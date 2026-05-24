@@ -1,0 +1,47 @@
+import React from 'react';
+
+export const LogoTextComponent = () => {
+  return (
+    <svg
+      width="140"
+      height="33"
+      viewBox="0 0 140 33"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="slimflow-text-bg" x1="0" y1="0" x2="26" y2="26" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#612BD3" />
+          <stop offset="0.5" stopColor="#D82D7E" />
+          <stop offset="1" stopColor="#FC69FF" />
+        </linearGradient>
+        <linearGradient id="slimflow-text-s" x1="6" y1="6" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#FFFFFF" />
+          <stop offset="1" stopColor="#FFB86B" />
+        </linearGradient>
+      </defs>
+      
+      <rect x="0" y="3.5" width="26" height="26" rx="7" fill="url(#slimflow-text-bg)" />
+      
+      <path
+        d="M18 13C18 9 8 9 8 13C8 16.5 18 16.5 18 20C18 24 8 24 8 20"
+        stroke="url(#slimflow-text-s)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        fill="none"
+      />
+      
+      <text
+        x="34"
+        y="24"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        fontWeight="bold"
+        fontSize="20"
+        fill="currentColor"
+        letterSpacing="-0.02em"
+      >
+        SlimFlow
+      </text>
+    </svg>
+  );
+};
