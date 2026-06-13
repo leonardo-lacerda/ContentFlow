@@ -10,6 +10,9 @@
     "start": "dotenv -e ../../.env -- next start -p 4200",
     "pm2": "pm2 start pnpm --name frontend -- start"
   },
+  "dependencies": {
+    "next": "16.2.1"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC"

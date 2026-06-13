@@ -9,6 +9,7 @@ on:
       - 'apps/orchestrator/**'
       - 'libraries/**'
       - 'Dockerfile.backend'
+      - 'Dockerfile.dev'
       - 'docker-compose*.yaml'
       - 'var/docker/**'
       - '.github/workflows/deploy-digitalocean.yml'
@@ -19,25 +20,27 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REGISTRY: registry.digitalocean.com/megaagentsleo
-  IMAGE_NAME: contentflow
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/contentflow
 
 jobs:
   build-and-push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          token: ${{ secrets.DO_ACCESS_TOKEN }}
-
-      - name: Login to DO Container Registry
-        run: doctl registry login --expiry-seconds 3600
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker image
         run: |
@@ -46,7 +49,7 @@ jobs:
             -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
             .
 
-      - name: Push image to registry
+      - name: Push image to GHCR
         run: |
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
@@ -55,6 +58,8 @@ jobs:
     name: Deploy on Droplet
     needs: build-and-push
     runs-on: ubuntu-latest
+    permissions:
+      packages: read
 
     steps:
       - name: Checkout repository
@@ -74,11 +79,15 @@ jobs:
 
       - name: Deploy with Docker Compose
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
         with:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           port: ${{ secrets.DO_PORT || '22' }}
+          envs: GHCR_TOKEN,GHCR_USER
           script: |
             set -e
             cd "${{ secrets.DO_APP_DIR }}"
@@ -88,9 +97,7 @@ jobs:
               exit 1
             fi
 
-            # Autenticar no DO Container Registry
-            echo "${{ secrets.DO_ACCESS_TOKEN }}" | docker login registry.digitalocean.com \
-              -u "${{ secrets.DO_ACCESS_TOKEN }}" --password-stdin
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
             COMPOSE_FILES="-f docker-compose.yaml -f docker-compose.production.yaml -f docker-compose.proxy.yaml"
 

@@ -5,7 +5,7 @@
 
 services:
   contentflow:
-    image: registry.digitalocean.com/megaagentsleo/contentflow:latest
+    image: ghcr.io/leonardo-lacerda/contentflow:latest
     environment:
       MAIN_URL: '${MAIN_URL}'
       FRONTEND_URL: '${FRONTEND_URL}'
