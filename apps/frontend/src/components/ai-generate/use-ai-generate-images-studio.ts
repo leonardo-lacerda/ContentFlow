@@ -36,13 +36,7 @@ import {
   carouselTemplates,
   defaultVisualStyle,
 } from './ai-generate-images.constants';
-import {
-  defaultVisualPresets,
-  findColorPreset,
-  findStructurePreset,
-  findStylePreset,
-  findTypographyPreset,
-} from './ai-generate-images.presets';
+import { defaultVisualPresets } from './ai-generate-images.presets';
 import {
   buildDirectionRenderSpec,
   buildDirectionSpec,
@@ -66,8 +60,6 @@ import {
   imageToCanvas,
   inferReferenceCategory,
   resizeImageBlobToDataUrl,
-  resolveImageRequestSettings,
-  selectedReferencesToDataUrls,
   slugifyFileName,
   sumCosts,
 } from './ai-generate-images.utils';
