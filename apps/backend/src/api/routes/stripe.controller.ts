@@ -6,6 +6,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { StripeService } from '@gitroom/nestjs-libraries/services/stripe.service';
+import { CaktoService } from '@gitroom/nestjs-libraries/services/cakto.service';
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Stripe')
@@ -13,6 +14,7 @@ import { ApiTags } from '@nestjs/swagger';
 export class StripeController {
   constructor(
     private readonly _stripeService: StripeService,
+    private readonly _caktoService: CaktoService
   ) {}
 
   @Post('/')
@@ -50,5 +52,24 @@ export class StripeController {
     } catch (e) {
       throw new HttpException(e, 500);
     }
+  }
+
+  @Post('/cakto')
+  cakto(@Req() req: RawBodyRequest<Request>) {
+    const rawBody = Buffer.isBuffer(req.rawBody)
+      ? req.rawBody.toString('utf8')
+      : JSON.stringify(req.body || {});
+
+    // @ts-ignore
+    if (!this._caktoService.validateWebhook(rawBody, req.headers)) {
+      throw new HttpException('Invalid Cakto webhook signature', 403);
+    }
+
+    const event = this._caktoService.parseWebhook(rawBody);
+    if (!event) {
+      return { ok: true, ignored: true };
+    }
+
+    return this._caktoService.processWebhook(event);
   }
 }

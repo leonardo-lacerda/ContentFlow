@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpException, Param, Post, Req } from '@nestjs/common';
 import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/subscription.service';
 import { StripeService } from '@gitroom/nestjs-libraries/services/stripe.service';
+import { CaktoService } from '@gitroom/nestjs-libraries/services/cakto.service';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { Organization, User } from '@prisma/client';
 import { BillingSubscribeDto } from '@gitroom/nestjs-libraries/dtos/billing/billing.subscribe.dto';
@@ -17,9 +18,18 @@ export class BillingController {
   constructor(
     private _subscriptionService: SubscriptionService,
     private _stripeService: StripeService,
+    private _caktoService: CaktoService,
     private _notificationService: NotificationService,
     private _nowpayments: Nowpayments
   ) {}
+
+  @Get('/plans')
+  plans() {
+    return {
+      provider: this._caktoService.isConfigured() ? 'cakto' : 'stripe',
+      plans: this._caktoService.commercialPlans,
+    };
+  }
 
   @Get('/check/:id')
   async checkId(
@@ -87,6 +97,9 @@ export class BillingController {
     @Req() req: Request
   ) {
     const uniqueId = req?.cookies?.track;
+    if (this._caktoService.isConfigured()) {
+      return this._caktoService.subscribe(uniqueId, org, user, body);
+    }
     return this._stripeService.subscribe(
       uniqueId,
       org.id,
@@ -98,6 +111,11 @@ export class BillingController {
 
   @Get('/portal')
   async modifyPayment(@GetOrgFromRequest() org: Organization) {
+    if (this._caktoService.isConfigured()) {
+      return {
+        portal: process.env.CAKTO_CUSTOMER_PORTAL_URL || '/billing',
+      };
+    }
     const customer = await this._stripeService.getCustomerByOrganizationId(
       org.id
     );
@@ -124,6 +142,10 @@ export class BillingController {
       `Organization ${org.name} has cancelled their subscription because: ${body.feedback}`,
       user.email
     );
+
+    if (this._caktoService.isConfigured()) {
+      return this._caktoService.cancel(org);
+    }
 
     return this._stripeService.setToCancel(org.id);
   }

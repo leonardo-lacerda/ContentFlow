@@ -15,7 +15,7 @@ import { pricing } from '@gitroom/nestjs-libraries/database/prisma/subscriptions
 import { FAQComponent } from '@gitroom/frontend/components/billing/faq.component';
 import { useSWRConfig } from 'swr';
 import { useUser } from '@gitroom/frontend/components/layout/user.context';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useVariables } from '@gitroom/react/helpers/variable.context';
 import { useModals } from '@gitroom/frontend/components/layout/new-modal';
 import { Textarea } from '@gitroom/react/form/textarea';
@@ -32,7 +32,7 @@ import { LogoutComponent } from '@gitroom/frontend/components/layout/logout.comp
 
 export const Prorate: FC<{
   period: 'MONTHLY' | 'YEARLY';
-  pack: 'STANDARD' | 'PRO';
+  pack: 'STANDARD' | 'PRO' | 'TEAM';
 }> = (props) => {
   const { period, pack } = props;
   const t = useT();
@@ -77,7 +77,7 @@ export const Prorate: FC<{
   );
 };
 export const Features: FC<{
-  pack: 'FREE' | 'STANDARD' | 'PRO';
+  pack: 'FREE' | 'STANDARD' | 'PRO' | 'TEAM';
 }> = (props) => {
   const { pack } = props;
   const features = useMemo(() => {
@@ -209,6 +209,17 @@ const Info: FC<{
     </div>
   );
 };
+
+const billingDisplayName = (name: string) => {
+  if (name === 'STANDARD') {
+    return 'Starter';
+  }
+  if (name === 'TEAM') {
+    return 'Scale';
+  }
+  return name.charAt(0) + name.slice(1).toLowerCase();
+};
+
 export const MainBillingComponent: FC<{
   sub?: Subscription;
 }> = (props) => {
@@ -220,7 +231,6 @@ export const MainBillingComponent: FC<{
   const user = useUser();
   const dub = useDubClickId();
   const modal = useModals();
-  const router = useRouter();
   const utm = useUtmUrl();
   const track = useTrack();
   const t = useT();
@@ -271,7 +281,7 @@ export const MainBillingComponent: FC<{
     return subscription?.subscriptionTier;
   }, [subscription, initialChannels, monthlyOrYearly, period]);
   const moveToCheckout = useCallback(
-    (billing: 'STANDARD' | 'PRO' | 'FREE', reactivate = false) =>
+    (billing: 'STANDARD' | 'PRO' | 'TEAM' | 'FREE', reactivate = false) =>
       async () => {
         if (reactivate) {
           setLoading(true);
@@ -434,14 +444,15 @@ export const MainBillingComponent: FC<{
       },
     [monthlyOrYearly, subscription, user, utm]
   );
-  if (user?.isLifetime) {
-    router.replace('/');
-    return null;
-  }
   return (
     <div className="flex flex-col gap-[16px]">
       <div className="flex flex-row">
-        <div className="flex-1 text-[20px]">{t('plans', 'Plans')}</div>
+        <div className="flex-1">
+          <div className="text-[20px]">{t('plans', 'Meu Plano')}</div>
+          <div className="text-[13px] text-customColor18 mt-[4px]">
+            Controle sua assinatura, troque de plano e acompanhe os limites.
+          </div>
+        </div>
         <div className="flex items-center gap-[16px]">
           <div>{t('monthly', 'MONTHLY')}</div>
           <div>
@@ -454,13 +465,16 @@ export const MainBillingComponent: FC<{
       {finishTrial && <FinishTrial close={() => setFinishTrial(false)} />}
       <div className="flex gap-[16px] [@media(max-width:1024px)]:flex-col [@media(max-width:1024px)]:text-center">
         {Object.entries(pricing)
+          .filter(([name]) =>
+            ['FREE', 'STANDARD', 'PRO', 'TEAM'].includes(name)
+          )
           .filter((f) => !isGeneral || f[0] !== 'FREE')
           .map(([name, values]) => (
             <div
               key={name}
               className="flex-1 bg-sixth border border-customColor6 rounded-[4px] p-[24px] gap-[16px] flex flex-col [@media(max-width:1024px)]:items-center"
             >
-              <div className="text-[18px]">{name}</div>
+              <div className="text-[18px]">{billingDisplayName(name)}</div>
               <div className="text-[38px] flex gap-[2px] items-center">
                 <div>
                   $
@@ -502,24 +516,24 @@ export const MainBillingComponent: FC<{
                         '!bg-red-500'
                     )}
                     onClick={moveToCheckout(
-                      name.toUpperCase() as 'STANDARD' | 'PRO'
+                      name.toUpperCase() as 'STANDARD' | 'PRO' | 'TEAM'
                     )}
                   >
                     {currentPackage === name.toUpperCase()
-                      ? 'Current Plan'
+                      ? 'Plano atual'
                       : name.toUpperCase() === 'FREE'
                       ? subscription?.cancelAt
                         ? `Downgrade on ${dayjs
                             .utc(subscription?.cancelAt)
                             .local()
                             .format('D MMM, YYYY')}`
-                        : 'Cancel subscription'
+                        : 'Cancelar assinatura'
                       : // @ts-ignore
                       (user?.tier === 'FREE' ||
                           user?.tier?.current === 'FREE') &&
                         user.allowTrial
                       ? t('start_7_days_free_trial', 'Start 7 days free trial')
-                      : 'Purchase'}
+                      : `Escolher ${billingDisplayName(name)}`}
                   </Button>
                 )}
                 {subscription &&
@@ -528,12 +542,12 @@ export const MainBillingComponent: FC<{
                   !!name && (
                     <Prorate
                       period={monthlyOrYearly === 'on' ? 'YEARLY' : 'MONTHLY'}
-                      pack={name.toUpperCase() as 'STANDARD' | 'PRO'}
+                      pack={name.toUpperCase() as 'STANDARD' | 'PRO' | 'TEAM'}
                     />
                   )}
               </div>
               <Features
-                pack={name.toUpperCase() as 'FREE' | 'STANDARD' | 'PRO'}
+                pack={name.toUpperCase() as 'FREE' | 'STANDARD' | 'PRO' | 'TEAM'}
               />
             </div>
           ))}

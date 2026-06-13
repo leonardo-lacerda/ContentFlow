@@ -251,6 +251,27 @@ export const MediaBox: FC<{
     onEnd: () => setLoading(false),
   });
 
+  const filteredMedia = useMemo(() => {
+    return (data?.results || []).filter((f: any) => {
+      if (type === 'video') {
+        return f.path.indexOf('mp4') > -1;
+      } else if (type === 'image') {
+        return f.path.indexOf('mp4') === -1;
+      }
+      return true;
+    });
+  }, [data?.results, type]);
+
+  const aiGeneratedProjects = useMemo(
+    () => filteredMedia.filter((media: any) => media.isCarousel),
+    [filteredMedia]
+  );
+
+  const looseMedia = useMemo(
+    () => filteredMedia.filter((media: any) => !media.isCarousel),
+    [filteredMedia]
+  );
+
   const addRemoveSelected = useCallback(
     (media: any) => () => {
       if (standalone) {
@@ -490,6 +511,105 @@ export const MediaBox: FC<{
     );
   }, [t, loading]);
 
+  const projectTitle = useCallback((media: any) => {
+    return (
+      media.carouselProject?.plan?.title ||
+      media.originalName?.replace('Carrossel: ', '') ||
+      media.originalName ||
+      'Projeto gerado por IA'
+    );
+  }, []);
+
+  const renderMediaCard = (media: any, className = 'w8-max aspect-square') => (
+    <div
+      className={clsx(
+        'group px-[3px] py-[3px] rounded-[6px]',
+        className,
+        !standalone && 'cursor-pointer'
+      )}
+      key={media.id}
+    >
+      <div
+        className={clsx(
+          'w-full h-full rounded-[6px] border-[4px] relative',
+          isMediaSelected(media) ? 'border-[#612BD3]' : 'border-transparent'
+        )}
+        onClick={addRemoveSelected(media)}
+      >
+        {isMediaSelected(media) ? (
+          <div className="text-white flex z-[101] justify-center items-center text-[14px] font-[500] w-[24px] h-[24px] rounded-full bg-[#612BD3] absolute -bottom-[10px] -end-[10px]">
+            {media.isCarousel
+              ? media.children?.length || 0
+              : selected.findIndex((z: any) => z.id === media.id) + 1}
+          </div>
+        ) : (
+          <DeleteCircleIcon
+            className="cursor-pointer hidden z-[100] group-hover:block absolute -top-[5px] -end-[5px]"
+            onClick={deleteImage(media)}
+          />
+        )}
+        <div className="absolute bottom-[10px] end-[10px] z-[100] max-w-[calc(100%-20px)] truncate rounded bg-black/55 px-[6px] py-[3px] text-[11px] text-white">
+          {media.isCarousel
+            ? `${projectTitle(media)} (${media.children?.length || 0})`
+            : media.originalName}
+        </div>
+        {media.isCarousel && (
+          <div className="absolute left-[10px] top-[10px] z-[100] flex flex-col items-start gap-[5px]">
+            <div className="rounded-full bg-[#612BD3] px-[8px] py-[4px] text-[11px] font-[700] text-white shadow">
+              Projeto IA
+            </div>
+            <div className="rounded-full border border-white/20 bg-black/55 px-[8px] py-[4px] text-[10px] font-[800] text-white shadow">
+              {media.children?.length || 0} slides
+            </div>
+          </div>
+        )}
+        <div className="w-full h-full rounded-[6px] overflow-hidden relative">
+          <div className="absolute z-[20] left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%]">
+            <div
+              onClick={maximize(media)}
+              className="cursor-pointer p-[4px] bg-black/40 hidden group-hover:block hover:scale-150 transition-all"
+            >
+              <svg
+                width="30"
+                height="30"
+                viewBox="0 0 14 14"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M2 9H0V14H5V12H2V9ZM0 5H2V2H5V0H0V5ZM12 12H9V14H14V9H12V12ZM9 0V2H12V5H14V0H9Z"
+                  fill="#F1F5F9"
+                />
+              </svg>
+            </div>
+          </div>
+          {media.path.indexOf('mp4') > -1 ? (
+            <VideoFrame url={mediaDirectory.set(media.path)} />
+          ) : media.isCarousel && media.children?.length > 1 ? (
+            <div className="grid h-full w-full grid-cols-2 gap-[2px] bg-black">
+              {media.children.slice(0, 4).map((item: any) => (
+                <img
+                  key={item.id}
+                  className="h-full w-full object-cover"
+                  src={mediaDirectory.set(item.path)}
+                  alt={item.alt || 'carousel slide'}
+                />
+              ))}
+            </div>
+          ) : (
+            <img
+              width="100%"
+              height="100%"
+              className="w-full h-full object-cover"
+              src={mediaDirectory.set(media.path)}
+              alt="media"
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <DropFiles disabled={loading} className="flex flex-col flex-1" onDrop={dragAndDrop}>
       <div className="flex flex-col flex-1">
@@ -600,96 +720,78 @@ export const MediaBox: FC<{
                 ))}
               </>
             )}
-            {data?.results
-              ?.filter((f: any) => {
-                if (type === 'video') {
-                  return f.path.indexOf('mp4') > -1;
-                } else if (type === 'image') {
-                  return f.path.indexOf('mp4') === -1;
-                }
-                return true;
-              })
-              .map((media: any) => (
-                <div
-                  className={clsx(
-                    'group px-[3px] py-[3px] float-left rounded-[6px] w8-max aspect-square',
-                    !standalone && 'cursor-pointer'
-                  )}
-                  key={media.id}
-                >
-                  <div
-                    className={clsx(
-                      'w-full h-full rounded-[6px] border-[4px] relative',
-                      isMediaSelected(media)
-                        ? 'border-[#612BD3]'
-                        : 'border-transparent'
-                    )}
-                    onClick={addRemoveSelected(media)}
-                  >
-                    {isMediaSelected(media) ? (
-                      <div className="text-white flex z-[101] justify-center items-center text-[14px] font-[500] w-[24px] h-[24px] rounded-full bg-[#612BD3] absolute -bottom-[10px] -end-[10px]">
-                        {media.isCarousel
-                          ? media.children?.length || 0
-                          : selected.findIndex((z: any) => z.id === media.id) + 1}
-                      </div>
-                    ) : (
-                      <DeleteCircleIcon
-                        className="cursor-pointer hidden z-[100] group-hover:block absolute -top-[5px] -end-[5px]"
-                        onClick={deleteImage(media)}
-                      />
-                    )}
-                    <div className="absolute bottom-[10px] end-[10px] z-[100] max-w-[calc(100%-20px)] truncate rounded bg-black/55 px-[6px] py-[3px] text-[11px] text-white">
-                      {media.isCarousel
-                        ? `${media.originalName?.replace('Carrossel: ', '')} (${media.children?.length || 0})`
-                        : media.originalName}
+            {!!aiGeneratedProjects.length && (
+              <div className="flex w-full flex-col gap-[14px] pb-[16px] pr-[6px]">
+                <div className="flex items-end justify-between px-[3px] pt-[3px]">
+                  <div>
+                    <div className="text-[18px] font-[800] text-white">
+                      Conteúdos gerados no AI Images
                     </div>
-                    {media.isCarousel && (
-                      <div className="absolute left-[10px] top-[10px] z-[100] flex flex-col items-start gap-[5px]">
-                        <div className="rounded-full bg-[#612BD3] px-[8px] py-[4px] text-[11px] font-[700] text-white shadow">
-                          Pasta
-                        </div>
-                        {media.carouselProject && (
-                          <div className="rounded-full border border-cyan-300/30 bg-cyan-500/90 px-[8px] py-[4px] text-[10px] font-[800] text-white shadow">
-                            Projeto IA
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="w-full h-full rounded-[6px] overflow-hidden relative">
-                      <div className="absolute z-[20] left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%]">
-                        <div
-                          onClick={maximize(media)}
-                          className="cursor-pointer p-[4px] bg-black/40 hidden group-hover:block hover:scale-150 transition-all"
-                        >
-                          <svg
-                            width="30"
-                            height="30"
-                            viewBox="0 0 14 14"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M2 9H0V14H5V12H2V9ZM0 5H2V2H5V0H0V5ZM12 12H9V14H14V9H12V12ZM9 0V2H12V5H14V0H9Z"
-                              fill="#F1F5F9"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                      {media.path.indexOf('mp4') > -1 ? (
-                        <VideoFrame url={mediaDirectory.set(media.path)} />
-                      ) : (
-                        <img
-                          width="100%"
-                          height="100%"
-                          className="w-full h-full object-cover"
-                          src={mediaDirectory.set(media.path)}
-                          alt="media"
-                        />
-                      )}
+                    <div className="text-[12px] text-newTextColor/60">
+                      Cada bloco mantém os slides do mesmo conteúdo juntos.
                     </div>
                   </div>
+                  <div className="rounded-full border border-newColColor px-[10px] py-[5px] text-[11px] font-[700] text-newTextColor/70">
+                    {aiGeneratedProjects.length} projetos
+                  </div>
                 </div>
-              ))}
+                {aiGeneratedProjects.map((media: any) => (
+                  <div
+                    key={media.id}
+                    className="rounded-[10px] border border-newColColor bg-newBgColorInner p-[10px]"
+                  >
+                    <div className="mb-[10px] flex flex-wrap items-center justify-between gap-[10px]">
+                      <div className="min-w-0">
+                        <div className="truncate text-[15px] font-[800] text-white">
+                          {projectTitle(media)}
+                        </div>
+                        <div className="mt-[3px] flex flex-wrap gap-[6px] text-[11px] text-newTextColor/60">
+                          {media.carouselProject?.company?.name && (
+                            <span>{media.carouselProject.company.name}</span>
+                          )}
+                          <span>{media.children?.length || 0} imagens</span>
+                          {media.createdAt && (
+                            <span>
+                              {new Date(media.createdAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="rounded-full bg-[#612BD3]/15 px-[10px] py-[5px] text-[11px] font-[800] text-[#BCA8FF]">
+                        Projeto IA
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-[8px] sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                      {renderMediaCard(media, 'aspect-square')}
+                      {media.children?.slice(1, 6).map((item: any) => (
+                        <div
+                          key={item.id}
+                          className="aspect-square overflow-hidden rounded-[6px] border border-newColColor"
+                        >
+                          <img
+                            className="h-full w-full object-cover"
+                            src={mediaDirectory.set(item.path)}
+                            alt={item.alt || 'carousel slide'}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!!looseMedia.length && (
+              <div className="w-full pr-[6px]">
+                {!!aiGeneratedProjects.length && (
+                  <div className="mb-[8px] px-[3px] text-[14px] font-[800] text-white">
+                    Mídias avulsas
+                  </div>
+                )}
+                <div className="flex flex-wrap">
+                  {looseMedia.map((media: any) => renderMediaCard(media))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         {(data?.pages || 0) > 1 && (

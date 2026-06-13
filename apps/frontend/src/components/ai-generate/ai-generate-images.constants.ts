@@ -99,4 +99,6 @@ export const textAreaClass =
   'w-full resize-y rounded-[10px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] p-[16px] text-[15px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-black dark:text-white transition duration-200 focus:border-black/40 dark:focus:border-white/40 focus:ring-4 focus:ring-black/5 dark:focus:ring-white/5 hover:border-black/20 dark:hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-50';
 
 export const GENERATED_IMAGE_CONCURRENCY = 2;
+export const MIN_CAROUSEL_SLIDES = 2;
+export const MAX_CAROUSEL_SLIDES = 10;
 export const REFERENCE_PAGE_SIZE = 72;

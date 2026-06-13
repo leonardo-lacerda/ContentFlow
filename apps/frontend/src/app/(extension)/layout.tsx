@@ -16,6 +16,14 @@ const jakartaSans = Plus_Jakarta_Sans({
 });
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
+  const billingEnabled = !!(
+    process.env.STRIPE_PUBLISHABLE_KEY ||
+    process.env.CAKTO_STARTER_CHECKOUT_URL ||
+    process.env.CAKTO_PRO_CHECKOUT_URL ||
+    process.env.CAKTO_SCALE_CHECKOUT_URL ||
+    process.env.CAKTO_CUSTOMER_PORTAL_URL
+  );
+
   return (
     <html>
       <head>
@@ -33,7 +41,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           environment={process.env.NODE_ENV!}
           backendUrl={process.env.NEXT_PUBLIC_BACKEND_URL!}
           plontoKey={process.env.NEXT_PUBLIC_POLOTNO!}
-          billingEnabled={!!process.env.STRIPE_PUBLISHABLE_KEY}
+          billingEnabled={billingEnabled}
           discordUrl={process.env.NEXT_PUBLIC_DISCORD_SUPPORT!}
           frontEndUrl={process.env.FRONTEND_URL!}
           isGeneral={!!process.env.IS_GENERAL}

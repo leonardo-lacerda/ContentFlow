@@ -5,6 +5,7 @@ import { UsersController } from '@gitroom/backend/api/routes/users.controller';
 import { AuthMiddleware } from '@gitroom/backend/services/auth/auth.middleware';
 import { StripeController } from '@gitroom/backend/api/routes/stripe.controller';
 import { StripeService } from '@gitroom/nestjs-libraries/services/stripe.service';
+import { CaktoService } from '@gitroom/nestjs-libraries/services/cakto.service';
 import { AnalyticsController } from '@gitroom/backend/api/routes/analytics.controller';
 import { PoliciesGuard } from '@gitroom/backend/services/auth/permissions/permissions.guard';
 import { PermissionsService } from '@gitroom/backend/services/auth/permissions/permissions.service';
@@ -85,6 +86,7 @@ const authenticatedController = [
   providers: [
     AuthService,
     StripeService,
+    CaktoService,
     OpenaiService,
     ExtractContentService,
     AuthMiddleware,

@@ -8,6 +8,7 @@ import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { MenuItem } from '@gitroom/frontend/components/new-layout/menu-item';
 
 interface MenuItemInterface {
+  id?: string;
   name: string;
   icon: ReactNode;
   path: string;
@@ -302,7 +303,8 @@ export const useMenuItem = () => {
       requireBilling: true,
     },
     {
-      name: t('billing', 'Billing'),
+      id: 'billing',
+      name: t('billing', 'Assinatura'),
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -382,9 +384,6 @@ export const TopMenu: FC = () => {
                 if (f.requireBilling && !billingEnabled) {
                   return false;
                 }
-                if (f.name === 'Billing' && user?.isLifetime) {
-                  return false;
-                }
                 if (f.role) {
                   return f.role.includes(user?.role!);
                 }
@@ -408,9 +407,6 @@ export const TopMenu: FC = () => {
               return false;
             }
             if (f.requireBilling && !billingEnabled) {
-              return false;
-            }
-            if (f.name === 'Billing' && user?.isLifetime) {
               return false;
             }
             if (f.role) {

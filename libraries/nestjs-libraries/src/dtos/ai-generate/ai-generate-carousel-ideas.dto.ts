@@ -1,4 +1,10 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsArray,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class AiGenerateCarouselIdeasDto {
   @IsString()
@@ -21,4 +27,14 @@ export class AiGenerateCarouselIdeasDto {
   @IsOptional()
   @MaxLength(128)
   textModel?: string;
+
+  /**
+   * Títulos de ideias já geradas/salvas anteriormente. A IA recebe essa lista
+   * para evitar repetir ideias e gerar apenas temas inéditos.
+   */
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  @MaxLength(240, { each: true })
+  existingTitles?: string[];
 }

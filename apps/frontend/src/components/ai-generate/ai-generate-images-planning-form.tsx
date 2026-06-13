@@ -1,6 +1,13 @@
 import { Button } from '@gitroom/react/form/button';
 
-import { carouselTemplates, inputClass, textAreaClass } from './ai-generate-images.constants';
+import {
+  MAX_CAROUSEL_SLIDES,
+  MIN_CAROUSEL_SLIDES,
+  carouselTemplates,
+  inputClass,
+  textAreaClass,
+} from './ai-generate-images.constants';
+import { Spinner } from './ai-generate-images.loaders';
 import type {
   CarouselIdea,
   CompanyProfile,
@@ -212,15 +219,18 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
             <button
               type="button"
               onClick={generateCompanyIdeas}
-              className="rounded-[10px] border border-black/10 bg-white px-[12px] py-[8px] text-[13px] font-[800] text-black shadow-sm hover:border-stone-500/40 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+              className="flex items-center gap-[8px] rounded-[10px] border border-black/10 bg-white px-[12px] py-[8px] text-[13px] font-[800] text-black shadow-sm hover:border-stone-500/40 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
               disabled={
                 loadingIdeas ||
                 loadingCompanyProfile ||
                 !hasRequiredCompanySummary
               }
             >
+              {loadingIdeas && <Spinner size={14} />}
               {loadingIdeas
                 ? 'Gerando ideias...'
+                : companyIdeas.length > 0
+                ? 'Gerar mais ideias (sem repetir)'
                 : 'Gerar ideias com contexto da empresa'}
             </button>
             <a
@@ -244,6 +254,14 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
           {ideasError && (
             <div className="mt-[8px] text-[12px] text-red-300">
               {ideasError}
+            </div>
+          )}
+
+          {companyIdeas.length > 0 && (
+            <div className="mt-[8px] text-[12px] text-green-400">
+              {companyIdeas.length} ideia{companyIdeas.length > 1 ? 's' : ''}{' '}
+              salva{companyIdeas.length > 1 ? 's' : ''} — ficam guardadas e não
+              gastam tokens ao reabrir.
             </div>
           )}
 
@@ -330,6 +348,59 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
           </select>
         </label>
 
+        <div className="md:col-span-2 rounded-[14px] border border-stone-500/20 bg-stone-500/10 p-[14px]">
+          <div className="mb-[10px] flex flex-wrap items-center justify-between gap-[10px]">
+            <div>
+              <span className="text-[14px] font-[800] text-black dark:text-white">
+                Quantidade de imagens
+              </span>
+              <p className="mt-[3px] text-[12px] text-black/55 dark:text-white/60">
+                Escolha quantos slides com texto serão criados neste carrossel.
+              </p>
+            </div>
+            <span className="rounded-full bg-white px-[10px] py-[5px] text-[12px] font-[900] text-stone-900 dark:bg-white/10 dark:text-white">
+              {slideCount} de {MAX_CAROUSEL_SLIDES}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-[10px] md:grid-cols-[1fr_92px]">
+            <input
+              type="range"
+              value={slideCount}
+              onChange={(event) => setSlideCount(Number(event.target.value))}
+              min={MIN_CAROUSEL_SLIDES}
+              max={MAX_CAROUSEL_SLIDES}
+              step={1}
+              className="w-full accent-stone-900 dark:accent-white"
+              aria-label="Quantidade de imagens"
+            />
+            <input
+              type="number"
+              value={slideCount}
+              onChange={(event) => setSlideCount(Number(event.target.value))}
+              min={MIN_CAROUSEL_SLIDES}
+              max={MAX_CAROUSEL_SLIDES}
+              className={inputClass}
+              aria-label="Número de imagens"
+            />
+          </div>
+          <div className="mt-[10px] flex flex-wrap gap-[8px]">
+            {[5, 8, 10].map((count) => (
+              <button
+                key={count}
+                type="button"
+                onClick={() => setSlideCount(count)}
+                className={`rounded-[999px] border px-[10px] py-[6px] text-[12px] font-[800] ${
+                  slideCount === count
+                    ? 'border-stone-950 bg-stone-950 text-white dark:border-white dark:bg-white dark:text-stone-950'
+                    : 'border-black/10 bg-white text-black/65 hover:border-stone-500/40 dark:border-white/10 dark:bg-white/10 dark:text-white/75'
+                }`}
+              >
+                {count} imagens
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Botão de Opções Avançadas */}
         <div className="md:col-span-2 mt-2">
           <button
@@ -376,22 +447,6 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
                   Emocional, acolhedor e inspirador
                 </option>
               </select>
-            </label>
-
-            <label className="flex flex-col gap-[8px]">
-              <span className="text-[14px] font-[500]">
-                Número de slides
-              </span>
-              <input
-                type="number"
-                value={slideCount}
-                onChange={(event) =>
-                  setSlideCount(Number(event.target.value))
-                }
-                min={2}
-                max={10}
-                className={inputClass}
-              />
             </label>
 
             <label className="flex flex-col gap-[8px]">

@@ -11,12 +11,14 @@ import {
 } from 'react';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { useMediaDirectory } from '@gitroom/react/helpers/use.media.directory';
+import { useToaster } from '@gitroom/react/toaster/toaster';
 
 import type {
   CarouselIdea,
   CarouselImageJob,
   CarouselPlan,
   CarouselSlide,
+  CompanyIdea,
   CompanyInspiration,
   CompanyProfile,
   CostEstimate,
@@ -25,16 +27,25 @@ import type {
   ReferenceImage,
   SavedAiProject,
   SlideImageResult,
+  VisualDirectionMode,
 } from './ai-generate-images.types';
 import {
+  MAX_CAROUSEL_SLIDES,
+  MIN_CAROUSEL_SLIDES,
   REFERENCE_PAGE_SIZE,
   carouselTemplates,
   defaultVisualStyle,
 } from './ai-generate-images.constants';
 import {
+  defaultVisualPresets,
+  findColorPreset,
+  findStructurePreset,
+  findStylePreset,
+  findTypographyPreset,
+} from './ai-generate-images.presets';
+import {
   blobToBytes,
   buildLimitedBrief,
-  buildReferenceInstruction,
   buildSlideImagePrompt,
   canvasToBlob,
   compactText,
@@ -58,6 +69,7 @@ import { aiGenerateImagesApi } from './ai-generate-images.api';
 export function useAiGenerateImagesStudio() {
   const fetch = useFetch();
   const mediaDirectory = useMediaDirectory();
+  const toaster = useToaster();
   const referenceDataUrlCache = useRef(new Map<string, string>());
   const generationAbortRef = useRef<AbortController | null>(null);
   const importProjectInputRef = useRef<HTMLInputElement | null>(null);
@@ -140,6 +152,35 @@ export function useAiGenerateImagesStudio() {
   const [loadingIdeas, setLoadingIdeas] = useState(false);
   const [ideasError, setIdeasError] = useState('');
   const [finalCreativeBrief, setFinalCreativeBrief] = useState('');
+  // Blocos visuais prontos (a pessoa escolhe em vez de escrever prompt).
+  const [structurePreset, setStructurePreset] = useState(
+    defaultVisualPresets.structurePreset
+  );
+  const [colorPreset, setColorPreset] = useState(
+    defaultVisualPresets.colorPreset
+  );
+  const [stylePreset, setStylePreset] = useState(
+    defaultVisualPresets.stylePreset
+  );
+  const [typographyPreset, setTypographyPreset] = useState(
+    defaultVisualPresets.typographyPreset
+  );
+  // Quando há inspirações selecionadas, por padrão elas assumem o visual.
+  const [inspirationsLeadVisual, setInspirationsLeadVisual] = useState(true);
+  const setClampedSlideCount = useCallback((value: number) => {
+    const nextValue = Number(value);
+    if (!Number.isFinite(nextValue)) {
+      setSlideCount(MIN_CAROUSEL_SLIDES);
+      return;
+    }
+
+    setSlideCount(
+      Math.min(
+        MAX_CAROUSEL_SLIDES,
+        Math.max(MIN_CAROUSEL_SLIDES, Math.round(nextValue))
+      )
+    );
+  }, []);
   const trimmedTopic = topic.trim();
   const trimmedTextModel = textModel.trim();
   const trimmedImageModel = imageModel.trim();
@@ -158,8 +199,8 @@ export function useAiGenerateImagesStudio() {
       !trimmedTopic ||
       !trimmedTextModel ||
       !hasRequiredCompanySummary ||
-      slideCount < 2 ||
-      slideCount > 10
+      slideCount < MIN_CAROUSEL_SLIDES ||
+      slideCount > MAX_CAROUSEL_SLIDES
     );
   }, [
     hasRequiredCompanySummary,
@@ -178,6 +219,24 @@ export function useAiGenerateImagesStudio() {
         (slide) => !slide.headline.trim() || !slide.imagePrompt.trim()
       )
     );
+  }, [generatingImages, plan?.slides, trimmedImageModel]);
+  const imageDisabledReason = useMemo(() => {
+    if (generatingImages) {
+      return 'A geração de imagens já está em andamento.';
+    }
+    if (!plan?.slides?.length) {
+      return 'Gere ou importe um plano de carrossel antes de criar imagens.';
+    }
+    if (!trimmedImageModel) {
+      return 'Informe o modelo de imagem nas opções avançadas.';
+    }
+    const incompleteSlide = plan.slides.find(
+      (slide) => !slide.headline.trim() || !slide.imagePrompt.trim()
+    );
+    if (incompleteSlide) {
+      return `Complete o título e o prompt visual do slide ${incompleteSlide.index}.`;
+    }
+    return '';
   }, [generatingImages, plan?.slides, trimmedImageModel]);
 
   const textCost = plan?.cost_estimate || null;
@@ -307,78 +366,139 @@ export function useAiGenerateImagesStudio() {
       .filter(Boolean)
       .join('\n');
   }, [companyProfile]);
-  const computedCreativeBrief = useMemo(
-    () =>
-      buildLimitedBrief(
-        [
-          `Empresa: ${companyProfile?.companyName || brandName || 'marca selecionada'}.`,
-          companyProfile?.summary &&
-            `Resumo estrategico: ${companyProfile.summary}`,
+  // Modo derivado (compat com o backend): inspirações comandam o visual quando
+  // há referências selecionadas e o toggle está ligado; senão, equilíbrio.
+  const visualDirectionMode: VisualDirectionMode =
+    selectedReferences.length > 0 && inspirationsLeadVisual
+      ? 'inspiration'
+      : 'balanced';
+  const computedCreativeBrief = useMemo(() => {
+    // No modo "inspiration" a identidade visual da marca sai do brief para
+    // nao competir com as inspiracoes; ficam apenas as regras de seguranca
+    // (logo, CTA, termos proibidos) e o contexto estrategico.
+    const hasReferences = selectedReferences.length > 0;
+    const inspirationMode = visualDirectionMode === 'inspiration' && hasReferences;
+    const brandMode = !hasReferences;
+
+    const referencesList = selectedReferences
+      .map(
+        (reference) =>
+          `${reference.name} (${reference.category || reference.source}${
+            reference.approved ? ', aprovada pela empresa' : ''
+          })${reference.description ? `: ${reference.description}` : ''}`
+      )
+      .join(' | ');
+
+    const referencesLine = !hasReferences
+      ? 'Sem inspiracoes temporarias selecionadas; priorize a identidade visual da marca.'
+      : inspirationMode
+      ? `Inspiracoes selecionadas (DIRECAO VISUAL PRINCIPAL): ${referencesList}. Elas mandam na composicao, enquadramento, paleta, tipografia, textura e atmosfera; em caso de conflito com qualquer outra instrucao de estilo, siga as inspiracoes. Nao copie marcas, logos, rostos ou elementos protegidos.`
+      : brandMode
+      ? `Inspiracoes selecionadas (apenas tempero visual): ${referencesList}. Em caso de conflito, priorize sempre a identidade visual da marca. Nao copie marcas, logos, rostos ou elementos protegidos.`
+      : `Inspiracoes selecionadas: ${referencesList}. Use-as como referencia forte de composicao, hierarquia, textura, paleta e atmosfera, em equilibrio com a identidade da marca, sem copiar marcas, logos, rostos ou elementos protegidos.`;
+
+    return buildLimitedBrief(
+      [
+        `Empresa: ${companyProfile?.companyName || brandName || 'marca selecionada'}.`,
+        companyProfile?.summary &&
+          `Resumo estrategico: ${companyProfile.summary}`,
+        !inspirationMode &&
           companyProfile?.visualIdentitySummary &&
-            `Identidade visual permanente: ${companyProfile.visualIdentitySummary}`,
-          brandColors.trim() && `Cores a respeitar: ${brandColors.trim()}.`,
-          brandFonts.trim() && `Tipografia desejada: ${brandFonts.trim()}.`,
+          `Identidade visual permanente: ${companyProfile.visualIdentitySummary}`,
+        !inspirationMode &&
+          brandColors.trim() &&
+          `Cores a respeitar: ${brandColors.trim()}.`,
+        !inspirationMode &&
+          brandFonts.trim() &&
+          `Tipografia desejada: ${brandFonts.trim()}.`,
+        !inspirationMode &&
           companyProfile?.brandPalettes?.length &&
-            `Paletas salvas no Brand Kit: ${companyProfile.brandPalettes
-              .map((palette) => `${palette.name} [${palette.colors.join(', ')}] - ${palette.usage}`)
-              .join(' | ')}`,
+          `Paletas salvas no Brand Kit: ${companyProfile.brandPalettes
+            .map((palette) => `${palette.name} [${palette.colors.join(', ')}] - ${palette.usage}`)
+            .join(' | ')}`,
+        !inspirationMode &&
           companyProfile?.brandFontPresets?.length &&
-            `Presets oficiais de fonte: ${companyProfile.brandFontPresets
-              .map((font) => `${font.name}: headline ${font.headline}; apoio ${font.body}; ${font.usage}`)
-              .join(' | ')}`,
-          defaultCta.trim() && `CTA padrao: ${defaultCta.trim()}.`,
-          forbiddenTerms.trim() &&
-            `Evitar termos/claims: ${forbiddenTerms.trim()}.`,
+          `Presets oficiais de fonte: ${companyProfile.brandFontPresets
+            .map((font) => `${font.name}: headline ${font.headline}; apoio ${font.body}; ${font.usage}`)
+            .join(' | ')}`,
+        defaultCta.trim() && `CTA padrao: ${defaultCta.trim()}.`,
+        forbiddenTerms.trim() &&
+          `Evitar termos/claims: ${forbiddenTerms.trim()}.`,
+        !inspirationMode &&
           companyProfile?.styleRules?.length &&
-            `Regras fixas de marca: ${companyProfile.styleRules
-              .map((rule) => `${rule.type === 'dont' ? 'Nao fazer' : 'Fazer'}: ${rule.text}`)
-              .join(' | ')}`,
-          `Logo/assinatura: ${
-            logoUsage === 'none'
-              ? 'nao usar logo nem selo de marca'
-              : logoUsage === 'text'
-              ? `usar apenas selo textual com o nome ${brandName || 'da marca'}`
-              : `usar assinatura visual discreta, posicao ${logoPosition}, tamanho ${logoScale}`
-          }.`,
-          selectedLogoReference &&
-            `Referencia de logo/assinatura selecionada: ${selectedLogoReference.name}. Use somente como orientacao de proporcao, presença e posicionamento, sem copiar marcas se a imagem nao pertencer ao usuario.`,
-          companyProfile?.contentPreferences &&
-            `Preferencias de conteudo: ${companyProfile.contentPreferences}`,
+          `Regras fixas de marca: ${companyProfile.styleRules
+            .map((rule) => `${rule.type === 'dont' ? 'Nao fazer' : 'Fazer'}: ${rule.text}`)
+            .join(' | ')}`,
+        `Logo/assinatura: ${
+          logoUsage === 'none'
+            ? 'nao usar logo nem selo de marca'
+            : logoUsage === 'text'
+            ? `usar apenas selo textual com o nome ${brandName || 'da marca'}`
+            : `usar assinatura visual discreta, posicao ${logoPosition}, tamanho ${logoScale}`
+        }.`,
+        selectedLogoReference &&
+          `Referencia de logo/assinatura selecionada: ${selectedLogoReference.name}. Use somente como orientacao de proporcao, presença e posicionamento, sem copiar marcas se a imagem nao pertencer ao usuario.`,
+        companyProfile?.contentPreferences &&
+          `Preferencias de conteudo: ${companyProfile.contentPreferences}`,
+        !inspirationMode &&
           visualStyle.trim() &&
-            `Direcao visual escolhida para este carrossel: ${visualStyle.trim()}`,
-          selectedReferences.length
-            ? `Inspiracoes selecionadas: ${selectedReferences
-                .map(
-                  (reference) =>
-                    `${reference.name} (${reference.category || reference.source}${
-                      reference.approved ? ', aprovada pela empresa' : ''
-                    })${reference.description ? `: ${reference.description}` : ''}`
-                )
-                .join(' | ')}. Use-as como referencia de composicao, hierarquia, textura e atmosfera, sem copiar marcas, logos, rostos ou elementos protegidos.`
-            : 'Sem inspiracoes temporarias selecionadas; priorize a identidade visual da marca.',
-          'Regra central: cada slide deve parecer uma peça pronta de carrossel premium, com texto legivel dentro da imagem, alto contraste, margens seguras e unidade visual entre os slides.',
-        ],
-        2200
-      ),
-    [
-      brandColors,
-      brandFonts,
-      brandName,
-      companyProfile,
-      defaultCta,
-      forbiddenTerms,
-      logoPosition,
-      logoScale,
-      logoUsage,
-      selectedLogoReference,
-      selectedReferences,
-      visualStyle,
-    ]
-  );
+          `Direcao visual escolhida para este carrossel: ${visualStyle.trim()}`,
+        referencesLine,
+        'Regra central: cada slide deve parecer uma peça pronta de carrossel premium, com texto legivel dentro da imagem, alto contraste, margens seguras e unidade visual entre os slides.',
+      ],
+      2200
+    );
+  }, [
+    brandColors,
+    brandFonts,
+    brandName,
+    companyProfile,
+    defaultCta,
+    forbiddenTerms,
+    logoPosition,
+    logoScale,
+    logoUsage,
+    selectedLogoReference,
+    selectedReferences,
+    visualDirectionMode,
+    visualStyle,
+  ]);
 
   const refreshCreativeBrief = useCallback(() => {
     setFinalCreativeBrief(computedCreativeBrief);
   }, [computedCreativeBrief]);
+
+  // Monta o "render spec" (estrutura + estilo/cor/tipografia + contexto) a
+  // partir dos presets escolhidos. Quando as inspirações comandam o visual, o
+  // builder ignora estilo/cor/tipografia e deixa as imagens assumirem.
+  const buildSlidePromptFor = useCallback(
+    (slide: CarouselSlide, referenceCount: number) => {
+      const hasInspirations = referenceCount > 0;
+      const lead = hasInspirations && inspirationsLeadVisual;
+      const color = findColorPreset(colorPreset);
+      return buildSlideImagePrompt(plan as CarouselPlan, slide, {
+        structureLayout: findStructurePreset(structurePreset).layout,
+        stylePrompt: findStylePreset(stylePreset).prompt,
+        colorPrompt: color.id === 'brand' ? '' : color.prompt,
+        brandColors: brandColors,
+        typographyPrompt: findTypographyPreset(typographyPreset).prompt,
+        brief: finalCreativeBrief || computedCreativeBrief,
+        hasInspirations,
+        inspirationsLeadVisual: lead,
+      });
+    },
+    [
+      brandColors,
+      colorPreset,
+      computedCreativeBrief,
+      finalCreativeBrief,
+      inspirationsLeadVisual,
+      plan,
+      structurePreset,
+      stylePreset,
+      typographyPreset,
+    ]
+  );
 
   const syncBrandReferences = useCallback((company?: CompanyProfile | null) => {
     const brandReferences = companyBrandReferences(company);
@@ -643,6 +763,17 @@ export function useAiGenerateImagesStudio() {
     };
   }, [applyCompanyBrandKit, syncBrandReferences]);
 
+  // Carrega as ideias já salvas da empresa selecionada (sem gastar tokens).
+  useEffect(() => {
+    const company =
+      companyProfiles.find((item) => item.id === selectedCompanyId) ||
+      companyProfiles.find((item) => item.summary?.trim()) ||
+      companyProfiles[0] ||
+      null;
+    setCompanyIdeas(company?.ideasLibrary || []);
+    setIdeasError('');
+  }, [companyProfiles, selectedCompanyId]);
+
   useEffect(() => {
     return () => {
       generationAbortRef.current?.abort();
@@ -806,7 +937,7 @@ export function useAiGenerateImagesStudio() {
     setSelectedTemplate(templateId);
     setGoal(nextTemplate.goal);
     setTone(nextTemplate.tone);
-    setSlideCount(nextTemplate.slideCount);
+    setClampedSlideCount(nextTemplate.slideCount);
     setVisualStyle(nextTemplate.visualStyle);
   };
 
@@ -1013,14 +1144,19 @@ export function useAiGenerateImagesStudio() {
 
     setLoadingIdeas(true);
     setIdeasError('');
-    setCompanyIdeas([]);
 
     try {
+      // Envia as ideias já salvas para a IA não repetir os mesmos temas.
+      const existingTitles = companyIdeas
+        .map((idea) => idea.title)
+        .filter(Boolean);
+
       const { ok, data, message } = await aiGenerateImagesApi.generateCompanyIdeas(fetch, {
         topicHint: trimmedTopic || undefined,
         companyContext: companyContext || undefined,
         language: 'pt-BR',
         textModel: trimmedTextModel,
+        existingTitles: existingTitles.length ? existingTitles : undefined,
       });
 
       if (!ok) {
@@ -1030,10 +1166,66 @@ export function useAiGenerateImagesStudio() {
         return;
       }
 
-      const ideas = Array.isArray(data?.ideas)
-        ? data.ideas
-        : [];
-      setCompanyIdeas(ideas);
+      const freshIdeas = Array.isArray(data?.ideas) ? data.ideas : [];
+      if (!freshIdeas.length) {
+        setIdeasError(
+          'A IA não retornou ideias novas desta vez. Tente novamente ou ajuste o tema.'
+        );
+        return;
+      }
+
+      const normalizeTitle = (title: string) =>
+        title
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu, '')
+          .replace(/[^a-z0-9]+/g, ' ')
+          .trim();
+
+      // Mescla ideias novas (no topo) com as salvas, removendo duplicadas.
+      const seen = new Set<string>();
+      const mergedLibrary: CompanyIdea[] = [];
+      const pushIdea = (idea: CarouselIdea | CompanyIdea) => {
+        const normalized = normalizeTitle(idea.title || '');
+        if (!normalized || seen.has(normalized)) {
+          return;
+        }
+        seen.add(normalized);
+        const existing = idea as Partial<CompanyIdea>;
+        mergedLibrary.push({
+          id:
+            existing.id ||
+            `idea_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          title: idea.title,
+          hook: idea.hook || '',
+          goal: idea.goal || '',
+          angle: idea.angle || '',
+          createdAt: existing.createdAt || new Date().toISOString(),
+        });
+      };
+
+      freshIdeas.forEach(pushIdea);
+      companyIdeas.forEach(pushIdea);
+
+      const cappedLibrary = mergedLibrary.slice(0, 120);
+      setCompanyIdeas(cappedLibrary);
+
+      // Persiste as ideias no perfil da empresa para não gastar tokens de novo.
+      if (companyProfile?.id) {
+        const { ok: savedOk, data: savedCompany } =
+          await aiGenerateImagesApi.saveCompanyProfile(fetch, {
+            ...companyProfile,
+            ideasLibrary: cappedLibrary,
+          });
+
+        if (savedOk && savedCompany) {
+          setCompanyProfiles((current) =>
+            current.map((company) =>
+              company.id === savedCompany.id ? savedCompany : company
+            )
+          );
+        }
+      }
     } catch (err) {
       setIdeasError('Nao foi possivel conectar ao servidor para gerar ideias.');
     } finally {
@@ -1085,7 +1277,10 @@ export function useAiGenerateImagesStudio() {
           audience: audience.trim(),
           tone: tone.trim(),
           platform,
-          slideCount,
+          slideCount: Math.min(
+            MAX_CAROUSEL_SLIDES,
+            Math.max(MIN_CAROUSEL_SLIDES, slideCount)
+          ),
           visualStyle: visualStyle.trim(),
           brandNotes: brandBrief,
           language: 'pt-BR',
@@ -1500,6 +1695,22 @@ export function useAiGenerateImagesStudio() {
 
   const generateCarouselImages = async () => {
     if (!plan?.slides?.length) {
+      setError('Gere ou importe um plano de carrossel antes de criar imagens.');
+      return;
+    }
+
+    if (!trimmedImageModel) {
+      setError('Informe o modelo de imagem nas opções avançadas.');
+      return;
+    }
+
+    const incompleteSlide = plan.slides.find(
+      (slide) => !slide.headline.trim() || !slide.imagePrompt.trim()
+    );
+    if (incompleteSlide) {
+      setError(
+        `Complete o título e o prompt visual do slide ${incompleteSlide.index} antes de gerar imagens.`
+      );
       return;
     }
 
@@ -1508,20 +1719,6 @@ export function useAiGenerateImagesStudio() {
         'A estimativa de custo ultrapassa o limite configurado. Ajuste o limite ou marque "gerar mesmo assim".'
       );
       return;
-    }
-
-    if (autoReviewBeforeImages && !allowGenerateWithReviewIssues) {
-      const review = editorialReview || (await reviewCarouselQuality(true));
-      const hasHighRisk =
-        (review?.score ?? 100) < 70 ||
-        review?.issues?.some((issue) => issue.severity === 'high');
-
-      if (hasHighRisk) {
-        setError(
-          'A revisão editorial encontrou riscos antes de gerar imagens. Ajuste os pontos indicados ou marque "gerar mesmo com alertas".'
-        );
-        return;
-      }
     }
 
     setGeneratingImages(true);
@@ -1537,38 +1734,51 @@ export function useAiGenerateImagesStudio() {
       });
       return next;
     });
-    setSlideImages({});
+    setSlideImages(
+      plan.slides.reduce<Record<number, SlideImageResult>>((acc, slide) => {
+        acc[slide.index] = {};
+        return acc;
+      }, {})
+    );
     setSavedCarouselCount(0);
 
-    const referenceDataUrls = selectedReferences.length
-      ? await selectedReferencesToDataUrls(
-          selectedReferences,
-          referenceDataUrlCache.current
-        )
-      : [];
-
-    const requestSettings = resolveImageRequestSettings(
-      imageProvider,
-      trimmedImageModel,
-      referenceDataUrls.length
-    );
-
     try {
+      const referenceDataUrls = selectedReferences.length
+        ? await selectedReferencesToDataUrls(
+            selectedReferences,
+            referenceDataUrlCache.current
+          )
+        : [];
+
+      if (
+        selectedReferences.length &&
+        referenceDataUrls.length < selectedReferences.length
+      ) {
+        toaster.show(
+          `${
+            selectedReferences.length - referenceDataUrls.length
+          } inspiração(ões) não puderam ser carregadas e foram ignoradas nesta geração.`,
+          'warning'
+        );
+      }
+
+      const requestSettings = resolveImageRequestSettings(
+        imageProvider,
+        trimmedImageModel,
+        referenceDataUrls.length
+      );
+
       const slides = plan.slides.map((slide) => {
         const requestBody: Record<string, unknown> = {
           provider: requestSettings.provider,
-          prompt: `${buildSlideImagePrompt(
-            plan,
-            slide,
-            finalCreativeBrief || computedCreativeBrief
-          )}${buildReferenceInstruction(referenceDataUrls.length)}`,
+          prompt: buildSlidePromptFor(slide, referenceDataUrls.length),
           model: requestSettings.model,
           n: 1,
         };
 
         if (referenceDataUrls.length) {
           requestBody.reference_images = referenceDataUrls;
-          requestBody.reference_description_model = 'gpt-image-1.5';
+          requestBody.reference_mode = visualDirectionMode;
         }
 
         if (requestSettings.provider === 'ia_generate') {
@@ -1595,12 +1805,6 @@ export function useAiGenerateImagesStudio() {
       }
 
       setImageJob(data);
-      setSlideImages(() =>
-        plan.slides.reduce<Record<number, SlideImageResult>>((acc, slide) => {
-          acc[slide.index] = {};
-          return acc;
-        }, {})
-      );
     } catch (err) {
       setError('Não foi possível conectar ao servidor para iniciar a fila.');
       setGeneratingImages(false);
@@ -1634,6 +1838,17 @@ export function useAiGenerateImagesStudio() {
             referenceDataUrlCache.current
           )
         : [];
+      if (
+        selectedReferences.length &&
+        referenceDataUrls.length < selectedReferences.length
+      ) {
+        toaster.show(
+          `${
+            selectedReferences.length - referenceDataUrls.length
+          } inspiração(ões) não puderam ser carregadas e foram ignoradas nesta geração.`,
+          'warning'
+        );
+      }
       const requestSettings = resolveImageRequestSettings(
         imageProvider,
         trimmedImageModel,
@@ -1641,18 +1856,14 @@ export function useAiGenerateImagesStudio() {
       );
       const requestBody: Record<string, unknown> = {
         provider: requestSettings.provider,
-        prompt: `${buildSlideImagePrompt(
-          plan,
-          slide,
-          finalCreativeBrief || computedCreativeBrief
-        )}${buildReferenceInstruction(referenceDataUrls.length)}`,
+        prompt: buildSlidePromptFor(slide, referenceDataUrls.length),
         model: requestSettings.model,
         n: 1,
       };
 
       if (referenceDataUrls.length) {
         requestBody.reference_images = referenceDataUrls;
-        requestBody.reference_description_model = 'gpt-image-1.5';
+        requestBody.reference_mode = visualDirectionMode;
       }
 
       if (requestSettings.provider === 'ia_generate') {
@@ -2083,6 +2294,7 @@ export function useAiGenerateImagesStudio() {
     hiddenReferenceCount,
     imageCost,
     imageDisabled,
+    imageDisabledReason,
     imageJob,
     imageJobProgress,
     imageModel,
@@ -2163,7 +2375,7 @@ export function useAiGenerateImagesStudio() {
     setSelectedCompanyId,
     setSelectedLogoReferenceId,
     setShowAdvanced,
-    setSlideCount,
+    setSlideCount: setClampedSlideCount,
     setTextModel,
     setTone,
     setTopic,
@@ -2190,6 +2402,17 @@ export function useAiGenerateImagesStudio() {
     uploadReferenceImages,
     uploadReferencesCount,
     visibleReferenceImages,
+    visualDirectionMode,
+    structurePreset,
+    setStructurePreset,
+    colorPreset,
+    setColorPreset,
+    stylePreset,
+    setStylePreset,
+    typographyPreset,
+    setTypographyPreset,
+    inspirationsLeadVisual,
+    setInspirationsLeadVisual,
     visualStyle,
   };
 }

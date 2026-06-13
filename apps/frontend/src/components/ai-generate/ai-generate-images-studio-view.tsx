@@ -12,6 +12,7 @@ import { CreativeBriefPanel } from './ai-generate-images-creative-brief';
 import { CarouselPreviewPanel } from './ai-generate-images-preview';
 import { SlideEditorPanel } from './ai-generate-images-slide-editor';
 import { ImageGenerationPanel } from './ai-generate-images-generation-panel';
+import { PlanGeneratingState } from './ai-generate-images.loaders';
 
 type AiGenerateImagesStudioViewProps = {
   studio: any;
@@ -20,7 +21,6 @@ type AiGenerateImagesStudioViewProps = {
 export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioViewProps) {
   const {
     activePreview,
-    allowGenerateWithReviewIssues,
     allowOverBudget,
     applyCompanyBrandKit,
     applyEditorialQuickFixes,
@@ -28,7 +28,6 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     approveReferenceForCompany,
     approvedReferencesCount,
     audience,
-    autoReviewBeforeImages,
     brandColors,
     brandFonts,
     brandLogoReferences,
@@ -71,6 +70,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     hiddenReferenceCount,
     imageCost,
     imageDisabled,
+    imageDisabledReason,
     imageJob,
     imageJobProgress,
     imageModel,
@@ -119,10 +119,8 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     selectedReferences,
     selectedTemplate,
     setActivePreview,
-    setAllowGenerateWithReviewIssues,
     setAllowOverBudget,
     setAudience,
-    setAutoReviewBeforeImages,
     setBrandColors,
     setBrandFonts,
     setBrandName,
@@ -178,6 +176,16 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     uploadReferenceImages,
     uploadReferencesCount,
     visibleReferenceImages,
+    structurePreset,
+    setStructurePreset,
+    colorPreset,
+    setColorPreset,
+    stylePreset,
+    setStylePreset,
+    typographyPreset,
+    setTypographyPreset,
+    inspirationsLeadVisual,
+    setInspirationsLeadVisual,
     visualStyle,
   } = studio;
 
@@ -261,6 +269,8 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
 
         <ErrorBanner message={error} />
 
+        {planning && !plan && <PlanGeneratingState />}
+
         <EmptyStudioState visible={!plan && !planning && !error} />
 
         {plan && (
@@ -293,9 +303,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
             />
 
             <CreativeBriefPanel
-              allowGenerateWithReviewIssues={allowGenerateWithReviewIssues}
               applyEditorialQuickFixes={applyEditorialQuickFixes}
-              autoReviewBeforeImages={autoReviewBeforeImages}
               brandColors={brandColors}
               companyProfile={companyProfile}
               computedCreativeBrief={computedCreativeBrief}
@@ -307,15 +315,24 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
               reviewCarouselQuality={reviewCarouselQuality}
               reviewingEditorial={reviewingEditorial}
               selectedReferences={selectedReferences}
-              setAllowGenerateWithReviewIssues={setAllowGenerateWithReviewIssues}
-              setAutoReviewBeforeImages={setAutoReviewBeforeImages}
               setFinalCreativeBrief={setFinalCreativeBrief}
+              structurePreset={structurePreset}
+              setStructurePreset={setStructurePreset}
+              colorPreset={colorPreset}
+              setColorPreset={setColorPreset}
+              stylePreset={stylePreset}
+              setStylePreset={setStylePreset}
+              typographyPreset={typographyPreset}
+              setTypographyPreset={setTypographyPreset}
+              inspirationsLeadVisual={inspirationsLeadVisual}
+              setInspirationsLeadVisual={setInspirationsLeadVisual}
             />
 
             <CarouselPreviewPanel
               activePreview={activePreview}
               brandName={brandName}
               editorialIssues={editorialIssues}
+              generatingImages={generatingImages}
               plan={plan}
               platform={platform}
               setActivePreview={setActivePreview}
@@ -347,6 +364,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
               cancelCarouselGeneration={cancelCarouselGeneration}
               costHistory={costHistory}
               costLimitBrl={costLimitBrl}
+              error={error}
               estimateGenerationCost={estimateGenerationCost}
               exportCarouselPackage={exportCarouselPackage}
               exportHeight={exportHeight}
@@ -356,6 +374,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
               generatedSlides={generatedSlides}
               generatingImages={generatingImages}
               imageDisabled={imageDisabled}
+              imageDisabledReason={imageDisabledReason}
               imageJob={imageJob}
               imageJobProgress={imageJobProgress}
               imageModel={imageModel}

@@ -1,8 +1,11 @@
+import * as Sentry from '@sentry/nestjs';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   HttpException,
+  NotFoundException,
   Param,
   Post,
   UseFilters,
@@ -51,7 +54,7 @@ export class NoAuthIntegrationsController {
         .getAllowedSocialsIntegrations()
         .includes(integration)
     ) {
-      throw new Error('Integration not allowed');
+      throw new BadRequestException('Integration not allowed');
     }
 
     const integrationProvider =
@@ -61,12 +64,12 @@ export class NoAuthIntegrationsController {
       ? 'none'
       : await ioRedis.get(`login:${body.state}`);
     if (!getCodeVerifier) {
-      throw new Error('Invalid state');
+      throw new BadRequestException('Invalid state');
     }
 
     const organization = await ioRedis.get(`organization:${body.state}`);
     if (!organization) {
-      throw new Error('Organization not found');
+      throw new NotFoundException('Organization not found');
     }
 
     const org = await this._organizationService.getOrgById(organization);
@@ -128,7 +131,6 @@ export class NoAuthIntegrationsController {
         }
 
         if (refresh && integrationProvider.reConnect) {
-          console.log('reconnect');
           try {
             const newAuth = await integrationProvider.reConnect(
               auth.id,
@@ -242,7 +244,7 @@ export class NoAuthIntegrationsController {
     this._refreshIntegrationService
       .startRefreshWorkflow(org.id, createUpdate.id, integrationProvider)
       .catch((err) => {
-        console.log(err);
+        Sentry.captureException(err);
       });
 
     // Fetch pages if this is a two-step provider and not a refresh
@@ -262,7 +264,7 @@ export class NoAuthIntegrationsController {
           pages = await integrationProvider[fetchMethod](accessToken);
         }
       } catch (err) {
-        console.log('Failed to fetch pages:', err);
+        Sentry.captureException(err);
       }
     }
 
@@ -309,12 +311,12 @@ export class NoAuthIntegrationsController {
   @Post('/public/provider/:id/connect')
   async saveProviderPage(@Param('id') id: string, @Body() body: any) {
     if (!body.state) {
-      throw new Error('Invalid state');
+      throw new BadRequestException('Invalid state');
     }
 
     const organization = await ioRedis.get(`organization:${body.state}`);
     if (!organization) {
-      throw new Error('Organization not found');
+      throw new NotFoundException('Organization not found');
     }
 
     const org = await this._organizationService.getOrgById(organization);

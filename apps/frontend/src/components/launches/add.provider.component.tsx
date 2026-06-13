@@ -24,13 +24,27 @@ const resolver = classValidatorResolver(ApiKeyDto);
 export const useAddProvider = (update?: () => void, invite?: boolean) => {
   const modal = useModals();
   const fetch = useFetch();
+  const allowedIdentifiers = [
+    'x',
+    'linkedin',
+    'linkedin-page',
+    'instagram',
+    'instagram-standalone',
+    'facebook',
+  ];
   return useCallback(async () => {
     const data = await (await fetch('/integrations')).json();
+    const filtered = {
+      ...data,
+      social: data.social.filter((item: { identifier: string }) =>
+        allowedIdentifiers.includes(item.identifier)
+      ),
+    };
     modal.openModal({
       title: 'Add Channel',
       withCloseButton: true,
       children: (
-        <AddProviderComponent invite={!!invite} update={update} {...data} />
+        <AddProviderComponent invite={!!invite} update={update} {...filtered} />
       ),
     });
   }, []);

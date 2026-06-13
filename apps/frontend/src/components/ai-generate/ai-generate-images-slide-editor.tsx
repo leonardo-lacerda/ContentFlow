@@ -1,5 +1,11 @@
 import { inputClass, textAreaClass } from './ai-generate-images.constants';
 import { imageSrc } from './ai-generate-images.utils';
+import {
+  AnimatedDots,
+  IndeterminateBar,
+  Spinner,
+  SlideMediaLoading,
+} from './ai-generate-images.loaders';
 import type {
   CarouselPlan,
   CarouselSlide,
@@ -51,7 +57,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
       <div className="mb-[24px] flex flex-col gap-[8px]">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-stone-500/20 bg-stone-500/10 font-bold text-stone-800 dark:text-stone-100">
-            2
+            3
           </div>
           <h3 className="text-[24px] font-[700] text-black dark:text-white">
             Revise a copy visual
@@ -84,23 +90,33 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
           {plan.slides.map((slide, slideIndex) => {
             const result = slideImages[slide.index];
             const src = imageSrc(result?.image);
+            const loadingMode = slideLoading[slide.index];
+            const isLoading = !!loadingMode;
+            const loadingImage = loadingMode === 'imagem';
 
             return (
               <div
                 key={slide.index}
-                className="flex flex-col md:flex-row gap-[24px] rounded-[16px] border border-newTableBorder p-[20px] bg-newBgColorInner"
+                aria-busy={isLoading}
+                className={`flex flex-col md:flex-row gap-[24px] rounded-[16px] border p-[20px] bg-newBgColorInner transition-colors ${
+                  isLoading ? 'border-primary/40' : 'border-newTableBorder'
+                }`}
               >
                 <div className="flex-1 flex flex-col gap-[12px]">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-primary/10 text-primary text-[12px] font-[700] uppercase tracking-wider">
                       Slide {slide.index}
                     </span>
-                    {slideLoading[slide.index] && (
-                      <span className="text-[12px] text-textItemBlur">
-                        Atualizando...
+                    {isLoading && (
+                      <span className="flex items-center gap-[7px] text-[12px] font-[700] text-primary">
+                        <Spinner size={14} />
+                        {loadingImage ? 'Gerando imagem' : 'Reescrevendo copy'}
+                        <AnimatedDots />
                       </span>
                     )}
                   </div>
+
+                  {isLoading && <IndeterminateBar />}
 
                   <div className="flex flex-wrap gap-[8px]">
                     <button
@@ -317,54 +333,58 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                         !!slideLoading[slide.index] ||
                         !trimmedImageModel
                       }
-                      className="rounded-[8px] border border-newTableBorder px-[9px] py-[6px] text-[12px] font-[600] hover:border-primary"
+                      className="flex items-center gap-[6px] rounded-[8px] border border-newTableBorder px-[9px] py-[6px] text-[12px] font-[600] hover:border-primary disabled:opacity-60"
                     >
-                      Regenerar imagem
+                      {loadingImage && <Spinner size={12} />}
+                      {loadingImage ? 'Gerando...' : 'Regenerar imagem'}
                     </button>
                   </div>
-                  {src ? (
-                    <button
-                      type="button"
-                      onClick={() => setLightboxIndex(slideIndex)}
-                      className="relative aspect-square rounded-[12px] overflow-hidden border border-newTableBorder group w-full text-left"
-                    >
-                      <img
-                        src={src}
-                        alt={slide.altText}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </button>
-                  ) : (
-                    <div className="aspect-square rounded-[12px] border-2 border-dashed border-newTableBorder bg-newBgColor flex flex-col items-center justify-center text-textItemBlur p-4 text-center">
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="mb-2 opacity-50"
+                  <div className="relative">
+                    {src ? (
+                      <button
+                        type="button"
+                        onClick={() => setLightboxIndex(slideIndex)}
+                        className="relative aspect-square rounded-[12px] overflow-hidden border border-newTableBorder group w-full text-left"
                       >
-                        <rect
-                          x="3"
-                          y="3"
-                          width="18"
-                          height="18"
-                          rx="2"
-                          ry="2"
+                        <img
+                          src={src}
+                          alt={slide.altText}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
-                      </svg>
-                      <span className="text-[12px]">
-                        Aguardando geração
-                      </span>
-                    </div>
-                  )}
+                      </button>
+                    ) : (
+                      <div className="aspect-square rounded-[12px] border-2 border-dashed border-newTableBorder bg-newBgColor flex flex-col items-center justify-center text-textItemBlur p-4 text-center">
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="mb-2 opacity-50"
+                        >
+                          <rect
+                            x="3"
+                            y="3"
+                            width="18"
+                            height="18"
+                            rx="2"
+                            ry="2"
+                          />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                        <span className="text-[12px]">
+                          Aguardando geração
+                        </span>
+                      </div>
+                    )}
+                    {loadingImage && <SlideMediaLoading />}
+                  </div>
                   {result?.error && (
                     <div className="text-[12px] text-red-400 mt-1">
                       {result.error}

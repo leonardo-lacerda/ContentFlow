@@ -54,11 +54,39 @@ export function sumCosts(costs: Array<CostEstimate | null | undefined>) {
   );
 }
 
+export type SlideRenderSpec = {
+  // Layout/estrutura escolhida (vazio = a IA decide pelo conteúdo).
+  structureLayout?: string;
+  // Prompts dos presets de estilo/cor/tipografia (ignorados quando as
+  // inspirações comandam o visual).
+  stylePrompt?: string;
+  colorPrompt?: string;
+  brandColors?: string;
+  typographyPrompt?: string;
+  // Contexto de marca/segurança (CTA, termos proibidos, logo, estratégia).
+  brief?: string;
+  hasInspirations?: boolean;
+  inspirationsLeadVisual?: boolean;
+};
+
 export function buildSlideImagePrompt(
   plan: CarouselPlan,
   slide: CarouselSlide,
-  creativeBrief?: string
+  spec: SlideRenderSpec = {}
 ) {
+  const {
+    structureLayout,
+    stylePrompt,
+    colorPrompt,
+    brandColors,
+    typographyPrompt,
+    brief,
+    hasInspirations,
+    inspirationsLeadVisual,
+  } = spec;
+
+  const inspirationsLead = !!hasInspirations && !!inspirationsLeadVisual;
+
   const textBlocks = [
     slide.headline.trim() && `HEADLINE PRINCIPAL: "${slide.headline.trim()}"`,
     slide.body.trim() && `TEXTO DE APOIO: "${slide.body.trim()}"`,
@@ -67,19 +95,43 @@ export function buildSlideImagePrompt(
     .filter(Boolean)
     .join('\n');
 
-  return [
-    'Crie uma arte quadrada 1:1 para um slide de carrossel de Instagram.',
+  const parts: Array<string | false | undefined> = [
+    'Crie uma arte quadrada 1:1 para um slide de carrossel de Instagram premium.',
     'O texto abaixo deve aparecer DENTRO da imagem, com grafia exatamente igual, em portugues, sem trocar palavras, sem traduzir e sem adicionar outros textos.',
     textBlocks,
     '',
-    `Direcao visual geral: ${plan.imageStyleGuide}`,
-    creativeBrief && `Brief visual final da marca e campanha: ${creativeBrief}`,
-    `Direcao deste slide: ${slide.imagePrompt}`,
+    structureLayout?.trim()
+      ? `Estrutura do slide: ${structureLayout.trim()}`
+      : `Estrutura do slide: ${slide.imagePrompt?.trim() || 'arte editorial limpa, com a headline em destaque e o apoio em hierarquia clara.'}`,
+  ];
+
+  if (inspirationsLead) {
+    // Prompt curto: as imagens anexadas assumem o visual. Sem descrever
+    // estilo/cor/tipografia em texto para não competir com elas.
+    parts.push(
+      'Estilo visual: siga FIELMENTE as imagens de referencia anexadas — composicao, enquadramento, paleta de cores, tipografia, textura, iluminacao e atmosfera. As imagens definem o visual; em caso de conflito com qualquer outra instrucao, priorize as imagens.'
+    );
+  } else {
+    parts.push(
+      stylePrompt?.trim()
+        ? `Estilo visual: ${stylePrompt.trim()}`
+        : `Direcao visual geral: ${plan.imageStyleGuide}`,
+      colorPrompt?.trim()
+        ? `Cores: ${colorPrompt.trim()}`
+        : brandColors?.trim() && `Cores a respeitar: ${brandColors.trim()}.`,
+      typographyPrompt?.trim() && `Tipografia: ${typographyPrompt.trim()}.`,
+      hasInspirations &&
+        'As imagens de referencia anexadas sao apoio de composicao e atmosfera, equilibradas com o estilo acima.'
+    );
+  }
+
+  parts.push(
+    brief?.trim() && `Contexto da marca e campanha: ${brief.trim()}`,
     '',
-    'Layout desejado: arte editorial como post premium de Instagram, hierarquia tipografica clara, headline grande, texto de apoio menor, muito respiro, margens seguras, contraste alto, legibilidade perfeita no celular.',
-    'Use uma metafora visual forte ou um objeto/personagem central que complemente a copy, sem cobrir o texto.',
-    'Se houver selo de marca, use apenas um pequeno pill simples com uma palavra curta relacionada ao tema, sem logotipo inventado.',
-  ].join('\n');
+    'Regras: texto perfeitamente legivel no celular, alto contraste, margens seguras, hierarquia tipografica clara e muito respiro. Nao copie marcas, logos, rostos ou elementos protegidos.'
+  );
+
+  return parts.filter(Boolean).join('\n');
 }
 
 export function getEditorialIssues(slides: CarouselSlide[]): EditorialIssue[] {
@@ -504,10 +556,24 @@ export const resolveImageRequestSettings = (
   };
 };
 
-export const buildReferenceInstruction = (referenceCount: number) =>
-  referenceCount
-    ? `\n\nAs ${referenceCount} imagem(ns) de inspiracao selecionadas serao analisadas antes da geracao. Use o brief visual gerado a partir delas como referencia forte de composicao, enquadramento, hierarquia tipografica, textura, paleta, espacamento e atmosfera. Nao copie marcas, logos, rostos ou elementos protegidos; crie uma adaptacao original mantendo apenas a direcao visual. Priorize legibilidade do texto do slide.`
-    : '';
+export const buildReferenceInstruction = (
+  referenceCount: number,
+  mode: 'brand' | 'balanced' | 'inspiration' = 'balanced'
+) => {
+  if (!referenceCount) {
+    return '';
+  }
+
+  if (mode === 'inspiration') {
+    return `\n\nAs ${referenceCount} imagem(ns) de inspiracao selecionadas sao a DIRECAO VISUAL PRINCIPAL desta arte. Em caso de conflito entre elas e qualquer instrucao de estilo da marca, siga as inspiracoes (composicao, enquadramento, paleta, tipografia, textura e atmosfera). Nao copie marcas, logos, rostos ou elementos protegidos; preserve o texto do slide com legibilidade perfeita.`;
+  }
+
+  if (mode === 'brand') {
+    return `\n\nAs ${referenceCount} imagem(ns) de inspiracao selecionadas sao apenas tempero visual. Em caso de conflito, priorize sempre a identidade visual da marca descrita acima. Nao copie marcas, logos, rostos ou elementos protegidos. Priorize legibilidade do texto do slide.`;
+  }
+
+  return `\n\nAs ${referenceCount} imagem(ns) de inspiracao selecionadas sao referencia forte de composicao, enquadramento, hierarquia tipografica, textura, paleta, espacamento e atmosfera, em equilibrio com a identidade da marca. Nao copie marcas, logos, rostos ou elementos protegidos; crie uma adaptacao original. Priorize legibilidade do texto do slide.`;
+};
 
 export const runWithConcurrency = async <T,>(
   items: T[],

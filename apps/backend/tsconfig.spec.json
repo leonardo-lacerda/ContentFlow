@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": "../../dist/out-tsc",
+    "types": ["jest", "node"],
+    // Specs exercise code across `libraries/*`, which can pull in files that
+    // don't type-check under this project's stricter compiler options even
+    // though they build fine under their own. Transpile each file
+    // independently rather than type-checking the whole program graph.
+    "isolatedModules": true
+  },
+  "include": [
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts",
+    "src/**/*.d.ts"
+  ]
+}

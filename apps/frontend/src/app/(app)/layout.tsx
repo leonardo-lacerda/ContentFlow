@@ -33,6 +33,13 @@ const jakartaSans = Plus_Jakarta_Sans({
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const cookieStore = await cookies();
   const language = cookieStore.get(cookieName)?.value || fallbackLng;
+  const billingEnabled = !!(
+    process.env.STRIPE_PUBLISHABLE_KEY ||
+    process.env.CAKTO_STARTER_CHECKOUT_URL ||
+    process.env.CAKTO_PRO_CHECKOUT_URL ||
+    process.env.CAKTO_SCALE_CHECKOUT_URL ||
+    process.env.CAKTO_CUSTOMER_PORTAL_URL
+  );
   const Plausible = !!process.env.STRIPE_PUBLISHABLE_KEY
     ? PlausibleProvider
     : Fragment;
@@ -61,7 +68,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           backendUrl={process.env.NEXT_PUBLIC_BACKEND_URL!}
           plontoKey={process.env.NEXT_PUBLIC_POLOTNO!}
           stripeClient={process.env.STRIPE_PUBLISHABLE_KEY!}
-          billingEnabled={!!process.env.STRIPE_PUBLISHABLE_KEY}
+          billingEnabled={billingEnabled}
           discordUrl={process.env.NEXT_PUBLIC_DISCORD_SUPPORT!}
           frontEndUrl={process.env.FRONTEND_URL!}
           isGeneral={!!process.env.IS_GENERAL}

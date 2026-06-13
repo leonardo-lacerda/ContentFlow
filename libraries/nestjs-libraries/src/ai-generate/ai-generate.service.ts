@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { AiGenerateCarouselDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-carousel.dto';
 import { AiGenerateCarouselIdeasDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-carousel-ideas.dto';
 import { AiGenerateImageDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-image.dto';
@@ -75,6 +76,12 @@ type CarouselPlan = {
 
 const carouselImageJobs = new Map<string, CarouselImageJob>();
 const costLedger = new Map<string, AiGenerateCostLedgerEntry[]>();
+// Cache do brief visual das inspirações: evita re-descrever as mesmas imagens
+// a cada slide do mesmo carrossel (economiza chamadas do modelo de visão).
+const referenceBriefCache = new Map<
+  string,
+  { promise: Promise<{ model: string; text: string }>; expires: number }
+>();
 
 function makeLedgerId() {
   return `cost_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -421,7 +428,9 @@ export class AiGenerateService {
   }
 
   getCostHistory(orgId: string) {
-    const entries = costLedger.get(orgId) || [];
+    const entries = (costLedger.get(orgId) || []).filter(
+      (entry) => entry.type !== 'estimate'
+    );
     const totals = entries.reduce(
       (acc, entry) => ({
         usd: acc.usd + entry.cost.usd,
@@ -464,8 +473,6 @@ export class AiGenerateService {
       totalTokens: textTokens + imageInputTokens + imageOutputTokens,
     });
 
-    this.recordCost(orgId, 'estimate', `Estimativa ${slideCount} imagens`, cost);
-
     return {
       slideCount,
       referenceCount,
@@ -500,6 +507,21 @@ export class AiGenerateService {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
+    const existingTitles = Array.isArray(body.existingTitles)
+      ? Array.from(
+          new Set(
+            body.existingTitles
+              .map((title) => firstString(title))
+              .filter(Boolean)
+          )
+        ).slice(0, 120)
+      : [];
+    const avoidanceInstruction = existingTitles.length
+      ? `\n\nIMPORTANTE: as ideias abaixo JA foram geradas anteriormente. NAO repita nenhuma delas e NAO crie variacoes muito parecidas. Gere apenas ideias ineditas, com angulos e temas diferentes destes:\n- ${existingTitles.join(
+          '\n- '
+        )}`
+      : '';
+
     try {
       const response = await fetch(`${openAiBaseUrl}/v1/chat/completions`, {
         method: 'POST',
@@ -510,7 +532,7 @@ export class AiGenerateService {
         },
         body: JSON.stringify({
           model: resolvedModel,
-          temperature: 0.8,
+          temperature: 0.9,
           response_format: { type: 'json_object' },
           user: orgId,
           messages: [
@@ -525,7 +547,7 @@ export class AiGenerateService {
                 body.companyContext || 'Sem contexto detalhado'
               }\n\nHint opcional de tema: ${
                 body.topicHint || 'Sem hint'
-              }\n\nRetorne EXATAMENTE:\n{\n  "ideas": [\n    {\n      "title": "tema curto do carrossel",\n      "hook": "frase gancho para abrir o post",\n      "goal": "objetivo do post (educar, autoridade, conversao, etc)",\n      "angle": "angulo editorial em 1 frase"\n    }\n  ]\n}\n\nGere entre 8 e 12 ideias, com variedade de formatos (educacional, storytelling, lista, mitos e verdades, case, antes/depois, oferta, autoridade).`,
+              }${avoidanceInstruction}\n\nRetorne EXATAMENTE:\n{\n  "ideas": [\n    {\n      "title": "tema curto do carrossel",\n      "hook": "frase gancho para abrir o post",\n      "goal": "objetivo do post (educar, autoridade, conversao, etc)",\n      "angle": "angulo editorial em 1 frase"\n    }\n  ]\n}\n\nGere entre 8 e 12 ideias, com variedade de formatos (educacional, storytelling, lista, mitos e verdades, case, antes/depois, oferta, autoridade).`,
             },
           ],
         }),
@@ -558,6 +580,14 @@ export class AiGenerateService {
 
       const parsed = parseJsonPayload(content);
       const ideasRaw = Array.isArray(parsed.ideas) ? parsed.ideas : [];
+      const normalizeTitle = (title: string) =>
+        title
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu, '')
+          .replace(/[^a-z0-9]+/g, ' ')
+          .trim();
+      const seenTitles = new Set(existingTitles.map(normalizeTitle));
       const ideas = ideasRaw
         .map((item) => {
           const record =
@@ -572,7 +602,19 @@ export class AiGenerateService {
             angle: firstString(record.angle),
           };
         })
-        .filter((idea) => idea.title)
+        .filter((idea) => {
+          if (!idea.title) {
+            return false;
+          }
+
+          const normalized = normalizeTitle(idea.title);
+          if (!normalized || seenTitles.has(normalized)) {
+            return false;
+          }
+
+          seenTitles.add(normalized);
+          return true;
+        })
         .slice(0, 12);
 
       return {
@@ -1030,10 +1072,15 @@ export class AiGenerateService {
       response_format: responseFormat,
       reference_images: referenceImages,
       reference_description_model: referenceDescriptionModel,
+      reference_mode: referenceModeRaw,
       input_fidelity: _inputFidelity,
       persist,
       ...requestBody
     } = body;
+    const referenceMode: 'brand' | 'balanced' | 'inspiration' =
+      referenceModeRaw === 'brand' || referenceModeRaw === 'inspiration'
+        ? referenceModeRaw
+        : 'balanced';
 
     const prompt = body.prompt?.trim();
     if (!prompt) {
@@ -1072,54 +1119,116 @@ export class AiGenerateService {
         const validReferenceDataUrls = (referenceImages || [])
           .slice(0, 3)
           .filter((image) => !!dataUrlToBlob(image));
-        resolvedModel =
-          validReferenceDataUrls.length
-            ? requestBody.model ||
-              process.env.AI_GENERATE_OPENAI_IMAGE_MODEL_WITH_REFERENCES ||
-              'gpt-image-2'
-            : requestBody.model ||
-              process.env.AI_GENERATE_OPENAI_IMAGE_MODEL ||
-              'gpt-image-2';
+
+        const size =
+          requestBody.size ||
+          process.env.AI_GENERATE_IMAGE_SIZE ||
+          '1024x1024';
+
+        // Modelo que GERA a imagem (separado do modelo que descreve as
+        // inspirações). Quando há inspirações, permitimos um modelo dedicado.
+        resolvedModel = validReferenceDataUrls.length
+          ? requestBody.model ||
+            process.env.AI_GENERATE_OPENAI_IMAGE_MODEL_WITH_REFERENCES ||
+            process.env.AI_GENERATE_OPENAI_IMAGE_MODEL ||
+            'gpt-image-2'
+          : requestBody.model ||
+            process.env.AI_GENERATE_OPENAI_IMAGE_MODEL ||
+            'gpt-image-2';
 
         let finalPrompt = prompt;
+        // Nos modos "balanced" e "inspiration" as inspirações vão como IMAGENS
+        // reais para o modelo (endpoint /images/edits aceita imagens de
+        // entrada). No modo "brand" elas viram apenas descrição em texto e a
+        // identidade da marca continua mandando.
+        const useImageInputs =
+          validReferenceDataUrls.length > 0 && referenceMode !== 'brand';
 
-        if (validReferenceDataUrls.length) {
-          const referenceBrief = await this.describeReferenceImages(
-            openAiBaseUrl,
-            openAiApiKey,
-            orgId,
-            validReferenceDataUrls,
-            referenceDescriptionModel
-          );
+        if (useImageInputs) {
+          finalPrompt =
+            referenceMode === 'inspiration'
+              ? `${prompt}
 
-          finalPrompt = `${prompt}
+As imagens anexadas são as inspirações selecionadas e a DIREÇÃO VISUAL PRINCIPAL desta arte: siga fielmente a composição, o enquadramento, a paleta, a tipografia, a textura, a iluminação e a atmosfera delas. Se houver conflito com qualquer instrução de estilo no texto acima, priorize as imagens anexadas. Não copie marcas, logos, rostos ou elementos protegidos; preserve o texto do slide com legibilidade perfeita.`
+              : `${prompt}
+
+As imagens anexadas são as inspirações selecionadas: use-as como referência forte de composição, paleta, tipografia, textura e atmosfera, equilibrando com a identidade da marca descrita acima. Não copie marcas, logos, rostos ou elementos protegidos; preserve o texto do slide com legibilidade perfeita.`;
+
+          const form = new FormData();
+          validReferenceDataUrls.forEach((dataUrl, index) => {
+            const blob = dataUrlToBlob(dataUrl);
+            if (!blob) {
+              return;
+            }
+            const extension =
+              blob.type === 'image/png'
+                ? 'png'
+                : blob.type === 'image/webp'
+                ? 'webp'
+                : 'jpg';
+            form.append('image[]', blob, `reference-${index + 1}.${extension}`);
+          });
+          form.append('model', resolvedModel);
+          form.append('prompt', finalPrompt);
+          form.append('n', String(requestBody.n || 1));
+          form.append('size', size);
+          if (requestBody.quality) {
+            form.append('quality', requestBody.quality);
+          }
+          form.append('user', requestBody.user || orgId);
+
+          response = await fetch(`${openAiBaseUrl}/v1/images/edits`, {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              Authorization: `Bearer ${openAiApiKey}`,
+            },
+            body: form,
+            signal: controller.signal,
+          });
+        } else {
+          if (validReferenceDataUrls.length) {
+            // Modo "brand": um modelo de VISÃO descreve as inspirações em um
+            // brief e a marca segue como prioridade. Best-effort: se falhar,
+            // ainda geramos a imagem.
+            try {
+              const referenceBrief = await this.describeReferenceImagesCached(
+                openAiBaseUrl,
+                openAiApiKey,
+                orgId,
+                validReferenceDataUrls,
+                referenceDescriptionModel
+              );
+
+              finalPrompt = `${prompt}
 
 Brief visual extraído das inspirações usando ${referenceBrief.model}:
 ${referenceBrief.text}
 
-Use esse brief visual como direção criativa para a imagem final. Gere a imagem final com o modelo ${resolvedModel}, sem copiar marcas, logos, rostos ou elementos protegidos das referências.`;
-        }
+Use esse brief visual como tempero (composição, enquadramento, textura, iluminação e atmosfera), mas em caso de conflito priorize a identidade visual da marca descrita acima. Não copie marcas, logos, rostos ou elementos protegidos das referências.`;
+            } catch {
+              // Sem brief disponível: ainda assim geramos com o prompt base.
+            }
+          }
 
-        response = await fetch(`${openAiBaseUrl}/v1/images/generations`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            Authorization: `Bearer ${openAiApiKey}`,
-          },
-          body: JSON.stringify({
-            ...requestBody,
-            prompt: finalPrompt,
-            model: resolvedModel,
-            n: requestBody.n || 1,
-            size:
-              requestBody.size ||
-              process.env.AI_GENERATE_IMAGE_SIZE ||
-              '1024x1024',
-            user: requestBody.user || orgId,
-          }),
-          signal: controller.signal,
-        });
+          response = await fetch(`${openAiBaseUrl}/v1/images/generations`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              Authorization: `Bearer ${openAiApiKey}`,
+            },
+            body: JSON.stringify({
+              ...requestBody,
+              prompt: finalPrompt,
+              model: resolvedModel,
+              n: requestBody.n || 1,
+              size,
+              user: requestBody.user || orgId,
+            }),
+            signal: controller.signal,
+          });
+        }
       } else {
         const baseUrl = process.env.AI_GENERATE_BASE_URL?.replace(/\/$/, '');
         const apiKey = process.env.AI_GENERATE_API_KEY;
@@ -1262,6 +1371,53 @@ Use esse brief visual como direção criativa para a imagem final. Gere a imagem
     };
   }
 
+  // Reaproveita o brief de inspirações idênticas dentro de uma janela curta,
+  // deduplicando inclusive chamadas concorrentes de slides do mesmo carrossel.
+  private describeReferenceImagesCached(
+    openAiBaseUrl: string,
+    openAiApiKey: string,
+    orgId: string,
+    images: string[],
+    requestedModel?: string
+  ) {
+    const now = Date.now();
+    const ttlMs = Number(
+      process.env.AI_GENERATE_REFERENCE_BRIEF_TTL_MS || 10 * 60 * 1000
+    );
+    const key = createHash('sha1')
+      .update(`${requestedModel || ''}|${images.join('|')}`)
+      .digest('hex');
+
+    const existing = referenceBriefCache.get(key);
+    if (existing && existing.expires > now) {
+      return existing.promise;
+    }
+
+    const promise = this.describeReferenceImages(
+      openAiBaseUrl,
+      openAiApiKey,
+      orgId,
+      images,
+      requestedModel
+    ).catch((error) => {
+      // Não cacheia falhas: permite nova tentativa na próxima geração.
+      referenceBriefCache.delete(key);
+      throw error;
+    });
+
+    referenceBriefCache.set(key, { promise, expires: now + ttlMs });
+
+    if (referenceBriefCache.size > 50) {
+      for (const [cacheKey, entry] of referenceBriefCache) {
+        if (entry.expires <= now) {
+          referenceBriefCache.delete(cacheKey);
+        }
+      }
+    }
+
+    return promise;
+  }
+
   private async describeReferenceImages(
     openAiBaseUrl: string,
     openAiApiKey: string,
@@ -1270,12 +1426,12 @@ Use esse brief visual como direção criativa para a imagem final. Gere a imagem
     requestedModel?: string
   ) {
     const primaryModel =
-      requestedModel ||
       process.env.AI_GENERATE_OPENAI_REFERENCE_DESCRIPTION_MODEL ||
-      'gpt-image-1.5';
+      requestedModel ||
+      'gpt-4.1-mini';
     const fallbackModel =
       process.env.AI_GENERATE_OPENAI_REFERENCE_DESCRIPTION_FALLBACK_MODEL ||
-      'gpt-4.1-mini';
+      'gpt-4o-mini';
     const models = [...new Set([primaryModel, fallbackModel].filter(Boolean))];
 
     const content = [

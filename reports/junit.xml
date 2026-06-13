@@ -1,27 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="11" failures="0" errors="0" time="31.615">
-  <testsuite name="PermissionsService" errors="0" failures="0" skipped="0" timestamp="2025-03-24T05:53:33" time="31.496" tests="11">
-    <testcase classname="PermissionsService check() Verification Bypass (64) Bypass for Empty List" name="PermissionsService check() Verification Bypass (64) Bypass for Empty List" time="0.01">
+<testsuites name="jest tests" tests="18" failures="0" errors="0" time="5.084">
+  <testsuite name="StripeService — webhook event processing" errors="0" failures="0" skipped="0" timestamp="2026-06-08T18:51:06" time="4.025" tests="7">
+    <testcase classname="StripeService — webhook event processing createSubscription forwards the parsed metadata and pricing tier to the subscription service when the card check passes" name="StripeService — webhook event processing createSubscription forwards the parsed metadata and pricing tier to the subscription service when the card check passes" time="0.007">
     </testcase>
-    <testcase classname="PermissionsService check() Verification Bypass (64) Bypass for Missing Stripe" name="PermissionsService check() Verification Bypass (64) Bypass for Missing Stripe" time="0.003">
+    <testcase classname="StripeService — webhook event processing createSubscription marks the subscription as stopped when the Stripe status is not active" name="StripeService — webhook event processing createSubscription marks the subscription as stopped when the Stripe status is not active" time="0.003">
     </testcase>
-    <testcase classname="PermissionsService check() Verification Bypass (64) No Bypass" name="PermissionsService check() Verification Bypass (64) No Bypass" time="0.002">
+    <testcase classname="StripeService — webhook event processing createSubscription does not create a subscription when the card check fails" name="StripeService — webhook event processing createSubscription does not create a subscription when the card check fails" time="0.003">
     </testcase>
-    <testcase classname="PermissionsService check() Channel Permission (82/87) All Conditions True" name="PermissionsService check() Channel Permission (82/87) All Conditions True" time="0.003">
+    <testcase classname="StripeService — webhook event processing createSubscription treats a card-check failure as a declined subscription instead of throwing" name="StripeService — webhook event processing createSubscription treats a card-check failure as a declined subscription instead of throwing" time="0.002">
     </testcase>
-    <testcase classname="PermissionsService check() Channel Permission (82/87) Channel With Option Limit" name="PermissionsService check() Channel Permission (82/87) Channel With Option Limit" time="0.003">
+    <testcase classname="StripeService — webhook event processing updateSubscription forwards the parsed metadata and pricing tier to the subscription service when the card check passes" name="StripeService — webhook event processing updateSubscription forwards the parsed metadata and pricing tier to the subscription service when the card check passes" time="0.002">
     </testcase>
-    <testcase classname="PermissionsService check() Channel Permission (82/87) Channel With Subscription Limit" name="PermissionsService check() Channel Permission (82/87) Channel With Subscription Limit" time="0.002">
+    <testcase classname="StripeService — webhook event processing updateSubscription does not update the subscription when the card check fails" name="StripeService — webhook event processing updateSubscription does not update the subscription when the card check fails" time="0.005">
     </testcase>
-    <testcase classname="PermissionsService check() Channel Permission (82/87) Channel Without Available Limits" name="PermissionsService check() Channel Permission (82/87) Channel Without Available Limits" time="0.003">
+    <testcase classname="StripeService — webhook event processing deleteSubscription removes the subscription tied to the Stripe customer id" name="StripeService — webhook event processing deleteSubscription removes the subscription tied to the Stripe customer id" time="0.002">
     </testcase>
-    <testcase classname="PermissionsService check() Channel Permission (82/87) Section Different from Channel" name="PermissionsService check() Channel Permission (82/87) Section Different from Channel" time="0.003">
+  </testsuite>
+  <testsuite name="PoliciesGuard" errors="0" failures="0" skipped="0" timestamp="2026-06-08T18:51:10" time="0.625" tests="5">
+    <testcase classname="PoliciesGuard bypasses authorization for /auth routes" name="PoliciesGuard bypasses authorization for /auth routes" time="0.003">
     </testcase>
-    <testcase classname="PermissionsService check() Monthly Posts Permission (97/110) Posts Within Limit" name="PermissionsService check() Monthly Posts Permission (97/110) Posts Within Limit" time="0.008">
+    <testcase classname="PoliciesGuard bypasses authorization for social-connect and provider integration routes" name="PoliciesGuard bypasses authorization for social-connect and provider integration routes" time="0.002">
     </testcase>
-    <testcase classname="PermissionsService check() Monthly Posts Permission (97/110) Posts Exceed Limit" name="PermissionsService check() Monthly Posts Permission (97/110) Posts Exceed Limit" time="0.003">
+    <testcase classname="PoliciesGuard allows the request when the handler has no policies attached" name="PoliciesGuard allows the request when the handler has no policies attached" time="0.002">
     </testcase>
-    <testcase classname="PermissionsService check() Monthly Posts Permission (97/110) Section Different with Posts Within Limit" name="PermissionsService check() Monthly Posts Permission (97/110) Section Different with Posts Within Limit" time="0.003">
+    <testcase classname="PoliciesGuard allows the request when the org ability grants every requested policy" name="PoliciesGuard allows the request when the org ability grants every requested policy" time="0.003">
+    </testcase>
+    <testcase classname="PoliciesGuard throws a SubscriptionException when the org ability denies a requested policy" name="PoliciesGuard throws a SubscriptionException when the org ability denies a requested policy" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="ThrottlerBehindProxyGuard" errors="0" failures="0" skipped="0" timestamp="2026-06-08T18:51:11" time="0.305" tests="6">
+    <testcase classname="ThrottlerBehindProxyGuard canActivate delegates to the base throttler for POST /public/v1/posts" name="ThrottlerBehindProxyGuard canActivate delegates to the base throttler for POST /public/v1/posts" time="0.002">
+    </testcase>
+    <testcase classname="ThrottlerBehindProxyGuard canActivate delegates to the base throttler for anonymous requests (no org attached, e.g. /auth/login or /public/*)" name="ThrottlerBehindProxyGuard canActivate delegates to the base throttler for anonymous requests (no org attached, e.g. /auth/login or /public/*)" time="0.002">
+    </testcase>
+    <testcase classname="ThrottlerBehindProxyGuard canActivate skips throttling for authenticated dashboard traffic outside the public posting API" name="ThrottlerBehindProxyGuard canActivate skips throttling for authenticated dashboard traffic outside the public posting API" time="0.003">
+    </testcase>
+    <testcase classname="ThrottlerBehindProxyGuard getTracker tracks authenticated traffic per-organization, separating /posts from other routes" name="ThrottlerBehindProxyGuard getTracker tracks authenticated traffic per-organization, separating /posts from other routes" time="0.005">
+    </testcase>
+    <testcase classname="ThrottlerBehindProxyGuard getTracker falls back to tracking anonymous requests by IP" name="ThrottlerBehindProxyGuard getTracker falls back to tracking anonymous requests by IP" time="0.002">
+    </testcase>
+    <testcase classname="ThrottlerBehindProxyGuard getTracker prefers the left-most proxied IP when the request has been forwarded" name="ThrottlerBehindProxyGuard getTracker prefers the left-most proxied IP when the request has been forwarded" time="0.001">
     </testcase>
   </testsuite>
 </testsuites>

@@ -186,6 +186,7 @@ export type CompanyProfile = {
   brandLogos?: BrandLogoAsset[];
   styleRules?: StyleRule[];
   inspirationLibrary?: CompanyInspiration[];
+  ideasLibrary?: CompanyIdea[];
   updatedAt: string;
   hasProfile?: boolean;
 };
@@ -196,6 +197,13 @@ export type CarouselIdea = {
   goal: string;
   angle: string;
 };
+
+export type CompanyIdea = CarouselIdea & {
+  id: string;
+  createdAt: string;
+};
+
+export type VisualDirectionMode = 'brand' | 'balanced' | 'inspiration';
 
 export type SavedAiProject = {
   id: string;

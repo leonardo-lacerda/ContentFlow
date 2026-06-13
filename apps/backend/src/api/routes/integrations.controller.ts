@@ -1,8 +1,11 @@
+import * as Sentry from '@sentry/nestjs';
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -129,7 +132,7 @@ export class IntegrationsController {
     @Body('additionalSettings') body: string
   ) {
     if (typeof body !== 'string') {
-      throw new Error('Invalid body');
+      throw new BadRequestException('Invalid body');
     }
 
     await this._integrationService.updateProviderSettings(org.id, id, body);
@@ -145,14 +148,14 @@ export class IntegrationsController {
       id
     );
     if (!integration) {
-      throw new Error('Invalid integration');
+      throw new NotFoundException('Invalid integration');
     }
 
     const manager = this._integrationManager.getSocialIntegration(
       integration.providerIdentifier
     );
     if (!manager.changeProfilePicture && !manager.changeNickname) {
-      throw new Error('Invalid integration');
+      throw new BadRequestException('Invalid integration');
     }
 
     const { url } = manager.changeProfilePicture
@@ -204,14 +207,14 @@ export class IntegrationsController {
         .getAllowedSocialsIntegrations()
         .includes(integration)
     ) {
-      throw new Error('Integration not allowed');
+      throw new BadRequestException('Integration not allowed');
     }
 
     const integrationProvider =
       this._integrationManager.getSocialIntegration(integration);
 
     if (integrationProvider.externalUrl && !externalUrl) {
-      throw new Error('Missing external url');
+      throw new BadRequestException('Missing external url');
     }
 
     try {
@@ -271,14 +274,14 @@ export class IntegrationsController {
       body.id
     );
     if (!getIntegration) {
-      throw new Error('Invalid integration');
+      throw new NotFoundException('Invalid integration');
     }
 
     let newList: any[] | { none: true } = [];
     try {
       newList = (await this.functionIntegration(org, body)) || [];
     } catch (err) {
-      console.log(err);
+      Sentry.captureException(err);
     }
 
     if (!Array.isArray(newList) && newList?.none) {
@@ -327,14 +330,14 @@ export class IntegrationsController {
       body.id
     );
     if (!getIntegration) {
-      throw new Error('Invalid integration');
+      throw new NotFoundException('Invalid integration');
     }
 
     const integrationProvider = this._integrationManager.getSocialIntegration(
       getIntegration.providerIdentifier
     );
     if (!integrationProvider) {
-      throw new Error('Invalid provider');
+      throw new NotFoundException('Invalid provider');
     }
 
     // @ts-ignore
@@ -374,7 +377,7 @@ export class IntegrationsController {
         return false;
       }
     }
-    throw new Error('Function not found');
+    throw new BadRequestException('Function not found');
   }
 
   @Post('/disable')

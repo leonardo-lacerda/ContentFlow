@@ -35,6 +35,7 @@ type CompanyProfilePayload = {
   brandLogos?: BrandLogoAsset[];
   styleRules?: StyleRule[];
   inspirationLibrary?: CompanyInspiration[];
+  ideasLibrary?: CompanyIdea[];
   updatedAt?: string;
 };
 
@@ -66,7 +67,17 @@ type CompanyProfile = {
   brandLogos: BrandLogoAsset[];
   styleRules: StyleRule[];
   inspirationLibrary: CompanyInspiration[];
+  ideasLibrary: CompanyIdea[];
   updatedAt: string;
+};
+
+type CompanyIdea = {
+  id: string;
+  title: string;
+  hook: string;
+  goal: string;
+  angle: string;
+  createdAt: string;
 };
 
 type VisualIdentityAsset = {
@@ -304,6 +315,45 @@ function cleanInspirationLibrary(value: unknown): CompanyInspiration[] {
     .slice(0, 80) as CompanyInspiration[];
 }
 
+function cleanCompanyIdeas(value: unknown): CompanyIdea[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+
+  return value
+    .map((idea) => {
+      const item = idea as Partial<CompanyIdea>;
+      const title = cleanText(item.title).slice(0, 240);
+      if (!title) {
+        return null;
+      }
+
+      const normalized = title
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+      if (!normalized || seen.has(normalized)) {
+        return null;
+      }
+      seen.add(normalized);
+
+      return {
+        id: cleanText(item.id) || makeBrandKitId('idea'),
+        title,
+        hook: cleanText(item.hook).slice(0, 500),
+        goal: cleanText(item.goal).slice(0, 240),
+        angle: cleanText(item.angle).slice(0, 500),
+        createdAt: cleanText(item.createdAt) || new Date().toISOString(),
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 120) as CompanyIdea[];
+}
+
 function extractResponseText(data: any) {
   if (typeof data?.output_text === 'string') {
     return data.output_text.trim();
@@ -349,6 +399,7 @@ export class OrganizationService {
       brandLogos: [],
       styleRules: [],
       inspirationLibrary: [],
+      ideasLibrary: [],
       updatedAt: '',
     };
   }
@@ -382,6 +433,7 @@ export class OrganizationService {
       brandLogos: cleanBrandLogos((company as any).brandLogos),
       styleRules: cleanStyleRules((company as any).styleRules),
       inspirationLibrary: cleanInspirationLibrary((company as any).inspirationLibrary),
+      ideasLibrary: cleanCompanyIdeas((company as any).ideasLibrary),
       updatedAt: cleanText(company.updatedAt),
     };
   }
@@ -430,6 +482,7 @@ export class OrganizationService {
             brandLogos: cleanBrandLogos((parsed as CompanyProfilePayload).brandLogos),
             styleRules: cleanStyleRules((parsed as CompanyProfilePayload).styleRules),
             inspirationLibrary: cleanInspirationLibrary((parsed as CompanyProfilePayload).inspirationLibrary),
+            ideasLibrary: cleanCompanyIdeas((parsed as CompanyProfilePayload).ideasLibrary),
             updatedAt: cleanText((parsed as CompanyProfilePayload).updatedAt),
           },
           org

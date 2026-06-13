@@ -2,6 +2,7 @@ import { Button } from '@gitroom/react/form/button';
 
 import { inputClass } from './ai-generate-images.constants';
 import { formatCurrency } from './ai-generate-images.utils';
+import { AnimatedDots, IndeterminateBar, Spinner } from './ai-generate-images.loaders';
 import type {
   CarouselImageJob,
   CarouselPlan,
@@ -16,6 +17,7 @@ type ImageGenerationPanelProps = {
   cancelCarouselGeneration: () => void;
   costHistory: CostHistoryResponse | null;
   costLimitBrl: number;
+  error: string;
   estimateGenerationCost: () => void;
   exportCarouselPackage: () => void;
   exportHeight: number;
@@ -25,6 +27,7 @@ type ImageGenerationPanelProps = {
   generatedSlides: number[];
   generatingImages: boolean;
   imageDisabled: boolean;
+  imageDisabledReason: string;
   imageJob: CarouselImageJob | null;
   imageJobProgress: number;
   imageModel: string;
@@ -57,6 +60,7 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
     cancelCarouselGeneration,
     costHistory,
     costLimitBrl,
+    error,
     estimateGenerationCost,
     exportCarouselPackage,
     exportHeight,
@@ -66,6 +70,7 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
     generatedSlides,
     generatingImages,
     imageDisabled,
+    imageDisabledReason,
     imageJob,
     imageJobProgress,
     imageModel,
@@ -96,7 +101,7 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
       <div className="mb-[24px] flex flex-col gap-[8px]">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-stone-500/20 bg-stone-500/10 font-bold text-stone-800 dark:text-stone-100">
-            3
+            4
           </div>
           <h3 className="text-[24px] font-[700] text-black dark:text-white">
             Gerar Imagens
@@ -294,6 +299,20 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
 		                  )}
 		                </div>
 
+		                {generatingImages &&
+		                  !(imageJob && ['queued', 'running'].includes(imageJob.status)) && (
+		                  <div className="mb-[18px] flex flex-col gap-[10px] rounded-[16px] border border-primary/20 bg-primary/5 p-[16px]">
+		                    <div className="flex items-center gap-[10px] text-[13px] font-[800] text-primary">
+		                      <Spinner size={16} />
+		                      <span className="flex items-center">
+		                        Preparando a fila de imagens
+		                        <AnimatedDots />
+		                      </span>
+		                    </div>
+		                    <IndeterminateBar />
+		                  </div>
+		                )}
+
 		                {imageJob && ['queued', 'running'].includes(imageJob.status) && (
 	                  <div className="mb-[18px] rounded-[16px] border border-stone-500/20 bg-stone-500/10 p-[16px]">
 	                    <div className="mb-[10px] flex items-center justify-between gap-[12px] text-[13px] font-[900] text-stone-800 dark:text-stone-100">
@@ -317,11 +336,17 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
             type="button"
             loading={generatingImages}
             disabled={imageDisabled}
+            title={imageDisabledReason || undefined}
             onClick={generateCarouselImages}
             className="rounded-[10px] !h-[48px] !px-8 text-[15px] font-[700]"
           >
             Criar {plan.slides.length} imagens com texto
           </Button>
+          {imageDisabled && imageDisabledReason && !generatingImages && (
+            <div className="max-w-[320px] rounded-[10px] border border-yellow-500/20 bg-yellow-500/10 px-[12px] py-[9px] text-[12px] font-[800] text-yellow-700 dark:text-yellow-100">
+              {imageDisabledReason}
+            </div>
+          )}
 
           {generatingImages && (
             <button
@@ -373,6 +398,26 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
             </span>
           )}
         </div>
+        {error && (
+          <div className="mt-[12px] flex items-start gap-2 rounded-[10px] border border-red-500/40 bg-red-500/10 px-[14px] py-[10px] text-[13px] font-[600] text-red-500 dark:text-red-300">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mt-[1px] shrink-0"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{error}</span>
+          </div>
+        )}
         {savedCarouselCount > 0 && (
           <div className="mt-[12px] rounded-[10px] border border-emerald-500/25 bg-emerald-500/10 px-[14px] py-[10px] text-[13px] font-[600] text-emerald-700 dark:text-emerald-300">
             Carrossel salvo em /media como projeto com{' '}

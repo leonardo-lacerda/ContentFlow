@@ -138,6 +138,7 @@ export const aiGenerateImagesApi = {
       companyContext?: string;
       language: string;
       textModel: string;
+      existingTitles?: string[];
     }
   ) =>
     postJson<{ ideas?: CarouselIdea[] }>(

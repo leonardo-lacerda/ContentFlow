@@ -4,6 +4,7 @@ import {
   condition,
   sleep,
   continueAsNew,
+  log,
 } from '@temporalio/workflow';
 import { EmailActivity } from '@gitroom/orchestrator/activities/email.activity';
 import {
@@ -49,7 +50,7 @@ export async function sendEmailWorkflow({
       await sendEmail(email.to, email.subject, email.html, email.replyTo);
       processedThisRun++;
     } catch (err) {
-      console.log(err);
+      log.error('Failed to send email', { error: err });
     }
 
     await sleep(RATE_LIMIT_MS);

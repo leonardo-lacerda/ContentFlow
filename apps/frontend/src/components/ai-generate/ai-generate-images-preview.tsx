@@ -1,4 +1,5 @@
 import { imageSrc } from './ai-generate-images.utils';
+import { Spinner } from './ai-generate-images.loaders';
 import type {
   CarouselPlan,
   CarouselTemplate,
@@ -10,6 +11,7 @@ type CarouselPreviewPanelProps = {
   activePreview: number;
   brandName: string;
   editorialIssues: EditorialIssue[];
+  generatingImages: boolean;
   plan: CarouselPlan;
   platform: string;
   setActivePreview: (index: number) => void;
@@ -23,6 +25,7 @@ export function CarouselPreviewPanel(props: CarouselPreviewPanelProps) {
     activePreview,
     brandName,
     editorialIssues,
+    generatingImages,
     plan,
     platform,
     setActivePreview,
@@ -52,6 +55,7 @@ export function CarouselPreviewPanel(props: CarouselPreviewPanelProps) {
       <div className="flex gap-[14px] overflow-x-auto pb-[8px]">
         {plan.slides.map((slide, index) => {
           const src = imageSrc(slideImages[slide.index]?.image);
+          const pending = generatingImages && !src && !slideImages[slide.index]?.error;
 
           return (
             <button
@@ -62,7 +66,9 @@ export function CarouselPreviewPanel(props: CarouselPreviewPanelProps) {
                 if (src) setLightboxIndex(index);
               }}
               className={`relative aspect-square w-[230px] shrink-0 overflow-hidden rounded-[12px] border text-left transition ${
-                activePreview === index
+                pending
+                  ? 'border-primary/60'
+                  : activePreview === index
                   ? 'border-primary'
                   : 'border-newTableBorder'
               }`}
@@ -79,6 +85,14 @@ export function CarouselPreviewPanel(props: CarouselPreviewPanelProps) {
                 <div className="absolute inset-0 bg-[linear-gradient(135deg,#f7f7f2,#d7dde8)]" />
               )}
               <div className="absolute inset-0 bg-black/25" />
+              {pending && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-[8px] bg-black/45 backdrop-blur-[1px]">
+                  <Spinner size={24} className="text-white" />
+                  <span className="text-[11px] font-[800] uppercase tracking-[0.12em] text-white/90">
+                    Gerando
+                  </span>
+                </div>
+              )}
               <div className="relative flex h-full flex-col justify-between p-[18px] text-white">
                 <div className="flex items-center justify-between text-[11px] font-[700] uppercase tracking-[0.08em]">
                   <span>{brandName.trim() || template.label}</span>

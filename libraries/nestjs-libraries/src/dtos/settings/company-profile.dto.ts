@@ -135,4 +135,15 @@ export class CompanyProfileDto {
     approved?: boolean;
     description?: string;
   }>;
+
+  @IsArray()
+  @IsOptional()
+  ideasLibrary?: Array<{
+    id?: string;
+    title?: string;
+    hook?: string;
+    goal?: string;
+    angle?: string;
+    createdAt?: string;
+  }>;
 }

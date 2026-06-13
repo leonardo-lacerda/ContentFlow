@@ -158,7 +158,6 @@ export class PublicController {
 
   @Post('/crypto/:path')
   async cryptoPost(@Body() body: any, @Param('path') path: string) {
-    console.log('cryptoPost', body, path);
     return this._nowpayments.processPayment(path, body);
   }
 
@@ -221,8 +220,7 @@ export class PublicController {
     }
 
     if (!r.ok && r.status !== 206) {
-      res.status(r.status);
-      throw new Error(`Upstream error: ${r.statusText}`);
+      return res.status(r.status).send(`Upstream error: ${r.statusText}`);
     }
 
     const type = r.headers.get('content-type') ?? 'application/octet-stream';

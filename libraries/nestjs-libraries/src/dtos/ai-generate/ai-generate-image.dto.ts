@@ -99,6 +99,17 @@ export class AiGenerateImageDto {
   @MaxLength(128)
   reference_description_model?: string;
 
+  /**
+   * Quem manda na direção visual quando há inspirações selecionadas:
+   * - brand: identidade da marca domina; inspirações são só tempero (texto).
+   * - balanced: marca e inspirações se equilibram; imagens vão para o modelo.
+   * - inspiration: inspirações dominam; imagens vão para o modelo com prioridade.
+   */
+  @IsString()
+  @IsIn(['brand', 'balanced', 'inspiration'])
+  @IsOptional()
+  reference_mode?: 'brand' | 'balanced' | 'inspiration';
+
   @IsBoolean()
   @IsOptional()
   persist?: boolean;

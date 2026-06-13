@@ -31,6 +31,18 @@ export class ConfigurationChecker {
     this.checkIsValidUrl('NEXT_PUBLIC_BACKEND_URL');
     this.checkIsValidUrl('BACKEND_INTERNAL_URL');
     this.checkNonEmpty('STORAGE_PROVIDER', 'Needed to setup storage.');
+    this.checkNonEmpty(
+      'OPENAI_API_KEY',
+      'Needed for AI content/image generation and the AI agents.'
+    );
+    this.checkNonEmpty(
+      'STRIPE_SECRET_KEY',
+      'Needed to create checkouts and manage subscriptions.'
+    );
+    this.checkNonEmpty(
+      'STRIPE_SIGNING_KEY',
+      'Needed to validate Stripe webhook events.'
+    );
   }
 
   checkNonEmpty(key: string, description?: string): boolean {
