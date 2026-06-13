@@ -28,6 +28,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        run: npm install --global pnpm@10.6.1
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
