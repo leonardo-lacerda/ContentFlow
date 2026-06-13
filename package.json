@@ -14,6 +14,8 @@
     "dev": "pnpm run --filter ./apps/extension --filter ./apps/orchestrator --filter ./apps/backend --filter ./apps/frontend --parallel dev",
     "start:basic": "bash ./scripts/start-basic.sh",
     "start:basic:rebuild": "REBUILD=true bash ./scripts/start-basic.sh",
+    "start:local": "node scripts/start-local.mjs",
+    "start:local:prod": "node scripts/start-local.mjs --prod",
     "dev-backend": "pnpm run --filter ./apps/backend --filter ./apps/frontend --parallel dev",
     "pm2": "pnpm run pm2-run",
     "publish-sdk": "pnpm run --filter ./apps/sdk publish",
@@ -38,6 +40,7 @@
     "prisma-reset": "cd ./libraries/nestjs-libraries/src/database/prisma && pnpm dlx prisma@6.5.0 db push --force-reset && pnpx prisma@6.5.0 db push",
     "docker-build": "./var/docker/docker-build.sh",
     "docker-create": "./var/docker/docker-create.sh",
+    "docker-redeploy": "node var/docker/redeploy.mjs",
     "postinstall": "pnpm run prisma-generate",
     "test": "jest --coverage --detectOpenHandles --reporters=default --reporters=jest-junit"
   },
