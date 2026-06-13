@@ -1,0 +1,9 @@
+# Proxy reverso com HTTPS automático (Let's Encrypt) para o backend no Droplet.
+# O domínio vem da variável de ambiente API_DOMAIN (ex.: api.seudominio.com).
+# Encaminha para o nginx interno do container "contentflow" (porta 5000),
+# que já roteia /api -> backend:3000 e /uploads -> disco.
+
+{$API_DOMAIN} {
+	encode gzip
+	reverse_proxy contentflow:5000
+}

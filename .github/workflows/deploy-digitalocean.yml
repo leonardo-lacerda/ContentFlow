@@ -47,6 +47,8 @@ jobs:
               exit 1
             fi
 
-            docker compose -f docker-compose.yaml pull || true
-            docker compose -f docker-compose.yaml up -d --build
+            COMPOSE_FILES="-f docker-compose.yaml -f docker-compose.proxy.yaml"
+
+            docker compose $COMPOSE_FILES pull || true
+            docker compose $COMPOSE_FILES up -d --build
             docker image prune -af

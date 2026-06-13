@@ -1,0 +1,30 @@
+# Proxy TLS para produção. Use junto com o compose principal:
+#   docker compose -f docker-compose.yaml -f docker-compose.proxy.yaml up -d
+#
+# Requer a variável API_DOMAIN no .env (ex.: API_DOMAIN=api.seudominio.com)
+# e as portas 80/443 abertas no Droplet (DNS A record api.* -> IP do Droplet).
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: contentflow-caddy
+    restart: always
+    environment:
+      API_DOMAIN: '${API_DOMAIN}'
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./var/docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - contentflow-network
+    depends_on:
+      - contentflow
+
+volumes:
+  caddy-data:
+    external: false
+  caddy-config:
+    external: false
