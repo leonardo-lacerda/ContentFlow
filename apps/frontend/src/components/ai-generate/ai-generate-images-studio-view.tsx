@@ -7,8 +7,7 @@ import {
   SessionCostSummary,
 } from './ai-generate-images.sections';
 import { AiGenerateImagesPlanningForm } from './ai-generate-images-planning-form';
-import { ReferenceLibraryPanel } from './ai-generate-images-reference-library';
-import { CreativeBriefPanel } from './ai-generate-images-creative-brief';
+import { DirectionPanel } from './ai-generate-images-direction-panel';
 import { CarouselPreviewPanel } from './ai-generate-images-preview';
 import { SlideEditorPanel } from './ai-generate-images-slide-editor';
 import { ImageGenerationPanel } from './ai-generate-images-generation-panel';
@@ -186,6 +185,10 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     setTypographyPreset,
     inspirationsLeadVisual,
     setInspirationsLeadVisual,
+    directionSpec,
+    setDirectionSpec,
+    directionSuggestedAxes,
+    directionDerivedFrom,
     visualStyle,
   } = studio;
 
@@ -275,57 +278,19 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
 
         {plan && (
           <div className="flex flex-col gap-[24px]">
-            <ReferenceLibraryPanel
-              approveReferenceForCompany={approveReferenceForCompany}
-              approvedReferencesCount={approvedReferencesCount}
-              brandReferencesCount={brandReferencesCount}
-              companyProfile={companyProfile}
-              companyReferencesCount={companyReferencesCount}
-              favoriteReferences={favoriteReferences}
-              globalReferencesCount={globalReferencesCount}
-              globalReferencesLoaded={globalReferencesLoaded}
-              hiddenReferenceCount={hiddenReferenceCount}
-              persistReferenceInCompanyLibrary={persistReferenceInCompanyLibrary}
-              referenceCategoryFilter={referenceCategoryFilter}
-              referenceCategories={referenceCategories}
-              referenceImages={referenceImages}
-              removeReferenceImage={removeReferenceImage}
-              savingReferenceLibrary={savingReferenceLibrary}
-              selectedReferences={selectedReferences}
-              setReferenceCategoryFilter={setReferenceCategoryFilter}
-              setReferenceDisplayLimit={setReferenceDisplayLimit}
-              setReferenceImages={setReferenceImages}
-              toggleReferenceFavorite={toggleReferenceFavorite}
-              toggleReferenceSelection={toggleReferenceSelection}
-              uploadReferenceImages={uploadReferenceImages}
-              uploadReferencesCount={uploadReferencesCount}
-              visibleReferenceImages={visibleReferenceImages}
-            />
-
-            <CreativeBriefPanel
-              applyEditorialQuickFixes={applyEditorialQuickFixes}
+            <DirectionPanel
+              spec={directionSpec}
+              setSpec={setDirectionSpec}
+              platform={platform}
+              derivedFrom={directionDerivedFrom}
+              suggestedAxes={directionSuggestedAxes}
               brandColors={brandColors}
-              companyProfile={companyProfile}
-              computedCreativeBrief={computedCreativeBrief}
+              applyEditorialQuickFixes={applyEditorialQuickFixes}
               correctingEditorial={correctingEditorial}
               editorialReview={editorialReview}
-              finalCreativeBrief={finalCreativeBrief}
               fixCarouselWithAi={fixCarouselWithAi}
-              refreshCreativeBrief={refreshCreativeBrief}
               reviewCarouselQuality={reviewCarouselQuality}
               reviewingEditorial={reviewingEditorial}
-              selectedReferences={selectedReferences}
-              setFinalCreativeBrief={setFinalCreativeBrief}
-              structurePreset={structurePreset}
-              setStructurePreset={setStructurePreset}
-              colorPreset={colorPreset}
-              setColorPreset={setColorPreset}
-              stylePreset={stylePreset}
-              setStylePreset={setStylePreset}
-              typographyPreset={typographyPreset}
-              setTypographyPreset={setTypographyPreset}
-              inspirationsLeadVisual={inspirationsLeadVisual}
-              setInspirationsLeadVisual={setInspirationsLeadVisual}
             />
 
             <CarouselPreviewPanel

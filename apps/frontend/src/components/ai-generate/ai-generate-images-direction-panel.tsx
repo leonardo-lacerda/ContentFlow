@@ -7,6 +7,7 @@ import {
   hierarchyPresets,
   imageryPresets,
 } from './ai-generate-images.presets';
+import type { EditorialReview } from './ai-generate-images.types';
 import type {
   DirectionAxisKey,
   DirectionSpec,
@@ -24,6 +25,13 @@ type DirectionPanelProps = {
   brandColors?: string;
   generating?: boolean;
   onGenerate?: () => void;
+  // Crítica editorial (opcional): mantém o recurso que vivia no painel antigo.
+  applyEditorialQuickFixes?: () => void;
+  correctingEditorial?: boolean;
+  editorialReview?: EditorialReview | null;
+  fixCarouselWithAi?: () => void;
+  reviewCarouselQuality?: () => void;
+  reviewingEditorial?: boolean;
 };
 
 function AxisRow({
@@ -85,6 +93,12 @@ export function DirectionPanel(props: DirectionPanelProps) {
     brandColors,
     generating,
     onGenerate,
+    applyEditorialQuickFixes,
+    correctingEditorial,
+    editorialReview,
+    fixCarouselWithAi,
+    reviewCarouselQuality,
+    reviewingEditorial,
   } = props;
 
   const isSuggested = (axis: DirectionAxisKey) => suggestedAxes.includes(axis);
@@ -201,6 +215,72 @@ export function DirectionPanel(props: DirectionPanelProps) {
           </button>
         )}
       </div>
+
+      {reviewCarouselQuality && (
+        <div className="mt-[14px] flex flex-wrap gap-[10px]">
+          <button
+            type="button"
+            onClick={() => reviewCarouselQuality()}
+            disabled={reviewingEditorial}
+            className="rounded-[10px] border border-white/10 bg-white/10 px-[14px] py-[9px] text-[12px] font-[900] text-black/70 hover:bg-black/5 dark:text-white dark:hover:bg-white/15 disabled:opacity-50"
+          >
+            {reviewingEditorial ? 'Revisando...' : 'Rodar crítica editorial'}
+          </button>
+          {editorialReview && (
+            <span className="rounded-[10px] border border-black/10 bg-black/[0.03] dark:border-white/10 dark:bg-white/5 px-[12px] py-[9px] text-[12px] font-[800] text-black/70 dark:text-white/80">
+              Score editorial: {editorialReview.score}/100
+            </span>
+          )}
+          {!!editorialReview?.issues?.length && applyEditorialQuickFixes && (
+            <button
+              type="button"
+              onClick={applyEditorialQuickFixes}
+              className="rounded-[10px] border border-emerald-500/25 bg-emerald-500/10 px-[14px] py-[9px] text-[12px] font-[900] text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-200"
+            >
+              Aplicar correções rápidas
+            </button>
+          )}
+          {!!editorialReview?.issues?.length && fixCarouselWithAi && (
+            <button
+              type="button"
+              onClick={fixCarouselWithAi}
+              disabled={correctingEditorial}
+              className="rounded-[10px] border border-stone-500/20 bg-stone-500/10 px-[14px] py-[9px] text-[12px] font-[900] text-stone-700 hover:bg-stone-500/15 disabled:opacity-50 dark:text-stone-100"
+            >
+              {correctingEditorial ? 'Corrigindo...' : 'Corrigir slides'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {editorialReview && (
+        <div className="mt-[12px] rounded-[14px] border border-black/10 bg-stone-50 p-[14px] dark:border-white/10 dark:bg-black/20">
+          <div className="text-[13px] font-[800] text-black dark:text-white">
+            {editorialReview.verdict}
+          </div>
+          {!!editorialReview.strengths?.length && (
+            <div className="mt-[8px] text-[12px] text-emerald-700 dark:text-emerald-200">
+              Pontos fortes: {editorialReview.strengths.join(', ')}
+            </div>
+          )}
+          {!!editorialReview.issues?.length && (
+            <div className="mt-[10px] flex flex-col gap-[6px]">
+              {editorialReview.issues.slice(0, 6).map((issue, index) => (
+                <div
+                  key={`${issue.issue}-${index}`}
+                  className="rounded-[10px] bg-white p-[10px] text-[12px] text-black/70 dark:bg-white/5 dark:text-white/75"
+                >
+                  <strong className="text-amber-700 dark:text-amber-200">
+                    {issue.slide ? `Slide ${issue.slide}: ` : ''}
+                    {issue.severity}
+                  </strong>{' '}
+                  {issue.issue} — {issue.suggestion}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

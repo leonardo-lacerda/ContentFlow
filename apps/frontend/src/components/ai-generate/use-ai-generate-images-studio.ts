@@ -44,6 +44,13 @@ import {
   findTypographyPreset,
 } from './ai-generate-images.presets';
 import {
+  buildDirectionRenderSpec,
+  buildDirectionSpec,
+  defaultDirectionSpec,
+  normalizeDirectionSpec,
+} from './direction-compiler';
+import type { DirectionAxisKey, DirectionSpec } from './direction-compiler';
+import {
   blobToBytes,
   buildLimitedBrief,
   buildSlideImagePrompt,
@@ -167,6 +174,12 @@ export function useAiGenerateImagesStudio() {
   );
   // Quando há inspirações selecionadas, por padrão elas assumem o visual.
   const [inspirationsLeadVisual, setInspirationsLeadVisual] = useState(true);
+  // Direção Criativa: 6 eixos de características visuais. O spec é derivado da
+  // estratégia (template + objetivo + plataforma + Brand Kit) e fica "sujo"
+  // assim que o usuário ajusta um dial — aí passa a valer o override.
+  const [directionSpec, setDirectionSpecState] =
+    useState<DirectionSpec>(defaultDirectionSpec);
+  const [directionDirty, setDirectionDirty] = useState(false);
   const setClampedSlideCount = useCallback((value: number) => {
     const nextValue = Number(value);
     if (!Number.isFinite(nextValue)) {
@@ -193,6 +206,43 @@ export function useAiGenerateImagesStudio() {
   const template =
     carouselTemplates.find((item) => item.id === selectedTemplate) ||
     carouselTemplates[0];
+  const hasBrandPalette = !!(
+    companyProfile?.brandPalettes?.length || brandColors.trim()
+  );
+  // Defaults sugeridos pela estratégia. Recalcula quando template/objetivo/
+  // plataforma/Brand Kit mudam, mas só vale enquanto o usuário não ajusta.
+  const derivedDirectionSpec = useMemo(
+    () =>
+      buildDirectionSpec(
+        { templateId: selectedTemplate, goal, platform },
+        { hasPalette: hasBrandPalette }
+      ),
+    [goal, hasBrandPalette, platform, selectedTemplate]
+  );
+  const effectiveDirectionSpec = directionDirty
+    ? directionSpec
+    : derivedDirectionSpec;
+  const setDirectionSpec = useCallback((next: DirectionSpec) => {
+    setDirectionSpecState(normalizeDirectionSpec(next));
+    setDirectionDirty(true);
+  }, []);
+  const directionSuggestedAxes = useMemo<DirectionAxisKey[]>(
+    () =>
+      directionDirty
+        ? []
+        : (Object.keys(effectiveDirectionSpec) as DirectionAxisKey[]),
+    [directionDirty, effectiveDirectionSpec]
+  );
+  const directionDerivedFrom = useMemo(
+    () =>
+      [
+        template.label,
+        goal,
+        platform.charAt(0).toUpperCase() + platform.slice(1),
+        hasBrandPalette ? `Brand Kit · ${brandName || 'marca'}` : '',
+      ].filter(Boolean),
+    [brandName, goal, hasBrandPalette, platform, template.label]
+  );
   const planDisabled = useMemo(() => {
     return (
       planning ||
@@ -468,35 +518,25 @@ export function useAiGenerateImagesStudio() {
     setFinalCreativeBrief(computedCreativeBrief);
   }, [computedCreativeBrief]);
 
-  // Monta o "render spec" (estrutura + estilo/cor/tipografia + contexto) a
-  // partir dos presets escolhidos. Quando as inspirações comandam o visual, o
-  // builder ignora estilo/cor/tipografia e deixa as imagens assumirem.
+  // Monta o prompt de cada slide a partir da Direção Criativa (6 eixos). O
+  // compilador resolve as escolhas em fragmentos determinísticos e injeta no
+  // builder existente — sem imagens de referência no comando.
   const buildSlidePromptFor = useCallback(
-    (slide: CarouselSlide, referenceCount: number) => {
-      const hasInspirations = referenceCount > 0;
-      const lead = hasInspirations && inspirationsLeadVisual;
-      const color = findColorPreset(colorPreset);
-      return buildSlideImagePrompt(plan as CarouselPlan, slide, {
-        structureLayout: findStructurePreset(structurePreset).layout,
-        stylePrompt: findStylePreset(stylePreset).prompt,
-        colorPrompt: color.id === 'brand' ? '' : color.prompt,
-        brandColors: brandColors,
-        typographyPrompt: findTypographyPreset(typographyPreset).prompt,
-        brief: finalCreativeBrief || computedCreativeBrief,
-        hasInspirations,
-        inspirationsLeadVisual: lead,
-      });
-    },
+    (slide: CarouselSlide) =>
+      buildSlideImagePrompt(
+        plan as CarouselPlan,
+        slide,
+        buildDirectionRenderSpec(effectiveDirectionSpec, {
+          brandColors,
+          brief: finalCreativeBrief || computedCreativeBrief,
+        })
+      ),
     [
       brandColors,
-      colorPreset,
       computedCreativeBrief,
+      effectiveDirectionSpec,
       finalCreativeBrief,
-      inspirationsLeadVisual,
       plan,
-      structurePreset,
-      stylePreset,
-      typographyPreset,
     ]
   );
 
@@ -570,6 +610,12 @@ export function useAiGenerateImagesStudio() {
       setSlideCount(loadedPlan.slides.length);
       setVisualStyle(metadata.visualStyle || visualStyle);
       setFinalCreativeBrief(metadata.creativeBrief || '');
+      if (metadata.directionSpec) {
+        setDirectionSpecState(normalizeDirectionSpec(metadata.directionSpec));
+        setDirectionDirty(true);
+      } else {
+        setDirectionDirty(false);
+      }
       setTextModel(metadata.generation?.textModel || textModel);
       setImageProvider(metadata.generation?.imageProvider || imageProvider);
       setImageModel(metadata.generation?.imageModel || imageModel);
@@ -1254,6 +1300,8 @@ export function useAiGenerateImagesStudio() {
     setSlideImages({});
     setSavedCarouselCount(0);
     setActivePreview(0);
+    // Novo carrossel: volta a seguir a direção sugerida pela estratégia.
+    setDirectionDirty(false);
 
     try {
       const brandBrief = buildLimitedBrief([
@@ -1743,45 +1791,15 @@ export function useAiGenerateImagesStudio() {
     setSavedCarouselCount(0);
 
     try {
-      const referenceDataUrls = selectedReferences.length
-        ? await selectedReferencesToDataUrls(
-            selectedReferences,
-            referenceDataUrlCache.current
-          )
-        : [];
-
-      if (
-        selectedReferences.length &&
-        referenceDataUrls.length < selectedReferences.length
-      ) {
-        toaster.show(
-          `${
-            selectedReferences.length - referenceDataUrls.length
-          } inspiração(ões) não puderam ser carregadas e foram ignoradas nesta geração.`,
-          'warning'
-        );
-      }
-
-      const requestSettings = resolveImageRequestSettings(
-        imageProvider,
-        trimmedImageModel,
-        referenceDataUrls.length
-      );
-
       const slides = plan.slides.map((slide) => {
         const requestBody: Record<string, unknown> = {
-          provider: requestSettings.provider,
-          prompt: buildSlidePromptFor(slide, referenceDataUrls.length),
-          model: requestSettings.model,
+          provider: imageProvider,
+          prompt: buildSlidePromptFor(slide),
+          model: trimmedImageModel,
           n: 1,
         };
 
-        if (referenceDataUrls.length) {
-          requestBody.reference_images = referenceDataUrls;
-          requestBody.reference_mode = visualDirectionMode;
-        }
-
-        if (requestSettings.provider === 'ia_generate') {
+        if (imageProvider === 'ia_generate') {
           requestBody.response_format = 'b64_json';
         }
 
@@ -1832,41 +1850,14 @@ export function useAiGenerateImagesStudio() {
     setSavedCarouselCount(0);
 
     try {
-      const referenceDataUrls = selectedReferences.length
-        ? await selectedReferencesToDataUrls(
-            selectedReferences,
-            referenceDataUrlCache.current
-          )
-        : [];
-      if (
-        selectedReferences.length &&
-        referenceDataUrls.length < selectedReferences.length
-      ) {
-        toaster.show(
-          `${
-            selectedReferences.length - referenceDataUrls.length
-          } inspiração(ões) não puderam ser carregadas e foram ignoradas nesta geração.`,
-          'warning'
-        );
-      }
-      const requestSettings = resolveImageRequestSettings(
-        imageProvider,
-        trimmedImageModel,
-        referenceDataUrls.length
-      );
       const requestBody: Record<string, unknown> = {
-        provider: requestSettings.provider,
-        prompt: buildSlidePromptFor(slide, referenceDataUrls.length),
-        model: requestSettings.model,
+        provider: imageProvider,
+        prompt: buildSlidePromptFor(slide),
+        model: trimmedImageModel,
         n: 1,
       };
 
-      if (referenceDataUrls.length) {
-        requestBody.reference_images = referenceDataUrls;
-        requestBody.reference_mode = visualDirectionMode;
-      }
-
-      if (requestSettings.provider === 'ia_generate') {
+      if (imageProvider === 'ia_generate') {
         requestBody.response_format = 'b64_json';
       }
 
@@ -2037,6 +2028,7 @@ export function useAiGenerateImagesStudio() {
         platform,
         slideCount,
         visualStyle,
+        directionSpec: effectiveDirectionSpec,
         brandNotes: metaText(brandNotes, 900),
         company: companyProfile
           ? {
@@ -2413,6 +2405,10 @@ export function useAiGenerateImagesStudio() {
     setTypographyPreset,
     inspirationsLeadVisual,
     setInspirationsLeadVisual,
+    directionSpec: effectiveDirectionSpec,
+    setDirectionSpec,
+    directionSuggestedAxes,
+    directionDerivedFrom,
     visualStyle,
   };
 }
