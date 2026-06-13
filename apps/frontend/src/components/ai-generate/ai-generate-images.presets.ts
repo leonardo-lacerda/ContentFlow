@@ -229,3 +229,248 @@ export const findStylePreset = (id: string) =>
   stylePresets.find((preset) => preset.id === id) || stylePresets[0];
 export const findTypographyPreset = (id: string) =>
   typographyPresets.find((preset) => preset.id === id) || typographyPresets[0];
+
+// ---------------------------------------------------------------------------
+// Direção Criativa — 6 eixos de características visuais.
+//
+// Cada opção carrega um fragmento de prompt determinístico (`prompt`). O
+// compilador (direction-compiler.ts) resolve as 6 escolhas em fragmentos e os
+// injeta no buildSlideImagePrompt já existente. Sem imagens de referência: a
+// direção nasce da estratégia (template + objetivo + plataforma + Brand Kit).
+// ---------------------------------------------------------------------------
+
+export type DirectionAxisOption = {
+  id: string;
+  label: string;
+  prompt: string;
+  hint?: string;
+};
+
+// Estilo editorial: cada opção é um "design system" fechado (paleta + tipo +
+// textura + atmosfera). Substitui e expande o antigo stylePresets.
+export const editorialPresets: DirectionAxisOption[] = [
+  {
+    id: 'editorial-premium',
+    label: 'Editorial premium',
+    prompt:
+      'estética editorial premium de revista sofisticada, tipografia serifada forte combinada com sans limpa, muito espaço negativo, paleta sóbria e contraste elegante.',
+  },
+  {
+    id: 'corporativo-moderno',
+    label: 'Corporativo moderno',
+    prompt:
+      'visual corporativo moderno e confiável, grid organizado, tipografia sans-serif limpa, paleta neutra com um acento de marca, aparência profissional.',
+  },
+  {
+    id: 'tech-futurista',
+    label: 'Tech futurista',
+    prompt:
+      'estética tech futurista, fundos escuros, acentos luminosos sutis, tipografia geométrica, sensação de produto digital de ponta.',
+  },
+  {
+    id: 'minimalista',
+    label: 'Minimalista',
+    prompt:
+      'minimalismo radical, quase nenhum elemento gráfico, foco total na tipografia e no espaço negativo.',
+  },
+  {
+    id: 'luxo',
+    label: 'Luxo',
+    prompt:
+      'estética de luxo, paleta escura ou monocromática com acento metálico/dourado discreto, tipografia serifada refinada, sensação premium e exclusiva.',
+  },
+  {
+    id: 'bold',
+    label: 'Bold',
+    prompt:
+      'visual bold e impactante, tipografia display pesada, blocos de cor sólidos, alto contraste e energia.',
+  },
+  {
+    id: 'clean',
+    label: 'Clean',
+    prompt:
+      'visual clean e arejado, fundo claro, formas simples, tipografia sans neutra, organização impecável.',
+  },
+  {
+    id: 'revista',
+    label: 'Revista',
+    prompt:
+      'diagramação de revista impressa, colunas, fios e marcadores editoriais, hierarquia tipográfica rica.',
+  },
+  {
+    id: 'startup',
+    label: 'Startup',
+    prompt:
+      'estética de startup moderna, formas geométricas e cores vivas equilibradas, tom acessível e otimista.',
+  },
+  {
+    id: 'institucional',
+    label: 'Institucional',
+    prompt:
+      'visual institucional sóbrio, paleta restrita, tipografia formal, sensação de credibilidade e solidez.',
+  },
+];
+
+// Hierarquia visual: peso relativo entre texto e elementos visuais.
+export const hierarchyPresets: DirectionAxisOption[] = [
+  {
+    id: 'text-dominant',
+    label: 'Texto dominante',
+    prompt:
+      'o texto é o elemento dominante: headline grande ocupando a maior parte da arte, elementos visuais reduzidos a apoio.',
+  },
+  {
+    id: 'balanced',
+    label: 'Equilibrado',
+    prompt:
+      'equilíbrio entre texto e elementos visuais, com hierarquia clara entre headline, apoio e gráficos.',
+  },
+  {
+    id: 'visual-dominant',
+    label: 'Visual dominante',
+    prompt:
+      'o elemento visual domina a composição; o texto aparece curto e direto, integrado à imagem.',
+  },
+];
+
+// Densidade visual: quantidade de elementos e espaço negativo.
+export const densityPresets: DirectionAxisOption[] = [
+  {
+    id: 'minimal',
+    label: 'Minimalista',
+    prompt:
+      'pouquíssimos elementos, máximo espaço negativo, composição respirada.',
+  },
+  {
+    id: 'medium',
+    label: 'Média',
+    prompt:
+      'densidade média, alguns elementos de apoio organizados sem poluir.',
+  },
+  {
+    id: 'rich',
+    label: 'Rica',
+    prompt:
+      'composição rica em elementos visuais, camadas e detalhes, mantendo a legibilidade do texto.',
+  },
+];
+
+// Composição: sistema de layout-base do carrossel.
+export const compositionPresets: DirectionAxisOption[] = [
+  {
+    id: 'centered',
+    label: 'Centralizada',
+    prompt: 'composição centralizada, elementos alinhados ao centro com simetria.',
+  },
+  {
+    id: 'asymmetric',
+    label: 'Assimétrica',
+    prompt:
+      'composição assimétrica e dinâmica, com tensão visual e alinhamentos deslocados.',
+  },
+  {
+    id: 'grid',
+    label: 'Grid',
+    prompt: 'composição em grid estruturado, blocos alinhados a uma grade visível.',
+  },
+  {
+    id: 'magazine',
+    label: 'Magazine',
+    prompt:
+      'diagramação estilo magazine, com manchete, colunas e hierarquia de revista.',
+  },
+  {
+    id: 'bento',
+    label: 'Bento',
+    prompt:
+      'composição em bento grid, blocos modulares de tamanhos variados encaixados.',
+  },
+  {
+    id: 'modular',
+    label: 'Modular',
+    prompt:
+      'composição modular com seções bem delimitadas e repetíveis entre os slides.',
+  },
+];
+
+// Uso de imagens: o dial de previsibilidade. "Sem imagens" e "Ícones e formas"
+// produzem texto-na-arte muito mais confiável que foto realista.
+export const imageryPresets: DirectionAxisOption[] = [
+  {
+    id: 'none',
+    label: 'Sem imagens',
+    prompt:
+      'sem fotografias; arte construída apenas com tipografia, cor e formas.',
+  },
+  {
+    id: 'icons',
+    label: 'Ícones e formas',
+    prompt:
+      'use ícones e formas geométricas simples como elementos visuais de apoio.',
+  },
+  {
+    id: 'illustration',
+    label: 'Ilustrações',
+    prompt:
+      'use ilustrações (flat ou editoriais) como elemento visual principal.',
+  },
+  {
+    id: 'people',
+    label: 'Pessoas',
+    prompt:
+      'use imagens de pessoas reais e autênticas, integradas à composição.',
+  },
+  {
+    id: 'product',
+    label: 'Produto',
+    prompt: 'destaque o produto em primeiro plano, bem iluminado.',
+  },
+  {
+    id: 'mockups',
+    label: 'Mockups',
+    prompt:
+      'use mockups de telas/dispositivos para mostrar o produto em contexto.',
+  },
+  {
+    id: 'ai-free',
+    label: 'IA livre',
+    prompt:
+      'imagens geradas livremente pela IA conforme o conteúdo de cada slide.',
+  },
+];
+
+// Intensidade da marca: peso do logo + rigidez no respeito às cores do Brand Kit.
+export const brandIntensityPresets: DirectionAxisOption[] = [
+  {
+    id: 'brand-dominant',
+    label: 'Marca dominante',
+    prompt:
+      'presença de marca forte: logo evidente, cores da marca dominando a paleta, assinatura clara.',
+  },
+  {
+    id: 'balanced',
+    label: 'Equilibrado',
+    prompt:
+      'presença de marca equilibrada: cores da marca respeitadas, logo discreto.',
+  },
+  {
+    id: 'content-dominant',
+    label: 'Conteúdo dominante',
+    prompt:
+      'marca sutil: assinatura mínima, foco quase total no conteúdo.',
+  },
+];
+
+export const directionAxes = {
+  editorial: editorialPresets,
+  hierarchy: hierarchyPresets,
+  density: densityPresets,
+  composition: compositionPresets,
+  imagery: imageryPresets,
+  brandIntensity: brandIntensityPresets,
+} as const;
+
+export const findDirectionOption = (
+  options: DirectionAxisOption[],
+  id: string
+) => options.find((option) => option.id === id) || options[0];
