@@ -10,6 +10,7 @@ const nextConfig = {
   experimental: {
     proxyTimeout: 90_000,
   },
+  outputFileTracingRoot: path.resolve(__dirname, '../..'),
   turbopack: {
     root: path.resolve(__dirname, '../..'),
   },
