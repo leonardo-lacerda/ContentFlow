@@ -4,29 +4,70 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'apps/backend/**'
+      - 'apps/orchestrator/**'
+      - 'libraries/**'
+      - 'Dockerfile.backend'
+      - 'docker-compose*.yaml'
+      - 'var/docker/**'
+      - '.github/workflows/deploy-digitalocean.yml'
   workflow_dispatch:
 
 concurrency:
   group: deploy-production
   cancel-in-progress: true
 
+env:
+  REGISTRY: registry.digitalocean.com/megaagentsleo
+  IMAGE_NAME: contentflow
+
 jobs:
-  deploy:
-    name: Deploy on Droplet
+  build-and-push:
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Copy project to server
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DO_ACCESS_TOKEN }}
+
+      - name: Login to DO Container Registry
+        run: doctl registry login --expiry-seconds 3600
+
+      - name: Build Docker image (backend + orchestrator)
+        run: |
+          docker build -f Dockerfile.backend \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            .
+
+      - name: Push image to registry
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    name: Deploy on Droplet
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Copy config files to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           port: ${{ secrets.DO_PORT || '22' }}
-          source: "."
+          source: "docker-compose.yaml,docker-compose.production.yaml,docker-compose.proxy.yaml,var/docker/caddy/Caddyfile,dynamicconfig/"
           target: ${{ secrets.DO_APP_DIR }}
           rm: false
           strip_components: 0
@@ -43,12 +84,16 @@ jobs:
             cd "${{ secrets.DO_APP_DIR }}"
 
             if [ ! -f .env ]; then
-              echo "Arquivo .env não encontrado em ${{ secrets.DO_APP_DIR }}"
+              echo "ERRO: .env nao encontrado em ${{ secrets.DO_APP_DIR }}"
               exit 1
             fi
 
-            COMPOSE_FILES="-f docker-compose.yaml -f docker-compose.proxy.yaml"
+            # Autenticar no DO Container Registry
+            echo "${{ secrets.DO_ACCESS_TOKEN }}" | docker login registry.digitalocean.com \
+              -u "${{ secrets.DO_ACCESS_TOKEN }}" --password-stdin
 
-            docker compose $COMPOSE_FILES pull || true
-            docker compose $COMPOSE_FILES up -d --build
+            COMPOSE_FILES="-f docker-compose.yaml -f docker-compose.production.yaml -f docker-compose.proxy.yaml"
+
+            docker compose $COMPOSE_FILES pull
+            docker compose $COMPOSE_FILES up -d
             docker image prune -af

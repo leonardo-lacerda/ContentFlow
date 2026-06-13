@@ -1,0 +1,32 @@
+# Sobrepõe o docker-compose.yaml para produção:
+# - Usa imagem pré-construída do DO Container Registry
+# - Injeta variáveis do .env do servidor (em vez de hardcodes do compose base)
+# Uso: docker compose -f docker-compose.yaml -f docker-compose.production.yaml -f docker-compose.proxy.yaml up -d
+
+services:
+  contentflow:
+    image: registry.digitalocean.com/megaagentsleo/contentflow:latest
+    environment:
+      MAIN_URL: '${MAIN_URL}'
+      FRONTEND_URL: '${FRONTEND_URL}'
+      NEXT_PUBLIC_BACKEND_URL: '${NEXT_PUBLIC_BACKEND_URL}'
+      BACKEND_INTERNAL_URL: '${BACKEND_INTERNAL_URL}'
+      JWT_SECRET: '${JWT_SECRET}'
+      DATABASE_URL: '${DATABASE_URL}'
+      REDIS_URL: '${REDIS_URL}'
+      TEMPORAL_ADDRESS: '${TEMPORAL_ADDRESS}'
+      DISABLE_TEMPORAL: '${DISABLE_TEMPORAL}'
+      IS_GENERAL: '${IS_GENERAL}'
+      DISABLE_REGISTRATION: '${DISABLE_REGISTRATION}'
+      STORAGE_PROVIDER: '${STORAGE_PROVIDER}'
+      UPLOAD_DIRECTORY: '${UPLOAD_DIRECTORY}'
+      NEXT_PUBLIC_UPLOAD_STATIC_DIRECTORY: '${NEXT_PUBLIC_UPLOAD_STATIC_DIRECTORY}'
+      OPENAI_API_KEY: '${OPENAI_API_KEY}'
+      AI_GENERATE_OPENAI_API_KEY: '${AI_GENERATE_OPENAI_API_KEY}'
+      AI_GENERATE_OPENAI_BASE_URL: '${AI_GENERATE_OPENAI_BASE_URL}'
+      AI_GENERATE_OPENAI_IMAGE_MODEL: '${AI_GENERATE_OPENAI_IMAGE_MODEL}'
+      API_LIMIT: '${API_LIMIT}'
+      STRIPE_PUBLISHABLE_KEY: '${STRIPE_PUBLISHABLE_KEY}'
+      STRIPE_SECRET_KEY: '${STRIPE_SECRET_KEY}'
+      STRIPE_SIGNING_KEY: '${STRIPE_SIGNING_KEY}'
+      STRIPE_SIGNING_KEY_CONNECT: '${STRIPE_SIGNING_KEY_CONNECT}'
