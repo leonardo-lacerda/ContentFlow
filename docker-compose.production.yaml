@@ -7,6 +7,21 @@ services:
   spotlight:
     profiles: ["debug"]
 
+  temporal-elasticsearch:
+    profiles: ["debug"]
+
+  temporal-postgresql:
+    profiles: ["debug"]
+
+  temporal:
+    profiles: ["debug"]
+
+  temporal-admin-tools:
+    profiles: ["debug"]
+
+  temporal-ui:
+    profiles: ["debug"]
+
   contentflow:
     image: ghcr.io/leonardo-lacerda/contentflow:latest
     environment:
