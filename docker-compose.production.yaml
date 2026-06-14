@@ -4,6 +4,9 @@
 # Uso: docker compose -f docker-compose.yaml -f docker-compose.production.yaml -f docker-compose.proxy.yaml up -d
 
 services:
+  spotlight:
+    profiles: ["debug"]
+
   contentflow:
     image: ghcr.io/leonardo-lacerda/contentflow:latest
     environment:
