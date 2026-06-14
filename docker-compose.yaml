@@ -1,9 +1,6 @@
 services:
   contentflow:
     image: contentflow-contentflow-local:ai-generate
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
     container_name: contentflow
     restart: always
     environment:
