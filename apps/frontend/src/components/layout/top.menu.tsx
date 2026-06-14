@@ -56,6 +56,7 @@ export const useMenuItem = () => {
         </svg>
       ),
       path: '/launches',
+      hide: true,
     },
     {
       name: 'Agent',
