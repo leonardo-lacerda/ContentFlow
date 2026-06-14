@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   AiGenerateImagesHeader,
   CarouselLightbox,
@@ -18,6 +19,7 @@ type AiGenerateImagesStudioViewProps = {
 };
 
 export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioViewProps) {
+  const [showSavedProjects, setShowSavedProjects] = useState(false);
   const {
     activePreview,
     allowOverBudget,
@@ -200,14 +202,31 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
       <div className="relative z-10 mx-auto w-full max-w-[1180px] flex flex-col gap-[24px] pt-[20px] pb-[60px]">
         <AiGenerateImagesHeader />
 
-        <SavedProjectsPanel
-          importProjectInputRef={importProjectInputRef}
-          loadingSavedProjects={loadingSavedProjects}
-          savedProjects={savedProjects}
-          onImportProjectJson={importProjectJson}
-          onLoadProjectIntoStudio={loadProjectIntoStudio}
-          onLoadSavedProjects={loadSavedProjects}
-        />
+        <div className="flex flex-col gap-[12px]">
+          <button
+            type="button"
+            onClick={() => setShowSavedProjects((value) => !value)}
+            className="flex w-fit items-center gap-[8px] rounded-[10px] border border-black/10 bg-white px-[14px] py-[9px] text-[13px] font-[800] text-black/70 transition hover:bg-stone-50 dark:border-white/10 dark:bg-white/5 dark:text-white/75 dark:hover:bg-white/10"
+          >
+            {showSavedProjects ? 'Ocultar projetos salvos' : 'Abrir projeto salvo'}
+            {savedProjects.length > 0 && (
+              <span className="rounded-full bg-stone-900/10 px-[8px] py-[2px] text-[11px] font-[900] text-black/70 dark:bg-white/10 dark:text-white/80">
+                {savedProjects.length}
+              </span>
+            )}
+          </button>
+
+          {showSavedProjects && (
+            <SavedProjectsPanel
+              importProjectInputRef={importProjectInputRef}
+              loadingSavedProjects={loadingSavedProjects}
+              savedProjects={savedProjects}
+              onImportProjectJson={importProjectJson}
+              onLoadProjectIntoStudio={loadProjectIntoStudio}
+              onLoadSavedProjects={loadSavedProjects}
+            />
+          )}
+        </div>
 
         <AiGenerateImagesPlanningForm
           applyCompanyBrandKit={applyCompanyBrandKit}

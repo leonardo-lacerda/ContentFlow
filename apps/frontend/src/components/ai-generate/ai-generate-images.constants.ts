@@ -93,6 +93,75 @@ export const carouselTemplates: CarouselTemplate[] = [
   },
 ];
 
+export const goalOptions = [
+  { value: 'educar e gerar engajamento', label: 'Educar e engajar' },
+  { value: 'vender uma oferta', label: 'Vender um produto/serviço' },
+  { value: 'gerar autoridade', label: 'Mostrar autoridade' },
+  { value: 'capturar leads', label: 'Capturar leads' },
+];
+
+export const platformOptions = [
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'linkedin', label: 'LinkedIn' },
+  { value: 'tiktok', label: 'TikTok' },
+];
+
+export const toneOptions = [
+  { value: 'claro, prático e persuasivo', label: 'Claro e persuasivo' },
+  { value: 'especialista, direto e premium', label: 'Especialista e premium' },
+  { value: 'leve, divertido e provocativo', label: 'Leve e divertido' },
+  { value: 'emocional, acolhedor e inspirador', label: 'Emocional e inspirador' },
+];
+
+export const audienceOptions = [
+  'Empreendedores',
+  'Pequenas empresas',
+  'Profissionais de marketing',
+  'Desenvolvedores',
+  'Designers',
+  'Criadores de conteúdo',
+  'Gestores / C-level',
+  'Consumidor final (B2C)',
+];
+
+export const visualStylePresets = [
+  { label: 'Editorial premium', value: defaultVisualStyle },
+  {
+    label: 'Cinematográfico',
+    value:
+      'Carrossel narrativo premium, cenas cinematográficas minimalistas, texto grande dentro da imagem, contraste alto e atmosfera humana.',
+  },
+  {
+    label: 'Lista limpa',
+    value:
+      'Carrossel de lista editorial, números grandes, composição limpa, metáforas visuais fortes e texto legível no celular.',
+  },
+  {
+    label: 'Analítico / dados',
+    value:
+      'Carrossel sofisticado com visual analítico, gráficos abstratos, tipografia editorial e leitura fácil.',
+  },
+];
+
+export const logoUsageOptions = [
+  { value: 'subtle', label: 'Assinatura discreta' },
+  { value: 'text', label: 'Só selo textual' },
+  { value: 'none', label: 'Não usar logo' },
+];
+
+export const logoPositionOptions = [
+  { value: 'top-right', label: 'Topo direito' },
+  { value: 'top-left', label: 'Topo esquerdo' },
+  { value: 'bottom-right', label: 'Rodapé direito' },
+  { value: 'bottom-left', label: 'Rodapé esquerdo' },
+];
+
+export const logoScaleOptions = [
+  { value: 'small', label: 'Pequeno' },
+  { value: 'medium', label: 'Médio' },
+  { value: 'badge', label: 'Selo/pill' },
+];
+
 export const inputClass =
   'h-[48px] w-full rounded-[10px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] px-[16px] text-[15px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-black dark:text-white transition duration-200 focus:border-black/40 dark:focus:border-white/40 focus:ring-4 focus:ring-black/5 dark:focus:ring-white/5 hover:border-black/20 dark:hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-50';
 export const textAreaClass =

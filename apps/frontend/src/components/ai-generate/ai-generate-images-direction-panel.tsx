@@ -115,7 +115,7 @@ export function DirectionPanel(props: DirectionPanelProps) {
     <div className="rounded-[18px] border border-black/10 bg-white p-[28px] shadow-sm dark:border-white/10 dark:bg-[#101010]">
       <div className="mb-[14px] flex items-start gap-[12px]">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-stone-500/20 bg-stone-500/10 text-[15px] font-[900] text-stone-800 dark:text-stone-100">
-          3
+          2
         </div>
         <div>
           <h3 className="text-[22px] font-[800] text-black dark:text-white">

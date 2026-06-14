@@ -57,7 +57,7 @@ async function start() {
     })
   );
 
-  app.use(['/copilot/*', '/posts', '/ai-generate/*'], (req: any, res: any, next: any) => {
+  app.use(['/copilot/*', '/posts', '/ai-generate/*', '/settings/*'], (req: any, res: any, next: any) => {
     json({ limit: '50mb' })(req, res, next);
   });
 
