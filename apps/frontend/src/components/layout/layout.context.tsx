@@ -76,7 +76,11 @@ function LayoutContextInner(params: { children: ReactNode }) {
       }
 
       if (response?.headers?.get('reload')) {
-        window.location.reload();
+        if (window.location.pathname.startsWith('/auth')) {
+          window.location.href = '/launches';
+        } else {
+          window.location.reload();
+        }
         return true;
       }
 
