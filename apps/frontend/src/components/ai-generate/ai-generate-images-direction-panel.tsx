@@ -112,10 +112,34 @@ function AxisGlyph({
 
   if (axisKey === 'imagery') {
     const Icon = imageryIcons[optionId] || Sparkles;
+    // "Sem imagens": mini-slide só com texto.
+    if (optionId === 'none') {
+      return (
+        <GlyphFrame>
+          <span className={`flex w-full flex-col justify-center gap-[4px] ${glyphClass}`}>
+            <Bar className="h-[5px] w-[85%]" />
+            <Bar className="h-[4px] w-[65%] opacity-50" />
+            <Bar className="h-[4px] w-[45%] opacity-50" />
+          </span>
+        </GlyphFrame>
+      );
+    }
+    // Demais: bloco de imagem (com o ícone do tipo) ao lado do texto.
+    const tall = optionId === 'mockups';
     return (
       <GlyphFrame>
-        <span className={`flex w-full items-center justify-center ${glyphClass}`}>
-          <Icon className="h-[22px] w-[22px]" strokeWidth={1.6} />
+        <span className={`flex w-full items-center gap-[7px] ${glyphClass}`}>
+          <span
+            className={`flex shrink-0 items-center justify-center rounded-[5px] border border-current/30 bg-current/10 ${
+              tall ? 'h-[34px] w-[22px]' : 'h-[30px] w-[30px]'
+            }`}
+          >
+            <Icon className="h-[15px] w-[15px]" strokeWidth={1.7} />
+          </span>
+          <span className="flex flex-1 flex-col gap-[4px]">
+            <Bar className="h-[4px] w-full opacity-70" />
+            <Bar className="h-[4px] w-2/3 opacity-50" />
+          </span>
         </span>
       </GlyphFrame>
     );
@@ -243,10 +267,114 @@ function AxisGlyph({
   );
 }
 
+// Prévia aproximada de um slide: reflete cores, estilo, hierarquia, composição
+// e uso de imagens em tempo real, para a pessoa ver +/- o que vai sair antes de
+// a IA gerar.
+function previewColors(brandColors?: string) {
+  const list = (brandColors || '')
+    .split(/[,;\n]/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+  return {
+    bg: list[0] || '#0F172A',
+    text: list[1] || '#F8FAFC',
+    accent: list[2] || '#2563EB',
+  };
+}
+
+function SlidePreview({
+  spec,
+  brandColors,
+  headline,
+}: {
+  spec: DirectionSpec;
+  brandColors?: string;
+  headline?: string;
+}) {
+  const { bg, text, accent } = previewColors(brandColors);
+  const serif = ['editorial-premium', 'luxo', 'revista', 'institucional'].includes(
+    spec.editorial
+  );
+  const big = spec.hierarchy === 'text-dominant';
+  const small = spec.hierarchy === 'visual-dominant';
+  const dense = spec.density === 'rich';
+  const centered = spec.composition === 'centered';
+  const showImage = spec.imagery !== 'none';
+  const Icon = imageryIcons[spec.imagery] || Sparkles;
+  const title = (headline || '').trim() || 'Sua headline aparece aqui';
+
+  return (
+    <div className="w-full max-w-[280px]">
+      <div
+        className="flex aspect-square w-full flex-col overflow-hidden rounded-[16px] border border-black/10 p-[22px] shadow-sm transition-colors duration-300 dark:border-white/10"
+        style={{ background: bg, color: text }}
+      >
+        <div
+          className="flex items-center justify-between text-[10px] font-[800] uppercase tracking-[0.12em]"
+          style={{ opacity: 0.75 }}
+        >
+          <span>Sua marca</span>
+          {dense && <span style={{ color: accent }}>● ● ●</span>}
+        </div>
+
+        <div
+          className={`flex flex-1 flex-col justify-center gap-[10px] ${
+            centered ? 'items-center text-center' : 'items-start text-left'
+          }`}
+        >
+          {showImage && (
+            <div
+              className="flex items-center justify-center rounded-[10px]"
+              style={{
+                width: small ? '100%' : 48,
+                height: small ? 92 : 48,
+                background: 'rgba(127,127,127,0.18)',
+                border: `1px solid ${accent}55`,
+              }}
+            >
+              <Icon style={{ width: 18, height: 18, color: text, opacity: 0.8 }} strokeWidth={1.7} />
+            </div>
+          )}
+          <span
+            style={{
+              fontFamily: serif
+                ? "Georgia, 'Times New Roman', serif"
+                : "Inter, system-ui, sans-serif",
+              fontWeight: 800,
+              lineHeight: 1.05,
+              fontSize: big ? 27 : small ? 16 : 21,
+            }}
+          >
+            {title}
+          </span>
+          <span
+            className="block rounded-full"
+            style={{ height: 3, width: centered ? '40%' : '55%', background: accent }}
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span
+            className="rounded-full px-[10px] py-[5px] text-[10px] font-[800]"
+            style={{ background: accent, color: bg }}
+          >
+            Saiba mais
+          </span>
+          <span style={{ opacity: 0.5, fontSize: 10 }}>1/6</span>
+        </div>
+      </div>
+      <p className="mt-[8px] text-center text-[11px] text-black/45 dark:text-white/45">
+        Prévia aproximada — muda conforme suas escolhas
+      </p>
+    </div>
+  );
+}
+
 type DirectionPanelProps = {
   spec: DirectionSpec;
   setSpec: (next: DirectionSpec) => void;
   platform: string;
+  sampleHeadline?: string;
   // Chips de "derivado de": rótulos da estratégia (template, objetivo, etc.).
   derivedFrom: string[];
   // Eixos que ainda estão no valor sugerido pela estratégia (mostram a tag).
@@ -340,6 +468,7 @@ export function DirectionPanel(props: DirectionPanelProps) {
     spec,
     setSpec,
     platform,
+    sampleHeadline,
     derivedFrom,
     suggestedAxes = [],
     brandColors,
@@ -407,6 +536,7 @@ export function DirectionPanel(props: DirectionPanelProps) {
         </div>
       )}
 
+      <div className="grid gap-[16px] md:grid-cols-[1fr_280px]">
       <div className="flex flex-col gap-[16px] rounded-[14px] border border-black/10 bg-stone-50 p-[16px] dark:border-white/10 dark:bg-black/20">
         <AxisRow
           axisKey="editorial"
@@ -462,6 +592,11 @@ export function DirectionPanel(props: DirectionPanelProps) {
           value={spec.brandIntensity}
           onChange={(id) => update('brandIntensity', id)}
         />
+      </div>
+
+        <div className="md:sticky md:top-[16px] flex justify-center self-start">
+          <SlidePreview spec={spec} brandColors={brandColors} headline={sampleHeadline} />
+        </div>
       </div>
 
       <div className="mt-[16px] flex flex-wrap items-center justify-between gap-[12px] border-t border-black/10 pt-[14px] dark:border-white/10">

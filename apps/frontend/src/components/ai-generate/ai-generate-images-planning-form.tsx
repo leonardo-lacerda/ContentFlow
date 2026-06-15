@@ -86,6 +86,26 @@ type AiGenerateImagesPlanningFormProps = {
 
 const BRIEF_STEPS = ['Empresa & Ideia', 'Formato', 'Marca & Ajustes'];
 
+// Cores da marca: seletor visual (escolha olhando, sem saber código de cor).
+const defaultBrandColors = ['#111827', '#FFFFFF', '#2563EB', '#F59E0B'];
+const parseColorList = (value: string) =>
+  (value || '')
+    .split(/[,;\n]/)
+    .map((color) => color.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+const brandColorRoles = ['Fundo', 'Texto', 'Destaque', 'Apoio'];
+const colorPalettes = [
+  { name: 'Moderna', colors: ['#0F172A', '#F8FAFC', '#2563EB', '#22C55E'] },
+  { name: 'Premium', colors: ['#111111', '#F5EFE6', '#C8A45D', '#6B4E2E'] },
+  { name: 'Criativa', colors: ['#151515', '#FFF7ED', '#F97316', '#EC4899'] },
+  { name: 'Minimalista', colors: ['#0F172A', '#FFFFFF', '#CBD5E1', '#64748B'] },
+  { name: 'Sereno', colors: ['#0E3A36', '#F2F7F5', '#1D6B5F', '#A7C9C2'] },
+  { name: 'Quente', colors: ['#2B1A12', '#FBF3EA', '#B4530A', '#E2A36B'] },
+  { name: 'Tinta', colors: ['#0B1E3B', '#EAF0F7', '#1E3A5F', '#7FA0C4'] },
+  { name: 'Vibrante', colors: ['#1E1E1E', '#FFFFFF', '#FF3D54', '#FFD23F'] },
+];
+
 function ChoiceChip({
   active,
   onClick,
@@ -184,6 +204,17 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
     .map((color) => color.trim())
     .filter(Boolean)
     .slice(0, 5);
+
+  const setBrandColorsFromArray = (colors: string[]) =>
+    setBrandColors(colors.filter(Boolean).slice(0, 6).join(', '));
+  const updateBrandColor = (index: number, color: string) => {
+    const colors = [...parseColorList(brandColors)];
+    while (colors.length <= index) {
+      colors.push(defaultBrandColors[colors.length] || '#FFFFFF');
+    }
+    colors[index] = color;
+    setBrandColorsFromArray(colors);
+  };
 
   return (
     <form
@@ -476,10 +507,87 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
                   <span className="text-[13px] font-[600]">Nome da marca</span>
                   <input value={brandName} onChange={(event) => setBrandName(event.target.value)} className={inputClass} maxLength={80} />
                 </label>
-                <label className="flex flex-col gap-[6px]">
-                  <span className="text-[13px] font-[600]">Cores</span>
-                  <input value={brandColors} onChange={(event) => setBrandColors(event.target.value)} className={inputClass} maxLength={120} />
-                </label>
+                <div className="flex flex-col gap-[12px] md:col-span-2">
+                  <div>
+                    <span className="text-[13px] font-[600]">Cores da marca</span>
+                    <p className="mt-[2px] text-[12px] text-black/50 dark:text-white/50">
+                      Monte a paleta: clique em cada cor para trocar, ou escolha uma pronta.
+                    </p>
+                  </div>
+
+                  {/* Swatches grandes, com papel e hex */}
+                  <div className="flex flex-wrap gap-[14px]">
+                    {brandColorRoles.map((role, index) => {
+                      const colors = parseColorList(brandColors);
+                      const color = (colors[index] || defaultBrandColors[index]).toUpperCase();
+                      return (
+                        <label
+                          key={role}
+                          className="group flex cursor-pointer flex-col items-center gap-[5px]"
+                          title={`${role}: ${color}`}
+                        >
+                          <span
+                            className="relative block h-[48px] w-[48px] rounded-[12px] border border-black/10 shadow-sm transition group-hover:scale-105 dark:border-white/15"
+                            style={{ backgroundColor: color }}
+                          >
+                            <input
+                              type="color"
+                              value={color}
+                              onChange={(event) => updateBrandColor(index, event.target.value)}
+                              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                              aria-label={`Escolher cor de ${role}`}
+                            />
+                          </span>
+                          <span className="text-[10px] font-[800] uppercase tracking-[0.08em] text-black/55 dark:text-white/55">
+                            {role}
+                          </span>
+                          <span className="text-[10px] tabular-nums text-black/40 dark:text-white/40">
+                            {color}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {/* Paletas prontas como cartões */}
+                  <div>
+                    <span className="text-[12px] font-[700] text-black/60 dark:text-white/60">
+                      Paletas prontas
+                    </span>
+                    <div className="mt-[8px] grid grid-cols-2 gap-[8px] sm:grid-cols-4">
+                      {colorPalettes.map((preset) => {
+                        const active =
+                          parseColorList(brandColors).join(',').toLowerCase() ===
+                          preset.colors.join(',').toLowerCase();
+                        return (
+                          <button
+                            key={preset.name}
+                            type="button"
+                            onClick={() => setBrandColorsFromArray(preset.colors)}
+                            className={`flex flex-col gap-[6px] rounded-[12px] border p-[8px] text-left transition ${
+                              active
+                                ? 'border-stone-950 ring-1 ring-stone-950 dark:border-white dark:ring-white'
+                                : 'border-black/10 hover:border-stone-500/40 dark:border-white/15'
+                            }`}
+                          >
+                            <span className="flex h-[26px] overflow-hidden rounded-[7px] border border-black/10 dark:border-white/10">
+                              {preset.colors.map((color) => (
+                                <span
+                                  key={`${preset.name}-${color}`}
+                                  className="flex-1"
+                                  style={{ backgroundColor: color }}
+                                />
+                              ))}
+                            </span>
+                            <span className="text-[11px] font-[800] text-black/70 dark:text-white/75">
+                              {preset.name}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
                 <label className="flex flex-col gap-[6px]">
                   <span className="text-[13px] font-[600]">Fontes / estilo tipográfico</span>
                   <input value={brandFonts} onChange={(event) => setBrandFonts(event.target.value)} className={inputClass} maxLength={180} />

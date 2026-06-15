@@ -133,22 +133,6 @@ const makeDraftAssetId = () =>
 const makeBrandKitId = (prefix: string) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-const parseColorList = (value: string) =>
-  value
-    .split(/[,;\n]/)
-    .map((color) => color.trim())
-    .filter(Boolean)
-    .slice(0, 12);
-
-const defaultBrandColors = ['#111827', '#FFFFFF', '#2563EB', '#F59E0B'];
-
-const colorPresets = [
-  { name: 'Moderna', colors: ['#111827', '#F8FAFC', '#2563EB', '#22C55E'] },
-  { name: 'Premium', colors: ['#111111', '#F5EFE6', '#C8A45D', '#6B4E2E'] },
-  { name: 'Criativa', colors: ['#151515', '#FFF7ED', '#F97316', '#EC4899'] },
-  { name: 'Minimalista', colors: ['#0F172A', '#FFFFFF', '#CBD5E1', '#64748B'] },
-];
-
 const fontStylePresets = [
   'Editorial e sofisticada nos títulos, simples e legível no apoio',
   'Moderna, limpa e direta, com títulos fortes',
@@ -589,46 +573,6 @@ export const CompanyOnboardingComponent = () => {
         asset.id === id ? { ...asset, description } : asset
       ),
     }));
-  };
-
-  const setBrandColorsFromArray = (colors: string[]) => {
-    setProfile((current) => ({
-      ...current,
-      brandColors: colors.filter(Boolean).slice(0, 12).join(', '),
-    }));
-  };
-
-  const updateBrandColor = (index: number, color: string) => {
-    const colors = [...parseColorList(profile.brandColors)];
-    while (colors.length <= index) {
-      colors.push(defaultBrandColors[colors.length] || '#FFFFFF');
-    }
-    colors[index] = color;
-    setBrandColorsFromArray(colors);
-  };
-
-  const saveCurrentPalette = () => {
-    const colors = parseColorList(profile.brandColors).length
-      ? parseColorList(profile.brandColors)
-      : defaultBrandColors;
-    if (!colors.length) {
-      setError('Adicione cores da marca antes de salvar uma paleta.');
-      return;
-    }
-
-    setProfile((current) => ({
-      ...current,
-      brandPalettes: [
-        ...(current.brandPalettes || []),
-        {
-          id: makeBrandKitId('palette'),
-          name: `Paleta ${(current.brandPalettes || []).length + 1}`,
-          colors,
-          usage: 'Usar como paleta principal dos carrosséis.',
-        },
-      ].slice(0, 12),
-    }));
-    setSuccess('Paleta salva no Brand Kit.');
   };
 
   const saveCurrentFontPreset = () => {
@@ -1225,59 +1169,7 @@ export const CompanyOnboardingComponent = () => {
                 </Button>
               </div>
 
-              {/* Cores */}
-              <div className="flex flex-col gap-[12px] rounded-[16px] border border-black/10 bg-white/60 p-[18px] dark:border-white/10 dark:bg-black/20">
-                <div>
-                  <FieldLabel>Cores da marca</FieldLabel>
-                  <p className="mt-[2px] text-[12px] text-black/50 dark:text-white/50">Escolha olhando, sem precisar saber código de cor.</p>
-                </div>
-                <div className="grid grid-cols-4 gap-[10px] max-w-[420px]">
-                  {Array.from({ length: 4 }).map((_, index) => {
-                    const colors = parseColorList(profile.brandColors);
-                    const color = colors[index] || defaultBrandColors[index];
-                    return (
-                      <label
-                        key={`brand-color-${index}`}
-                        className="group flex cursor-pointer flex-col gap-[6px] rounded-[14px] border border-black/10 bg-black/5 p-[8px] transition hover:border-stone-500/50 dark:border-white/10 dark:bg-white/5"
-                      >
-                        <span className="h-[44px] rounded-[10px] border border-black/10 shadow-sm dark:border-white/10" style={{ backgroundColor: color }} />
-                        <span className="text-center text-[11px] font-[800] text-black/55 dark:text-white/55">Cor {index + 1}</span>
-                        <input
-                          type="color"
-                          value={color}
-                          onChange={(event) => updateBrandColor(index, event.target.value)}
-                          className="sr-only"
-                          aria-label={`Escolher cor ${index + 1} da marca`}
-                        />
-                      </label>
-                    );
-                  })}
-                </div>
-                <div className="flex flex-wrap gap-[8px]">
-                  {colorPresets.map((preset) => (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      onClick={() => setBrandColorsFromArray(preset.colors)}
-                      className="flex items-center gap-[6px] rounded-full border border-black/10 bg-white/70 px-[10px] py-[7px] text-[12px] font-[800] text-black/70 transition hover:border-stone-500/50 hover:text-stone-900 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:text-stone-100"
-                    >
-                      <span className="flex -space-x-[4px]">
-                        {preset.colors.slice(0, 3).map((color) => (
-                          <span key={`${preset.name}-${color}`} className="h-[13px] w-[13px] rounded-full border border-white/70" style={{ backgroundColor: color }} />
-                        ))}
-                      </span>
-                      {preset.name}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={saveCurrentPalette}
-                    className="rounded-full border border-stone-500/20 bg-stone-500/10 px-[12px] py-[7px] text-[12px] font-[800] text-stone-800 transition hover:bg-stone-500/15 dark:text-stone-200"
-                  >
-                    Salvar paleta
-                  </button>
-                </div>
-              </div>
+              {/* As cores da marca agora são escolhidas no Estúdio (/ai-generate-images). */}
 
               {/* Letras */}
               <div className="flex flex-col gap-[12px] rounded-[16px] border border-black/10 bg-white/60 p-[18px] dark:border-white/10 dark:bg-black/20">

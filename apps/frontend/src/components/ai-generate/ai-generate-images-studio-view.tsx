@@ -301,6 +301,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
               spec={directionSpec}
               setSpec={setDirectionSpec}
               platform={platform}
+              sampleHeadline={plan?.slides?.[0]?.headline || plan?.title}
               derivedFrom={directionDerivedFrom}
               suggestedAxes={directionSuggestedAxes}
               brandColors={brandColors}
