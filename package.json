@@ -16,6 +16,7 @@
     "start:basic:rebuild": "REBUILD=true bash ./scripts/start-basic.sh",
     "start:local": "node scripts/start-local.mjs",
     "start:local:prod": "node scripts/start-local.mjs --prod",
+    "generate:style-references": "node scripts/generate-style-references.mjs",
     "dev-backend": "pnpm run --filter ./apps/backend --filter ./apps/frontend --parallel dev",
     "pm2": "pnpm run pm2-run",
     "publish-sdk": "pnpm run --filter ./apps/sdk publish",

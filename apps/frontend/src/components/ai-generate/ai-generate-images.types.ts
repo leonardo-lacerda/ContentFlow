@@ -5,6 +5,16 @@ export type GeneratedImage = {
   mediaId?: string;
 };
 
+// Referência visual de estilo: o usuário vê só a imagem (dataUrl); o prompt
+// fica associado internamente e é reutilizado na geração final.
+export type StyleReference = {
+  id: string;
+  label?: string;
+  prompt: string;
+  dataUrl: string;
+  image?: GeneratedImage;
+};
+
 export type CostEstimate = {
   usd: number;
   brl: number;

@@ -252,60 +252,70 @@ export const editorialPresets: DirectionAxisOption[] = [
   {
     id: 'editorial-premium',
     label: 'Editorial premium',
+    hint: 'Cara de revista cara e sofisticada',
     prompt:
       'estética editorial premium de revista sofisticada, tipografia serifada forte combinada com sans limpa, muito espaço negativo, paleta sóbria e contraste elegante.',
   },
   {
     id: 'corporativo-moderno',
     label: 'Corporativo moderno',
+    hint: 'Sério e profissional, de empresa',
     prompt:
       'visual corporativo moderno e confiável, grid organizado, tipografia sans-serif limpa, paleta neutra com um acento de marca, aparência profissional.',
   },
   {
     id: 'tech-futurista',
     label: 'Tech futurista',
+    hint: 'Escuro e moderno, cara de app/tech',
     prompt:
       'estética tech futurista, fundos escuros, acentos luminosos sutis, tipografia geométrica, sensação de produto digital de ponta.',
   },
   {
     id: 'minimalista',
     label: 'Minimalista',
+    hint: 'Quase nada na tela, só o essencial',
     prompt:
       'minimalismo radical, quase nenhum elemento gráfico, foco total na tipografia e no espaço negativo.',
   },
   {
     id: 'luxo',
     label: 'Luxo',
+    hint: 'Sofisticado, escuro com toque dourado',
     prompt:
       'estética de luxo, paleta escura ou monocromática com acento metálico/dourado discreto, tipografia serifada refinada, sensação premium e exclusiva.',
   },
   {
     id: 'bold',
     label: 'Bold',
+    hint: 'Forte e chamativo, letras e cores grandes',
     prompt:
       'visual bold e impactante, tipografia display pesada, blocos de cor sólidos, alto contraste e energia.',
   },
   {
     id: 'clean',
     label: 'Clean',
+    hint: 'Claro, limpo e bem organizado',
     prompt:
       'visual clean e arejado, fundo claro, formas simples, tipografia sans neutra, organização impecável.',
   },
   {
     id: 'revista',
     label: 'Revista',
+    hint: 'Diagramado como página de revista',
     prompt:
       'diagramação de revista impressa, colunas, fios e marcadores editoriais, hierarquia tipográfica rica.',
   },
   {
     id: 'startup',
     label: 'Startup',
+    hint: 'Jovem, colorido e otimista',
     prompt:
       'estética de startup moderna, formas geométricas e cores vivas equilibradas, tom acessível e otimista.',
   },
   {
     id: 'institucional',
     label: 'Institucional',
+    hint: 'Sóbrio e sério, passa credibilidade',
     prompt:
       'visual institucional sóbrio, paleta restrita, tipografia formal, sensação de credibilidade e solidez.',
   },
@@ -316,18 +326,21 @@ export const hierarchyPresets: DirectionAxisOption[] = [
   {
     id: 'text-dominant',
     label: 'Texto dominante',
+    hint: 'O texto manda; pouca imagem',
     prompt:
       'o texto é o elemento dominante: headline grande ocupando a maior parte da arte, elementos visuais reduzidos a apoio.',
   },
   {
     id: 'balanced',
     label: 'Equilibrado',
+    hint: 'Texto e imagem com peso parecido',
     prompt:
       'equilíbrio entre texto e elementos visuais, com hierarquia clara entre headline, apoio e gráficos.',
   },
   {
     id: 'visual-dominant',
     label: 'Visual dominante',
+    hint: 'A imagem manda; pouco texto',
     prompt:
       'o elemento visual domina a composição; o texto aparece curto e direto, integrado à imagem.',
   },
@@ -338,18 +351,21 @@ export const densityPresets: DirectionAxisOption[] = [
   {
     id: 'minimal',
     label: 'Minimalista',
+    hint: 'Bem vazio, muito espaço sobrando',
     prompt:
       'pouquíssimos elementos, máximo espaço negativo, composição respirada.',
   },
   {
     id: 'medium',
     label: 'Média',
+    hint: 'Alguns elementos, sem poluir',
     prompt:
       'densidade média, alguns elementos de apoio organizados sem poluir.',
   },
   {
     id: 'rich',
     label: 'Rica',
+    hint: 'Cheio de elementos e detalhes',
     prompt:
       'composição rica em elementos visuais, camadas e detalhes, mantendo a legibilidade do texto.',
   },
@@ -360,34 +376,40 @@ export const compositionPresets: DirectionAxisOption[] = [
   {
     id: 'centered',
     label: 'Centralizada',
+    hint: 'Tudo no meio, simétrico',
     prompt: 'composição centralizada, elementos alinhados ao centro com simetria.',
   },
   {
     id: 'asymmetric',
     label: 'Assimétrica',
+    hint: 'Desalinhado de propósito, dinâmico',
     prompt:
       'composição assimétrica e dinâmica, com tensão visual e alinhamentos deslocados.',
   },
   {
     id: 'grid',
-    label: 'Grid',
+    label: 'Grid (grade)',
+    hint: 'Alinhado em colunas e linhas',
     prompt: 'composição em grid estruturado, blocos alinhados a uma grade visível.',
   },
   {
     id: 'magazine',
     label: 'Magazine',
+    hint: 'Manchete e colunas, como revista',
     prompt:
       'diagramação estilo magazine, com manchete, colunas e hierarquia de revista.',
   },
   {
     id: 'bento',
     label: 'Bento',
+    hint: 'Blocos de tamanhos diferentes encaixados',
     prompt:
       'composição em bento grid, blocos modulares de tamanhos variados encaixados.',
   },
   {
     id: 'modular',
     label: 'Modular',
+    hint: 'Seções separadas e repetidas',
     prompt:
       'composição modular com seções bem delimitadas e repetíveis entre os slides.',
   },
@@ -399,41 +421,48 @@ export const imageryPresets: DirectionAxisOption[] = [
   {
     id: 'none',
     label: 'Sem imagens',
+    hint: 'Só texto, cor e formas',
     prompt:
       'sem fotografias; arte construída apenas com tipografia, cor e formas.',
   },
   {
     id: 'icons',
     label: 'Ícones e formas',
+    hint: 'Ícones e formas geométricas simples',
     prompt:
       'use ícones e formas geométricas simples como elementos visuais de apoio.',
   },
   {
     id: 'illustration',
     label: 'Ilustrações',
+    hint: 'Desenhos / ilustrações',
     prompt:
       'use ilustrações (flat ou editoriais) como elemento visual principal.',
   },
   {
     id: 'people',
     label: 'Pessoas',
+    hint: 'Fotos de pessoas',
     prompt:
       'use imagens de pessoas reais e autênticas, integradas à composição.',
   },
   {
     id: 'product',
     label: 'Produto',
+    hint: 'Foco no seu produto',
     prompt: 'destaque o produto em primeiro plano, bem iluminado.',
   },
   {
     id: 'mockups',
     label: 'Mockups',
+    hint: 'Telas/celular mostrando o produto',
     prompt:
       'use mockups de telas/dispositivos para mostrar o produto em contexto.',
   },
   {
     id: 'ai-free',
     label: 'IA livre',
+    hint: 'A IA escolhe a imagem',
     prompt:
       'imagens geradas livremente pela IA conforme o conteúdo de cada slide.',
   },
@@ -444,18 +473,21 @@ export const brandIntensityPresets: DirectionAxisOption[] = [
   {
     id: 'brand-dominant',
     label: 'Marca dominante',
+    hint: 'Logo e cores da marca em destaque',
     prompt:
       'presença de marca forte: logo evidente, cores da marca dominando a paleta, assinatura clara.',
   },
   {
     id: 'balanced',
     label: 'Equilibrado',
+    hint: 'Marca presente, mas discreta',
     prompt:
       'presença de marca equilibrada: cores da marca respeitadas, logo discreto.',
   },
   {
     id: 'content-dominant',
     label: 'Conteúdo dominante',
+    hint: 'Marca quase invisível, foco no conteúdo',
     prompt:
       'marca sutil: assinatura mínima, foco quase total no conteúdo.',
   },

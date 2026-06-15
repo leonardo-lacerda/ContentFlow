@@ -27,6 +27,7 @@ import type {
   ReferenceImage,
   SavedAiProject,
   SlideImageResult,
+  StyleReference,
   VisualDirectionMode,
 } from './ai-generate-images.types';
 import {
@@ -172,6 +173,12 @@ export function useAiGenerateImagesStudio() {
   const [directionSpec, setDirectionSpecState] =
     useState<DirectionSpec>(defaultDirectionSpec);
   const [directionDirty, setDirectionDirty] = useState(false);
+  // Referências visuais: imagens geradas (o usuário escolhe o estilo pela
+  // imagem; o prompt associado fica interno e alimenta a geração final).
+  const [styleReferences, setStyleReferences] = useState<StyleReference[]>([]);
+  const [selectedStyleReferenceId, setSelectedStyleReferenceId] = useState('');
+  const [loadingStyleReferences, setLoadingStyleReferences] = useState(false);
+  const [styleReferencesError, setStyleReferencesError] = useState('');
   const setClampedSlideCount = useCallback((value: number) => {
     const nextValue = Number(value);
     if (!Number.isFinite(nextValue)) {
@@ -408,6 +415,15 @@ export function useAiGenerateImagesStudio() {
       .filter(Boolean)
       .join('\n');
   }, [companyProfile]);
+  // Estilo visual escolhido pela imagem de referência (o prompt fica interno).
+  const selectedStyleReference = useMemo(
+    () =>
+      styleReferences.find(
+        (reference) => reference.id === selectedStyleReferenceId
+      ) || null,
+    [styleReferences, selectedStyleReferenceId]
+  );
+  const selectedStylePrompt = selectedStyleReference?.prompt || '';
   // Modo derivado (compat com o backend): inspirações comandam o visual quando
   // há referências selecionadas e o toggle está ligado; senão, equilíbrio.
   const visualDirectionMode: VisualDirectionMode =
@@ -485,6 +501,8 @@ export function useAiGenerateImagesStudio() {
         !inspirationMode &&
           visualStyle.trim() &&
           `Direcao visual escolhida para este carrossel: ${visualStyle.trim()}`,
+        selectedStylePrompt &&
+          `Direcao visual principal (estilo escolhido pelo usuario): ${selectedStylePrompt}. Siga fielmente este estilo (estetica, enquadramento, composicao, iluminacao, textura e atmosfera) em todos os slides; em caso de conflito com outras instrucoes de estilo, priorize esta direcao.`,
         referencesLine,
         'Regra central: cada slide deve parecer uma peça pronta de carrossel premium, com texto legivel dentro da imagem, alto contraste, margens seguras e unidade visual entre os slides.',
       ],
@@ -502,6 +520,7 @@ export function useAiGenerateImagesStudio() {
     logoUsage,
     selectedLogoReference,
     selectedReferences,
+    selectedStylePrompt,
     visualDirectionMode,
     visualStyle,
   ]);
@@ -509,6 +528,65 @@ export function useAiGenerateImagesStudio() {
   const refreshCreativeBrief = useCallback(() => {
     setFinalCreativeBrief(computedCreativeBrief);
   }, [computedCreativeBrief]);
+
+  // Carrega as referências visuais ESTÁTICAS (geradas uma vez por um script e
+  // versionadas em /public/style-references). Sem geração em runtime: o usuário
+  // só vê as imagens; cada uma traz o prompt associado, que alimenta a geração.
+  const loadStyleReferences = useCallback(async () => {
+    setLoadingStyleReferences(true);
+    setStyleReferencesError('');
+
+    try {
+      const response = await window.fetch('/style-references/index.json', {
+        cache: 'no-store',
+      });
+      const data = (await response.json().catch(() => null)) as {
+        references?: Array<{
+          id?: string;
+          file?: string;
+          label?: string;
+          prompt?: string;
+          dataUrl?: string;
+        }>;
+      } | null;
+
+      const rawReferences = Array.isArray(data?.references)
+        ? data!.references
+        : [];
+      const mapped: StyleReference[] = rawReferences
+        .filter((reference) => reference?.prompt && (reference.file || reference.dataUrl))
+        .map((reference) => ({
+          id: reference.id || reference.file || '',
+          label: reference.label,
+          prompt: reference.prompt as string,
+          dataUrl: reference.dataUrl || `/style-references/${reference.file}`,
+        }))
+        .filter((reference) => reference.id && reference.dataUrl);
+
+      if (!mapped.length) {
+        setStyleReferences([]);
+        setStyleReferencesError(
+          'Nenhuma referência visual disponível. Rode o script de geração (scripts/generate-style-references.mjs).'
+        );
+        return;
+      }
+
+      setStyleReferences(mapped);
+      setSelectedStyleReferenceId((current) =>
+        mapped.some((reference) => reference.id === current) ? current : ''
+      );
+    } catch {
+      setStyleReferencesError(
+        'Não foi possível carregar as referências visuais.'
+      );
+    } finally {
+      setLoadingStyleReferences(false);
+    }
+  }, []);
+
+  const selectStyleReference = useCallback((id: string) => {
+    setSelectedStyleReferenceId((current) => (current === id ? '' : id));
+  }, []);
 
   // Monta o prompt de cada slide a partir da Direção Criativa (6 eixos). O
   // compilador resolve as escolhas em fragmentos determinísticos e injeta no
@@ -2402,5 +2480,13 @@ export function useAiGenerateImagesStudio() {
     directionSuggestedAxes,
     directionDerivedFrom,
     visualStyle,
+    // Referências visuais de estilo
+    styleReferences,
+    selectedStyleReferenceId,
+    selectedStylePrompt,
+    loadingStyleReferences,
+    styleReferencesError,
+    loadStyleReferences,
+    selectStyleReference,
   };
 }

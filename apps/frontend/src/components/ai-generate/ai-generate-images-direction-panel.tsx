@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import { Package, PenTool, Shapes, Smartphone, Sparkles, Type, Users } from 'lucide-react';
 import type { DirectionAxisOption } from './ai-generate-images.presets';
 import {
   brandIntensityPresets,
@@ -13,6 +15,233 @@ import type {
   DirectionSpec,
 } from './direction-compiler';
 import { summarizeDirection } from './direction-compiler';
+
+// ---------------------------------------------------------------------------
+// Mini-prévias animadas: cada opção mostra um "slide" em miniatura ilustrando
+// o conceito (composição, densidade, hierarquia, etc.), para a pessoa entender
+// visualmente sem precisar conhecer jargão.
+// ---------------------------------------------------------------------------
+
+// Barra (linha de texto) e bloco (imagem) usam bg-current → herdam a cor do
+// cartão (branco quando ativo, escuro quando inativo).
+const Bar = ({ className = '' }: { className?: string }) => (
+  <span className={`block rounded-full bg-current ${className}`} />
+);
+const Block = ({ className = '' }: { className?: string }) => (
+  <span className={`block rounded-[3px] bg-current ${className}`} />
+);
+
+function GlyphFrame({ children }: { children: ReactNode }) {
+  return (
+    <span className="dir-glyph mb-[8px] flex aspect-[5/3] w-full items-stretch overflow-hidden rounded-[8px] border border-current/15 bg-current/[0.06] p-[7px]">
+      {children}
+    </span>
+  );
+}
+
+const imageryIcons: Record<string, typeof Type> = {
+  none: Type,
+  icons: Shapes,
+  illustration: PenTool,
+  people: Users,
+  product: Package,
+  mockups: Smartphone,
+  'ai-free': Sparkles,
+};
+
+// Tratamentos de "estilo editorial": cor de fundo + barras que evocam o clima.
+const editorialGlyphs: Record<string, { bg: string; fg: string; accent?: string }> = {
+  'editorial-premium': { bg: '#f7f2ea', fg: '#1c1917' },
+  'corporativo-moderno': { bg: '#ffffff', fg: '#1c2b46', accent: '#2563eb' },
+  'tech-futurista': { bg: '#0e1116', fg: '#9fb4c9', accent: '#22d3ee' },
+  minimalista: { bg: '#ffffff', fg: '#1c1917' },
+  luxo: { bg: '#14110c', fg: '#e7d9b8', accent: '#c9a227' },
+  bold: { bg: '#ffffff', fg: '#111111' },
+  clean: { bg: '#fafafa', fg: '#3a3a3a' },
+  revista: { bg: '#ffffff', fg: '#1c1917' },
+  startup: { bg: '#ffffff', fg: '#1c1917', accent: '#7c3aed' },
+  institucional: { bg: '#eef0f2', fg: '#33415c' },
+};
+
+function AxisGlyph({
+  axisKey,
+  optionId,
+  active,
+}: {
+  axisKey: DirectionAxisKey;
+  optionId: string;
+  active: boolean;
+}) {
+  const glyphClass = `dir-glyph-inner text-current transition-transform duration-300 group-hover:scale-[1.06] ${
+    active ? 'dir-glyph-active' : ''
+  }`;
+
+  if (axisKey === 'editorial') {
+    const treatment = editorialGlyphs[optionId] || editorialGlyphs.minimalista;
+    return (
+      <span
+        className="dir-glyph mb-[8px] flex aspect-[5/3] w-full flex-col justify-center gap-[5px] overflow-hidden rounded-[8px] border border-black/10 p-[10px] transition-transform duration-300 group-hover:scale-[1.06]"
+        style={{ background: treatment.bg, color: treatment.fg }}
+      >
+        {optionId === 'bold' ? (
+          <span className="block h-[10px] w-[70%] rounded-[2px] bg-current" />
+        ) : optionId === 'revista' ? (
+          <span className="flex gap-[4px]">
+            <span className="block h-[18px] w-1/2 rounded-[2px] bg-current opacity-80" />
+            <span className="flex w-1/2 flex-col gap-[3px]">
+              <span className="block h-[3px] w-full rounded-full bg-current opacity-50" />
+              <span className="block h-[3px] w-full rounded-full bg-current opacity-50" />
+              <span className="block h-[3px] w-2/3 rounded-full bg-current opacity-50" />
+            </span>
+          </span>
+        ) : (
+          <>
+            <span className="block h-[5px] w-[80%] rounded-full bg-current" />
+            <span className="block h-[3px] w-[55%] rounded-full bg-current opacity-50" />
+          </>
+        )}
+        {treatment.accent && (
+          <span
+            className="block h-[4px] w-[28%] rounded-full"
+            style={{ background: treatment.accent }}
+          />
+        )}
+      </span>
+    );
+  }
+
+  if (axisKey === 'imagery') {
+    const Icon = imageryIcons[optionId] || Sparkles;
+    return (
+      <GlyphFrame>
+        <span className={`flex w-full items-center justify-center ${glyphClass}`}>
+          <Icon className="h-[22px] w-[22px]" strokeWidth={1.6} />
+        </span>
+      </GlyphFrame>
+    );
+  }
+
+  if (axisKey === 'density') {
+    const dots =
+      optionId === 'minimal' ? 1 : optionId === 'medium' ? 3 : 9;
+    return (
+      <GlyphFrame>
+        <span
+          className={`grid w-full place-content-center gap-[4px] ${glyphClass}`}
+          style={{ gridTemplateColumns: `repeat(${dots > 3 ? 3 : dots}, minmax(0,auto))` }}
+        >
+          {Array.from({ length: dots }).map((_, i) => (
+            <span key={i} className="h-[6px] w-[6px] rounded-full bg-current opacity-80" />
+          ))}
+        </span>
+      </GlyphFrame>
+    );
+  }
+
+  if (axisKey === 'hierarchy') {
+    return (
+      <GlyphFrame>
+        <span className={`flex w-full items-center gap-[6px] ${glyphClass}`}>
+          {optionId === 'text-dominant' && (
+            <>
+              <span className="flex flex-1 flex-col gap-[4px]">
+                <Bar className="h-[7px] w-full" />
+                <Bar className="h-[4px] w-2/3 opacity-50" />
+              </span>
+              <Block className="h-[14px] w-[14px] opacity-40" />
+            </>
+          )}
+          {optionId === 'balanced' && (
+            <>
+              <span className="flex flex-1 flex-col gap-[4px]">
+                <Bar className="h-[5px] w-full" />
+                <Bar className="h-[4px] w-3/4 opacity-50" />
+              </span>
+              <Block className="h-[26px] w-[26px] opacity-40" />
+            </>
+          )}
+          {optionId === 'visual-dominant' && (
+            <>
+              <Block className="h-[34px] flex-1 opacity-40" />
+              <Bar className="h-[4px] w-[10px] opacity-60" />
+            </>
+          )}
+        </span>
+      </GlyphFrame>
+    );
+  }
+
+  if (axisKey === 'brandIntensity') {
+    const size =
+      optionId === 'brand-dominant' ? 26 : optionId === 'balanced' ? 16 : 8;
+    return (
+      <GlyphFrame>
+        <span className={`flex w-full items-center gap-[6px] ${glyphClass}`}>
+          <span
+            className="rounded-[4px] bg-current"
+            style={{ width: size, height: size }}
+          />
+          <span className="flex flex-1 flex-col gap-[4px]">
+            <Bar className="h-[4px] w-full opacity-50" />
+            <Bar className="h-[4px] w-3/4 opacity-50" />
+            <Bar className="h-[4px] w-1/2 opacity-50" />
+          </span>
+        </span>
+      </GlyphFrame>
+    );
+  }
+
+  // Composição
+  return (
+    <GlyphFrame>
+      <span className={`w-full ${glyphClass}`}>
+        {optionId === 'centered' && (
+          <span className="flex h-full flex-col items-center justify-center gap-[4px]">
+            <Bar className="h-[5px] w-[60%]" />
+            <Bar className="h-[3px] w-[40%] opacity-50" />
+          </span>
+        )}
+        {optionId === 'asymmetric' && (
+          <span className="flex h-full flex-col justify-center gap-[4px]">
+            <Bar className="h-[5px] w-[70%]" />
+            <Bar className="h-[3px] w-[45%] opacity-50" />
+            <span className="ml-auto block h-[10px] w-[10px] rounded-[3px] bg-current opacity-40" />
+          </span>
+        )}
+        {optionId === 'grid' && (
+          <span className="grid h-full grid-cols-2 grid-rows-2 gap-[4px]">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <span key={i} className="rounded-[3px] bg-current opacity-50" />
+            ))}
+          </span>
+        )}
+        {optionId === 'magazine' && (
+          <span className="flex h-full flex-col gap-[4px]">
+            <Bar className="h-[5px] w-full" />
+            <span className="flex flex-1 gap-[4px]">
+              <Block className="flex-1 opacity-40" />
+              <Block className="flex-1 opacity-40" />
+            </span>
+          </span>
+        )}
+        {optionId === 'bento' && (
+          <span className="grid h-full grid-cols-3 grid-rows-2 gap-[4px]">
+            <span className="col-span-2 row-span-2 rounded-[3px] bg-current opacity-50" />
+            <span className="rounded-[3px] bg-current opacity-40" />
+            <span className="rounded-[3px] bg-current opacity-40" />
+          </span>
+        )}
+        {optionId === 'modular' && (
+          <span className="flex h-full flex-col justify-center gap-[5px]">
+            <Block className="h-[7px] w-full opacity-50" />
+            <Block className="h-[7px] w-full opacity-40" />
+            <Block className="h-[7px] w-full opacity-30" />
+          </span>
+        )}
+      </span>
+    </GlyphFrame>
+  );
+}
 
 type DirectionPanelProps = {
   spec: DirectionSpec;
@@ -35,13 +264,17 @@ type DirectionPanelProps = {
 };
 
 function AxisRow({
+  axisKey,
   title,
+  description,
   suggested,
   options,
   value,
   onChange,
 }: {
+  axisKey: DirectionAxisKey;
   title: string;
+  description?: string;
   suggested?: boolean;
   options: DirectionAxisOption[];
   value: string;
@@ -50,7 +283,7 @@ function AxisRow({
   return (
     <div>
       <div className="flex items-baseline gap-[8px]">
-        <span className="text-[12px] font-[800] text-black dark:text-white">
+        <span className="text-[13px] font-[800] text-black dark:text-white">
           {title}
         </span>
         {suggested && (
@@ -59,22 +292,41 @@ function AxisRow({
           </span>
         )}
       </div>
-      <div className="mt-[6px] flex flex-wrap gap-[6px]">
-        {options.map((option) => {
+      {description && (
+        <p className="mt-[2px] text-[12px] text-black/50 dark:text-white/50">
+          {description}
+        </p>
+      )}
+      <div className="mt-[8px] grid grid-cols-2 gap-[8px] sm:grid-cols-3 md:grid-cols-4">
+        {options.map((option, index) => {
           const active = value === option.id;
           return (
             <button
               key={option.id}
               type="button"
               onClick={() => onChange(option.id)}
-              title={option.prompt}
-              className={`rounded-[999px] border px-[11px] py-[6px] text-[12px] font-[700] transition ${
+              style={{ animationDelay: `${index * 35}ms` }}
+              className={`dir-card group flex flex-col items-start gap-[2px] rounded-[12px] border px-[10px] py-[10px] text-left transition ${
                 active
                   ? 'border-stone-950 bg-stone-950 text-white dark:border-white dark:bg-white dark:text-stone-950'
                   : 'border-black/10 bg-white text-black/70 hover:border-stone-500/40 hover:bg-stone-50 dark:border-white/15 dark:bg-white/5 dark:text-white/75 dark:hover:bg-white/10'
               }`}
             >
-              {option.label}
+              <AxisGlyph axisKey={axisKey} optionId={option.id} active={active} />
+              <span className="text-[13px] font-[700] leading-tight">
+                {option.label}
+              </span>
+              {option.hint && (
+                <span
+                  className={`text-[11px] leading-snug ${
+                    active
+                      ? 'text-white/70 dark:text-stone-950/70'
+                      : 'text-black/45 dark:text-white/45'
+                  }`}
+                >
+                  {option.hint}
+                </span>
+              )}
             </button>
           );
         })}
@@ -113,6 +365,17 @@ export function DirectionPanel(props: DirectionPanelProps) {
 
   return (
     <div className="rounded-[18px] border border-black/10 bg-white p-[28px] shadow-sm dark:border-white/10 dark:bg-[#101010]">
+      <style>{`
+        @keyframes dirIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        @keyframes dirPulse { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.04); opacity: 1; } }
+        .dir-card { animation: dirIn .42s ease both; }
+        .dir-glyph-active { animation: dirPulse 2.6s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .dir-card { animation: none; }
+          .dir-glyph-active { animation: none; }
+          .dir-glyph-inner { transition: none !important; }
+        }
+      `}</style>
       <div className="mb-[14px] flex items-start gap-[12px]">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-stone-500/20 bg-stone-500/10 text-[15px] font-[900] text-stone-800 dark:text-stone-100">
           2
@@ -146,42 +409,54 @@ export function DirectionPanel(props: DirectionPanelProps) {
 
       <div className="flex flex-col gap-[16px] rounded-[14px] border border-black/10 bg-stone-50 p-[16px] dark:border-white/10 dark:bg-black/20">
         <AxisRow
+          axisKey="editorial"
           title="Estilo editorial"
+          description="O clima geral da arte — a 'cara' que o carrossel vai ter."
           suggested={isSuggested('editorial')}
           options={editorialPresets}
           value={spec.editorial}
           onChange={(id) => update('editorial', id)}
         />
         <AxisRow
+          axisKey="hierarchy"
           title="Hierarquia visual"
+          description="O que se destaca mais em cada slide: o texto ou a imagem."
           suggested={isSuggested('hierarchy')}
           options={hierarchyPresets}
           value={spec.hierarchy}
           onChange={(id) => update('hierarchy', id)}
         />
         <AxisRow
+          axisKey="density"
           title="Densidade visual"
+          description="Quantidade de elementos na arte — do mais vazio ao mais cheio."
           suggested={isSuggested('density')}
           options={densityPresets}
           value={spec.density}
           onChange={(id) => update('density', id)}
         />
         <AxisRow
+          axisKey="composition"
           title="Composição"
+          description="Como os elementos ficam organizados no slide."
           suggested={isSuggested('composition')}
           options={compositionPresets}
           value={spec.composition}
           onChange={(id) => update('composition', id)}
         />
         <AxisRow
+          axisKey="imagery"
           title="Uso de imagens"
+          description="Que tipo de imagem aparece junto do texto."
           suggested={isSuggested('imagery')}
           options={imageryPresets}
           value={spec.imagery}
           onChange={(id) => update('imagery', id)}
         />
         <AxisRow
+          axisKey="brandIntensity"
           title="Intensidade da marca"
+          description="O quanto a sua marca (logo e cores) aparece na arte."
           suggested={isSuggested('brandIntensity')}
           options={brandIntensityPresets}
           value={spec.brandIntensity}

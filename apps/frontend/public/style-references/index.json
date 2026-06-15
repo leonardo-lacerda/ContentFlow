@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-06-14T23:38:14.381Z",
+  "model": {
+    "text": "gpt-4.1-mini",
+    "image": "gpt-image-2"
+  },
+  "references": [
+    {
+      "id": "style-01",
+      "file": "style-01.png",
+      "label": "Editorial Minimalista",
+      "prompt": "Swiss International Typographic Style: grid rigoroso, tipografia grotesque sans-serif (estilo Helvetica) em peso forte, layout assimétrico com muito espaço em branco, paleta off-white com preto e um único acento em vermelho, alto contraste, sofisticação de revista de design."
+    },
+    {
+      "id": "style-02",
+      "file": "style-02.png",
+      "label": "Memphis Geométrico Colorido",
+      "prompt": "Memphis Group dos anos 80: formas geométricas irregulares, squiggles e confetes, padrões de pontos, cores primárias saturadas (amarelo, vermelho, azul, rosa) sobre fundo claro, tipografia bold arredondada, energia pop-art divertida."
+    }
+  ]
+}
