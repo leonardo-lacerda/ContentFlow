@@ -152,6 +152,26 @@ export const aiGenerateImagesApi = {
     payload: Record<string, unknown>
   ) => postJson<CarouselPlan>(fetcher, '/ai-generate/carousel-plan', payload),
 
+  generateCaption: async (
+    fetcher: AiGenerateFetcher,
+    payload: {
+      title?: string;
+      slides?: Array<{ headline?: string; body?: string }>;
+      platform?: string;
+      tone?: string;
+      language?: string;
+      companyContext?: string;
+      forbiddenTerms?: string;
+      defaultCta?: string;
+      textModel?: string;
+    }
+  ) =>
+    postJson<{ caption?: string; hashtags?: string[]; platform?: string }>(
+      fetcher,
+      '/ai-generate/carousel-caption',
+      payload
+    ),
+
   reviewCarousel: async (
     fetcher: AiGenerateFetcher,
     payload: Record<string, unknown>

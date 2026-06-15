@@ -11,9 +11,22 @@ import { Type } from 'class-transformer';
 
 export class AiGenerateCarouselDto {
   @IsString()
+  @IsOptional()
   @MinLength(3)
   @MaxLength(240)
-  topic: string;
+  topic?: string;
+
+  // Conteúdo de origem para "repurpose": link de um artigo/página e/ou texto
+  // colado. Quando presente, o carrossel é gerado a partir desse material.
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  sourceUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(20000)
+  sourceText?: string;
 
   @IsString()
   @IsOptional()

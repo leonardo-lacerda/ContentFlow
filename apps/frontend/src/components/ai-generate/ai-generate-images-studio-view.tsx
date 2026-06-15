@@ -4,11 +4,12 @@ import {
   CarouselLightbox,
   EmptyStudioState,
   ErrorBanner,
-  SavedProjectsPanel,
   SessionCostSummary,
 } from './ai-generate-images.sections';
 import { AiGenerateImagesPlanningForm } from './ai-generate-images-planning-form';
 import { DirectionPanel } from './ai-generate-images-direction-panel';
+import { CaptionPanel } from './ai-generate-images-caption-panel';
+import { CompanyGalleryPanel } from './ai-generate-images-gallery-panel';
 import { CarouselPreviewPanel } from './ai-generate-images-preview';
 import { SlideEditorPanel } from './ai-generate-images-slide-editor';
 import { ImageGenerationPanel } from './ai-generate-images-generation-panel';
@@ -38,6 +39,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     canSaveCarousel,
     cancelCarouselGeneration,
     companyIdeas,
+    companyGallery,
     companyProfile,
     companyProfiles,
     companyReferencesCount,
@@ -114,6 +116,15 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     savedProjects,
     savingCarousel,
     savingReferenceLibrary,
+    saveBrandDefaults,
+    savingBrandDefaults,
+    generateCaption,
+    generatingCaption,
+    captionPlatform,
+    postCaption,
+    setPostCaption,
+    postHashtags,
+    captionError,
     selectedCompanyId,
     selectedLogoReference,
     selectedLogoReferenceId,
@@ -150,6 +161,10 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     setSelectedCompanyId,
     setSelectedLogoReferenceId,
     setShowAdvanced,
+    sourceUrl,
+    setSourceUrl,
+    sourceText,
+    setSourceText,
     setSlideCount,
     setTextModel,
     setTone,
@@ -208,22 +223,22 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
             onClick={() => setShowSavedProjects((value) => !value)}
             className="flex w-fit items-center gap-[8px] rounded-[10px] border border-black/10 bg-white px-[14px] py-[9px] text-[13px] font-[800] text-black/70 transition hover:bg-stone-50 dark:border-white/10 dark:bg-white/5 dark:text-white/75 dark:hover:bg-white/10"
           >
-            {showSavedProjects ? 'Ocultar projetos salvos' : 'Abrir projeto salvo'}
-            {savedProjects.length > 0 && (
+            {showSavedProjects ? 'Ocultar galeria' : 'Galeria da empresa'}
+            {companyGallery.length > 0 && (
               <span className="rounded-full bg-stone-900/10 px-[8px] py-[2px] text-[11px] font-[900] text-black/70 dark:bg-white/10 dark:text-white/80">
-                {savedProjects.length}
+                {companyGallery.length}
               </span>
             )}
           </button>
 
           {showSavedProjects && (
-            <SavedProjectsPanel
+            <CompanyGalleryPanel
+              items={companyGallery}
+              loading={loadingSavedProjects}
               importProjectInputRef={importProjectInputRef}
-              loadingSavedProjects={loadingSavedProjects}
-              savedProjects={savedProjects}
               onImportProjectJson={importProjectJson}
-              onLoadProjectIntoStudio={loadProjectIntoStudio}
-              onLoadSavedProjects={loadSavedProjects}
+              onOpen={loadProjectIntoStudio}
+              onRefresh={loadSavedProjects}
             />
           )}
         </div>
@@ -275,6 +290,10 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
           setSelectedCompanyId={setSelectedCompanyId}
           setSelectedLogoReferenceId={setSelectedLogoReferenceId}
           setShowAdvanced={setShowAdvanced}
+          sourceUrl={sourceUrl}
+          setSourceUrl={setSourceUrl}
+          sourceText={sourceText}
+          setSourceText={setSourceText}
           setSlideCount={setSlideCount}
           setTextModel={setTextModel}
           setTone={setTone}
@@ -283,6 +302,8 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
           showAdvanced={showAdvanced}
           slideCount={slideCount}
           syncBrandReferences={syncBrandReferences}
+          saveBrandDefaults={saveBrandDefaults}
+          savingBrandDefaults={savingBrandDefaults}
           textModel={textModel}
           tone={tone}
           topic={topic}
@@ -302,6 +323,15 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
               setSpec={setDirectionSpec}
               platform={platform}
               sampleHeadline={plan?.slides?.[0]?.headline || plan?.title}
+              sampleHeadlines={
+                plan?.slides?.length
+                  ? [
+                      plan.slides[0]?.headline,
+                      plan.slides[Math.floor(plan.slides.length / 2)]?.headline,
+                      plan.slides[plan.slides.length - 1]?.headline,
+                    ].filter(Boolean)
+                  : undefined
+              }
               derivedFrom={directionDerivedFrom}
               suggestedAxes={directionSuggestedAxes}
               brandColors={brandColors}
@@ -341,6 +371,17 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
               slideLoading={slideLoading}
               trimmedImageModel={trimmedImageModel}
               updateSlide={updateSlide}
+            />
+
+            <CaptionPanel
+              platform={platform}
+              captionPlatform={captionPlatform}
+              caption={postCaption}
+              hashtags={postHashtags}
+              loading={generatingCaption}
+              error={captionError}
+              onGenerate={generateCaption}
+              onCaptionChange={setPostCaption}
             />
 
             <ImageGenerationPanel

@@ -282,26 +282,36 @@ function previewColors(brandColors?: string) {
   };
 }
 
+const SEQUENCE_ROLES = ['Capa', 'Conteúdo', 'Fechamento'];
+
 function SlidePreview({
   spec,
   brandColors,
   headline,
+  headlines,
 }: {
   spec: DirectionSpec;
   brandColors?: string;
   headline?: string;
+  headlines?: string[];
 }) {
   const { bg, text, accent } = previewColors(brandColors);
   const serif = ['editorial-premium', 'luxo', 'revista', 'institucional'].includes(
     spec.editorial
   );
+  const fontFamily = serif
+    ? "Georgia, 'Times New Roman', serif"
+    : "Inter, system-ui, sans-serif";
   const big = spec.hierarchy === 'text-dominant';
   const small = spec.hierarchy === 'visual-dominant';
   const dense = spec.density === 'rich';
   const centered = spec.composition === 'centered';
   const showImage = spec.imagery !== 'none';
   const Icon = imageryIcons[spec.imagery] || Sparkles;
-  const title = (headline || '').trim() || 'Sua headline aparece aqui';
+  const sequence = (headlines && headlines.length ? headlines : [headline || ''])
+    .map((h) => (h || '').trim())
+    .slice(0, 3);
+  const title = sequence[0] || (headline || '').trim() || 'Sua headline aparece aqui';
 
   return (
     <div className="w-full max-w-[280px]">
@@ -363,6 +373,47 @@ function SlidePreview({
           <span style={{ opacity: 0.5, fontSize: 10 }}>1/6</span>
         </div>
       </div>
+
+      {/* Sequência do carrossel: capa → conteúdo → fechamento */}
+      {sequence.length > 1 && (
+        <div className="mt-[10px] grid grid-cols-3 gap-[6px]">
+          {sequence.map((item, index) => (
+            <div key={index} className="flex flex-col items-center gap-[3px]">
+              <div
+                className="flex aspect-square w-full flex-col justify-between overflow-hidden rounded-[8px] border border-black/10 p-[6px] dark:border-white/10"
+                style={{ background: bg, color: text }}
+              >
+                <span
+                  className="block rounded-full"
+                  style={{ height: 2, width: '45%', background: text, opacity: 0.4 }}
+                />
+                <span
+                  style={{
+                    fontFamily,
+                    fontWeight: 700,
+                    lineHeight: 1.1,
+                    fontSize: 7,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {item || 'Slide'}
+                </span>
+                <span
+                  className="block rounded-full"
+                  style={{ height: 3, width: '32%', background: accent }}
+                />
+              </div>
+              <span className="text-[9px] font-[700] text-black/40 dark:text-white/40">
+                {SEQUENCE_ROLES[index]}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <p className="mt-[8px] text-center text-[11px] text-black/45 dark:text-white/45">
         Prévia aproximada — muda conforme suas escolhas
       </p>
@@ -375,6 +426,7 @@ type DirectionPanelProps = {
   setSpec: (next: DirectionSpec) => void;
   platform: string;
   sampleHeadline?: string;
+  sampleHeadlines?: string[];
   // Chips de "derivado de": rótulos da estratégia (template, objetivo, etc.).
   derivedFrom: string[];
   // Eixos que ainda estão no valor sugerido pela estratégia (mostram a tag).
@@ -469,6 +521,7 @@ export function DirectionPanel(props: DirectionPanelProps) {
     setSpec,
     platform,
     sampleHeadline,
+    sampleHeadlines,
     derivedFrom,
     suggestedAxes = [],
     brandColors,
@@ -595,7 +648,12 @@ export function DirectionPanel(props: DirectionPanelProps) {
       </div>
 
         <div className="md:sticky md:top-[16px] flex justify-center self-start">
-          <SlidePreview spec={spec} brandColors={brandColors} headline={sampleHeadline} />
+          <SlidePreview
+            spec={spec}
+            brandColors={brandColors}
+            headline={sampleHeadline}
+            headlines={sampleHeadlines}
+          />
         </div>
       </div>
 

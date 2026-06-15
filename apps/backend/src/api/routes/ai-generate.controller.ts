@@ -4,6 +4,7 @@ import { Organization } from '@prisma/client';
 import { AiGenerateService } from '@gitroom/nestjs-libraries/ai-generate/ai-generate.service';
 import { AiGenerateCarouselDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-carousel.dto';
 import { AiGenerateCarouselIdeasDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-carousel-ideas.dto';
+import { AiGenerateCaptionDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-caption.dto';
 import { AiGenerateImageDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-image.dto';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 
@@ -34,6 +35,14 @@ export class AiGenerateController {
     @Body() body: AiGenerateCarouselIdeasDto
   ) {
     return this._aiGenerateService.generateCarouselIdeas(org.id, body);
+  }
+
+  @Post('/carousel-caption')
+  generateCarouselCaption(
+    @GetOrgFromRequest() org: Organization,
+    @Body() body: AiGenerateCaptionDto
+  ) {
+    return this._aiGenerateService.generateCarouselCaption(org.id, body);
   }
 
   @Post('/carousel-review')

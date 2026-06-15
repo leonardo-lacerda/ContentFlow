@@ -108,6 +108,7 @@ export function useAiGenerateImagesStudio() {
     useState(REFERENCE_PAGE_SIZE);
   const [referenceCategoryFilter, setReferenceCategoryFilter] = useState('todas');
   const [savingReferenceLibrary, setSavingReferenceLibrary] = useState('');
+  const [savingBrandDefaults, setSavingBrandDefaults] = useState(false);
   const [globalReferencesLoaded, setGlobalReferencesLoaded] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [activePreview, setActivePreview] = useState(0);
@@ -152,6 +153,15 @@ export function useAiGenerateImagesStudio() {
   const [loadingIdeas, setLoadingIdeas] = useState(false);
   const [ideasError, setIdeasError] = useState('');
   const [finalCreativeBrief, setFinalCreativeBrief] = useState('');
+  // Repurpose: gerar carrossel a partir de um link/artigo ou texto colado.
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [sourceText, setSourceText] = useState('');
+  // Legenda do post (texto fora da imagem) + hashtags por rede.
+  const [captionPlatform, setCaptionPlatform] = useState('');
+  const [postCaption, setPostCaption] = useState('');
+  const [postHashtags, setPostHashtags] = useState<string[]>([]);
+  const [generatingCaption, setGeneratingCaption] = useState(false);
+  const [captionError, setCaptionError] = useState('');
   // Blocos visuais prontos (a pessoa escolhe em vez de escrever prompt).
   const [structurePreset, setStructurePreset] = useState(
     defaultVisualPresets.structurePreset
@@ -242,21 +252,23 @@ export function useAiGenerateImagesStudio() {
       ].filter(Boolean),
     [brandName, goal, hasBrandPalette, platform, template.label]
   );
+  const hasGenerationInput =
+    !!trimmedTopic || !!sourceUrl.trim() || !!sourceText.trim();
   const planDisabled = useMemo(() => {
     return (
       planning ||
-      !trimmedTopic ||
+      !hasGenerationInput ||
       !trimmedTextModel ||
       !hasRequiredCompanySummary ||
       slideCount < MIN_CAROUSEL_SLIDES ||
       slideCount > MAX_CAROUSEL_SLIDES
     );
   }, [
+    hasGenerationInput,
     hasRequiredCompanySummary,
     planning,
     slideCount,
     trimmedTextModel,
-    trimmedTopic,
   ]);
 
   const imageDisabled = useMemo(() => {
@@ -1243,6 +1255,122 @@ export function useAiGenerateImagesStudio() {
     });
   };
 
+  // Salva o Brand Kit atual (cores, fontes, CTA, termos) como padrão da empresa
+  // selecionada — para vir pré-preenchido nos próximos carrosséis.
+  const saveBrandDefaults = useCallback(async () => {
+    if (!companyProfile?.id) {
+      setError('Selecione uma empresa para salvar o padrão da marca.');
+      return false;
+    }
+
+    setSavingBrandDefaults(true);
+    setError('');
+
+    const nextCompany = {
+      ...companyProfile,
+      brandColors,
+      brandFonts,
+      defaultCta,
+      forbiddenTerms,
+    };
+
+    try {
+      const { ok, data: savedCompany, message } =
+        await aiGenerateImagesApi.saveCompanyProfile(fetch, nextCompany);
+      if (!ok || !savedCompany) {
+        setError(message || 'Não foi possível salvar o padrão da marca.');
+        return false;
+      }
+      setCompanyProfiles((current) =>
+        current.map((company) =>
+          company.id === savedCompany.id ? savedCompany : company
+        )
+      );
+      return true;
+    } catch (err) {
+      setError('Não foi possível salvar o padrão da marca.');
+      return false;
+    } finally {
+      setSavingBrandDefaults(false);
+    }
+  }, [brandColors, brandFonts, companyProfile, defaultCta, fetch, forbiddenTerms]);
+
+  // Gera legenda + hashtags adaptadas à rede a partir do carrossel atual.
+  const generateCaption = useCallback(
+    async (captionPlatformArg: string) => {
+      if (!plan) {
+        return;
+      }
+      setGeneratingCaption(true);
+      setCaptionError('');
+      setCaptionPlatform(captionPlatformArg);
+
+      try {
+        const { ok, data, message } = await aiGenerateImagesApi.generateCaption(
+          fetch,
+          {
+            title: plan.title,
+            slides: plan.slides.map((slide) => ({
+              headline: slide.headline,
+              body: slide.body,
+            })),
+            platform: captionPlatformArg,
+            tone: tone.trim() || undefined,
+            language: 'pt-BR',
+            companyContext: companyContext || undefined,
+            forbiddenTerms: forbiddenTerms.trim() || undefined,
+            defaultCta: defaultCta.trim() || undefined,
+            textModel: trimmedTextModel,
+          }
+        );
+
+        if (!ok || !data) {
+          setCaptionError(message || 'Não foi possível gerar a legenda.');
+          return;
+        }
+
+        setPostCaption(data.caption || '');
+        setPostHashtags(Array.isArray(data.hashtags) ? data.hashtags : []);
+      } catch {
+        setCaptionError('Não foi possível conectar ao servidor.');
+      } finally {
+        setGeneratingCaption(false);
+      }
+    },
+    [companyContext, defaultCta, fetch, forbiddenTerms, plan, tone, trimmedTextModel]
+  );
+
+  // Galeria por empresa: carrosséis salvos da empresa selecionada, com miniatura.
+  const companyGallery = useMemo(() => {
+    return savedProjects
+      .filter((project) => {
+        const meta = project.carouselProject || {};
+        if (!selectedCompanyId) {
+          return true;
+        }
+        return (
+          meta.company?.id === selectedCompanyId ||
+          (!!companyProfile?.companyName &&
+            meta.company?.name === companyProfile.companyName)
+        );
+      })
+      .map((project) => {
+        const meta = project.carouselProject || {};
+        const firstChild = project.children?.[0];
+        return {
+          id: project.id,
+          title:
+            meta.plan?.title ||
+            project.originalName?.replace('Carrossel: ', '') ||
+            'Carrossel salvo',
+          slideCount: project.children?.length || meta.plan?.slides?.length || 0,
+          platform: meta.platform || '',
+          thumbnail: firstChild ? mediaDirectory.set(firstChild.path) : '',
+          project,
+        };
+      });
+  }, [companyProfile, mediaDirectory, savedProjects, selectedCompanyId]);
+
   const removeReferenceImage = (id: string) => {
     referenceDataUrlCache.current.delete(id);
     setReferenceImages((current) =>
@@ -1352,8 +1480,8 @@ export function useAiGenerateImagesStudio() {
   const generatePlan = async (event: FormEvent) => {
     event.preventDefault();
 
-    if (!trimmedTopic) {
-      setError('Digite o tema ou título do post.');
+    if (!trimmedTopic && !sourceUrl.trim() && !sourceText.trim()) {
+      setError('Digite o tema, ou cole um link/texto de origem.');
       return;
     }
 
@@ -1390,7 +1518,9 @@ export function useAiGenerateImagesStudio() {
       const { ok, data, message } = await aiGenerateImagesApi.generateCarouselPlan(
         fetch,
         {
-          topic: trimmedTopic,
+          topic: trimmedTopic || undefined,
+          sourceUrl: sourceUrl.trim() || undefined,
+          sourceText: sourceText.trim() || undefined,
           goal: goal.trim(),
           audience: audience.trim(),
           tone: tone.trim(),
@@ -2399,6 +2529,16 @@ export function useAiGenerateImagesStudio() {
     savedProjects,
     savingCarousel,
     savingReferenceLibrary,
+    saveBrandDefaults,
+    savingBrandDefaults,
+    generateCaption,
+    generatingCaption,
+    captionPlatform,
+    postCaption,
+    setPostCaption,
+    postHashtags,
+    captionError,
+    companyGallery,
     selectedCompanyId,
     selectedLogoReference,
     selectedLogoReferenceId,
@@ -2437,6 +2577,10 @@ export function useAiGenerateImagesStudio() {
     setSelectedCompanyId,
     setSelectedLogoReferenceId,
     setShowAdvanced,
+    sourceUrl,
+    setSourceUrl,
+    sourceText,
+    setSourceText,
     setSlideCount: setClampedSlideCount,
     setTextModel,
     setTone,

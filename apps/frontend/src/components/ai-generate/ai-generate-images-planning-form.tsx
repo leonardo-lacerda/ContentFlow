@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import { Button } from '@gitroom/react/form/button';
 
 import {
@@ -70,6 +71,10 @@ type AiGenerateImagesPlanningFormProps = {
   setSelectedCompanyId: (value: string) => void;
   setSelectedLogoReferenceId: (value: string) => void;
   setShowAdvanced: (value: boolean) => void;
+  sourceUrl: string;
+  setSourceUrl: (value: string) => void;
+  sourceText: string;
+  setSourceText: (value: string) => void;
   setSlideCount: (value: number) => void;
   setTextModel: (value: string) => void;
   setTone: (value: string) => void;
@@ -78,6 +83,8 @@ type AiGenerateImagesPlanningFormProps = {
   showAdvanced: boolean;
   slideCount: number;
   syncBrandReferences: (company?: CompanyProfile) => void;
+  saveBrandDefaults: () => void;
+  savingBrandDefaults: boolean;
   textModel: string;
   tone: string;
   topic: string;
@@ -95,6 +102,34 @@ const parseColorList = (value: string) =>
     .filter(Boolean)
     .slice(0, 12);
 const brandColorRoles = ['Fundo', 'Texto', 'Destaque', 'Apoio'];
+
+// Contraste (WCAG) entre Texto e Fundo — para avisar quando o texto pode sumir.
+const hexToRgb = (hex: string) => {
+  const clean = hex.replace('#', '');
+  const full =
+    clean.length === 3
+      ? clean.split('').map((c) => c + c).join('')
+      : clean.padEnd(6, '0').slice(0, 6);
+  return {
+    r: parseInt(full.slice(0, 2), 16),
+    g: parseInt(full.slice(2, 4), 16),
+    b: parseInt(full.slice(4, 6), 16),
+  };
+};
+const relativeLuminance = (hex: string) => {
+  const { r, g, b } = hexToRgb(hex);
+  const channel = (value: number) => {
+    const v = value / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+};
+const contrastRatio = (a: string, b: string) => {
+  const la = relativeLuminance(a);
+  const lb = relativeLuminance(b);
+  const [hi, lo] = la > lb ? [la, lb] : [lb, la];
+  return (hi + 0.05) / (lo + 0.05);
+};
 const colorPalettes = [
   { name: 'Moderna', colors: ['#0F172A', '#F8FAFC', '#2563EB', '#22C55E'] },
   { name: 'Premium', colors: ['#111111', '#F5EFE6', '#C8A45D', '#6B4E2E'] },
@@ -178,6 +213,10 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
     setSelectedCompanyId,
     setSelectedLogoReferenceId,
     setShowAdvanced,
+    sourceUrl,
+    setSourceUrl,
+    sourceText,
+    setSourceText,
     setSlideCount,
     setTextModel,
     setTone,
@@ -186,6 +225,8 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
     showAdvanced,
     slideCount,
     syncBrandReferences,
+    saveBrandDefaults,
+    savingBrandDefaults,
     textModel,
     tone,
     topic,
@@ -214,6 +255,17 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
     }
     colors[index] = color;
     setBrandColorsFromArray(colors);
+  };
+
+  // Legibilidade: contraste entre Fundo (cor 1) e Texto (cor 2).
+  const colorsArr = parseColorList(brandColors);
+  const bgColor = colorsArr[0] || defaultBrandColors[0];
+  const textColor = colorsArr[1] || defaultBrandColors[1];
+  const colorContrast = contrastRatio(bgColor, textColor);
+  const lowContrast = colorContrast < 4.5;
+  const fixTextContrast = () => {
+    const better = relativeLuminance(bgColor) > 0.4 ? '#111111' : '#FFFFFF';
+    updateBrandColor(1, better);
   };
 
   return (
@@ -314,6 +366,34 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
               maxLength={240}
             />
           </label>
+
+          {/* Repurpose: gerar a partir de um link ou texto */}
+          <div className="rounded-[12px] border border-stone-500/20 bg-stone-500/5 p-[14px]">
+            <div className="mb-[8px] flex items-center gap-[8px]">
+              <Sparkles className="h-[16px] w-[16px] text-stone-600 dark:text-stone-300" />
+              <span className="text-[13px] font-[800] text-black dark:text-white">
+                Transformar conteúdo em carrossel
+              </span>
+              <span className="text-[12px] text-black/50 dark:text-white/50">opcional</span>
+            </div>
+            <p className="mb-[10px] text-[12px] text-black/55 dark:text-white/55">
+              Cole o link de um artigo/página ou um texto. A IA extrai e monta o carrossel — pode deixar o tema acima em branco.
+            </p>
+            <input
+              value={sourceUrl}
+              onChange={(event) => setSourceUrl(event.target.value)}
+              placeholder="https://seublog.com/artigo"
+              className={`${inputClass} mb-[8px]`}
+              maxLength={500}
+            />
+            <textarea
+              value={sourceText}
+              onChange={(event) => setSourceText(event.target.value)}
+              placeholder="...ou cole aqui o texto que quer transformar em carrossel"
+              className={`${textAreaClass} min-h-[80px]`}
+              maxLength={20000}
+            />
+          </div>
 
           <div className="rounded-[12px] border border-newTableBorder bg-newBgColorInner p-[14px]">
             <div className="flex flex-wrap items-center gap-[10px]">
@@ -549,6 +629,22 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
                     })}
                   </div>
 
+                  {/* Aviso de legibilidade (contraste Texto × Fundo) */}
+                  {lowContrast && (
+                    <div className="flex flex-wrap items-center gap-[10px] rounded-[12px] border border-amber-500/30 bg-amber-500/10 px-[12px] py-[9px]">
+                      <span className="text-[12px] font-[600] text-amber-700 dark:text-amber-200">
+                        O texto pode ficar difícil de ler sobre esse fundo.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={fixTextContrast}
+                        className="rounded-[8px] border border-amber-500/40 bg-amber-500/15 px-[10px] py-[5px] text-[12px] font-[800] text-amber-800 transition hover:bg-amber-500/25 dark:text-amber-100"
+                      >
+                        Ajustar o texto
+                      </button>
+                    </div>
+                  )}
+
                   {/* Paletas prontas como cartões */}
                   <div>
                     <span className="text-[12px] font-[700] text-black/60 dark:text-white/60">
@@ -656,6 +752,20 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
                       ))}
                     </select>
                   </label>
+                </div>
+
+                <div className="md:col-span-2 flex flex-wrap items-center gap-[12px] border-t border-black/5 pt-[14px] dark:border-white/5">
+                  <Button
+                    type="button"
+                    onClick={saveBrandDefaults}
+                    loading={savingBrandDefaults}
+                    className="!h-[42px] rounded-[10px] !bg-stone-100 !px-[16px] !text-[13px] font-[800] !text-stone-900 hover:!bg-stone-200 dark:!bg-white/10 dark:!text-white dark:hover:!bg-white/15"
+                  >
+                    Salvar como padrão da marca
+                  </Button>
+                  <span className="text-[12px] text-black/50 dark:text-white/50">
+                    Guarda cores, fontes, CTA e termos nesta empresa para vir prontos da próxima vez.
+                  </span>
                 </div>
               </div>
             )}

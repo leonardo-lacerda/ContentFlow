@@ -3,7 +3,9 @@ import { createHash } from 'crypto';
 import { AiGenerateCarouselDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-carousel.dto';
 import { AiGenerateCarouselIdeasDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-carousel-ideas.dto';
 import { AiGenerateImageDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-image.dto';
+import { AiGenerateCaptionDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-caption.dto';
 import { MediaService } from '@gitroom/nestjs-libraries/database/prisma/media/media.service';
+import { ExtractContentService } from '@gitroom/nestjs-libraries/openai/extract.content.service';
 import { UploadFactory } from '@gitroom/nestjs-libraries/upload/upload.factory';
 
 type AiGenerateImage = {
@@ -398,7 +400,10 @@ function normalizeCarouselPlan(
 export class AiGenerateService {
   private storage = UploadFactory.createStorage();
 
-  constructor(private _mediaService: MediaService) {}
+  constructor(
+    private _mediaService: MediaService,
+    private _extractContentService: ExtractContentService
+  ) {}
 
   private recordCost(
     orgId: string,
@@ -643,10 +648,195 @@ export class AiGenerateService {
     }
   }
 
+  // Gera a legenda do post + hashtags adaptadas à rede escolhida, a partir do
+  // conteúdo do carrossel já criado.
+  async generateCarouselCaption(orgId: string, body: AiGenerateCaptionDto) {
+    const openAiApiKey =
+      process.env.AI_GENERATE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+    const openAiBaseUrl =
+      process.env.AI_GENERATE_OPENAI_BASE_URL?.replace(/\/$/, '') ||
+      'https://api.openai.com';
+
+    if (!openAiApiKey) {
+      throw new HttpException(
+        'OpenAI official API is not configured',
+        HttpStatus.SERVICE_UNAVAILABLE
+      );
+    }
+
+    const platform = (body.platform || 'instagram').toLowerCase();
+    const resolvedModel =
+      body.textModel?.trim() ||
+      process.env.AI_GENERATE_OPENAI_TEXT_MODEL ||
+      'gpt-4.1-mini';
+    const timeoutMs = Number(process.env.AI_GENERATE_TIMEOUT_MS || 120000);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    const slidesText = Array.isArray(body.slides)
+      ? body.slides
+          .map((slide, index) =>
+            `Slide ${index + 1}: ${firstString(slide?.headline)}${
+              slide?.body ? ` — ${firstString(slide.body)}` : ''
+            }`
+          )
+          .filter(Boolean)
+          .join('\n')
+          .slice(0, 6000)
+      : '';
+
+    const platformGuides: Record<string, string> = {
+      instagram:
+        'Instagram: tom leve e proximo, gancho forte na primeira linha, quebras de linha curtas, emojis com moderacao, CTA convidando a salvar/comentar. 5 a 12 hashtags relevantes.',
+      linkedin:
+        'LinkedIn: tom profissional e de autoridade, gancho na primeira linha, paragrafos curtos, poucos ou nenhum emoji, foco em insight/valor. No maximo 3 a 5 hashtags.',
+      tiktok:
+        'TikTok: tom direto, jovem e dinamico, frase curta de impacto, 1 ou 2 emojis, CTA rapido. 3 a 6 hashtags em tendencia/relevantes.',
+    };
+    const platformGuide = platformGuides[platform] || platformGuides.instagram;
+
+    try {
+      const response = await fetch(`${openAiBaseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${openAiApiKey}`,
+        },
+        body: JSON.stringify({
+          model: resolvedModel,
+          temperature: 0.8,
+          response_format: { type: 'json_object' },
+          user: orgId,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Voce e copywriter senior de redes sociais. Escreva a legenda (texto que vai FORA da imagem) e hashtags para acompanhar um carrossel. Responda apenas JSON valido.',
+            },
+            {
+              role: 'user',
+              content: `Escreva a legenda e as hashtags para acompanhar este carrossel na rede indicada.\n\nRede: ${platform}\nDiretrizes da rede: ${platformGuide}\nTom de voz: ${
+                body.tone || 'claro, prático e persuasivo'
+              }\nIdioma: ${body.language || 'pt-BR'}\n${
+                body.defaultCta ? `CTA preferido: ${body.defaultCta}\n` : ''
+              }${
+                body.forbiddenTerms
+                  ? `Evite estes termos/claims: ${body.forbiddenTerms}\n`
+                  : ''
+              }${
+                body.companyContext
+                  ? `Contexto da empresa:\n${body.companyContext.slice(0, 2000)}\n`
+                  : ''
+              }\nTitulo do carrossel: ${firstString(body.title)}\nConteudo dos slides:\n${
+                slidesText || '(sem detalhe de slides)'
+              }\n\nRetorne EXATAMENTE:\n{\n  "caption": "legenda pronta para publicar, com quebras de linha quando fizer sentido",\n  "hashtags": ["#exemplo"]\n}`,
+            },
+          ],
+        }),
+        signal: controller.signal,
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        choices?: Array<{ message?: { content?: string } }>;
+        usage?: Record<string, unknown>;
+        message?: string;
+        error?: { message?: string } | string;
+      };
+
+      if (!response.ok) {
+        const errorMessage =
+          data.message ||
+          (typeof data.error === 'string' ? data.error : data.error?.message) ||
+          'Caption generation failed';
+        const status =
+          response.status < 500 ? response.status : HttpStatus.BAD_GATEWAY;
+        throw new HttpException(errorMessage, status);
+      }
+
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) {
+        throw new HttpException(
+          'OpenAI did not return caption content',
+          HttpStatus.BAD_GATEWAY
+        );
+      }
+
+      const parsed = parseJsonPayload(content);
+      const caption = firstString(parsed.caption);
+      const hashtags = Array.isArray(parsed.hashtags)
+        ? parsed.hashtags
+            .map((tag: unknown) => firstString(tag))
+            .filter(Boolean)
+            .map((tag: string) => (tag.startsWith('#') ? tag : `#${tag}`))
+            .slice(0, 15)
+        : [];
+
+      const result = {
+        caption,
+        hashtags,
+        platform,
+        provider: 'openai_official',
+        model: resolvedModel,
+        usage: data.usage,
+        cost_estimate: estimateCostInUsdAndBrl(data.usage),
+      };
+      this.recordCost(
+        orgId,
+        'text',
+        `Legenda ${platform}: ${(body.title || 'carrossel').slice(0, 60)}`,
+        result.cost_estimate
+      );
+      return result;
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new HttpException(
+          'OpenAI caption request timed out',
+          HttpStatus.GATEWAY_TIMEOUT
+        );
+      }
+      throw new HttpException(
+        'Unable to generate caption',
+        HttpStatus.BAD_GATEWAY
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async generateCarouselPlan(orgId: string, body: AiGenerateCarouselDto) {
     const topic = body.topic?.trim();
-    if (!topic) {
-      throw new HttpException('Topic is required', HttpStatus.BAD_REQUEST);
+    const sourceUrl = body.sourceUrl?.trim();
+    const sourceTextInput = body.sourceText?.trim();
+
+    // Repurpose: se veio um link, extraímos o conteúdo da página.
+    let sourceContent = sourceTextInput || '';
+    if (sourceUrl) {
+      try {
+        const normalizedUrl = /^https?:\/\//i.test(sourceUrl)
+          ? sourceUrl
+          : `https://${sourceUrl}`;
+        const extracted = await this._extractContentService.extractContent(
+          normalizedUrl
+        );
+        const cleaned = (extracted || '').trim();
+        if (cleaned) {
+          sourceContent = [sourceContent, cleaned].filter(Boolean).join('\n\n');
+        }
+      } catch {
+        // Se falhar a extração, seguimos com o texto colado (se houver).
+      }
+    }
+    sourceContent = sourceContent.slice(0, 12000);
+
+    if (!topic && !sourceContent) {
+      throw new HttpException(
+        'Informe um tema ou um link/texto de origem.',
+        HttpStatus.BAD_REQUEST
+      );
     }
 
     const openAiApiKey =
@@ -672,7 +862,7 @@ export class AiGenerateService {
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     const brief = {
-      topic,
+      topic: topic || (sourceContent ? '(derivar do conteúdo de origem)' : ''),
       goal: body.goal || 'educar e gerar engajamento',
       audience: body.audience || 'pessoas interessadas no tema',
       tone: body.tone || 'claro, prático e persuasivo',
@@ -710,7 +900,11 @@ export class AiGenerateService {
                 brief,
                 null,
                 2
-              )}\n\nFormato obrigatorio do JSON:\n{\n  "title": "titulo do post",\n  "platform": "instagram",\n  "language": "pt-BR",\n  "caption": "legenda curta para acompanhar o post fora da imagem",\n  "hashtags": ["#tag"],\n  "imageStyleGuide": "guia visual consistente para todas as imagens, incluindo tipografia, cores, composicao e elementos de marca",\n  "slides": [\n    {\n      "index": 1,\n      "headline": "frase principal curta que deve aparecer GRANDE dentro da imagem",\n      "body": "texto de apoio curto que tambem deve aparecer dentro da imagem",\n      "cta": "micro chamada visual opcional para aparecer no slide",\n      "imagePrompt": "descricao visual do fundo, objeto/personagem/metafora, layout e espacos de respiro para encaixar a tipografia",\n      "altText": "descricao acessivel da imagem"\n    }\n  ]\n}\n\nRegras: headline e body sao copy visual para dentro do criativo, nao descricao do post. Escreva pouco texto por slide, com quebras naturais e alto impacto. Use uma linguagem natural em portugues do Brasil. Cada slide deve funcionar como uma peca editorial quadrada: tipografia grande, hierarquia clara, bastante margem e uma metafora visual forte. O imagePrompt deve preparar uma imagem que contenha texto renderizado com legibilidade, sem pedir legenda externa. Evite promessas exageradas, nao invente logos; se nao houver marca, use um pequeno selo textual com o tema ou categoria.`,
+              )}${
+                sourceContent
+                  ? `\n\nCONTEUDO DE ORIGEM (transforme ISTO em carrossel; extraia os pontos principais, resuma e adapte para slides curtos e impactantes; se nao houver tema definido, crie um titulo forte a partir deste conteudo):\n"""\n${sourceContent}\n"""`
+                  : ''
+              }\n\nFormato obrigatorio do JSON:\n{\n  "title": "titulo do post",\n  "platform": "instagram",\n  "language": "pt-BR",\n  "caption": "legenda curta para acompanhar o post fora da imagem",\n  "hashtags": ["#tag"],\n  "imageStyleGuide": "guia visual consistente para todas as imagens, incluindo tipografia, cores, composicao e elementos de marca",\n  "slides": [\n    {\n      "index": 1,\n      "headline": "frase principal curta que deve aparecer GRANDE dentro da imagem",\n      "body": "texto de apoio curto que tambem deve aparecer dentro da imagem",\n      "cta": "micro chamada visual opcional para aparecer no slide",\n      "imagePrompt": "descricao visual do fundo, objeto/personagem/metafora, layout e espacos de respiro para encaixar a tipografia",\n      "altText": "descricao acessivel da imagem"\n    }\n  ]\n}\n\nRegras: headline e body sao copy visual para dentro do criativo, nao descricao do post. Escreva pouco texto por slide, com quebras naturais e alto impacto. Use uma linguagem natural em portugues do Brasil. Cada slide deve funcionar como uma peca editorial quadrada: tipografia grande, hierarquia clara, bastante margem e uma metafora visual forte. O imagePrompt deve preparar uma imagem que contenha texto renderizado com legibilidade, sem pedir legenda externa. Evite promessas exageradas, nao invente logos; se nao houver marca, use um pequeno selo textual com o tema ou categoria.`,
             },
           ],
         }),
@@ -755,7 +949,7 @@ export class AiGenerateService {
         usage: data.usage,
         cost_estimate: estimateCostInUsdAndBrl(data.usage),
       };
-      this.recordCost(orgId, 'text', `Copy: ${topic.slice(0, 80)}`, result.cost_estimate);
+      this.recordCost(orgId, 'text', `Copy: ${(topic || plan.title || 'conteúdo').slice(0, 80)}`, result.cost_estimate);
       return result;
     } catch (error: unknown) {
       if (error instanceof HttpException) {
