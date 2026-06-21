@@ -107,13 +107,3 @@ jobs:
             docker compose $COMPOSE_FILES pull
             docker compose $COMPOSE_FILES up -d
             docker image prune -af
-
-            echo "=== STATUS DOS CONTAINERS (30s apos start) ==="
-            sleep 30
-            docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-            echo "=== RAM ==="
-            free -h
-            echo "=== LOGS contentflow (ultimas 50 linhas) ==="
-            docker logs contentflow --tail 50 2>&1 || true
-            echo "=== LOGS caddy (ultimas 30 linhas) ==="
-            docker logs contentflow-caddy --tail 30 2>&1 || true
