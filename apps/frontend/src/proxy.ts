@@ -44,7 +44,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (
-    nextUrl.pathname === '/' ||
+    (nextUrl.pathname === '/' && !authCookie) ||
     nextUrl.pathname.startsWith('/uploads/') ||
     nextUrl.pathname.startsWith('/p/') ||
     nextUrl.pathname.startsWith('/provider/') ||
