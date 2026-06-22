@@ -1,0 +1,26 @@
+name: Diagnose Droplet
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    name: Dump logs
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and dump status + logs
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          port: ${{ secrets.DO_PORT || '22' }}
+          command_timeout: 5m
+          script: |
+            cd "${{ secrets.DO_APP_DIR }}"
+            echo "=== CONTAINERS ==="
+            docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "=== DISABLE_TEMPORAL no .env ==="
+            grep -E "DISABLE_TEMPORAL|TEMPORAL_ADDRESS|IS_GENERAL" .env || echo "(nao encontrado)"
+            echo "=== LOGS contentflow (ultimas 120 linhas) ==="
+            docker logs contentflow --tail 120 2>&1 || true
