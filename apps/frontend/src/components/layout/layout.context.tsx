@@ -86,11 +86,17 @@ function LayoutContextInner(params: { children: ReactNode }) {
 
       if (response.status === 401 || response?.headers?.get('logout')) {
         if (!isSecured) {
+          // Cookies nao-seguros: o JS consegue limpar e voltar para a landing.
           setCookie('auth', '', -10);
           setCookie('showorg', '', -10);
           setCookie('impersonate', '', -10);
+          window.location.href = '/';
+        } else {
+          // Cookies httpOnly nao podem ser limpos via JS. Usa o endpoint de
+          // logout do servidor para apagar o cookie e evitar loop de redirect
+          // (/ -> /launches -> 401 -> / ...) quando o token esta expirado/invalido.
+          window.location.href = '/auth/logout';
         }
-        window.location.href = '/';
       }
       if (response.status === 406) {
         if (
