@@ -119,6 +119,27 @@ export const useMenuItem = () => {
       path: '/media',
     },
     {
+      name: 'Onboarding',
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="21"
+          viewBox="0 0 20 21"
+          fill="none"
+        >
+          <path
+            d="M10 2.16699L12.65 7.53366L18.5667 8.39199L14.2833 12.567L15.3 18.4587L10 15.6753L4.7 18.4587L5.71667 12.567L1.43335 8.39199L7.35002 7.53366L10 2.16699Z"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ),
+      path: '/onboarding/company',
+    },
+    {
       name: t('ai_images', 'AI Images'),
       icon: (
         <svg
@@ -145,27 +166,6 @@ export const useMenuItem = () => {
         </svg>
       ),
       path: '/ai-generate-images',
-    },
-    {
-      name: 'Onboarding',
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="21"
-          viewBox="0 0 20 21"
-          fill="none"
-        >
-          <path
-            d="M10 2.16699L12.65 7.53366L18.5667 8.39199L14.2833 12.567L15.3 18.4587L10 15.6753L4.7 18.4587L5.71667 12.567L1.43335 8.39199L7.35002 7.53366L10 2.16699Z"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      ),
-      path: '/onboarding/company',
     },
     {
       name: t('plugs', 'Plugs'),
