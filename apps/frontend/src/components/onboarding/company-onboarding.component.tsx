@@ -515,7 +515,7 @@ export const CompanyOnboardingComponent = () => {
       }
       setContentPillars(Array.isArray(data?.contentPillars) ? data.contentPillars : []);
       setPostIdeas(Array.isArray(data?.postIdeas) ? data.postIdeas : []);
-      setSuccess('Analisamos seu site. Revise as opções sugeridas abaixo.');
+      setSuccess('Analisamos seu site. Veja o resumo e os pilares gerados abaixo.');
     } catch (err) {
       setError('Não foi possível conectar ao servidor.');
     } finally {
@@ -1448,11 +1448,33 @@ export const CompanyOnboardingComponent = () => {
             </div>
           )}
           {success && (
-            <div className="mt-[20px] flex items-center gap-[12px] rounded-[14px] border border-green-500/30 bg-green-500/10 p-[14px]">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-green-500/20 text-green-400">
-                <CheckCircle2 className="h-4 w-4" />
+            <div className="mt-[20px] flex flex-col gap-[12px]">
+              <div className="flex items-center gap-[12px] rounded-[14px] border border-green-500/30 bg-green-500/10 p-[14px]">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-500/20 text-green-400">
+                  <CheckCircle2 className="h-4 w-4" />
+                </div>
+                <p className="text-[13px] font-medium text-green-300">{success}</p>
               </div>
-              <p className="text-[13px] font-medium text-green-300">{success}</p>
+
+              {step === 0 && profile.summary && (
+                <div className="flex flex-col gap-[10px] rounded-[14px] border border-black/10 bg-black/5 p-[16px] dark:border-white/10 dark:bg-white/5">
+                  <span className="text-[12px] font-[900] uppercase tracking-[0.12em] text-black/50 dark:text-white/50">Resumo gerado</span>
+                  <p className="text-[13px] leading-relaxed text-black/80 dark:text-white/80">{profile.summary}</p>
+                </div>
+              )}
+
+              {step === 0 && contentPillars.length > 0 && (
+                <div className="flex flex-col gap-[10px] rounded-[14px] border border-black/10 bg-black/5 p-[16px] dark:border-white/10 dark:bg-white/5">
+                  <span className="text-[12px] font-[900] uppercase tracking-[0.12em] text-black/50 dark:text-white/50">Pilares de conteúdo sugeridos</span>
+                  <div className="flex flex-wrap gap-[8px]">
+                    {contentPillars.map((pillar, index) => (
+                      <span key={`${pillar}-${index}`} className="rounded-full border border-stone-500/20 bg-stone-500/10 px-[12px] py-[6px] text-[12px] font-medium text-stone-700 dark:text-stone-200">
+                        {pillar}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
