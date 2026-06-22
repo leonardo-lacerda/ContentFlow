@@ -43,6 +43,27 @@ import { AnnouncementsRepository } from '@gitroom/nestjs-libraries/database/pris
 import { AnnouncementsService } from '@gitroom/nestjs-libraries/database/prisma/announcements/announcements.service';
 import { ErrorsRepository } from '@gitroom/nestjs-libraries/database/prisma/errors/errors.repository';
 import { ErrorsService } from '@gitroom/nestjs-libraries/database/prisma/errors/errors.service';
+import { TemporalService } from 'nestjs-temporal-core';
+
+// Quando o Temporal esta desabilitado (DISABLE_TEMPORAL=true), o modulo global
+// do Temporal nao e carregado e o TemporalService deixa de existir no container
+// de DI. Varios servicos (notifications, email, posts, autopost, integration,
+// refresh) injetam TemporalService no construtor e quebrariam a inicializacao do
+// NestJS. Este stub no-op permite que esses servicos sejam construidos; todas as
+// chamadas de workflow viram no-op com optional chaining nos call sites.
+const temporalDisabled = process.env.DISABLE_TEMPORAL === 'true';
+
+const temporalStub = {
+  client: {
+    getRawClient: () => undefined,
+    getWorkflowHandle: () => undefined,
+  },
+  terminateWorkflow: () => undefined,
+} as unknown as TemporalService;
+
+const temporalStubProvider = temporalDisabled
+  ? [{ provide: TemporalService, useValue: temporalStub }]
+  : [];
 
 @Global()
 @Module({
@@ -95,6 +116,7 @@ import { ErrorsService } from '@gitroom/nestjs-libraries/database/prisma/errors/
     AnnouncementsService,
     ErrorsRepository,
     ErrorsService,
+    ...temporalStubProvider,
   ],
   get exports() {
     return this.providers;
