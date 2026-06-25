@@ -2,6 +2,10 @@
 
 Este projeto faz deploy automático para um Droplet da DigitalOcean ao fazer push na branch `main`.
 
+## Produção/teste atual
+
+O estado conhecido da produção/teste atual está documentado em [`PRODUCAO_ATUAL.md`](PRODUCAO_ATUAL.md), incluindo Droplet, IPs, custo, DNS observado e checklist para recriar em outro Droplet antes de excluir o atual.
+
 ## Plano recomendado (custo x estabilidade)
 
 Para esse monorepo com frontend + backend + serviços de apoio via Docker Compose:
