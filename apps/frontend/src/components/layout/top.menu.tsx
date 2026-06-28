@@ -179,7 +179,7 @@ export const useMenuItem = () => {
           />
         </svg>
       ),
-      path: '/onboarding/company',
+      path: '/onboarding/brand',
     },
     {
       name: t('ai_images', 'AI Images'),
