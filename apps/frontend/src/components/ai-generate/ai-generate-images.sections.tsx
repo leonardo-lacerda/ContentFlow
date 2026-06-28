@@ -1,5 +1,5 @@
-import type { ChangeEvent, Dispatch, RefObject, SetStateAction } from 'react';
-import { LayoutTemplate } from 'lucide-react';
+import { ChangeEvent, Dispatch, RefObject, SetStateAction } from 'react';
+import { LayoutTemplate, Undo2, Redo2 } from 'lucide-react';
 
 import type {
   CarouselPlan,
@@ -8,15 +8,44 @@ import type {
 } from './ai-generate-images.types';
 import { formatCurrency, imageSrc } from './ai-generate-images.utils';
 
-export function AiGenerateImagesHeader() {
+type AiGenerateImagesHeaderProps = {
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+};
+
+export function AiGenerateImagesHeader({ canUndo, canRedo, onUndo, onRedo }: AiGenerateImagesHeaderProps) {
   return (
     <div className="relative overflow-hidden rounded-[18px] border border-black/10 bg-[#f7f2ea] p-[32px] shadow-sm dark:border-white/10 dark:bg-[#141312]">
       <div className="relative z-10 flex flex-col gap-[12px]">
-        <div className="inline-flex w-fit items-center gap-[8px] rounded-full border border-black/10 bg-white/70 px-[12px] py-[6px] dark:border-white/10 dark:bg-white/5">
-          <LayoutTemplate className="h-[14px] w-[14px] text-stone-700 dark:text-stone-200" />
-          <span className="text-[12px] font-[800] uppercase tracking-[0.14em] text-stone-700 dark:text-stone-200">
-            Estúdio editorial
-          </span>
+        <div className="flex items-center justify-between">
+          <div className="inline-flex w-fit items-center gap-[8px] rounded-full border border-black/10 bg-white/70 px-[12px] py-[6px] dark:border-white/10 dark:bg-white/5">
+            <LayoutTemplate className="h-[14px] w-[14px] text-stone-700 dark:text-stone-200" />
+            <span className="text-[12px] font-[800] uppercase tracking-[0.14em] text-stone-700 dark:text-stone-200">
+              Estúdio editorial
+            </span>
+          </div>
+          <div className="flex items-center gap-[8px]">
+            <button
+              type="button"
+              onClick={onUndo}
+              disabled={!canUndo}
+              className="flex items-center justify-center h-9 w-9 rounded-[10px] border border-black/10 bg-white/70 text-stone-700 transition hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-white/10 dark:bg-white/5 dark:text-stone-200 dark:hover:bg-white/10"
+              title="Desfazer (Ctrl+Z)"
+            >
+              <Undo2 className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onRedo}
+              disabled={!canRedo}
+              className="flex items-center justify-center h-9 w-9 rounded-[10px] border border-black/10 bg-white/70 text-stone-700 transition hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-white/10 dark:bg-white/5 dark:text-stone-200 dark:hover:bg-white/10"
+              title="Refazer (Ctrl+Shift+Z)"
+            >
+              <Redo2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         <h2 className="text-[36px] font-[800] tracking-tight text-black dark:text-white leading-tight">
           Estúdio de Carrosséis

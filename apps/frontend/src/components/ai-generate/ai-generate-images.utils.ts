@@ -1,4 +1,7 @@
 import type {
+  BackendTemplateDefinition,
+} from './template-registry.types';
+import type {
   CarouselPlan,
   CarouselSlide,
   CompanyProfile,
@@ -156,11 +159,24 @@ export function buildSlideImagePrompt(
   return parts.filter(Boolean).join('\n');
 }
 
-export function getEditorialIssues(slides: CarouselSlide[]): EditorialIssue[] {
+export function getEditorialIssues(
+  slides: CarouselSlide[],
+  forbiddenTerms?: string,
+  backendTemplate?: BackendTemplateDefinition | null,
+): EditorialIssue[] {
+  // Parse forbidden terms from comma/semicolon/newline-separated string
+  const parsedForbidden = forbiddenTerms
+    ? forbiddenTerms
+        .split(/[,;\n]/)
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+
   return slides.flatMap((slide) => {
     const issues: EditorialIssue[] = [];
     const headlineLength = slide.headline.trim().length;
     const bodyLength = slide.body.trim().length;
+    const combinedText = `${slide.headline} ${slide.body} ${slide.cta}`.toLowerCase();
 
     if (headlineLength > 78) {
       issues.push({
@@ -196,6 +212,115 @@ export function getEditorialIssues(slides: CarouselSlide[]): EditorialIssue[] {
         label: 'Promessa forte demais; vale revisar para soar mais confiável.',
         tone: 'warning',
       });
+    }
+
+    // --- Forbidden terms check ---
+    if (parsedForbidden.length > 0) {
+      for (const term of parsedForbidden) {
+        if (combinedText.includes(term)) {
+          issues.push({
+            slide: slide.index,
+            label: `Termo proibido encontrado: "${term}".`,
+            tone: 'danger',
+          });
+        }
+      }
+    }
+
+    // --- Template-specific editorial checks ---
+    if (backendTemplate?.editorialChecks?.length) {
+      for (const check of backendTemplate.editorialChecks) {
+        const desc = (check.description || '').toLowerCase();
+        const msg = check.message || check.description;
+
+        // Headline length check per template
+        if (
+          desc.includes('headline') &&
+          (desc.includes('curt') || desc.includes('breve') || desc.includes('máx') || desc.includes('max'))
+        ) {
+          const match = desc.match(/(\d+)/);
+          const limit = match ? parseInt(match[1], 10) : 60;
+          if (headlineLength > limit) {
+            issues.push({
+              slide: slide.index,
+              label: `${msg} (${headlineLength}/${limit} caracteres).`,
+              tone: check.severity === 'error' ? 'danger' : 'warning',
+            });
+          }
+        }
+
+        // Body text length check per template
+        if (
+          desc.includes('corpo') &&
+          (desc.includes('curt') || desc.includes('breve') || desc.includes('máx') || desc.includes('max'))
+        ) {
+          const match = desc.match(/(\d+)/);
+          const limit = match ? parseInt(match[1], 10) : 120;
+          if (bodyLength > limit) {
+            issues.push({
+              slide: slide.index,
+              label: `${msg} (${bodyLength}/${limit} caracteres).`,
+              tone: check.severity === 'error' ? 'danger' : 'warning',
+            });
+          }
+        }
+
+        // CTA required check
+        if (
+          desc.includes('cta') &&
+          (desc.includes('obrigatório') || desc.includes('necessário') || desc.includes('required'))
+        ) {
+          if (!slide.cta.trim()) {
+            issues.push({
+              slide: slide.index,
+              label: msg,
+              tone: check.severity === 'error' ? 'danger' : 'warning',
+            });
+          }
+        }
+
+        // No all-caps / shouting check
+        if (desc.includes('maiúscul') || desc.includes('caps') || desc.includes('shout')) {
+          const words = slide.headline.split(/\s+/);
+          const capsWords = words.filter(
+            (w) => w.length >= 3 && w === w.toUpperCase() && /[A-ZÀ-Ú]/.test(w)
+          );
+          if (capsWords.length >= 2) {
+            issues.push({
+              slide: slide.index,
+              label: msg,
+              tone: check.severity === 'error' ? 'danger' : 'warning',
+            });
+          }
+        }
+
+        // No competitor mentions
+        if (desc.includes('concorrent') || desc.includes('competitor')) {
+          const competitorPattern = /contra\s+(o|a|os|as)\s+\w+|vs\.?\s+\w+|versus\s+\w+/i;
+          if (competitorPattern.test(combinedText)) {
+            issues.push({
+              slide: slide.index,
+              label: msg,
+              tone: check.severity === 'error' ? 'danger' : 'warning',
+            });
+          }
+        }
+
+        // Image prompt must contain specific visual direction keywords
+        if (
+          desc.includes('imagem') &&
+          desc.includes('prompt') &&
+          (desc.includes('direção') || desc.includes('descrição') || desc.includes('conteúdo'))
+        ) {
+          if (slide.imagePrompt.trim().length < 20) {
+            issues.push({
+              slide: slide.index,
+              label: msg,
+              tone: check.severity === 'error' ? 'danger' : 'warning',
+            });
+          }
+        }
+      }
     }
 
     return issues;

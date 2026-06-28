@@ -101,6 +101,7 @@ export type SlideImageResult = {
 export type CarouselTemplate = {
   id: string;
   label: string;
+  category: string;
   goal: string;
   tone: string;
   slideCount: number;

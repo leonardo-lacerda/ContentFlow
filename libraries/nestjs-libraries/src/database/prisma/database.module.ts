@@ -50,6 +50,8 @@ import { BrandProfileRepository } from '@gitroom/nestjs-libraries/database/prism
 import { BrandDnaSnapshotRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-dna-snapshot.repository';
 import { BrandAssetRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-asset.repository';
 import { BrandDnaExtractionService } from '@gitroom/nestjs-libraries/ai-generate/brand-dna-extraction.service';
+import { EditorialPlanService } from '@gitroom/nestjs-libraries/database/prisma/editorial-plans/editorial-plan.service';
+import { EditorialPlanRepository } from '@gitroom/nestjs-libraries/database/prisma/editorial-plans/editorial-plan.repository';
 import { TemporalService } from 'nestjs-temporal-core';
 
 // Quando o Temporal esta desabilitado (DISABLE_TEMPORAL=true), o modulo global
@@ -130,6 +132,8 @@ const temporalStubProvider = temporalDisabled
     UrlValidationService,
     WebsiteMetadataExtractor,
     BrandDnaExtractionService,
+    EditorialPlanService,
+    EditorialPlanRepository,
     ...temporalStubProvider,
   ],
   get exports() {

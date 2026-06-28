@@ -12,6 +12,7 @@ import {
   logoPositionOptions,
   logoScaleOptions,
   logoUsageOptions,
+  nicheOptions,
   platformOptions,
   textAreaClass,
   toneOptions,
@@ -23,6 +24,10 @@ import type {
   CompanyProfile,
   ReferenceImage,
 } from './ai-generate-images.types';
+import type { TemplateRecommendation } from './template-registry.types';
+import { TemplateRecommendationPanel } from './template-recommendation-panel';
+import { templateCategories } from './ai-generate-images.constants';
+import { TemplateEditorialChecks } from './template-editorial-checks';
 
 type AiGenerateImagesPlanningFormProps = {
   applyCompanyBrandKit: (company?: CompanyProfile) => void;
@@ -54,6 +59,8 @@ type AiGenerateImagesPlanningFormProps = {
   selectedCompanyId: string;
   selectedLogoReferenceId: string;
   selectedTemplate: string;
+  selectedNiche: string;
+  setSelectedNiche: (value: string) => void;
   setAudience: (value: string) => void;
   setBrandColors: (value: string) => void;
   setBrandFonts: (value: string) => void;
@@ -89,6 +96,11 @@ type AiGenerateImagesPlanningFormProps = {
   tone: string;
   topic: string;
   visualStyle: string;
+  templateRecommendations: TemplateRecommendation[];
+  loadingRecommendations: boolean;
+  templatesLoaded: boolean;
+  requestRecommendations: () => Promise<void>;
+  backendTemplates: Array<{ id: string; editorialChecks: Array<{ id: string; description: string; severity: string; message: string }> }>;
 };
 
 const BRIEF_STEPS = ['Empresa & Ideia', 'Formato', 'Marca & Ajustes'];
@@ -231,10 +243,14 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
     tone,
     topic,
     visualStyle,
+    selectedNiche,
+    setSelectedNiche,
+    backendTemplates,
   } = props;
 
   const [step, setStep] = useState(0);
   const [editingBrandKit, setEditingBrandKit] = useState(false);
+  const selectedBackendTemplate = backendTemplates.find((t) => t.id === selectedTemplate) || null;
 
   const goNext = () => setStep((current) => Math.min(current + 1, BRIEF_STEPS.length - 1));
   const goBack = () => setStep((current) => Math.max(current - 1, 0));
@@ -463,23 +479,44 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
         <div className="grid grid-cols-1 gap-[20px]">
           <div className="flex flex-col gap-[8px]">
             <span className="text-[14px] font-[600]">Template</span>
-            <div className="grid grid-cols-2 gap-[8px] md:grid-cols-4">
-              {carouselTemplates.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => applyTemplate(item.id)}
-                  className={`h-[40px] rounded-[10px] border px-[10px] text-[13px] font-[600] transition ${
-                    selectedTemplate === item.id
-                      ? 'border-stone-950 bg-stone-950 text-white dark:border-white dark:bg-white dark:text-stone-950'
-                      : 'border-black/10 bg-white text-black/65 hover:border-stone-500/40 hover:bg-stone-50 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10'
-                  }`}
-                >
-                  {item.label}
-                </button>
+            <TemplateRecommendationPanel
+              recommendations={templateRecommendations}
+              loading={loadingRecommendations}
+              onSelect={applyTemplate}
+              selectedTemplateId={selectedTemplate}
+            />
+            <div className="flex flex-col gap-[12px]">
+              {templateCategories.map((category) => {
+                const categoryTemplates = carouselTemplates.filter(t => t.category === category.id);
+                if (categoryTemplates.length === 0) return null;
+                return (
+                  <div key={category.id} className="flex flex-col gap-[6px]">
+                    <span className="text-[12px] font-[600] text-black/40 dark:text-white/40 uppercase tracking-wide">{category.label}</span>
+                    <div className="grid grid-cols-2 gap-[8px] md:grid-cols-4">
+                      {categoryTemplates.map((item) => (
+                        <button key={item.id} type="button" onClick={() => applyTemplate(item.id)} className={`h-[40px] rounded-[10px] border px-[10px] text-[13px] font-[600] transition ${selectedTemplate === item.id ? 'border-stone-950 bg-stone-950 text-white dark:border-white dark:bg-white dark:text-stone-950' : 'border-black/10 bg-white text-black/65 hover:border-stone-500/40 hover:bg-stone-50 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10'}`}>
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-[8px]">
+            <span className="text-[14px] font-[600]">Nicho</span>
+            <div className="flex flex-wrap gap-[8px]">
+              {nicheOptions.map((option) => (
+                <ChoiceChip key={option.value} active={selectedNiche === option.value} onClick={() => setSelectedNiche(selectedNiche === option.value ? '' : option.value)}>
+                  {option.label}
+                </ChoiceChip>
               ))}
             </div>
           </div>
+
+          <TemplateEditorialChecks template={selectedBackendTemplate} />
 
           <div className="flex flex-col gap-[8px]">
             <span className="text-[14px] font-[600]">Qual o seu objetivo?</span>

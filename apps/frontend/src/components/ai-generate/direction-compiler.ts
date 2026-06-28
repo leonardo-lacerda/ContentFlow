@@ -55,6 +55,68 @@ export type DirectionBrandKit = {
   hasPalette?: boolean;
 };
 
+// Template → curated DirectionSpec base for extended templates.
+// Each entry provides a deterministic starting point; goal/platform modifiers
+// still apply on top. Unknown templates fall through to the legacy if/else.
+const NEW_TEMPLATE_DIRECTION_MAP: Record<string, Partial<DirectionSpec>> = {
+  'faq': {
+    editorial: 'clean',
+    hierarchy: 'text-dominant',
+    density: 'medium',
+    composition: 'modular',
+    imagery: 'icons',
+  },
+  'comparison': {
+    editorial: 'corporativo-moderno',
+    hierarchy: 'balanced',
+    density: 'medium',
+    composition: 'grid',
+    imagery: 'icons',
+  },
+  'testimonial': {
+    editorial: 'revista',
+    hierarchy: 'visual-dominant',
+    density: 'minimal',
+    composition: 'centered',
+    imagery: 'people',
+  },
+  'statistics': {
+    editorial: 'bold',
+    hierarchy: 'visual-dominant',
+    density: 'medium',
+    composition: 'centered',
+    imagery: 'icons',
+  },
+  'problem-solution': {
+    editorial: 'startup',
+    hierarchy: 'balanced',
+    density: 'medium',
+    composition: 'asymmetric',
+    imagery: 'illustration',
+  },
+  'us-vs-them': {
+    editorial: 'bold',
+    hierarchy: 'balanced',
+    density: 'medium',
+    composition: 'asymmetric',
+    imagery: 'icons',
+  },
+  'best-sellers': {
+    editorial: 'corporativo-moderno',
+    hierarchy: 'visual-dominant',
+    density: 'rich',
+    composition: 'grid',
+    imagery: 'product',
+  },
+  'negative-hook': {
+    editorial: 'bold',
+    hierarchy: 'visual-dominant',
+    density: 'minimal',
+    composition: 'centered',
+    imagery: 'ai-free',
+  },
+};
+
 // Garante que qualquer DirectionSpec parcial/sujo vira um spec válido. Um id
 // ausente OU inválido cai no default canônico do eixo (defaultDirectionSpec),
 // não no primeiro item da lista. Útil ao reabrir projetos salvos.
@@ -108,38 +170,60 @@ export const buildDirectionSpec = (
   const isLinkedin = platform === 'linkedin';
   const isTiktok = platform === 'tiktok';
 
-  let editorial = defaultDirectionSpec.editorial;
-  if (template === 'storytelling') editorial = 'revista';
-  else if (template === 'case') editorial = 'corporativo-moderno';
-  else if (template === 'offer' || template === 'before-after') editorial = 'bold';
-  else if (template === 'list') editorial = 'clean';
-  else if (isAuthority) editorial = 'editorial-premium';
+  // New template map provides curated base specs for extended templates.
+  // Existing if/else logic serves as fallback for legacy templates.
+  const templateSpec = NEW_TEMPLATE_DIRECTION_MAP[template];
+
+  // --- Editorial ---
+  let editorial = templateSpec?.editorial ?? defaultDirectionSpec.editorial;
+  if (!templateSpec) {
+    if (template === 'storytelling') editorial = 'revista';
+    else if (template === 'case') editorial = 'corporativo-moderno';
+    else if (template === 'offer' || template === 'before-after') editorial = 'bold';
+    else if (template === 'list') editorial = 'clean';
+    else if (isAuthority) editorial = 'editorial-premium';
+  }
   if (isLinkedin && !isOffer) editorial = 'institucional';
   if (isTiktok) editorial = 'bold';
 
-  let hierarchy: DirectionSpec['hierarchy'] = 'balanced';
-  if (template === 'list' || template === 'educational') hierarchy = 'text-dominant';
-  else if (template === 'storytelling' || isOffer) hierarchy = 'visual-dominant';
+  // --- Hierarchy ---
+  let hierarchy: DirectionSpec['hierarchy'] = templateSpec?.hierarchy ?? 'balanced';
+  if (!templateSpec) {
+    if (template === 'list' || template === 'educational') hierarchy = 'text-dominant';
+    else if (template === 'storytelling' || isOffer) hierarchy = 'visual-dominant';
+  }
 
-  let density: DirectionSpec['density'] = 'medium';
-  if (isAuthority || isLinkedin) density = 'minimal';
-  else if (isTiktok || template === 'offer') density = 'rich';
+  // --- Density ---
+  let density: DirectionSpec['density'] = templateSpec?.density ?? 'medium';
+  if (!templateSpec) {
+    if (isAuthority || isLinkedin) density = 'minimal';
+    else if (isTiktok || template === 'offer') density = 'rich';
+  }
 
-  let composition: DirectionSpec['composition'] = 'centered';
-  if (template === 'list') composition = 'grid';
-  else if (template === 'storytelling' || template === 'case') composition = 'magazine';
-  else if (isOffer || template === 'before-after') composition = 'asymmetric';
+  // --- Composition ---
+  let composition: DirectionSpec['composition'] = templateSpec?.composition ?? 'centered';
+  if (!templateSpec) {
+    if (template === 'list') composition = 'grid';
+    else if (template === 'storytelling' || template === 'case') composition = 'magazine';
+    else if (isOffer || template === 'before-after') composition = 'asymmetric';
+  }
 
-  let imagery: DirectionSpec['imagery'] = 'ai-free';
-  if (isLinkedin && isAuthority) imagery = 'none';
-  else if (template === 'storytelling') imagery = 'people';
-  else if (isOffer) imagery = 'product';
-  else if (template === 'educational' || template === 'list') imagery = 'icons';
+  // --- Imagery ---
+  let imagery: DirectionSpec['imagery'] = templateSpec?.imagery ?? 'ai-free';
+  if (!templateSpec) {
+    if (isLinkedin && isAuthority) imagery = 'none';
+    else if (template === 'storytelling') imagery = 'people';
+    else if (isOffer) imagery = 'product';
+    else if (template === 'educational' || template === 'list') imagery = 'icons';
+  }
 
-  let brandIntensity: DirectionSpec['brandIntensity'] = brandKit.hasPalette
-    ? 'balanced'
-    : 'content-dominant';
-  if (isOffer || isLeads) brandIntensity = 'brand-dominant';
+  // --- Brand Intensity ---
+  let brandIntensity: DirectionSpec['brandIntensity'] =
+    templateSpec?.brandIntensity ??
+    (brandKit.hasPalette ? 'balanced' : 'content-dominant');
+  if (!templateSpec) {
+    if (isOffer || isLeads) brandIntensity = 'brand-dominant';
+  }
 
   return normalizeDirectionSpec({
     editorial,

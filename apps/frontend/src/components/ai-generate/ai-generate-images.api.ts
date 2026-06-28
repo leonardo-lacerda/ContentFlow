@@ -9,6 +9,12 @@ import type {
   GenerateImageResponse,
   SavedAiProject,
 } from './ai-generate-images.types';
+import type {
+  BackendTemplateDefinition,
+  TemplateRecommendRequest,
+  TemplateRecommendResponse,
+  TemplateTrackEvent,
+} from './template-registry.types';
 
 export type AiGenerateFetcher = (
   input: string,
@@ -224,4 +230,39 @@ export const aiGenerateImagesApi = {
       }>;
     }
   ) => postJson<unknown[]>(fetcher, '/media/carousel', payload),
+
+  /** Fetch all active carousel templates from the backend. */
+  listTemplates: async (fetcher: AiGenerateFetcher) =>
+    getJson<{ templates: BackendTemplateDefinition[]; schemaVersion: string }>(
+      fetcher,
+      '/ai-generate/templates'
+    ),
+
+  /** Ask the backend to recommend templates based on context. */
+  recommendTemplates: async (
+    fetcher: AiGenerateFetcher,
+    params: TemplateRecommendRequest
+  ) =>
+    postJson<TemplateRecommendResponse>(
+      fetcher,
+      '/ai-generate/templates/recommend',
+      params
+    ),
+
+  /** Fire-and-forget: track a template usage event. */
+  trackTemplateUsage: async (
+    fetcher: AiGenerateFetcher,
+    templateId: string,
+    event: TemplateTrackEvent
+  ) => {
+    try {
+      await fetcher('/ai-generate/templates/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId, event }),
+      });
+    } catch {
+      /* swallow — analytics must not break the UI */
+    }
+  },
 };

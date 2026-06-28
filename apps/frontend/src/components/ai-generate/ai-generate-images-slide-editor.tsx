@@ -12,11 +12,22 @@ import type {
   ReferenceImage,
   SlideImageResult,
 } from './ai-generate-images.types';
+import {
+  Plus,
+  Trash2,
+  Copy,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
 type SlideEditorPanelProps = {
+  addSlide: (afterIndex: number) => void;
+  duplicateSlide: (index: number) => void;
   generateSlideImage: (slide: CarouselSlide) => void;
+  moveSlide: (fromIndex: number, toIndex: number) => void;
   plan: CarouselPlan;
   regenerateSlideCopy: (slide: CarouselSlide, mode: string) => void;
+  removeSlide: (index: number) => void;
   restoreImageVersion: (slideIndex: number, historyIndex: number) => void;
   restoreSlideVersion: (slideIndex: number, historyIndex: number) => void;
   selectedReferences: ReferenceImage[];
@@ -38,9 +49,13 @@ type SlideEditorPanelProps = {
 
 export function SlideEditorPanel(props: SlideEditorPanelProps) {
   const {
+    addSlide,
+    duplicateSlide,
     generateSlideImage,
+    moveSlide,
     plan,
     regenerateSlideCopy,
+    removeSlide,
     restoreImageVersion,
     restoreSlideVersion,
     selectedReferences,
@@ -111,13 +126,60 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                     <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-primary/10 text-primary text-[12px] font-[700] uppercase tracking-wider">
                       Slide {slide.index}
                     </span>
-                    {isLoading && (
-                      <span className="flex items-center gap-[7px] text-[12px] font-[700] text-primary">
-                        <Spinner size={14} />
-                        {loadingImage ? 'Gerando imagem' : 'Reescrevendo copy'}
-                        <AnimatedDots />
-                      </span>
-                    )}
+                    <div className="flex items-center gap-[4px]">
+                      {isLoading && (
+                        <span className="flex items-center gap-[7px] text-[12px] font-[700] text-primary mr-2">
+                          <Spinner size={14} />
+                          {loadingImage ? 'Gerando imagem' : 'Reescrevendo copy'}
+                          <AnimatedDots />
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => moveSlide(slideIndex, slideIndex - 1)}
+                        disabled={slideIndex === 0 || isLoading}
+                        className="flex items-center justify-center h-7 w-7 rounded-[6px] border border-newTableBorder text-textItemBlur transition hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Mover slide para esquerda"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveSlide(slideIndex, slideIndex + 1)}
+                        disabled={slideIndex === plan.slides.length - 1 || isLoading}
+                        className="flex items-center justify-center h-7 w-7 rounded-[6px] border border-newTableBorder text-textItemBlur transition hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Mover slide para direita"
+                      >
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => duplicateSlide(slideIndex)}
+                        disabled={isLoading}
+                        className="flex items-center justify-center h-7 w-7 rounded-[6px] border border-newTableBorder text-textItemBlur transition hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Duplicar slide"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addSlide(slideIndex)}
+                        disabled={isLoading}
+                        className="flex items-center justify-center h-7 w-7 rounded-[6px] border border-newTableBorder text-textItemBlur transition hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Adicionar slide após este"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeSlide(slideIndex)}
+                        disabled={plan.slides.length <= 1 || isLoading}
+                        className="flex items-center justify-center h-7 w-7 rounded-[6px] border border-red-500/30 text-red-400 transition hover:border-red-500 hover:bg-red-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Remover slide"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   {isLoading && <IndeterminateBar />}

@@ -67,6 +67,15 @@ import {
 } from './ai-generate-images.utils';
 import { aiGenerateImagesApi } from './ai-generate-images.api';
 import { fetchTemplates, fetchRecommendations, trackTemplateUsage } from './template-registry';
+import {
+  addSlideToPlan,
+  createSnapshot,
+  duplicateSlideInPlan,
+  moveSlideInPlan,
+  pushSnapshot,
+  removeSlideFromPlan,
+  restoreSnapshot,
+} from './slide-operations';
 import type { BackendTemplateDefinition, TemplateRecommendation } from './template-registry.types';
 
 export function useAiGenerateImagesStudio() {
@@ -105,6 +114,8 @@ export function useAiGenerateImagesStudio() {
   const [generatingImages, setGeneratingImages] = useState(false);
   const [error, setError] = useState('');
   const [plan, setPlan] = useState<CarouselPlan | null>(null);
+  const [undoStack, setUndoStack] = useState<string[]>([]);
+  const [redoStack, setRedoStack] = useState<string[]>([]);
   const [slideImages, setSlideImages] = useState<
     Record<number, SlideImageResult>
   >({});
@@ -330,7 +341,11 @@ export function useAiGenerateImagesStudio() {
   const isOverSoftLimit =
     !!costHistory?.softLimitBrl && projectedCostBrl >= costHistory.softLimitBrl;
   const isOverUserLimit = costLimitBrl > 0 && projectedCostBrl >= costLimitBrl;
-  const editorialIssues = plan ? getEditorialIssues(plan.slides) : [];
+  const selectedBackendTemplate =
+    backendTemplates.find((bt) => bt.id === selectedTemplate) || null;
+  const editorialIssues = plan
+    ? getEditorialIssues(plan.slides, forbiddenTerms, selectedBackendTemplate)
+    : [];
   const selectedReferences = referenceImages
     .filter((image) => image.selected)
     .slice(0, 3);
@@ -1129,7 +1144,6 @@ export function useAiGenerateImagesStudio() {
       if (!current) {
         return current;
       }
-
       return {
         ...current,
         slides: current.slides.map((slide) =>
@@ -1138,6 +1152,77 @@ export function useAiGenerateImagesStudio() {
       };
     });
   };
+
+  const saveSnapshot = useCallback(() => {
+    const snapshot = createSnapshot(plan, slideImages);
+    setUndoStack((stack) => pushSnapshot(stack, snapshot));
+    setRedoStack([]);
+  }, [plan, slideImages]);
+
+  const undo = useCallback(() => {
+    setUndoStack((stack) => {
+      if (stack.length === 0) return stack;
+      const raw = stack[stack.length - 1];
+      setRedoStack((redo) => {
+        const snapshot = createSnapshot(plan, slideImages);
+        return [...redo, snapshot];
+      });
+      const { plan: prevPlan, slideImages: prevImages } = restoreSnapshot(raw);
+      setPlan(prevPlan);
+      setSlideImages(prevImages);
+      return stack.slice(0, -1);
+    });
+  }, [plan, slideImages]);
+
+  const redo = useCallback(() => {
+    setRedoStack((stack) => {
+      if (stack.length === 0) return stack;
+      const raw = stack[stack.length - 1];
+      setUndoStack((undo) => {
+        const snapshot = createSnapshot(plan, slideImages);
+        return [...undo, snapshot];
+      });
+      const { plan: nextPlan, slideImages: nextImages } = restoreSnapshot(raw);
+      setPlan(nextPlan);
+      setSlideImages(nextImages);
+      return stack.slice(0, -1);
+    });
+  }, [plan, slideImages]);
+
+  const canUndo = undoStack.length > 0;
+  const canRedo = redoStack.length > 0;
+
+  const addSlide = useCallback(
+    (afterIndex: number) => {
+      saveSnapshot();
+      setPlan((current) => addSlideToPlan(current, afterIndex));
+    },
+    [saveSnapshot]
+  );
+
+  const removeSlide = useCallback(
+    (index: number) => {
+      saveSnapshot();
+      setPlan((current) => removeSlideFromPlan(current, index));
+    },
+    [saveSnapshot]
+  );
+
+  const duplicateSlide = useCallback(
+    (index: number) => {
+      saveSnapshot();
+      setPlan((current) => duplicateSlideInPlan(current, index));
+    },
+    [saveSnapshot]
+  );
+
+  const moveSlide = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      saveSnapshot();
+      setPlan((current) => moveSlideInPlan(current, fromIndex, toIndex));
+    },
+    [saveSnapshot]
+  );
 
   const uploadReferenceImages = async (
     event: ChangeEvent<HTMLInputElement>
@@ -2026,6 +2111,18 @@ export function useAiGenerateImagesStudio() {
       return;
     }
 
+    // Auto-review gate: block image generation when editorial issues exist
+    if (
+      autoReviewBeforeImages &&
+      editorialIssues.length > 0 &&
+      !allowGenerateWithReviewIssues
+    ) {
+      setError(
+        `Existem ${editorialIssues.length} problema${editorialIssues.length !== 1 ? 's' : ''} editorial${editorialIssues.length !== 1 ? 'is' : ''} não resolvido${editorialIssues.length !== 1 ? 's' : ''}. Resolva os problemas ou marque "gerar mesmo assim" para continuar.`
+      );
+      return;
+    }
+
     setGeneratingImages(true);
     setError('');
     setImageJob(null);
@@ -2603,6 +2700,7 @@ export function useAiGenerateImagesStudio() {
     selectedLogoReferenceId,
     selectedReferences,
     selectedTemplate,
+    selectedBackendTemplate,
     setActivePreview,
     setAllowGenerateWithReviewIssues,
     setAllowOverBudget,
@@ -2666,6 +2764,14 @@ export function useAiGenerateImagesStudio() {
     trimmedTextModel,
     trimmedTopic,
     updateSlide,
+    addSlide,
+    removeSlide,
+    duplicateSlide,
+    moveSlide,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
     uploadReferenceImages,
     uploadReferencesCount,
     visibleReferenceImages,

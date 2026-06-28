@@ -51,6 +51,149 @@ describe('direction-compiler', () => {
     });
   });
 
+  describe('buildDirectionSpec — new templates (16 total)', () => {
+    it('faq: clean editorial, text-dominant, icons', () => {
+      const spec = buildDirectionSpec({ templateId: 'faq' });
+      expect(spec.editorial).toBe('clean');
+      expect(spec.hierarchy).toBe('text-dominant');
+      expect(spec.density).toBe('medium');
+      expect(spec.composition).toBe('modular');
+      expect(spec.imagery).toBe('icons');
+    });
+
+    it('comparison: corporativo-moderno, grid layout', () => {
+      const spec = buildDirectionSpec({ templateId: 'comparison' });
+      expect(spec.editorial).toBe('corporativo-moderno');
+      expect(spec.hierarchy).toBe('balanced');
+      expect(spec.density).toBe('medium');
+      expect(spec.composition).toBe('grid');
+      expect(spec.imagery).toBe('icons');
+    });
+
+    it('testimonial: revista editorial, people imagery', () => {
+      const spec = buildDirectionSpec({ templateId: 'testimonial' });
+      expect(spec.editorial).toBe('revista');
+      expect(spec.hierarchy).toBe('visual-dominant');
+      expect(spec.density).toBe('minimal');
+      expect(spec.composition).toBe('centered');
+      expect(spec.imagery).toBe('people');
+    });
+
+    it('statistics: bold editorial, visual-dominant with icons', () => {
+      const spec = buildDirectionSpec({ templateId: 'statistics' });
+      expect(spec.editorial).toBe('bold');
+      expect(spec.hierarchy).toBe('visual-dominant');
+      expect(spec.density).toBe('medium');
+      expect(spec.composition).toBe('centered');
+      expect(spec.imagery).toBe('icons');
+    });
+
+    it('problem-solution: startup editorial, illustration imagery', () => {
+      const spec = buildDirectionSpec({ templateId: 'problem-solution' });
+      expect(spec.editorial).toBe('startup');
+      expect(spec.hierarchy).toBe('balanced');
+      expect(spec.density).toBe('medium');
+      expect(spec.composition).toBe('asymmetric');
+      expect(spec.imagery).toBe('illustration');
+    });
+
+    it('us-vs-them: bold editorial, asymmetric composition', () => {
+      const spec = buildDirectionSpec({ templateId: 'us-vs-them' });
+      expect(spec.editorial).toBe('bold');
+      expect(spec.hierarchy).toBe('balanced');
+      expect(spec.density).toBe('medium');
+      expect(spec.composition).toBe('asymmetric');
+      expect(spec.imagery).toBe('icons');
+    });
+
+    it('best-sellers: corporativo-moderno, product imagery, rich density', () => {
+      const spec = buildDirectionSpec({ templateId: 'best-sellers' });
+      expect(spec.editorial).toBe('corporativo-moderno');
+      expect(spec.hierarchy).toBe('visual-dominant');
+      expect(spec.density).toBe('rich');
+      expect(spec.composition).toBe('grid');
+      expect(spec.imagery).toBe('product');
+    });
+
+    it('negative-hook: bold editorial, visual-dominant, minimal density', () => {
+      const spec = buildDirectionSpec({ templateId: 'negative-hook' });
+      expect(spec.editorial).toBe('bold');
+      expect(spec.hierarchy).toBe('visual-dominant');
+      expect(spec.density).toBe('minimal');
+      expect(spec.composition).toBe('centered');
+      expect(spec.imagery).toBe('ai-free');
+    });
+
+    it('new templates are deterministic', () => {
+      const templates = [
+        'faq', 'comparison', 'testimonial', 'statistics',
+        'problem-solution', 'us-vs-them', 'best-sellers', 'negative-hook',
+      ];
+      for (const t of templates) {
+        const a = buildDirectionSpec({ templateId: t });
+        const b = buildDirectionSpec({ templateId: t });
+        expect(a).toEqual(b);
+      }
+    });
+
+    it('new templates produce valid specs via normalizeDirectionSpec', () => {
+      const templates = [
+        'faq', 'comparison', 'testimonial', 'statistics',
+        'problem-solution', 'us-vs-them', 'best-sellers', 'negative-hook',
+      ];
+      for (const t of templates) {
+        const spec = buildDirectionSpec({ templateId: t });
+        expect(spec).toEqual(normalizeDirectionSpec(spec));
+      }
+    });
+  });
+
+  describe('buildDirectionSpec — backward compatibility (legacy templates)', () => {
+    it('storytelling: revista editorial, people imagery', () => {
+      const spec = buildDirectionSpec({ templateId: 'storytelling' });
+      expect(spec.editorial).toBe('revista');
+      expect(spec.hierarchy).toBe('visual-dominant');
+      expect(spec.imagery).toBe('people');
+      expect(spec.composition).toBe('magazine');
+    });
+
+    it('case: corporativo-moderno editorial, magazine composition', () => {
+      const spec = buildDirectionSpec({ templateId: 'case' });
+      expect(spec.editorial).toBe('corporativo-moderno');
+      expect(spec.composition).toBe('magazine');
+    });
+
+    it('offer: bold editorial, brand-dominant, product imagery', () => {
+      const spec = buildDirectionSpec(
+        { templateId: 'offer', goal: 'vender uma oferta' },
+        { hasPalette: true }
+      );
+      expect(spec.editorial).toBe('bold');
+      expect(spec.brandIntensity).toBe('brand-dominant');
+      expect(spec.imagery).toBe('product');
+    });
+
+    it('list: clean editorial, text-dominant, grid composition', () => {
+      const spec = buildDirectionSpec({ templateId: 'list' });
+      expect(spec.editorial).toBe('clean');
+      expect(spec.hierarchy).toBe('text-dominant');
+      expect(spec.composition).toBe('grid');
+      expect(spec.imagery).toBe('icons');
+    });
+
+    it('educational: text-dominant, icons imagery', () => {
+      const spec = buildDirectionSpec({ templateId: 'educational' });
+      expect(spec.hierarchy).toBe('text-dominant');
+      expect(spec.imagery).toBe('icons');
+    });
+
+    it('before-after: bold editorial, asymmetric composition', () => {
+      const spec = buildDirectionSpec({ templateId: 'before-after' });
+      expect(spec.editorial).toBe('bold');
+      expect(spec.composition).toBe('asymmetric');
+    });
+  });
+
   describe('normalizeDirectionSpec', () => {
     it('ids inválidos voltam para os defaults dos eixos', () => {
       const spec = normalizeDirectionSpec({ editorial: 'inexistente', imagery: 'xpto' } as any);

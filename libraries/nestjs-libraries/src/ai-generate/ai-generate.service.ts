@@ -901,6 +901,32 @@ export class AiGenerateService {
       );
     }
 
+    // Resolve template enrichment when a templateId is provided.
+    // The template's instruction and narrative promptInstruction are injected
+    // into the system prompt to steer the model toward the chosen structure.
+    let templateEnrichment = '';
+    if (body.templateId) {
+      try {
+        // Lazy import to avoid circular dependency issues at module level
+        const { templateRegistry } = await import(
+          '@gitroom/nestjs-libraries/ai-generate/templates/template-registry'
+        );
+        const template = templateRegistry.get(body.templateId);
+        if (template) {
+          templateEnrichment =
+            `\n\nTEMPLATE ESCOLHIDO: "${template.label}" (${template.id})` +
+            `\nInstrucao do template: ${template.instruction}` +
+            `\nNarrativa: ${template.narrative.promptInstruction}` +
+            `\nTom recomendado: ${template.tone}` +
+            `\nDensidade de texto: ${template.textDensity}` +
+            `\nDirecao visual padrao: editorial=${template.defaultDirection.editorial}, hierarquia=${template.defaultDirection.hierarchy}, densidade=${template.defaultDirection.density}` +
+            `\nCTA recomendado: ${template.recommendedCta}`;
+        }
+      } catch {
+        // If the registry import fails, proceed without template enrichment.
+      }
+    }
+
     const openAiApiKey =
       process.env.AI_GENERATE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
     const openAiBaseUrl =
@@ -966,7 +992,7 @@ export class AiGenerateService {
                 sourceContent
                   ? `\n\nCONTEUDO DE ORIGEM (transforme ISTO em carrossel; extraia os pontos principais, resuma e adapte para slides curtos e impactantes; se nao houver tema definido, crie um titulo forte a partir deste conteudo):\n"""\n${sourceContent}\n"""`
                   : ''
-              }\n\nFormato obrigatorio do JSON:\n{\n  "title": "titulo do post",\n  "platform": "instagram",\n  "language": "pt-BR",\n  "caption": "legenda curta para acompanhar o post fora da imagem",\n  "hashtags": ["#tag"],\n  "imageStyleGuide": "guia visual consistente para todas as imagens, incluindo tipografia, cores, composicao e elementos de marca",\n  "slides": [\n    {\n      "index": 1,\n      "headline": "frase principal curta que deve aparecer GRANDE dentro da imagem",\n      "body": "texto de apoio curto que tambem deve aparecer dentro da imagem",\n      "cta": "micro chamada visual opcional para aparecer no slide",\n      "imagePrompt": "descricao visual do fundo, objeto/personagem/metafora, layout e espacos de respiro para encaixar a tipografia",\n      "altText": "descricao acessivel da imagem"\n    }\n  ]\n}\n\nRegras: headline e body sao copy visual para dentro do criativo, nao descricao do post. Escreva pouco texto por slide, com quebras naturais e alto impacto. Use uma linguagem natural em portugues do Brasil. Cada slide deve funcionar como uma peca editorial quadrada: tipografia grande, hierarquia clara, bastante margem e uma metafora visual forte. O imagePrompt deve preparar uma imagem que contenha texto renderizado com legibilidade, sem pedir legenda externa. Evite promessas exageradas, nao invente logos; se nao houver marca, use um pequeno selo textual com o tema ou categoria.`,
+              }${templateEnrichment}\n\nFormato obrigatorio do JSON:\n{\n  "title": "titulo do post",\n  "platform": "instagram",\n  "language": "pt-BR",\n  "caption": "legenda curta para acompanhar o post fora da imagem",\n  "hashtags": ["#tag"],\n  "imageStyleGuide": "guia visual consistente para todas as imagens, incluindo tipografia, cores, composicao e elementos de marca",\n  "slides": [\n    {\n      "index": 1,\n      "headline": "frase principal curta que deve aparecer GRANDE dentro da imagem",\n      "body": "texto de apoio curto que tambem deve aparecer dentro da imagem",\n      "cta": "micro chamada visual opcional para aparecer no slide",\n      "imagePrompt": "descricao visual do fundo, objeto/personagem/metafora, layout e espacos de respiro para encaixar a tipografia",\n      "altText": "descricao acessivel da imagem"\n    }\n  ]\n}\n\nRegras: headline e body sao copy visual para dentro do criativo, nao descricao do post. Escreva pouco texto por slide, com quebras naturais e alto impacto. Use uma linguagem natural em portugues do Brasil. Cada slide deve funcionar como uma peca editorial quadrada: tipografia grande, hierarquia clara, bastante margem e uma metafora visual forte. O imagePrompt deve preparar uma imagem que contenha texto renderizado com legibilidade, sem pedir legenda externa. Evite promessas exageradas, nao invente logos; se nao houver marca, use um pequeno selo textual com o tema ou categoria.`,
             },
           ],
         }),
@@ -1069,6 +1095,31 @@ export class AiGenerateService {
       'gpt-4.1-mini';
     const payload = body.reviewPayload || JSON.stringify(body);
 
+    // --- Extract template checks and forbidden terms from reviewPayload ---
+    let parsedPayload: Record<string, unknown> = {};
+    try { parsedPayload = JSON.parse(payload); } catch { /* ignore */ }
+
+    const editorialChecks = (parsedPayload.editorialChecks || []) as Array<{
+      id: string; description?: string; severity?: string; message?: string; pattern?: string;
+    }>;
+    const forbiddenTerms = (parsedPayload.forbiddenTerms || '') as string;
+    const templateId = (parsedPayload.templateId || body.templateId || '') as string;
+
+    // Build template checks section for the prompt
+    const templateChecksSection = editorialChecks.length > 0
+      ? `\n\nREGRAS EDITORIAIS DO TEMPLATE "${templateId}":\n` +
+        editorialChecks.map((check) =>
+          `- [${check.severity || 'warning'}] ${check.description || check.id}: ${check.message || ''}${
+            check.pattern ? ` (padrão regex: ${check.pattern})` : ''
+          }`
+        ).join('\n')
+      : '';
+
+    // Build forbidden terms section for the prompt
+    const forbiddenSection = forbiddenTerms
+      ? `\n\nTERMOS PROIBIDOS PELA MARCA (devem ser denunciados se encontrados no conteúdo):\n${forbiddenTerms}`
+      : '';
+
     const response = await fetch(`${openAiBaseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
@@ -1085,14 +1136,46 @@ export class AiGenerateService {
           {
             role: 'system',
             content:
-              'Voce e editor senior de carrosseis e diretor de arte. Avalie legibilidade, clareza, promessa exagerada, consistencia com marca, funcao de cada slide e qualidade visual. Responda somente JSON valido.',
+              'Você é editor sênior de carrosseis e diretor de arte. Avalie legibilidade, clareza, promessa exagerada, consistência com marca, função de cada slide e qualidade visual. Verifique também as regras editoriais do template e termos proibidos da marca. Responda somente JSON válido.',
           },
           {
             role: 'user',
-            content: `Revise este carrossel antes da geracao final de imagens.\n\nPayload:\n${payload.slice(
-              0,
-              16000
-            )}\n\nRetorne exatamente:\n{\n  "score": 0,\n  "verdict": "resumo curto do nivel editorial",\n  "issues": [\n    {"slide": 1, "severity": "low|medium|high", "issue": "problema", "suggestion": "correcao objetiva"}\n  ],\n  "strengths": ["ponto forte"]\n}\n\nSe estiver bom, issues pode ser vazio. Use pt-BR.`,
+            content: `Revise este carrossel antes da geração final de imagens.${templateChecksSection}${forbiddenSection}
+
+Payload:
+${payload.slice(0, 14000)}
+
+Retorne exatamente:
+{
+  "score": 0-100,
+  "verdict": "resumo curto do nível editorial",
+  "issues": [
+    {
+      "slideIndex": 1,
+      "field": "headline|body|cta|imagePrompt",
+      "message": "problema",
+      "suggestion": "correção objetiva",
+      "type": "warning|blocker"
+    }
+  ],
+  "strengths": ["ponto forte"],
+  "templateCheckResults": [
+    {
+      "checkId": "id-do-check",
+      "passed": true|false,
+      "message": "detalhe"
+    }
+  ],
+  "forbiddenTermMatches": [
+    {
+      "term": "termo proibido encontrado",
+      "slideIndex": 1,
+      "field": "headline|body"
+    }
+  ]
+}
+
+Se estiver bom, issues pode ser vazio. Use pt-BR.`,
           },
         ],
       }),
@@ -1133,6 +1216,42 @@ export class AiGenerateService {
     const parsed = validation.success && validation.data
       ? validation.data as Record<string, unknown>
       : parseJsonPayload(content);
+
+    // --- Local forbidden terms validation as fallback ---
+    if (forbiddenTerms && Array.isArray(parsed.issues)) {
+      const terms = forbiddenTerms.split(/[,;]\s*/).map(t => t.trim().toLowerCase()).filter(Boolean);
+      const planSlides = (parsedPayload.plan?.slides || parsedPayload.slides || []) as Array<{
+        index?: number; headline?: string; body?: string; cta?: string;
+      }>;
+      const existingMatches = (parsed.forbiddenTermMatches || []) as Array<{
+        term: string; slideIndex: number; field: string;
+      }>;
+      const matchSet = new Set(existingMatches.map(m => `${m.term}-${m.slideIndex}-${m.field}`));
+
+      for (const slide of planSlides) {
+        const fields: Record<string, string> = {
+          headline: (slide.headline || '').toLowerCase(),
+          body: (slide.body || '').toLowerCase(),
+          cta: (slide.cta || '').toLowerCase(),
+        };
+        for (const term of terms) {
+          for (const [field, value] of Object.entries(fields)) {
+            if (value.includes(term) && !matchSet.has(`${term}-${slide.index}-${field}`)) {
+              existingMatches.push({ term, slideIndex: slide.index || 0, field });
+              matchSet.add(`${term}-${slide.index}-${field}`);
+              (parsed.issues as Array<Record<string, unknown>>).push({
+                type: 'blocker',
+                slideIndex: slide.index,
+                field,
+                message: `Termo proibido "${term}" encontrado.`,
+                suggestion: `Remova ou substitua o termo "${term}" por uma alternativa.`,
+              });
+            }
+          }
+        }
+      }
+      parsed.forbiddenTermMatches = existingMatches;
+    }
 
     return {
       ...parsed,

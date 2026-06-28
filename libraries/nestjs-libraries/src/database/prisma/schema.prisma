@@ -986,6 +986,7 @@ model BrandProfile {
   assets         BrandAsset[]
   contentIdeas   ContentIdea[]
   carouselProjects CarouselProject[]
+  editorialPlans EditorialPlan[]
 
   @@index([organizationId])
   @@index([status])
@@ -1059,6 +1060,7 @@ model ContentIdea {
   organization   Organization      @relation(fields: [organizationId], references: [id])
   brandProfile   BrandProfile      @relation(fields: [brandProfileId], references: [id])
   carouselProject CarouselProject?
+  editorialSlots EditorialSlot[]
 
   @@index([organizationId])
   @@index([brandProfileId])
@@ -1091,6 +1093,7 @@ model CarouselProject {
   organization   Organization          @relation(fields: [organizationId], references: [id])
   brandProfile   BrandProfile          @relation(fields: [brandProfileId], references: [id])
   contentIdea    ContentIdea?          @relation(fields: [contentIdeaId], references: [id])
+  editorialSlots EditorialSlot[]
 
   @@index([organizationId])
   @@index([brandProfileId])
@@ -1145,4 +1148,64 @@ model GenerationJob {
   @@index([type])
   @@index([carouselProjectId])
   @@index([idempotencyKey])
+}
+
+model EditorialPlan {
+  id               String   @id @default(uuid())
+  brandProfileId   String
+  organizationId   String
+  name             String
+  frequencyPerWeek Int      @default(3)
+  platforms        String[] @default(["instagram"])
+  pillars          String[] @default([])
+  objectives       String[] @default([])
+  languages        String[] @default(["pt-BR"])
+  timezone         String   @default("America/Sao_Paulo")
+  blackoutDates    String[] @default([])
+  autoGenerate     Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  brandProfile     BrandProfile       @relation(fields: [brandProfileId], references: [id])
+  slots            EditorialSlot[]
+
+  @@index([brandProfileId])
+  @@index([organizationId])
+}
+
+model EditorialSlot {
+  id                String   @id @default(uuid())
+  editorialPlanId   String
+  brandProfileId    String
+  organizationId    String
+  scheduledDate     DateTime
+  pillar            String?
+  objective         String?
+  platform          String   @default("instagram")
+  status            EditorialSlotStatus @default(PLANNED)
+  contentIdeaId     String?
+  carouselProjectId String?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  editorialPlan     EditorialPlan     @relation(fields: [editorialPlanId], references: [id])
+  contentIdea       ContentIdea?      @relation(fields: [contentIdeaId], references: [id])
+  carouselProject   CarouselProject?  @relation(fields: [carouselProjectId], references: [id])
+
+  @@index([editorialPlanId])
+  @@index([brandProfileId])
+  @@index([organizationId])
+  @@index([scheduledDate])
+  @@index([status])
+}
+
+enum EditorialSlotStatus {
+  PLANNED
+  IDEAS_GENERATED
+  APPROVED
+  REJECTED
+  CAROUSEL_CREATED
+  SCHEDULED
+  PUBLISHED
 }

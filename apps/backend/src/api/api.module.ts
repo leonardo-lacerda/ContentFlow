@@ -41,6 +41,7 @@ import { AnnouncementsController } from '@gitroom/backend/api/routes/announcemen
 import { AdminController } from '@gitroom/backend/api/routes/admin.controller';
 import { AiGenerateController } from '@gitroom/backend/api/routes/ai-generate.controller';
 import { AiGenerateService } from '@gitroom/nestjs-libraries/ai-generate/ai-generate.service';
+import { TemplateRecommenderService } from '@gitroom/nestjs-libraries/ai-generate/templates/template-recommender.service';
 import { AuthProviderManager } from '@gitroom/backend/services/auth/providers/providers.manager';
 import { BrandsController } from '@gitroom/backend/api/routes/brands.controller';
 import { ContentIdeaController } from '@gitroom/backend/api/routes/content-ideas.controller';
@@ -56,6 +57,9 @@ import { CarouselProjectRepository } from '@gitroom/nestjs-libraries/database/pr
 import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.service';
 import { GenerationJobRepository } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.repository';
 import { GenerationJobController } from '@gitroom/backend/api/routes/generation-jobs.controller';
+import { EditorialPlansController } from '@gitroom/backend/api/routes/editorial-plans.controller';
+import { EditorialPlanService } from '@gitroom/nestjs-libraries/database/prisma/editorial-plans/editorial-plan.service';
+import { EditorialPlanRepository } from '@gitroom/nestjs-libraries/database/prisma/editorial-plans/editorial-plan.repository';
 import { GithubProvider } from '@gitroom/backend/services/auth/providers/github.provider';
 import { GoogleProvider } from '@gitroom/backend/services/auth/providers/google.provider';
 import { FarcasterProvider } from '@gitroom/backend/services/auth/providers/farcaster.provider';
@@ -87,6 +91,7 @@ const authenticatedController = [
   ContentIdeaController,
   CarouselProjectController,
   GenerationJobController,
+  EditorialPlansController,
 ];
 @Module({
   imports: [UploadModule],
@@ -116,6 +121,7 @@ const authenticatedController = [
     ShortLinkService,
     Nowpayments,
     AiGenerateService,
+    TemplateRecommenderService,
     AuthProviderManager,
     GithubProvider,
     GoogleProvider,
@@ -132,6 +138,8 @@ const authenticatedController = [
     CarouselProjectRepository,
     GenerationJobService,
     GenerationJobRepository,
+    EditorialPlanService,
+    EditorialPlanRepository,
   ],
   get exports() {
     return [...this.imports, ...this.providers];
