@@ -3,6 +3,8 @@ import OpenAI from 'openai';
 import { shuffle } from 'lodash';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
+import { BrandDnaExtractionSchema } from '@gitroom/nestjs-libraries/ai-generate/schemas/brand-dna-extraction.schema';
+import type { BrandDnaExtraction } from '@gitroom/nestjs-libraries/ai-generate/schemas/brand-dna-extraction.schema';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || 'sk-proj-',
@@ -267,5 +269,33 @@ export class OpenaiService {
     }
 
     return [];
+  }
+
+  async generateBrandDna(prompt: string): Promise<BrandDnaExtraction | null> {
+    try {
+      const result = await openai.chat.completions.parse({
+        model: 'gpt-4.1',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are an expert brand analyst. Extract structured brand DNA from the provided website content.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        response_format: zodResponseFormat(
+          BrandDnaExtractionSchema,
+          'brandDna'
+        ),
+      });
+
+      return result.choices[0].message.parsed || null;
+    } catch (err) {
+      console.log(err);
+      return null;
+    }
   }
 }

@@ -6,13 +6,16 @@ import { BrandProfileAdapter } from './brand-profile.adapter';
 import { Organization } from '@prisma/client';
 import { CreateBrandProfileDto } from '@gitroom/nestjs-libraries/dtos/settings/create-brand-profile.dto';
 import { UpdateBrandProfileDto } from '@gitroom/nestjs-libraries/dtos/settings/update-brand-profile.dto';
+import { AnalyzeBrandDto } from '@gitroom/nestjs-libraries/dtos/settings/analyze-brand.dto';
+import { BrandDnaExtractionService } from '@gitroom/nestjs-libraries/ai-generate/brand-dna-extraction.service';
 
 @Injectable()
 export class BrandProfileService {
   constructor(
     private brandProfileRepository: BrandProfileRepository,
     private brandDnaSnapshotRepository: BrandDnaSnapshotRepository,
-    private brandAssetRepository: BrandAssetRepository
+    private brandAssetRepository: BrandAssetRepository,
+    private brandDnaExtractionService: BrandDnaExtractionService
   ) {}
 
   async getBrands(orgId: string) {
@@ -62,6 +65,14 @@ export class BrandProfileService {
 
   async createAsset(brandProfileId: string, data: { type: string; mediaId?: string; sourceUrl?: string; metadata?: any }) {
     return this.brandAssetRepository.create({ brandProfileId, ...data });
+  }
+
+  async analyzeBrand(orgId: string, brandId: string, dto: AnalyzeBrandDto) {
+    const brand = await this.brandProfileRepository.findById(brandId);
+    if (!brand || brand.organizationId !== orgId) {
+      throw new Error('Brand not found');
+    }
+    return this.brandDnaExtractionService.analyze(brandId, dto.url);
   }
 
   async migrateFromLegacy(orgId: string, org: Organization) {

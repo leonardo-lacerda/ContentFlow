@@ -20,6 +20,8 @@ import { StripeService } from '@gitroom/nestjs-libraries/services/stripe.service
 import { CaktoService } from '@gitroom/nestjs-libraries/services/cakto.service';
 import { ExtractContentService } from '@gitroom/nestjs-libraries/openai/extract.content.service';
 import { OpenaiService } from '@gitroom/nestjs-libraries/openai/openai.service';
+import { UrlValidationService } from '@gitroom/nestjs-libraries/openai/url-validation.service';
+import { WebsiteMetadataExtractor } from '@gitroom/nestjs-libraries/openai/website-metadata.extractor';
 import { AgenciesService } from '@gitroom/nestjs-libraries/database/prisma/agencies/agencies.service';
 import { AgenciesRepository } from '@gitroom/nestjs-libraries/database/prisma/agencies/agencies.repository';
 import { TrackService } from '@gitroom/nestjs-libraries/track/track.service';
@@ -47,6 +49,7 @@ import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/b
 import { BrandProfileRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.repository';
 import { BrandDnaSnapshotRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-dna-snapshot.repository';
 import { BrandAssetRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-asset.repository';
+import { BrandDnaExtractionService } from '@gitroom/nestjs-libraries/ai-generate/brand-dna-extraction.service';
 import { TemporalService } from 'nestjs-temporal-core';
 
 // Quando o Temporal esta desabilitado (DISABLE_TEMPORAL=true), o modulo global
@@ -124,6 +127,9 @@ const temporalStubProvider = temporalDisabled
     BrandProfileRepository,
     BrandDnaSnapshotRepository,
     BrandAssetRepository,
+    UrlValidationService,
+    WebsiteMetadataExtractor,
+    BrandDnaExtractionService,
     ...temporalStubProvider,
   ],
   get exports() {

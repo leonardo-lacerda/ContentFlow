@@ -1,0 +1,2079 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ContentFlow — Painel Interno</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* === ContentFlow Design Tokens === */
+      --bg-app: #0e0e0e;
+      --bg-surface: #1a1919;
+      --bg-elevated: #242323;
+      --bg-hover: #201f1f;
+      --border-color: #252525;
+      --border-light: #2b2b2b;
+      --text-primary: #ffffff;
+      --text-secondary: #999999;
+      --text-muted: #696868;
+      --purple: #612bd3;
+      --purple-hover: #7236f1;
+      --purple-light: #7c3aed;
+      --pink: #d82d7e;
+      --pink-hover: #e83e8e;
+      --green: #32d583;
+      --green-bg: rgba(50, 213, 131, 0.1);
+      --orange: #f59e0b;
+      --orange-bg: rgba(245, 158, 11, 0.1);
+      --red: #f97066;
+      --red-bg: rgba(249, 112, 102, 0.1);
+      --blue: #3b82f6;
+      --blue-bg: rgba(59, 130, 246, 0.1);
+      --brand-gradient: linear-gradient(135deg, #612bd3, #d82d7e);
+      --brand-gradient-2: linear-gradient(135deg, #7c3aed, #ec4492);
+      --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      --sidebar-width: 260px;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    html { font-size: 16px; }
+    body {
+      font-family: var(--font);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: var(--sidebar-width);
+      min-height: 100vh;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 50;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar-logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--brand-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .sidebar-logo-text {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .sidebar-logo-text span {
+      background: var(--brand-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sidebar-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 16px 12px 8px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      position: relative;
+    }
+
+    .sidebar-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .sidebar-item.active {
+      background: rgba(97, 43, 211, 0.15);
+      color: var(--purple-light);
+    }
+
+    .sidebar-item.active::before {
+      content: '';
+      position: absolute;
+      left: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 20px;
+      border-radius: 0 3px 3px 0;
+      background: var(--brand-gradient);
+    }
+
+    .sidebar-item svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+
+    .sidebar-item.active svg { opacity: 1; }
+
+    .sidebar-badge {
+      margin-left: auto;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    .sidebar-badge.green { background: var(--green-bg); color: var(--green); }
+    .sidebar-badge.pink { background: rgba(216, 45, 126, 0.15); color: var(--pink); }
+
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .sidebar-user:hover { background: var(--bg-hover); }
+
+    .sidebar-user-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--brand-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .sidebar-user-info { flex: 1; min-width: 0; }
+    .sidebar-user-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .sidebar-user-plan { font-size: 11px; color: var(--text-muted); }
+
+    /* ===== MAIN ===== */
+    .main {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      min-height: 100vh;
+    }
+
+    /* ===== TOPBAR ===== */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-app);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .topbar-greeting h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .topbar-greeting p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Brand Selector */
+    .brand-selector {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .brand-selector:hover { border-color: var(--purple); }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--purple);
+      flex-shrink: 0;
+    }
+
+    .brand-dot.orange { background: var(--orange); }
+    .brand-dot.green { background: var(--green); }
+    .brand-dot.blue { background: var(--blue); }
+
+    .brand-selector-info { font-size: 13px; }
+    .brand-selector-name { font-weight: 600; color: var(--text-primary); }
+    .brand-selector-arrow { color: var(--text-muted); font-size: 10px; margin-left: 4px; }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topbar-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .topbar-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    .topbar-btn .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+      position: absolute;
+      top: 8px;
+      right: 8px;
+    }
+
+    .topbar-btn svg { width: 18px; height: 18px; }
+
+    .topbar-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--brand-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* ===== PAGE CONTENT ===== */
+    .page-content {
+      padding: 24px 32px 48px;
+    }
+
+    /* ===== STATS ROW ===== */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--purple);
+      transform: translateY(-2px);
+    }
+
+    .stat-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .stat-card-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .stat-card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stat-card-icon.purple { background: rgba(97, 43, 211, 0.15); }
+    .stat-card-icon.pink { background: rgba(216, 45, 126, 0.15); }
+    .stat-card-icon.green { background: var(--green-bg); }
+    .stat-card-icon.orange { background: var(--orange-bg); }
+
+    .stat-card-icon svg { width: 18px; height: 18px; }
+    .stat-card-icon.purple svg { color: var(--purple-light); }
+    .stat-card-icon.pink svg { color: var(--pink); }
+    .stat-card-icon.green svg { color: var(--green); }
+    .stat-card-icon.orange svg { color: var(--orange); }
+
+    .stat-card-value {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.1;
+    }
+
+    .stat-card-change {
+      font-size: 12px;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stat-card-change.up { color: var(--green); }
+    .stat-card-change.down { color: var(--red); }
+
+    /* ===== SECTION HEADER ===== */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .section-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .section-header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .section-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--brand-gradient);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--purple);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    .btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ===== CARDS GRID ===== */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-header h3 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .card-body { padding: 24px; }
+    .card-body.p0 { padding: 0; }
+
+    /* ===== BRAND DNA CARD ===== */
+    .brand-dna-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .brand-dna-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+
+    .brand-dna-card.gradient-border {
+      border-image: var(--brand-gradient) 1;
+      border-radius: var(--radius-lg);
+      border-width: 1px;
+      border-style: solid;
+      border-image-slice: 1;
+    }
+
+    .dna-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .dna-status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dna-status-dot.active { background: var(--green); box-shadow: 0 0 8px rgba(50, 213, 131, 0.4); }
+    .dna-status-dot.pending { background: var(--orange); box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); }
+    .dna-status-dot.inactive { background: var(--text-muted); }
+
+    .dna-status-text {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .dna-status-text.active { color: var(--green); }
+    .dna-status-text.pending { color: var(--orange); }
+
+    .dna-preview {
+      display: flex;
+      gap: 8px;
+      margin: 16px 0;
+    }
+
+    .dna-color {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--border-color);
+    }
+
+    .dna-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+    }
+
+    .dna-progress {
+      margin-top: 16px;
+    }
+
+    .dna-progress-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--bg-elevated);
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .dna-progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--brand-gradient);
+      transition: width 0.5s ease;
+    }
+
+    .dna-progress-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .dna-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .dna-info-item {}
+    .dna-info-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .dna-info-value { font-size: 14px; font-weight: 500; margin-top: 2px; }
+
+    /* ===== CONTENT TYPE TABS ===== */
+    .content-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-elevated);
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 24px;
+    }
+
+    .content-tab {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+      background: transparent;
+      font-family: var(--font);
+    }
+
+    .content-tab:hover { color: var(--text-primary); }
+    .content-tab.active {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* ===== CARROSSEL GRID ===== */
+    .carrossel-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .carrossel-thumb {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .carrossel-thumb:hover {
+      border-color: var(--purple);
+      transform: translateY(-2px);
+    }
+
+    .carrossel-thumb-preview {
+      aspect-ratio: 9/16;
+      background: var(--bg-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .carrossel-thumb-preview .mock-slide {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+      font-size: 11px;
+    }
+
+    .mock-slide-1 { background: linear-gradient(135deg, #1a1a2e, #16213e); }
+    .mock-slide-2 { background: linear-gradient(135deg, #2d1b3d, #1a1a2e); }
+    .mock-slide-3 { background: linear-gradient(135deg, #1a1a2e, #0f3460); }
+    .mock-slide-4 { background: linear-gradient(135deg, #16213e, #0f3460); }
+    .mock-slide-5 { background: linear-gradient(135deg, #2d1b3d, #533483); }
+
+    .mock-slide-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 4px;
+    }
+
+    .mock-slide-sub {
+      font-size: 10px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .carrossel-thumb-info {
+      padding: 12px 14px;
+    }
+
+    .carrossel-thumb-title {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .carrossel-thumb-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .carrossel-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .carrossel-thumb:hover .carrossel-actions { opacity: 1; }
+
+    .carrossel-action-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: rgba(0,0,0,0.6);
+      border: none;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      backdrop-filter: blur(4px);
+    }
+
+    .carrossel-action-btn:hover { background: var(--purple); }
+
+    /* ===== SWIPE INTERFACE ===== */
+    .swipe-section {
+      margin-top: 32px;
+    }
+
+    .swipe-container {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    .swipe-main {
+      flex: 1;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .swipe-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      aspect-ratio: 9/16;
+      max-height: 600px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .swipe-card-inner {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      text-align: center;
+    }
+
+    .swipe-card-type {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--pink);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 12px;
+    }
+
+    .swipe-card-headline {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.3;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+
+    .swipe-card-body {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .swipe-card-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .swipe-card-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .swipe-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .swipe-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 2px solid var(--border-color);
+      background: var(--bg-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 22px;
+    }
+
+    .swipe-btn:hover { transform: scale(1.1); }
+    .swipe-btn.dismiss:hover { border-color: var(--red); background: var(--red-bg); color: var(--red); }
+    .swipe-btn.save:hover { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+    .swipe-btn.edit:hover { border-color: var(--blue); background: var(--blue-bg); color: var(--blue); }
+    .swipe-btn.fav:hover { border-color: var(--pink); background: rgba(216, 45, 126, 0.1); color: var(--pink); }
+
+    .swipe-counter {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .swipe-counter span { color: var(--text-primary); font-weight: 600; }
+
+    /* Swipe Suggestions sidebar */
+    .swipe-suggestions {
+      width: 280px;
+      flex-shrink: 0;
+    }
+
+    .swipe-suggestions h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .swipe-suggestion-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .swipe-suggestion-item:hover {
+      background: var(--bg-hover);
+      border-color: var(--purple);
+    }
+
+    .swipe-suggestion-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(97, 43, 211, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+
+    .swipe-suggestion-text { flex: 1; }
+    .swipe-suggestion-text strong { font-size: 13px; font-weight: 600; display: block; }
+    .swipe-suggestion-text span { font-size: 12px; color: var(--text-secondary); }
+
+    /* ===== GENERATE FORM ===== */
+    .generate-panel {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+    }
+
+    .generate-form {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-primary);
+    }
+
+    .form-label .hint {
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: var(--font);
+      transition: border-color 0.15s;
+    }
+
+    .form-input:focus {
+      border-color: var(--purple);
+      outline: none;
+    }
+
+    .form-input::placeholder { color: var(--text-muted); }
+
+    .form-select {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: var(--font);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23696868' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      cursor: pointer;
+    }
+
+    .form-select:focus { border-color: var(--purple); outline: none; }
+
+    .form-textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 10px 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: var(--font);
+      resize: vertical;
+      transition: border-color 0.15s;
+    }
+
+    .form-textarea:focus { border-color: var(--purple); outline: none; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ===== TOGGLE SWITCH ===== */
+    .toggle-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .toggle-chip {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: var(--font);
+    }
+
+    .toggle-chip:hover { border-color: var(--purple); color: var(--text-primary); }
+    .toggle-chip.active { background: rgba(97, 43, 211, 0.15); border-color: var(--purple); color: var(--purple-light); }
+
+    /* ===== ANALYTICS PREVIEW ===== */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+    }
+
+    .chart-placeholder {
+      background: var(--bg-elevated);
+      border-radius: var(--radius-sm);
+      height: 200px;
+      display: flex;
+      align-items: flex-end;
+      padding: 16px 24px;
+      gap: 8px;
+    }
+
+    .chart-bar {
+      flex: 1;
+      border-radius: 4px 4px 0 0;
+      background: var(--brand-gradient);
+      opacity: 0.7;
+      transition: opacity 0.15s;
+      min-height: 20px;
+    }
+
+    .chart-bar:nth-child(1) { height: 60%; }
+    .chart-bar:nth-child(2) { height: 80%; }
+    .chart-bar:nth-child(3) { height: 45%; }
+    .chart-bar:nth-child(4) { height: 90%; }
+    .chart-bar:nth-child(5) { height: 70%; }
+    .chart-bar:nth-child(6) { height: 55%; }
+    .chart-bar:nth-child(7) { height: 95%; }
+
+    .chart-bar.highlight { opacity: 1; }
+
+    .analytics-metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .analytics-metric:last-child { border-bottom: none; }
+    .analytics-metric-label { font-size: 13px; color: var(--text-secondary); }
+    .analytics-metric-value { font-size: 15px; font-weight: 700; }
+
+    /* ===== PAGE HEADER ===== */
+    .page-header {
+      margin-bottom: 28px;
+    }
+
+    .page-header h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .page-header p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+    }
+
+    .empty-state-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 28px;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      max-width: 360px;
+      margin: 0 auto 20px;
+    }
+
+    /* ===== NOTIFICATION ===== */
+    .notif-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .notif-item:last-child { border-bottom: none; }
+
+    .notif-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+
+    .notif-icon.generated { background: rgba(50, 213, 131, 0.15); }
+    .notif-icon.scheduled { background: rgba(59, 130, 246, 0.15); }
+    .notif-icon.dna { background: rgba(97, 43, 211, 0.15); }
+    .notif-icon.alert { background: var(--red-bg); }
+
+    .notif-content { flex: 1; }
+    .notif-text { font-size: 13px; line-height: 1.4; }
+    .notif-text strong { font-weight: 600; }
+    .notif-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ===== CALENDAR MINI ===== */
+    .cal-mini-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .cal-mini-header h4 { font-size: 14px; font-weight: 600; }
+
+    .cal-nav {
+      display: flex;
+      gap: 4px;
+    }
+
+    .cal-nav-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .cal-nav-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      text-align: center;
+    }
+
+    .cal-day-header {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 4px 0;
+      text-transform: uppercase;
+    }
+
+    .cal-day {
+      padding: 6px 0;
+      font-size: 13px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .cal-day:hover { background: var(--bg-hover); }
+    .cal-day.today { background: var(--purple); color: white; font-weight: 600; }
+    .cal-day.has-event { color: var(--purple-light); font-weight: 600; }
+    .cal-day.other-month { color: var(--text-muted); }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1200px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .carrossel-grid { grid-template-columns: repeat(2, 1fr); }
+      .generate-panel { grid-template-columns: 1fr; }
+      .brand-dna-grid { grid-template-columns: 1fr; }
+      .analytics-grid { grid-template-columns: 1fr; }
+      .swipe-container { flex-direction: column; align-items: center; }
+      .swipe-suggestions { width: 100%; max-width: 420px; }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { width: 72px; }
+      .sidebar-logo-text,
+      .sidebar-item span,
+      .sidebar-section-label,
+      .sidebar-badge,
+      .sidebar-user-info { display: none; }
+      .sidebar-logo { justify-content: center; padding: 20px 0; }
+      .sidebar-item { justify-content: center; padding: 10px; }
+      .sidebar-item.active::before { left: 0; }
+      .main { margin-left: 72px; }
+      .page-content { padding: 16px; }
+      .topbar { padding: 12px 16px; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .carrossel-grid { grid-template-columns: 1fr; }
+      .topbar-greeting p { display: none; }
+    }
+
+    /* ===== SVG ICONS ===== */
+    .icon { width: 20px; height: 20px; display: inline-block; }
+
+    /* ===== TABS NAV ===== */
+    .sub-nav {
+      display: flex;
+      gap: 2px;
+      background: var(--bg-elevated);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 24px;
+    }
+
+    .sub-nav-item {
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      font-family: var(--font);
+      transition: all 0.15s;
+    }
+
+    .sub-nav-item:hover { color: var(--text-primary); }
+    .sub-nav-item.active {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* ===== DIVIDER ===== */
+    .divider {
+      height: 1px;
+      background: var(--border-color);
+      margin: 32px 0;
+    }
+
+    /* ===== GRID 2 cols ===== */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 1200px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* ===== RECENT ACTIVITY ===== */
+    .activity-item {
+      display: flex;
+      gap: 12px;
+      padding: 10px 0;
+    }
+
+    .activity-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .activity-dot.green { background: var(--green); }
+    .activity-dot.purple { background: var(--purple-light); }
+    .activity-dot.pink { background: var(--pink); }
+    .activity-dot.orange { background: var(--orange); }
+
+    .activity-text { font-size: 13px; }
+    .activity-text strong { font-weight: 600; }
+    .activity-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+  <!-- ============================== -->
+  <!-- SIDEBAR                        -->
+  <!-- ============================== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">CF</div>
+      <div class="sidebar-logo-text"><span>Content</span>Flow</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Principal</div>
+
+      <a class="sidebar-item active" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1"/></svg>
+        <span>Dashboard</span>
+      </a>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <span>Brand DNA</span>
+        <span class="sidebar-badge green">Ativo</span>
+      </a>
+
+      <div class="sidebar-section-label">Conteúdo</div>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m4-12l-4-4-4 4m8 8l-4 4-4-4"/></svg>
+        <span>Studio</span>
+      </a>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l2-1m-2 1v-2.5M18 18l2-1v-2.5"/></svg>
+        <span>Gerar Carrosséis</span>
+      </a>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+        <span>Swipe</span>
+        <span class="sidebar-badge pink">12</span>
+      </a>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span>Calendário</span>
+      </a>
+
+      <div class="sidebar-section-label">Gestão</div>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <span>Analytics</span>
+      </a>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>Time</span>
+      </a>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>Configurações</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-user-avatar">LL</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">Leonardo Lacerda</div>
+          <div class="sidebar-user-plan">Plano Pro</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================== -->
+  <!-- MAIN                           -->
+  <!-- ============================== -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-greeting">
+          <h1>Dashboard</h1>
+          <p>Bem-vindo de volta, Leonardo! Seus carrosséis estão performando bem esta semana.</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <!-- Brand Selector -->
+        <div class="brand-selector">
+          <div class="brand-dot"></div>
+          <div class="brand-selector-info">
+            <span class="brand-selector-name">ContentFlow</span>
+            <span class="brand-selector-arrow">▼</span>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="topbar-btn">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            <span class="dot"></span>
+          </button>
+          <button class="topbar-avatar">LL</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+
+      <!-- ===== STATS ===== -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Total de Carrosséis</span>
+            <div class="stat-card-icon purple">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+          </div>
+          <div class="stat-card-value">248</div>
+          <div class="stat-card-change up">↑ 12% essa semana</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Gerados essa semana</span>
+            <div class="stat-card-icon pink">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            </div>
+          </div>
+          <div class="stat-card-value">34</div>
+          <div class="stat-card-change up">↑ 8% vs semana passada</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Agendados</span>
+            <div class="stat-card-icon green">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+          </div>
+          <div class="stat-card-value">18</div>
+          <div class="stat-card-change up">↑ 3 novos amanhã</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Publicados</span>
+            <div class="stat-card-icon orange">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+          </div>
+          <div class="stat-card-value">89</div>
+          <div class="stat-card-change up">↑ 24% engagement médio</div>
+        </div>
+      </div>
+
+      <!-- ===== QUICK ACTION ===== -->
+      <div style="margin-bottom: 32px;">
+        <div class="section-header">
+          <div>
+            <h2>Ação Rápida</h2>
+            <p>Gere conteúdo novo em segundos</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button class="btn btn-primary" style="padding:14px 28px; font-size:14px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            Gerar 10 Carrosséis
+          </button>
+          <button class="btn btn-secondary" style="padding:14px 28px; font-size:14px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Analisar Site (Brand DNA)
+          </button>
+          <button class="btn btn-secondary" style="padding:14px 28px; font-size:14px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            Revisar na Fila (12)
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== 2-COLUMN SECTION ===== -->
+      <div class="grid-2">
+        <!-- Brand DNA Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Brand DNA</h3>
+            <span class="sidebar-badge green">● Configurado</span>
+          </div>
+          <div class="card-body">
+            <div class="dna-status">
+              <div class="dna-status-dot active"></div>
+              <span class="dna-status-text active">Perfil de marca ativo</span>
+            </div>
+
+            <div class="dna-preview">
+              <div class="dna-color" style="background:#612bd3;"></div>
+              <div class="dna-color" style="background:#d82d7e;"></div>
+              <div class="dna-color" style="background:#0e0e0e;"></div>
+              <div class="dna-color" style="background:#ffffff; border-color:#555;"></div>
+              <div class="dna-color" style="background:#32d583;"></div>
+            </div>
+
+            <div class="dna-info-grid">
+              <div>
+                <div class="dna-info-label">Tom de Voz</div>
+                <div class="dna-info-value">Profissional + Direct</div>
+              </div>
+              <div>
+                <div class="dna-info-label">Público</div>
+                <div class="dna-info-value">Founders & Marketing</div>
+              </div>
+              <div>
+                <div class="dna-info-label">Nicho</div>
+                <div class="dna-info-value">SaaS / Tecnologia</div>
+              </div>
+              <div>
+                <div class="dna-info-label">Idiomas</div>
+                <div class="dna-info-value">PT, EN, ES</div>
+              </div>
+            </div>
+
+            <div class="dna-progress" style="margin-top:16px;">
+              <div class="dna-progress-bar">
+                <div class="dna-progress-fill" style="width:85%"></div>
+              </div>
+              <div class="dna-progress-label">
+                <span>Força do perfil</span>
+                <span style="color:var(--green);">85%</span>
+              </div>
+            </div>
+
+            <div style="margin-top:16px; display:flex; gap:6px; flex-wrap:wrap;">
+              <span class="dna-tag">🎯 Marketing Digital</span>
+              <span class="dna-tag">📊 SaaS</span>
+              <span class="dna-tag">💻 Tecnologia</span>
+              <span class="dna-tag">📱 Redes Sociais</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Atividade Recente</h3>
+            <button class="btn btn-ghost btn-sm">Ver todas</button>
+          </div>
+          <div class="card-body">
+            <div class="activity-item">
+              <div class="activity-dot green"></div>
+              <div>
+                <div class="activity-text"><strong>10 carrosséis</strong> gerados com sucesso</div>
+                <div class="activity-time">Há 12 minutos</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot purple"></div>
+              <div>
+                <div class="activity-text">Brand DNA atualizado — <strong>90% completo</strong></div>
+                <div class="activity-time">Há 45 minutos</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot pink"></div>
+              <div>
+                <div class="activity-text">Carrossel <strong>"5 Dicas de Marketing"</strong> agendado</div>
+                <div class="activity-time">Há 2 horas</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot green"></div>
+              <div>
+                <div class="activity-text">Novo lote de <strong>8 carrosséis</strong> pronto para revisão</div>
+                <div class="activity-time">Há 3 horas</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot orange"></div>
+              <div>
+                <div class="activity-text">Carrossel <strong>"Case de Sucesso"</strong> atingiu 5k impressions</div>
+                <div class="activity-time">Há 5 horas</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== DIVIDER ===== -->
+      <div class="divider"></div>
+
+      <!-- ===== STUDIO SECTION ===== -->
+      <div class="section-header">
+        <div>
+          <h2>Studio — Gerar Carrosséis</h2>
+          <p>Escolha o tipo de conteúdo e gere carrosséis alinhados com sua marca</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-ghost btn-sm">Salvar rascunho</button>
+          <button class="btn btn-primary btn-sm">Gerar agora</button>
+        </div>
+      </div>
+
+      <!-- Generate Panel -->
+      <div class="generate-panel" style="margin-bottom: 32px;">
+        <!-- Form -->
+        <div class="generate-form">
+          <div class="form-group">
+            <label class="form-label">Tipo de Carrossel</label>
+            <div class="toggle-group">
+              <button class="toggle-chip active">Educativo</button>
+              <button class="toggle-chip">Vendas</button>
+              <button class="toggle-chip">Comparação</button>
+              <button class="toggle-chip">FAQ</button>
+              <button class="toggle-chip">Lista</button>
+              <button class="toggle-chip">Storytelling</button>
+              <button class="toggle-chip">Mythbuster</button>
+              <button class="toggle-chip">Before & After</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tópico <span class="hint">(opcional)</span></label>
+            <input class="form-input" type="text" placeholder="Ex: 5 estratégias de marketing para 2024">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tom</label>
+              <select class="form-select">
+                <option>Profissional</option>
+                <option>Casual</option>
+                <option>Inspirador</option>
+                <option>Humorístico</option>
+                <option>Urgente</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Idioma</label>
+              <select class="form-select">
+                <option>Português (BR)</option>
+                <option>Inglês (US)</option>
+                <option>Espanhol</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Instruções extras <span class="hint">(opcional)</span></label>
+            <textarea class="form-textarea" placeholder="Ex: Foque em dados estatísticos, use um tom mais direto..."></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Slides por carrossel</label>
+            <div class="toggle-group">
+              <button class="toggle-chip">5</button>
+              <button class="toggle-chip active">7</button>
+              <button class="toggle-chip">10</button>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0; margin-top: 12px;">
+            <label class="form-label">Quantidade</label>
+            <div class="toggle-group">
+              <button class="toggle-chip active">5</button>
+              <button class="toggle-chip">10</button>
+              <button class="toggle-chip">20</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="card" style="display:flex; flex-direction:column;">
+          <div class="card-header">
+            <h3>Pré-visualização</h3>
+            <span style="font-size:12px; color:var(--text-muted);">Baseado no seu Brand DNA</span>
+          </div>
+          <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:24px;">
+            <div class="swipe-card" style="max-width:320px; max-height:520px;">
+              <div class="swipe-card-inner" style="background:linear-gradient(135deg, #1a1a2e, #16213e);">
+                <div class="swipe-card-type">📊 Educativo</div>
+                <div class="swipe-card-headline">5 Estratégias de Marketing que Vão Transformar seu Negócio</div>
+                <div class="swipe-card-body">
+                  Dados recentes mostram que empresas que investem em conteúdo educacional têm 3x mais engajamento.
+                </div>
+              </div>
+              <div class="swipe-card-footer">
+                <div class="swipe-card-brand">
+                  <div class="brand-dot"></div>
+                  ContentFlow
+                </div>
+                <span style="font-size:11px; color:var(--text-muted);">Slide 1/7</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== DIVIDER ===== -->
+      <div class="divider"></div>
+
+      <!-- ===== SWIPE SECTION ===== -->
+      <div class="swipe-section">
+        <div class="section-header">
+          <div>
+            <h2>Content Swipe</h2>
+            <p>Deslize para salvar ou descartar ideias de carrossel geradas pela IA</p>
+          </div>
+          <div class="section-actions">
+            <button class="btn btn-secondary btn-sm">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              Gerar mais ideias
+            </button>
+          </div>
+        </div>
+
+        <div class="swipe-container">
+          <div class="swipe-main">
+            <div class="swipe-card">
+              <div class="swipe-card-inner" style="background:linear-gradient(135deg, #2d1b3d, #1a1a2e);">
+                <div class="swipe-card-type">📈 Comparação</div>
+                <div class="swipe-card-headline">ContentFlow vs Canva: Qual é o Melhor para seu Negócio?</div>
+                <div class="swipe-card-body">
+                  Enquanto o Canva oferece templates genéricos, o ContentFlow gera carrosséis personalizados com o DNA da sua marca em segundos.
+                </div>
+              </div>
+              <div class="swipe-card-footer">
+                <div class="swipe-card-brand">
+                  <div class="brand-dot"></div>
+                  ContentFlow
+                </div>
+                <span style="font-size:11px; color:var(--text-muted);">Slide 1/7</span>
+              </div>
+            </div>
+
+            <div class="swipe-actions">
+              <button class="swipe-btn dismiss" title="Descartar">✕</button>
+              <button class="swipe-btn edit" title="Editar">✎</button>
+              <button class="swipe-btn save" title="Salvar">✓</button>
+              <button class="swipe-btn fav" title="Favoritar">♥</button>
+            </div>
+
+            <div class="swipe-counter">
+              <span>3</span> de <span>12</span> revisados · <span style="color:var(--green);">8 salvos</span> · <span style="color:var(--red);">4 descartados</span>
+            </div>
+          </div>
+
+          <div class="swipe-suggestions">
+            <h4>Próximas ideias</h4>
+
+            <div class="swipe-suggestion-item">
+              <div class="swipe-suggestion-icon">❓</div>
+              <div class="swipe-suggestion-text">
+                <strong>FAQ: Dúvidas Comuns</strong>
+                <span>5 perguntas frequentes sobre marketing digital</span>
+              </div>
+            </div>
+
+            <div class="swipe-suggestion-item">
+              <div class="swipe-suggestion-icon">📊</div>
+              <div class="swipe-suggestion-text">
+                <strong>Estatísticas do Setor</strong>
+                <span>10 dados que mostram a importância do conteúdo visual</span>
+              </div>
+            </div>
+
+            <div class="swipe-suggestion-item">
+              <div class="swipe-suggestion-icon">💡</div>
+              <div class="swipe-suggestion-text">
+                <strong>Dicas Rápidas</strong>
+                <span>7 maneiras de aumentar seu engajamento no Instagram</span>
+              </div>
+            </div>
+
+            <div class="swipe-suggestion-item">
+              <div class="swipe-suggestion-icon">🏆</div>
+              <div class="swipe-suggestion-text">
+                <strong>Case de Sucesso</strong>
+                <span>Como a Empresa X cresceu 300% com carrosséis</span>
+              </div>
+            </div>
+
+            <div class="swipe-suggestion-item">
+              <div class="swipe-suggestion-icon">⚠️</div>
+              <div class="swipe-suggestion-text">
+                <strong>Mythbuster</strong>
+                <span>5 mitos sobre marketing de conteúdo que você precisa parar de acreditar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== DIVIDER ===== -->
+      <div class="divider"></div>
+
+      <!-- ===== CALENDAR + ANALYTICS ===== -->
+      <div class="grid-2">
+        <!-- Calendar -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Calendário de Conteúdo</h3>
+            <button class="btn btn-ghost btn-sm">Ver completo</button>
+          </div>
+          <div class="card-body">
+            <div class="cal-mini-header">
+              <h4>Junho 2026</h4>
+              <div class="cal-nav">
+                <button class="cal-nav-btn">◀</button>
+                <button class="cal-nav-btn">▶</button>
+              </div>
+            </div>
+            <div class="cal-grid">
+              <div class="cal-day-header">D</div>
+              <div class="cal-day-header">S</div>
+              <div class="cal-day-header">T</div>
+              <div class="cal-day-header">Q</div>
+              <div class="cal-day-header">Q</div>
+              <div class="cal-day-header">S</div>
+              <div class="cal-day-header">S</div>
+
+              <div class="cal-day other-month">31</div>
+              <div class="cal-day">1</div>
+              <div class="cal-day">2</div>
+              <div class="cal-day">3</div>
+              <div class="cal-day">4</div>
+              <div class="cal-day">5</div>
+              <div class="cal-day">6</div>
+
+              <div class="cal-day">7</div>
+              <div class="cal-day">8</div>
+              <div class="cal-day">9</div>
+              <div class="cal-day">10</div>
+              <div class="cal-day">11</div>
+              <div class="cal-day">12</div>
+              <div class="cal-day">13</div>
+
+              <div class="cal-day">14</div>
+              <div class="cal-day">15</div>
+              <div class="cal-day">16</div>
+              <div class="cal-day has-event">17</div>
+              <div class="cal-day has-event">18</div>
+              <div class="cal-day">19</div>
+              <div class="cal-day">20</div>
+
+              <div class="cal-day">21</div>
+              <div class="cal-day">22</div>
+              <div class="cal-day">23</div>
+              <div class="cal-day">24</div>
+              <div class="cal-day has-event">25</div>
+              <div class="cal-day">26</div>
+              <div class="cal-day today">27</div>
+
+              <div class="cal-day has-event">28</div>
+              <div class="cal-day has-event">29</div>
+              <div class="cal-day">30</div>
+              <div class="cal-day other-month">1</div>
+              <div class="cal-day other-month">2</div>
+              <div class="cal-day other-month">3</div>
+              <div class="cal-day other-month">4</div>
+            </div>
+
+            <div style="margin-top:16px;">
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; background:var(--bg-elevated); border-radius:var(--radius-sm); margin-bottom:6px;">
+                <div style="width:3px; height:24px; border-radius:2px; background:var(--pink);"></div>
+                <div style="flex:1;">
+                  <div style="font-size:13px; font-weight:500;">5 Dicas de Marketing</div>
+                  <div style="font-size:11px; color:var(--text-muted);">28 jun · Carrossel</div>
+                </div>
+                <span style="font-size:11px; padding:2px 8px; border-radius:4px; background:var(--green-bg); color:var(--green);">Agendado</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; background:var(--bg-elevated); border-radius:var(--radius-sm);">
+                <div style="width:3px; height:24px; border-radius:2px; background:var(--purple);"></div>
+                <div style="flex:1;">
+                  <div style="font-size:13px; font-weight:500;">Case de Sucesso — Cliente X</div>
+                  <div style="font-size:11px; color:var(--text-muted);">29 jun · Carrossel</div>
+                </div>
+                <span style="font-size:11px; padding:2px 8px; border-radius:4px; background:var(--blue-bg); color:var(--blue);">Rascunho</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytics Preview -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Performance (últimos 7 dias)</h3>
+            <button class="btn btn-ghost btn-sm">Detalhes</button>
+          </div>
+          <div class="card-body">
+            <div class="chart-placeholder">
+              <div class="chart-bar"></div>
+              <div class="chart-bar"></div>
+              <div class="chart-bar"></div>
+              <div class="chart-bar highlight"></div>
+              <div class="chart-bar"></div>
+              <div class="chart-bar"></div>
+              <div class="chart-bar"></div>
+            </div>
+
+            <div style="margin-top:16px;">
+              <div class="analytics-metric">
+                <span class="analytics-metric-label">Impressões totais</span>
+                <span class="analytics-metric-value">24.538</span>
+              </div>
+              <div class="analytics-metric">
+                <span class="analytics-metric-label">Engajamento médio</span>
+                <span class="analytics-metric-value" style="color:var(--green);">24%</span>
+              </div>
+              <div class="analytics-metric">
+                <span class="analytics-metric-label">Cliques</span>
+                <span class="analytics-metric-value">1.847</span>
+              </div>
+              <div class="analytics-metric">
+                <span class="analytics-metric-label">Carrosséis com melhor performance</span>
+                <span class="analytics-metric-value" style="font-size:13px; font-weight:500;">"5 Estratégias" · "Case X"</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== RECENT CARROSSÉIS ===== -->
+      <div style="margin-top: 32px;">
+        <div class="section-header">
+          <div>
+            <h2>Carrosséis Recentes</h2>
+            <p>Últimos carrosséis gerados para sua marca</p>
+          </div>
+          <div class="section-actions">
+            <button class="btn btn-ghost btn-sm">Ver todos</button>
+          </div>
+        </div>
+
+        <div class="sub-nav">
+          <button class="sub-nav-item active">Todos</button>
+          <button class="sub-nav-item">Educativo</button>
+          <button class="sub-nav-item">Vendas</button>
+          <button class="sub-nav-item">Comparação</button>
+          <button class="sub-nav-item">FAQ</button>
+          <button class="sub-nav-item">Storytelling</button>
+        </div>
+
+        <div class="carrossel-grid">
+          <!-- Item 1 -->
+          <div class="carrossel-thumb">
+            <div class="carrossel-thumb-preview">
+              <div class="mock-slide mock-slide-1">
+                <div class="carrossel-actions">
+                  <button class="carrossel-action-btn">✎</button>
+                  <button class="carrossel-action-btn">⬇</button>
+                </div>
+                <div class="mock-slide-title">5 Estratégias</div>
+                <div class="mock-slide-sub">Marketing Digital 2024</div>
+              </div>
+            </div>
+            <div class="carrossel-thumb-info">
+              <div class="carrossel-thumb-title">5 Estratégias de Marketing</div>
+              <div class="carrossel-thumb-meta">
+                <span>📊 Educativo</span>
+                <span>•</span>
+                <span>7 slides</span>
+                <span>•</span>
+                <span style="color:var(--green);">Publicado</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 2 -->
+          <div class="carrossel-thumb">
+            <div class="carrossel-thumb-preview">
+              <div class="mock-slide mock-slide-2">
+                <div class="carrossel-actions">
+                  <button class="carrossel-action-btn">✎</button>
+                  <button class="carrossel-action-btn">⬇</button>
+                </div>
+                <div class="mock-slide-title">Nós vs Eles</div>
+                <div class="mock-slide-sub">ContentFlow x Canva</div>
+              </div>
+            </div>
+            <div class="carrossel-thumb-info">
+              <div class="carrossel-thumb-title">ContentFlow vs Canva</div>
+              <div class="carrossel-thumb-meta">
+                <span>📈 Comparação</span>
+                <span>•</span>
+                <span>10 slides</span>
+                <span>•</span>
+                <span style="color:var(--blue);">Rascunho</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 3 -->
+          <div class="carrossel-thumb">
+            <div class="carrossel-thumb-preview">
+              <div class="mock-slide mock-slide-3">
+                <div class="carrossel-actions">
+                  <button class="carrossel-action-btn">✎</button>
+                  <button class="carrossel-action-btn">⬇</button>
+                </div>
+                <div class="mock-slide-title">FAQ Marketing</div>
+                <div class="mock-slide-sub">Perguntas Frequentes</div>
+              </div>
+            </div>
+            <div class="carrossel-thumb-info">
+              <div class="carrossel-thumb-title">FAQ: Dúvidas de Marketing</div>
+              <div class="carrossel-thumb-meta">
+                <span>❓ FAQ</span>
+                <span>•</span>
+                <span>5 slides</span>
+                <span>•</span>
+                <span style="color:var(--green);">Publicado</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== FOOTER SPACE ===== -->
+      <div style="height:48px;"></div>
+
+    </div>
+  </div>
+
+</body>
+</html>

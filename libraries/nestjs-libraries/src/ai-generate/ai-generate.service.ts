@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { AiGenerateCarouselDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-carousel.dto';
 import { AiGenerateCarouselIdeasDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-carousel-ideas.dto';
@@ -7,6 +7,10 @@ import { AiGenerateCaptionDto } from '@gitroom/nestjs-libraries/dtos/ai-generate
 import { MediaService } from '@gitroom/nestjs-libraries/database/prisma/media/media.service';
 import { ExtractContentService } from '@gitroom/nestjs-libraries/openai/extract.content.service';
 import { UploadFactory } from '@gitroom/nestjs-libraries/upload/upload.factory';
+import {
+  validateAiResponse,
+  buildAiMetadata,
+} from './ai-response-validator';
 
 type AiGenerateImage = {
   url?: string;
@@ -398,6 +402,7 @@ function normalizeCarouselPlan(
 
 @Injectable()
 export class AiGenerateService {
+  private readonly logger = new Logger(AiGenerateService.name);
   private storage = UploadFactory.createStorage();
 
   constructor(
@@ -583,7 +588,24 @@ export class AiGenerateService {
         );
       }
 
-      const parsed = parseJsonPayload(content);
+      // Validate with Zod schema
+      const validation = validateAiResponse<{ ideas: Array<{
+        title: string;
+        hook: string;
+        goal: string;
+        angle: string;
+      }> }>('carousel-idea', content, 1);
+
+      if (!validation.success) {
+        Logger.warn(
+          `Carousel ideas validation failed: ${validation.errors?.issues?.length || 0} issues`,
+          'AiGenerateService'
+        );
+      }
+
+      const parsed = validation.success && validation.data
+        ? validation.data
+        : parseJsonPayload(content);
       const ideasRaw = Array.isArray(parsed.ideas) ? parsed.ideas : [];
       const normalizeTitle = (title: string) =>
         title
@@ -762,12 +784,51 @@ export class AiGenerateService {
         );
       }
 
-      const parsed = parseJsonPayload(content);
-      const caption = firstString(parsed.caption);
-      const hashtags = Array.isArray(parsed.hashtags)
-        ? parsed.hashtags
-            .map((tag: unknown) => firstString(tag))
-            .filter(Boolean)
+      // Validate with Zod schema
+      const validation = validateAiResponse<{
+        caption: string;
+        hashtags: string[];
+      }>('caption-package', content, 1);
+
+      if (!validation.success) {
+        Logger.warn(
+          `Caption validation failed: ${validation.errors?.issues?.length || 0} issues`,
+          'AiGenerateService'
+        );
+        // Fallback: use raw parsed data
+        const parsed = parseJsonPayload(content);
+        const caption = firstString(parsed.caption);
+        const hashtags = Array.isArray(parsed.hashtags)
+          ? parsed.hashtags
+              .map((tag: unknown) => firstString(tag))
+              .filter(Boolean)
+              .map((tag: string) => (tag.startsWith('#') ? tag : `#${tag}`))
+              .slice(0, 15)
+          : [];
+
+        const result = {
+          caption,
+          hashtags,
+          platform,
+          provider: 'openai_official',
+          model: resolvedModel,
+          usage: data.usage,
+          cost_estimate: estimateCostInUsdAndBrl(data.usage),
+          ...buildAiMetadata('caption-package', resolvedModel, 'openai_official'),
+        };
+        this.recordCost(
+          orgId,
+          'text',
+          `Legenda ${platform}: ${(body.title || 'carrossel').slice(0, 60)}`,
+          result.cost_estimate
+        );
+        return result;
+      }
+
+      const validated = validation.data!;
+      const caption = firstString(validated.caption);
+      const hashtags = Array.isArray(validated.hashtags)
+        ? validated.hashtags
             .map((tag: string) => (tag.startsWith('#') ? tag : `#${tag}`))
             .slice(0, 15)
         : [];
@@ -780,6 +841,7 @@ export class AiGenerateService {
         model: resolvedModel,
         usage: data.usage,
         cost_estimate: estimateCostInUsdAndBrl(data.usage),
+        ...buildAiMetadata('caption-package', resolvedModel, 'openai_official'),
       };
       this.recordCost(
         orgId,
@@ -936,8 +998,22 @@ export class AiGenerateService {
         );
       }
 
+      // Validate with Zod schema
+      const validation = validateAiResponse<CarouselPlan>('carousel-plan', content, 1);
+
+      if (!validation.success) {
+        Logger.warn(
+          `Carousel plan validation failed: ${validation.errors?.issues?.length || 0} issues`,
+          'AiGenerateService'
+        );
+      }
+
+      const validatedPlan = validation.success && validation.data
+        ? validation.data as unknown as Record<string, unknown>
+        : parseJsonPayload(content);
+
       const plan = normalizeCarouselPlan(
-        parseJsonPayload(content),
+        validatedPlan,
         body,
         slideCount
       );
@@ -948,6 +1024,7 @@ export class AiGenerateService {
         model: resolvedModel,
         usage: data.usage,
         cost_estimate: estimateCostInUsdAndBrl(data.usage),
+        ...buildAiMetadata('carousel-plan', resolvedModel, 'openai_official'),
       };
       this.recordCost(orgId, 'text', `Copy: ${(topic || plan.title || 'conteúdo').slice(0, 80)}`, result.cost_estimate);
       return result;
@@ -1043,7 +1120,24 @@ export class AiGenerateService {
       );
     }
 
-    return parseJsonPayload(content);
+    // Validate with Zod schema
+    const validation = validateAiResponse('editorial-review', content, 1);
+
+    if (!validation.success) {
+      Logger.warn(
+        `Editorial review validation failed: ${validation.errors?.issues?.length || 0} issues`,
+        'AiGenerateService'
+      );
+    }
+
+    const parsed = validation.success && validation.data
+      ? validation.data as Record<string, unknown>
+      : parseJsonPayload(content);
+
+    return {
+      ...parsed,
+      ...buildAiMetadata('editorial-review', resolvedModel, 'openai_official'),
+    };
   }
 
   async fixCarouselWithEditorialReview(orgId: string, body: AiGenerateCarouselDto) {
@@ -1119,7 +1213,19 @@ export class AiGenerateService {
       );
     }
 
-    const parsed = parseJsonPayload(content);
+    // Validate with Zod schema
+    const validation = validateAiResponse('carousel-plan', content, 1);
+
+    if (!validation.success) {
+      Logger.warn(
+        `Carousel plan (fix) validation failed: ${validation.errors?.issues?.length || 0} issues`,
+        'AiGenerateService'
+      );
+    }
+
+    const parsed = validation.success && validation.data
+      ? validation.data as unknown as Record<string, unknown>
+      : parseJsonPayload(content);
     const plan = normalizeCarouselPlan(parsed, body, slideCount);
     const result = {
       ...plan,
@@ -1130,6 +1236,7 @@ export class AiGenerateService {
       model: resolvedModel,
       usage: data.usage,
       cost_estimate: estimateCostInUsdAndBrl(data.usage),
+      ...buildAiMetadata('carousel-plan', resolvedModel, 'openai_official'),
     };
     this.recordCost(orgId, 'text', `Correção editorial: ${body.topic.slice(0, 80)}`, result.cost_estimate);
     return result;

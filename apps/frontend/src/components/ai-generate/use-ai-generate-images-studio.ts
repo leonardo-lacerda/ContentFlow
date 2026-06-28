@@ -142,6 +142,12 @@ export function useAiGenerateImagesStudio() {
   const [slideImageHistory, setSlideImageHistory] = useState<
     Record<number, SlideImageResult[]>
   >({});
+  // Ajuste rápido por slide: texto em linguagem natural que o usuário escreve
+  // para refinar a imagem ("mais escuro", "menos texto") sem reescrever o
+  // prompt inteiro. Aplicado na regeneração daquele slide.
+  const [slideImageAdjustments, setSlideImageAdjustments] = useState<
+    Record<number, string>
+  >({});
   const [logoUsage, setLogoUsage] = useState('subtle');
   const [logoPosition, setLogoPosition] = useState('top-right');
   const [logoScale, setLogoScale] = useState('small');
@@ -605,21 +611,31 @@ export function useAiGenerateImagesStudio() {
   // builder existente — sem imagens de referência no comando.
   const buildSlidePromptFor = useCallback(
     (slide: CarouselSlide) =>
-      buildSlideImagePrompt(
-        plan as CarouselPlan,
-        slide,
-        buildDirectionRenderSpec(effectiveDirectionSpec, {
+      buildSlideImagePrompt(plan as CarouselPlan, slide, {
+        ...buildDirectionRenderSpec(effectiveDirectionSpec, {
           brandColors,
           brief: finalCreativeBrief || computedCreativeBrief,
-        })
-      ),
+        }),
+        adjustment: slideImageAdjustments[slide.index]?.trim() || undefined,
+      }),
     [
       brandColors,
       computedCreativeBrief,
       effectiveDirectionSpec,
       finalCreativeBrief,
       plan,
+      slideImageAdjustments,
     ]
+  );
+
+  const setSlideImageAdjustment = useCallback(
+    (slideIndex: number, value: string) => {
+      setSlideImageAdjustments((current) => ({
+        ...current,
+        [slideIndex]: value,
+      }));
+    },
+    []
   );
 
   const syncBrandReferences = useCallback((company?: CompanyProfile | null) => {
@@ -1496,6 +1512,7 @@ export function useAiGenerateImagesStudio() {
     setError('');
     setPlan(null);
     setSlideImages({});
+    setSlideImageAdjustments({});
     setSavedCarouselCount(0);
     setActivePreview(0);
     // Novo carrossel: volta a seguir a direção sugerida pela estratégia.
@@ -2589,6 +2606,8 @@ export function useAiGenerateImagesStudio() {
     showAdvanced,
     slideCount,
     slideHistory,
+    slideImageAdjustments,
+    setSlideImageAdjustment,
     slideImageHistory,
     slideImages,
     slideLoading,

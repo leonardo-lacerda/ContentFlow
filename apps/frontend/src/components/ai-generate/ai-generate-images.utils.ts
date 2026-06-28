@@ -67,6 +67,10 @@ export type SlideRenderSpec = {
   brief?: string;
   hasInspirations?: boolean;
   inspirationsLeadVisual?: boolean;
+  // Ajuste rápido em linguagem natural escrito pelo usuário para ESTE slide
+  // (ex.: "deixe o fundo mais escuro", "menos texto"). Entra como instrução de
+  // alta prioridade na regeneração da imagem.
+  adjustment?: string;
 };
 
 export function buildSlideImagePrompt(
@@ -83,6 +87,7 @@ export function buildSlideImagePrompt(
     brief,
     hasInspirations,
     inspirationsLeadVisual,
+    adjustment,
   } = spec;
 
   const inspirationsLead = !!hasInspirations && !!inspirationsLeadVisual;
@@ -95,14 +100,27 @@ export function buildSlideImagePrompt(
     .filter(Boolean)
     .join('\n');
 
+  // Conceito visual específico deste slide, vindo do briefing do carrossel.
+  // É a cena/metáfora única que o plano gerou para o slide e DEVE ser
+  // respeitada — não pode ser engolida pela direção criativa genérica.
+  const slideConcept = slide.imagePrompt?.trim();
+
   const parts: Array<string | false | undefined> = [
     'Crie uma arte quadrada 1:1 para um slide de carrossel de Instagram premium.',
     'O texto abaixo deve aparecer DENTRO da imagem, com grafia exatamente igual, em portugues, sem trocar palavras, sem traduzir e sem adicionar outros textos.',
     textBlocks,
     '',
-    structureLayout?.trim()
-      ? `Estrutura do slide: ${structureLayout.trim()}`
-      : `Estrutura do slide: ${slide.imagePrompt?.trim() || 'arte editorial limpa, com a headline em destaque e o apoio em hierarquia clara.'}`,
+    // O QUE mostrar neste slide (briefing). Sempre presente quando existir.
+    slideConcept &&
+      `Conceito visual deste slide (siga fielmente o briefing): ${slideConcept}`,
+    // COMO organizar: sistema de layout da Direção Criativa. Complementa o
+    // conceito acima, sem substituí-lo.
+    structureLayout?.trim() &&
+      `Estrutura/layout do slide: ${structureLayout.trim()}`,
+    // Fallback só quando não há nem conceito de slide nem estrutura definida.
+    !slideConcept &&
+      !structureLayout?.trim() &&
+      'Estrutura do slide: arte editorial limpa, com a headline em destaque e o apoio em hierarquia clara.',
   ];
 
   if (inspirationsLead) {
@@ -127,6 +145,10 @@ export function buildSlideImagePrompt(
 
   parts.push(
     brief?.trim() && `Contexto da marca e campanha: ${brief.trim()}`,
+    // Ajuste do usuário é a instrução de maior prioridade: vem por último e é
+    // explicitamente marcado para o modelo aplicar sobre tudo acima.
+    adjustment?.trim() &&
+      `AJUSTE PRIORITARIO PEDIDO PELO USUARIO (aplique sobre todas as instrucoes acima, mantendo o texto e o conceito do slide): ${adjustment.trim()}`,
     '',
     'Regras: texto perfeitamente legivel no celular, alto contraste, margens seguras, hierarquia tipografica clara e muito respiro. Nao copie marcas, logos, rostos ou elementos protegidos.'
   );

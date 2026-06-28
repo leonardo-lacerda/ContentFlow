@@ -24,6 +24,8 @@ type SlideEditorPanelProps = {
   setPlan: (plan: CarouselPlan) => void;
   slideHistory: Record<number, CarouselSlide[]>;
   slideImageHistory: Record<number, SlideImageResult[]>;
+  slideImageAdjustments: Record<number, string>;
+  setSlideImageAdjustment: (slideIndex: number, value: string) => void;
   slideImages: Record<number, SlideImageResult>;
   slideLoading: Record<number, string>;
   trimmedImageModel: string;
@@ -45,6 +47,8 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
     setLightboxIndex,
     setPlan,
     slideHistory,
+    slideImageAdjustments,
+    setSlideImageAdjustment,
     slideImageHistory,
     slideImages,
     slideLoading,
@@ -339,6 +343,34 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       {loadingImage ? 'Gerando...' : 'Regenerar imagem'}
                     </button>
                   </div>
+
+                  <div className="flex flex-col gap-[6px]">
+                    <input
+                      value={slideImageAdjustments[slide.index] || ''}
+                      onChange={(event) =>
+                        setSlideImageAdjustment(slide.index, event.target.value)
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          if (
+                            !slideLoading[slide.index] &&
+                            trimmedImageModel
+                          ) {
+                            generateSlideImage(slide);
+                          }
+                        }
+                      }}
+                      placeholder="Ajuste rápido: ex. mais escuro, menos texto…"
+                      disabled={!!slideLoading[slide.index]}
+                      className={`${inputClass} text-[12px]`}
+                    />
+                    <span className="text-[11px] text-textItemBlur">
+                      Descreva o ajuste e clique em “Regenerar imagem” (ou Enter)
+                      para aplicar só neste slide.
+                    </span>
+                  </div>
+
                   <div className="relative">
                     {src ? (
                       <button

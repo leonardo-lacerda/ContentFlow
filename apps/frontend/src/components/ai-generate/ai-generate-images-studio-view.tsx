@@ -173,6 +173,8 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     showAdvanced,
     slideCount,
     slideHistory,
+    slideImageAdjustments,
+    setSlideImageAdjustment,
     slideImageHistory,
     slideImages,
     slideLoading,
@@ -366,6 +368,8 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
               setLightboxIndex={setLightboxIndex}
               setPlan={setPlan}
               slideHistory={slideHistory}
+              slideImageAdjustments={slideImageAdjustments}
+              setSlideImageAdjustment={setSlideImageAdjustment}
               slideImageHistory={slideImageHistory}
               slideImages={slideImages}
               slideLoading={slideLoading}

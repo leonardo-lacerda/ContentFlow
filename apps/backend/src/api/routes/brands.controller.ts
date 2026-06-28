@@ -7,6 +7,7 @@ import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/p
 import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
 import { CreateBrandProfileDto } from '@gitroom/nestjs-libraries/dtos/settings/create-brand-profile.dto';
 import { UpdateBrandProfileDto } from '@gitroom/nestjs-libraries/dtos/settings/update-brand-profile.dto';
+import { AnalyzeBrandDto } from '@gitroom/nestjs-libraries/dtos/settings/analyze-brand.dto';
 
 @ApiTags('Brands')
 @Controller('/brands')
@@ -81,5 +82,22 @@ export class BrandsController {
     @Body() body: { type: string; mediaId?: string; sourceUrl?: string; metadata?: any }
   ) {
     return this.brandProfileService.createAsset(id, body);
+  }
+
+  @Post('/:id/analyze')
+  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  async analyzeBrand(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string,
+    @Body() body: AnalyzeBrandDto
+  ) {
+    return this.brandProfileService.analyzeBrand(org.id, id, body);
+  }
+
+  @Get('/:id/dna/latest')
+  async getLatestDna(
+    @Param('id') id: string
+  ) {
+    return this.brandProfileService.getLatestDnaSnapshot(id);
   }
 }

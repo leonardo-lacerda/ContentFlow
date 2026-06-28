@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ContentFlow — Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       SIDEBAR
+       ============================================================ -->
+  <aside class="sidebar">
+
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">CF</div>
+      <div class="sidebar-logo-text"><span>Content</span>Flow</div>
+    </div>
+
+    <nav class="sidebar-nav">
+
+      <div class="sidebar-label">Principal</div>
+
+      <a class="sidebar-item active" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1"/></svg>
+        <span>Dashboard</span>
+      </a>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <span>Brand DNA</span>
+        <span class="sidebar-badge green">Ativo</span>
+      </a>
+
+      <div class="sidebar-label">Conteúdo</div>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l2-1m-2 1v-2.5M18 18l2-1v-2.5"/></svg>
+        <span>Studio</span>
+      </a>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+        <span>Revisar</span>
+        <span class="sidebar-badge pink">12</span>
+      </a>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span>Calendário</span>
+      </a>
+
+      <div class="sidebar-label">Gestão</div>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <span>Analytics</span>
+      </a>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>Time</span>
+      </a>
+
+      <a class="sidebar-item" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>Configurações</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-user-avatar">LL</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">Leonardo Lacerda</div>
+          <div class="sidebar-user-plan">Plano Profissional</div>
+        </div>
+        <span class="sidebar-user-chevron">⌄</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-greeting">
+          <h1>Dashboard</h1>
+          <p>Bem-vindo de volta! Seus carrosséis estão com bom desempenho esta semana.</p>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+
+        <div class="brand-selector">
+          <div class="brand-dot"></div>
+          <div class="brand-info">
+            <span class="brand-name">ContentFlow</span>
+            <span class="brand-arrow">⌄</span>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="topbar-btn">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            <span class="dot"></span>
+          </button>
+          <div class="topbar-avatar">LL</div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- ============================================================
+         PAGE CONTENT
+         ============================================================ -->
+    <div class="page">
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-top">
+            <span class="stat-label">Carrosséis criados</span>
+            <div class="stat-icon purple">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+          </div>
+          <div class="stat-value">248</div>
+          <div class="stat-change up">↑ 12% esta semana</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-top">
+            <span class="stat-label">Gerados na semana</span>
+            <div class="stat-icon pink">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            </div>
+          </div>
+          <div class="stat-value">34</div>
+          <div class="stat-change up">↑ 8% vs. semana anterior</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-top">
+            <span class="stat-label">Agendados</span>
+            <div class="stat-icon orange">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+          </div>
+          <div class="stat-value">18</div>
+          <div class="stat-change up">Próximos 7 dias</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-top">
+            <span class="stat-label">Publicados</span>
+            <div class="stat-icon green">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+          </div>
+          <div class="stat-value">89</div>
+          <div class="stat-change up">24% engajamento médio</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="section">
+        <div class="section-head">
+          <div>
+            <h2>Ações rápidas</h2>
+            <p>Gere e revise conteúdo em segundos</p>
+          </div>
+        </div>
+        <div class="quick-actions">
+          <button class="btn btn-primary btn-lg">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            Gerar Carrosséis
+          </button>
+          <button class="btn btn-secondary btn-lg">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            Analisar Site (Brand DNA)
+          </button>
+          <button class="btn btn-secondary btn-lg">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            Revisar Conteúdo
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--pink-bg);color:var(--pink);font-size:11px;font-weight:700;">12</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2-Column: Brand DNA + Activity -->
+      <div class="grid2" style="margin-bottom:36px;">
+
+        <!-- Brand DNA -->
+        <div class="card">
+          <div class="card-head">
+            <h3>Brand DNA</h3>
+            <span class="sidebar-badge green">● Perfil completo</span>
+          </div>
+          <div class="card-body">
+
+            <div class="dna-status">
+              <div class="dna-dot active"></div>
+              <span class="dna-status-label active">Sua marca está pronta para gerar conteúdo</span>
+            </div>
+
+            <div class="dna-colors">
+              <div class="dna-swatch" style="background:#612bd3;"></div>
+              <div class="dna-swatch" style="background:#d82d7e;"></div>
+              <div class="dna-swatch" style="background:#0d0d12;"></div>
+              <div class="dna-swatch" style="background:#ffffff; border-color:#ccc;"></div>
+              <div class="dna-swatch" style="background:#0fbe7a;"></div>
+            </div>
+
+            <div class="dna-grid">
+              <div>
+                <div class="dna-item-lbl">Tom de voz</div>
+                <div class="dna-item-val">Profissional + Direto</div>
+              </div>
+              <div>
+                <div class="dna-item-lbl">Público-alvo</div>
+                <div class="dna-item-val">Founders & Marketing</div>
+              </div>
+              <div>
+                <div class="dna-item-lbl">Segmento</div>
+                <div class="dna-item-val">SaaS / Tecnologia</div>
+              </div>
+              <div>
+                <div class="dna-item-lbl">Idiomas</div>
+                <div class="dna-item-val">PT, EN, ES</div>
+              </div>
+            </div>
+
+            <div class="dna-bar">
+              <div class="dna-bar-track">
+                <div class="dna-bar-fill" style="width:88%;"></div>
+              </div>
+              <div class="dna-bar-labels">
+                <span>Força do perfil</span>
+                <span><strong>88%</strong></span>
+              </div>
+            </div>
+
+            <div class="dna-tags">
+              <span class="dna-tag">🎯 Marketing Digital</span>
+              <span class="dna-tag">📊 SaaS</span>
+              <span class="dna-tag">💻 Tecnologia</span>
+              <span class="dna-tag">📱 Redes Sociais</span>
+              <span class="dna-tag">📈 Growth</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Activity -->
+        <div class="card">
+          <div class="card-head">
+            <h3>Atividade recente</h3>
+            <button class="btn btn-ghost btn-sm">Ver tudo</button>
+          </div>
+          <div class="card-body">
+            <div class="activity-item">
+              <div class="activity-dot green"></div>
+              <div>
+                <div class="activity-text"><strong>10 carrosséis</strong> gerados com sucesso</div>
+                <div class="activity-time">Há 12 minutos</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot purple"></div>
+              <div>
+                <div class="activity-text">Brand DNA atualizado — <strong>88% completo</strong></div>
+                <div class="activity-time">Há 45 minutos</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot pink"></div>
+              <div>
+                <div class="activity-text">Carrossel <strong>"5 Dicas de Marketing"</strong> agendado para 28/06</div>
+                <div class="activity-time">Há 2 horas</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot green"></div>
+              <div>
+                <div class="activity-text">Novo lote de <strong>8 carrosséis</strong> pronto para revisão</div>
+                <div class="activity-time">Há 3 horas</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot orange"></div>
+              <div>
+                <div class="activity-text">Carrossel <strong>"Case de Sucesso"</strong> — 5.230 impressões</div>
+                <div class="activity-time">Há 5 horas</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================================
+           STUDIO
+           ============================================================ -->
+      <div class="divider"></div>
+
+      <div class="section-head">
+        <div>
+          <h2>Studio</h2>
+          <p>Gere carrosséis alinhados com o DNA da sua marca</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-ghost btn-sm">Salvar rascunho</button>
+          <button class="btn btn-primary btn-sm">Gerar agora</button>
+        </div>
+      </div>
+
+      <div class="gen-layout" style="margin-bottom:36px;">
+
+        <!-- Form -->
+        <div class="gen-form">
+
+          <div class="field">
+            <label class="field-label">Tipo de carrossel</label>
+            <div class="chip-group">
+              <button class="chip active">Educativo</button>
+              <button class="chip">Vendas</button>
+              <button class="chip">Comparação</button>
+              <button class="chip">FAQ</button>
+              <button class="chip">Lista</button>
+              <button class="chip">Storytelling</button>
+              <button class="chip">Mythbuster</button>
+              <button class="chip">Before & After</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Tópico <span class="hint">(opcional)</span></label>
+            <input class="field-input" type="text" placeholder="Ex: 5 estratégias de marketing digital">
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Tom</label>
+              <select class="field-select">
+                <option>Profissional</option>
+                <option>Casual</option>
+                <option>Inspirador</option>
+                <option>Humorístico</option>
+                <option>Urgente</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">Idioma</label>
+              <select class="field-select">
+                <option>Português (BR)</option>
+                <option>English (US)</option>
+                <option>Español</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Instruções extras <span class="hint">(opcional)</span></label>
+            <textarea class="field-textarea" placeholder="Ex: Foque em dados, tom direto, mencione cases reais..."></textarea>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Slides</label>
+              <div class="chip-group">
+                <button class="chip">5</button>
+                <button class="chip active">7</button>
+                <button class="chip">10</button>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">Quantidade</label>
+              <div class="chip-group">
+                <button class="chip active">5</button>
+                <button class="chip">10</button>
+                <button class="chip">20</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Preview -->
+        <div class="preview-card">
+          <div class="card-head">
+            <h3>Pré-visualização</h3>
+            <span style="font-size:12px;color:var(--text-muted);">Baseado no Brand DNA</span>
+          </div>
+          <div class="preview-body">
+            <div class="swipe-mini">
+              <div class="swipe-mini-inner">
+                <div class="swipe-mini-type">📘 Educativo</div>
+                <div class="swipe-mini-title">
+                  5 Estratégias de Marketing<br>
+                  que Transformam Resultados
+                </div>
+                <div class="swipe-mini-desc">
+                  Empresas que investem em conteúdo educacional têm <strong>3x mais engajamento</strong> nas redes sociais.
+                </div>
+              </div>
+              <div class="swipe-mini-footer">
+                <div class="swipe-mini-brand">
+                  <div class="brand-dot"></div>
+                  ContentFlow
+                </div>
+                <span class="swipe-mini-slide">Slide 1 / 7</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================================
+           CONTENT SWIPE
+           ============================================================ -->
+      <div class="divider"></div>
+
+      <div class="section-head">
+        <div>
+          <h2>Revisar Conteúdo</h2>
+          <p>Deslize para salvar ou descartar as ideias geradas pela IA</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-secondary btn-sm">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Gerar mais ideias
+          </button>
+        </div>
+      </div>
+
+      <div class="swipe-wrap">
+
+        <div class="swipe-col">
+          <div class="swipe-card-big">
+            <div class="swipe-card-big-inner">
+              <div class="swipe-card-big-type">📊 Comparação</div>
+              <div class="swipe-card-big-title">
+                ContentFlow vs Canva:<br>
+                Qual é o melhor para sua marca?
+              </div>
+              <div class="swipe-card-big-desc">
+                Enquanto o Canva oferece templates genéricos, o ContentFlow gera carrosséis personalizados com o DNA da sua marca em segundos.
+              </div>
+            </div>
+            <div class="swipe-card-big-footer">
+              <div class="swipe-card-big-brand">
+                <div class="brand-dot"></div>
+                ContentFlow
+              </div>
+              <span class="swipe-card-big-slide">Slide 1 / 7</span>
+            </div>
+          </div>
+
+          <div class="swipe-btns">
+            <button class="swipe-btn dismiss" title="Descartar">✕</button>
+            <button class="swipe-btn edit" title="Editar">✎</button>
+            <button class="swipe-btn save" title="Salvar">✓</button>
+            <button class="swipe-btn fav" title="Favoritar">♥</button>
+          </div>
+
+          <div class="swipe-counter">
+            <strong>3</strong> de <strong>12</strong> revisados ·
+            <span style="color:var(--green);font-weight:600;">8 salvos</span> ·
+            <span style="color:var(--text-muted);">4 descartados</span>
+          </div>
+        </div>
+
+        <!-- Suggestions -->
+        <div class="swipe-suggest">
+          <h4>Próximas ideias</h4>
+
+          <div class="swipe-suggest-item">
+            <div class="swipe-suggest-icon">❓</div>
+            <div class="swipe-suggest-text">
+              <strong>FAQ: Dúvidas Comuns</strong>
+              <span>5 perguntas frequentes sobre marketing digital</span>
+            </div>
+          </div>
+
+          <div class="swipe-suggest-item">
+            <div class="swipe-suggest-icon">📊</div>
+            <div class="swipe-suggest-text">
+              <strong>Estatísticas do Setor</strong>
+              <span>Dados que mostram a importância do conteúdo visual</span>
+            </div>
+          </div>
+
+          <div class="swipe-suggest-item">
+            <div class="swipe-suggest-icon">💡</div>
+            <div class="swipe-suggest-text">
+              <strong>Dicas Rápidas</strong>
+              <span>7 maneiras de aumentar o engajamento no Instagram</span>
+            </div>
+          </div>
+
+          <div class="swipe-suggest-item">
+            <div class="swipe-suggest-icon">🏆</div>
+            <div class="swipe-suggest-text">
+              <strong>Case de Sucesso</strong>
+              <span>Como a Empresa X cresceu 300% com carrosséis</span>
+            </div>
+          </div>
+
+          <div class="swipe-suggest-item">
+            <div class="swipe-suggest-icon">⚠️</div>
+            <div class="swipe-suggest-text">
+              <strong>Mythbuster</strong>
+              <span>5 mitos sobre marketing que você precisa parar de acreditar</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================================
+           CALENDAR + ANALYTICS
+           ============================================================ -->
+      <div class="divider"></div>
+
+      <div class="grid2">
+
+        <!-- Calendar -->
+        <div class="card">
+          <div class="card-head">
+            <h3>Calendário</h3>
+            <button class="btn btn-ghost btn-sm">Ver completo</button>
+          </div>
+          <div class="card-body">
+
+            <div class="cal-head">
+              <h4>Junho 2026</h4>
+              <div class="cal-nav">
+                <button class="cal-nav-btn">◀</button>
+                <button class="cal-nav-btn">▶</button>
+              </div>
+            </div>
+
+            <div class="cal-grid">
+              <div class="cal-day-hdr">D</div>
+              <div class="cal-day-hdr">S</div>
+              <div class="cal-day-hdr">T</div>
+              <div class="cal-day-hdr">Q</div>
+              <div class="cal-day-hdr">Q</div>
+              <div class="cal-day-hdr">S</div>
+              <div class="cal-day-hdr">S</div>
+
+              <div class="cal-day other">31</div>
+              <div class="cal-day">1</div>
+              <div class="cal-day">2</div>
+              <div class="cal-day">3</div>
+              <div class="cal-day">4</div>
+              <div class="cal-day">5</div>
+              <div class="cal-day">6</div>
+              <div class="cal-day">7</div>
+              <div class="cal-day">8</div>
+              <div class="cal-day">9</div>
+              <div class="cal-day">10</div>
+              <div class="cal-day">11</div>
+              <div class="cal-day">12</div>
+              <div class="cal-day">13</div>
+              <div class="cal-day">14</div>
+              <div class="cal-day">15</div>
+              <div class="cal-day">16</div>
+              <div class="cal-day event">17</div>
+              <div class="cal-day event">18</div>
+              <div class="cal-day">19</div>
+              <div class="cal-day">20</div>
+              <div class="cal-day">21</div>
+              <div class="cal-day">22</div>
+              <div class="cal-day">23</div>
+              <div class="cal-day">24</div>
+              <div class="cal-day event">25</div>
+              <div class="cal-day">26</div>
+              <div class="cal-day today">27</div>
+              <div class="cal-day event">28</div>
+              <div class="cal-day event">29</div>
+              <div class="cal-day">30</div>
+              <div class="cal-day other">1</div>
+              <div class="cal-day other">2</div>
+              <div class="cal-day other">3</div>
+              <div class="cal-day other">4</div>
+            </div>
+
+            <div class="cal-events">
+              <div class="cal-event">
+                <div class="cal-event-bar pink"></div>
+                <div class="cal-event-body">
+                  <div class="cal-event-title">5 Dicas de Marketing Digital</div>
+                  <div class="cal-event-date">28 jun · Carrossel</div>
+                </div>
+                <span class="cal-event-badge scheduled">Agendado</span>
+              </div>
+              <div class="cal-event">
+                <div class="cal-event-bar purple"></div>
+                <div class="cal-event-body">
+                  <div class="cal-event-title">Case de Sucesso — Cliente X</div>
+                  <div class="cal-event-date">29 jun · Carrossel</div>
+                </div>
+                <span class="cal-event-badge draft">Rascunho</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Analytics -->
+        <div class="card">
+          <div class="card-head">
+            <h3>Performance</h3>
+            <button class="btn btn-ghost btn-sm">Relatório completo</button>
+          </div>
+          <div class="card-body">
+
+            <div class="chart">
+              <div class="chart-bar"></div>
+              <div class="chart-bar"></div>
+              <div class="chart-bar"></div>
+              <div class="chart-bar highlight"></div>
+              <div class="chart-bar"></div>
+              <div class="chart-bar"></div>
+              <div class="chart-bar"></div>
+            </div>
+
+            <div class="metrics">
+              <div class="metric">
+                <span class="metric-label">Impressões (7 dias)</span>
+                <span class="metric-value">24.538</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Engajamento médio</span>
+                <span class="metric-value green">24%</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Cliques em link</span>
+                <span class="metric-value">1.847</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Melhor carrossel</span>
+                <span class="metric-value" style="font-size:13px;font-weight:500;">"5 Estratégias de Marketing"</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Taxa de conversão</span>
+                <span class="metric-value pink">3,2%</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================================
+           RECENT CARROSSÉIS
+           ============================================================ -->
+      <div class="divider"></div>
+
+      <div class="section-head">
+        <div>
+          <h2>Carrosséis Recentes</h2>
+          <p>Últimos carrosséis gerados para sua marca</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-ghost btn-sm">Arquivo completo</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active">Todos</button>
+        <button class="tab">Educativo</button>
+        <button class="tab">Vendas</button>
+        <button class="tab">Comparação</button>
+        <button class="tab">FAQ</button>
+        <button class="tab">Storytelling</button>
+      </div>
+
+      <div class="carrossel-grid">
+
+        <div class="carrossel-item">
+          <div class="carrossel-preview">
+            <div class="mock mock-1">
+              <div class="carrossel-hover">
+                <button class="carrossel-hover-btn">✎</button>
+                <button class="carrossel-hover-btn">⬇</button>
+                <button class="carrossel-hover-btn">﹒﹒﹒</button>
+              </div>
+              <div class="mock-title">5 Estratégias de Marketing</div>
+              <div class="mock-sub">Educativo · 7 slides</div>
+            </div>
+          </div>
+          <div class="carrossel-info">
+            <div class="carrossel-title">5 Estratégias de Marketing</div>
+            <div class="carrossel-meta">
+              <span>📘 Educativo</span>
+              <span>·</span>
+              <span style="color:var(--green);font-weight:500;">Publicado</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="carrossel-item">
+          <div class="carrossel-preview">
+            <div class="mock mock-2">
+              <div class="carrossel-hover">
+                <button class="carrossel-hover-btn">✎</button>
+                <button class="carrossel-hover-btn">⬇</button>
+                <button class="carrossel-hover-btn">﹒﹒﹒</button>
+              </div>
+              <div class="mock-title">ContentFlow vs Canva</div>
+              <div class="mock-sub">Comparação · 10 slides</div>
+            </div>
+          </div>
+          <div class="carrossel-info">
+            <div class="carrossel-title">ContentFlow vs Canva</div>
+            <div class="carrossel-meta">
+              <span>📊 Comparação</span>
+              <span>·</span>
+              <span style="color:var(--blue);font-weight:500;">Rascunho</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="carrossel-item">
+          <div class="carrossel-preview">
+            <div class="mock mock-3">
+              <div class="carrossel-hover">
+                <button class="carrossel-hover-btn">✎</button>
+                <button class="carrossel-hover-btn">⬇</button>
+                <button class="carrossel-hover-btn">﹒﹒﹒</button>
+              </div>
+              <div class="mock-title">FAQ Marketing Digital</div>
+              <div class="mock-sub">FAQ · 5 slides</div>
+            </div>
+          </div>
+          <div class="carrossel-info">
+            <div class="carrossel-title">FAQ Marketing Digital</div>
+            <div class="carrossel-meta">
+              <span>❓ FAQ</span>
+              <span>·</span>
+              <span style="color:var(--green);font-weight:500;">Publicado</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="height:64px;"></div>
+
+    </div><!-- /page -->
+  </div><!-- /main -->
+
+</body>
+</html>
