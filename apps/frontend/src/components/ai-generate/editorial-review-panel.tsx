@@ -232,6 +232,15 @@ export function EditorialReviewPanel(props: EditorialReviewPanelProps) {
             </div>
           )}
 
+          {score != null && score < 60 && (
+            <div className="flex items-center gap-[8px] rounded-[10px] border border-red-500/30 bg-red-500/10 px-[12px] py-[10px] dark:border-red-400/30 dark:bg-red-400/10">
+              <AlertCircle className="h-[16px] w-[16px] shrink-0 text-red-600 dark:text-red-400" />
+              <p className="text-[12px] font-[700] text-red-700 dark:text-red-300">
+                Nota abaixo de 60 — a geração será bloqueada até que o conteúdo seja melhorado.
+              </p>
+            </div>
+          )}
+
           {/* Backend review issues */}
           {hasReviewIssues && (
             <div className="flex flex-col gap-[6px]">

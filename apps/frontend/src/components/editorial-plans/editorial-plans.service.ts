@@ -63,3 +63,14 @@ export async function updateSlot(slotId: string, data: any) {
     body: JSON.stringify(data),
   });
 }
+
+export async function runGeneration(id: string) {
+  return api(`${BASE}/${id}/run-generation`, { method: 'POST' });
+}
+
+export async function toggleAutoGeneration(id: string, autoGenerate: boolean) {
+  return api(`${BASE}/${id}/toggle-auto`, {
+    method: 'POST',
+    body: JSON.stringify({ autoGenerate }),
+  });
+}

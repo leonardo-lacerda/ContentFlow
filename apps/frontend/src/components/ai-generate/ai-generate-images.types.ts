@@ -125,6 +125,9 @@ export type ReferenceImage = {
   approved?: boolean;
   category?: string;
   description?: string;
+  tags?: string[];
+  license?: string;
+  sourceUrl?: string;
 };
 
 export type VisualIdentityAsset = {

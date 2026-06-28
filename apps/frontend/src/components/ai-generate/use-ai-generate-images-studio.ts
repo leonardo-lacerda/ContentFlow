@@ -133,6 +133,7 @@ export function useAiGenerateImagesStudio() {
   const [savingCarousel, setSavingCarousel] = useState(false);
   const [savedCarouselCount, setSavedCarouselCount] = useState(0);
   const [savedCarouselProject, setSavedCarouselProject] = useState('');
+  const [savedCarouselProjectId, setSavedCarouselProjectId] = useState('');
   const [savedProjects, setSavedProjects] = useState<SavedAiProject[]>([]);
   const [loadingSavedProjects, setLoadingSavedProjects] = useState(false);
   const [exportingPackage, setExportingPackage] = useState(false);
@@ -641,6 +642,7 @@ export function useAiGenerateImagesStudio() {
           brandColors,
           brief: finalCreativeBrief || computedCreativeBrief,
         }),
+        hasBrandLogos: brandLogoReferences.length > 0,
         adjustment: slideImageAdjustments[slide.index]?.trim() || undefined,
       }),
     [
@@ -648,6 +650,7 @@ export function useAiGenerateImagesStudio() {
       computedCreativeBrief,
       effectiveDirectionSpec,
       finalCreativeBrief,
+      brandLogoReferences.length,
       plan,
       slideImageAdjustments,
     ]
@@ -1192,6 +1195,24 @@ export function useAiGenerateImagesStudio() {
   const canUndo = undoStack.length > 0;
   const canRedo = redoStack.length > 0;
 
+  // Keyboard shortcuts for undo (Ctrl+Z) and redo (Ctrl+Shift+Z / Ctrl+Y)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey;
+      if (!isMod) return;
+
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
+
   const addSlide = useCallback(
     (afterIndex: number) => {
       saveSnapshot();
@@ -1686,6 +1707,14 @@ export function useAiGenerateImagesStudio() {
 
       const nextPlan = data;
       setPlan(nextPlan);
+      // Restore persisted editorial review if available
+      try {
+        const reviewKey = `editorial-review-${nextPlan.title || 'untitled'}`;
+        const savedReview = localStorage.getItem(reviewKey);
+        if (savedReview) {
+          setEditorialReview(JSON.parse(savedReview));
+        }
+      } catch { /* ignore */ }
       trackTemplateUsage(fetch, selectedTemplate, 'generate').catch(() => {});
       setFinalCreativeBrief(
         buildLimitedBrief(
@@ -1736,6 +1765,11 @@ export function useAiGenerateImagesStudio() {
       }
       const review = data;
       setEditorialReview(review);
+      // Persist review to localStorage for recovery
+      try {
+        const reviewKey = `editorial-review-${plan.title || 'untitled'}`;
+        localStorage.setItem(reviewKey, JSON.stringify(review));
+      } catch { /* ignore localStorage errors */ }
       return review;
     } catch (err) {
       if (!silent) {
@@ -2119,6 +2153,19 @@ export function useAiGenerateImagesStudio() {
     ) {
       setError(
         `Existem ${editorialIssues.length} problema${editorialIssues.length !== 1 ? 's' : ''} editorial${editorialIssues.length !== 1 ? 'is' : ''} não resolvido${editorialIssues.length !== 1 ? 's' : ''}. Resolva os problemas ou marque "gerar mesmo assim" para continuar.`
+      );
+      return;
+    }
+
+    // Auto-review gate: block when editorial score is below 60
+    if (
+      autoReviewBeforeImages &&
+      editorialReview &&
+      editorialReview.score < 60 &&
+      !allowGenerateWithReviewIssues
+    ) {
+      setError(
+        `A nota editorial é ${editorialReview.score}/100, inferior ao mínimo de 60. Corrija os problemas ou marque "gerar mesmo assim" para continuar.`
       );
       return;
     }
@@ -2560,6 +2607,9 @@ export function useAiGenerateImagesStudio() {
         Array.isArray(data) ? data.length : plan.slides.length
       );
       setSavedCarouselProject(plan.title || trimmedTopic || 'Carrossel salvo');
+      if (Array.isArray(data) && data.length > 0 && data[0]?.id) {
+        setSavedCarouselProjectId(String(data[0].id));
+      }
     } catch (err) {
       setError(
         'Não foi possível conectar ao servidor para salvar o carrossel.'
@@ -2682,6 +2732,7 @@ export function useAiGenerateImagesStudio() {
     saveCarouselToMedia,
     savedCarouselCount,
     savedCarouselProject,
+    savedCarouselProjectId,
     savedProjects,
     savingCarousel,
     savingReferenceLibrary,

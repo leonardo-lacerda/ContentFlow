@@ -109,4 +109,35 @@ export class CarouselProjectController {
   ) {
     return this.carouselProjectService.updateStatus(id, body.status as any);
   }
+
+  @Post('/:id/request-approval')
+  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  async requestApproval(@Param('id') id: string) {
+    return this.carouselProjectService.updateProject(id, { approvalStatus: 'PENDING' } as any);
+  }
+
+  @Post('/:id/approve')
+  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  async approveProject(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.carouselProjectService.updateProject(id, {
+      approvalStatus: 'APPROVED',
+      approvedBy: org.id,
+      approvedAt: new Date(),
+    } as any);
+  }
+
+  @Post('/:id/reject')
+  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  async rejectProject(
+    @Param('id') id: string,
+    @Body() body: { reason?: string }
+  ) {
+    return this.carouselProjectService.updateProject(id, {
+      approvalStatus: 'REJECTED',
+      rejectionReason: body.reason,
+    } as any);
+  }
 }

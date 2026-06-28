@@ -120,6 +120,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     saveCarouselToMedia,
     savedCarouselCount,
     savedCarouselProject,
+    savedCarouselProjectId,
     savedProjects,
     savingCarousel,
     savingReferenceLibrary,
@@ -509,6 +510,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
               saveCarouselToMedia={saveCarouselToMedia}
               savedCarouselCount={savedCarouselCount}
               savedCarouselProject={savedCarouselProject}
+              savedCarouselProjectId={savedCarouselProjectId}
               savingCarousel={savingCarousel}
               setAllowOverBudget={setAllowOverBudget}
               setCostLimitBrl={setCostLimitBrl}

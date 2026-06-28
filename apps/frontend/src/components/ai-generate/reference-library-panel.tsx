@@ -76,10 +76,18 @@ export function ReferenceLibraryPanel({
 }: ReferenceLibraryPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [selectedTag, setSelectedTag] = useState('');
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedCount = referenceImages.filter((r) => r.selected).length;
   const favoriteCount = referenceImages.filter((r) => r.favorite).length;
+
+  // Extract all unique tags from references
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    referenceImages.forEach((r) => r.tags?.forEach((t) => tagSet.add(t)));
+    return Array.from(tagSet).sort();
+  }, [referenceImages]);
 
   // Build source counts map
   const sourceCounts = useMemo(
@@ -107,6 +115,10 @@ export function ReferenceLibraryPanel({
       images = images.filter((r) => r.favorite);
     }
 
+    if (selectedTag) {
+      images = images.filter((r) => r.tags?.includes(selectedTag));
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       images = images.filter(
@@ -114,12 +126,13 @@ export function ReferenceLibraryPanel({
           r.name.toLowerCase().includes(q) ||
           r.category?.toLowerCase().includes(q) ||
           r.source?.toLowerCase().includes(q) ||
-          r.description?.toLowerCase().includes(q)
+          r.description?.toLowerCase().includes(q) ||
+          r.tags?.some((t) => t.toLowerCase().includes(q))
       );
     }
 
     return images;
-  }, [visibleReferenceImages, showFavoritesOnly, searchQuery]);
+  }, [visibleReferenceImages, showFavoritesOnly, selectedTag, searchQuery]);
 
   const handleUploadClick = useCallback(() => {
     uploadInputRef.current?.click();
@@ -309,6 +322,32 @@ export function ReferenceLibraryPanel({
             );
           })}
       </div>
+
+      {/* ── Tag filter pills ─────────────────────────────────────────── */}
+      {allTags.length > 0 && (
+        <div className=\"mb-[12px] flex flex-wrap gap-[6px]\">
+          <span className=\"text-[11px] font-[700] text-black/40 dark:text-white/40 self-center mr-[4px]\">Tags:</span>
+          {allTags.slice(0, 12).map((tag) => {
+            const active = selectedTag === tag;
+            const count = referenceImages.filter((r) => r.tags?.includes(tag)).length;
+            return (
+              <button
+                key={tag}
+                type=\"button\"
+                onClick={() => setSelectedTag(active ? '' : tag)}
+                className={`flex items-center gap-[4px] rounded-full border px-[10px] py-[4px] text-[10px] font-[700] transition ${
+                  active
+                    ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:border-blue-400 dark:bg-blue-400/10 dark:text-blue-400'
+                    : 'border-black/10 bg-white text-black/50 hover:border-black/20 dark:border-white/10 dark:bg-white/5 dark:text-white/50'
+                }`}
+              >
+                {tag}
+                <span className=\"text-[9px] opacity-60\">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── Image grid ─────────────────────────────────────────────── */}
       {displayImages.length > 0 ? (

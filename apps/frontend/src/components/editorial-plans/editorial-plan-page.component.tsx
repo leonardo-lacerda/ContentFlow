@@ -18,11 +18,14 @@ import {
   AlertTriangle,
   CalendarDays,
   Filter,
+  Play,
+  Power,
+  RefreshCw,
 } from 'lucide-react';
 import { useEditorialPlans, useEditorialSlots, mutateEditorialPlans, mutateEditorialSlots } from './editorial-plans.hooks';
 import { EditorialPlan, EditorialSlot, EditorialSlotStatus } from './editorial-plans.types';
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
-import { createPlan, deletePlan, updatePlan, generateCalendar, updateSlot } from './editorial-plans.service';
+import { createPlan, deletePlan, updatePlan, generateCalendar, updateSlot, runGeneration, toggleAutoGeneration } from './editorial-plans.service';
 
 const inputClass =
   'h-[48px] w-full rounded-[10px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] px-[16px] text-[15px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-black dark:text-white transition duration-200 focus:border-black/40 dark:focus:border-white/40 focus:ring-4 focus:ring-black/5 dark:focus:ring-white/5 hover:border-black/20 dark:hover:border-white/20';
@@ -83,6 +86,7 @@ export function EditorialPlanPage() {
   const { data: plans, isLoading, error, mutate } = useEditorialPlans();
   const [selectedPlan, setSelectedPlan] = useState<EditorialPlan | null>(null);
   const [generating, setGenerating] = useState<string | null>(null);
+  const [autoGenerating, setAutoGenerating] = useState<string | null>(null);
 
   const selectedPlanId = selectedPlan?.id;
   const { data: slots, isLoading: slotsLoading } = useEditorialSlots(selectedPlanId);
@@ -423,6 +427,29 @@ export function EditorialPlanPage() {
     }
   };
 
+  const handleRunGeneration = async (plan: EditorialPlan) => {
+    setAutoGenerating(plan.id);
+    try {
+      await runGeneration(plan.id);
+      toaster.show('Geração executada com sucesso!', 'success');
+      mutateEditorialPlans();
+    } catch (err: any) {
+      toaster.show(err.message || 'Erro ao executar geração', 'warning');
+    } finally {
+      setAutoGenerating(null);
+    }
+  };
+
+  const handleToggleAuto = async (plan: EditorialPlan, autoGenerate: boolean) => {
+    try {
+      await toggleAutoGeneration(plan.id, autoGenerate);
+      toaster.show(autoGenerate ? 'Auto-geração ativada' : 'Auto-geração desativada', 'success');
+      mutateEditorialPlans();
+    } catch (err: any) {
+      toaster.show(err.message || 'Erro ao atualizar auto-geração', 'warning');
+    }
+  };
+
   const handleGenerateOptions = (plan: EditorialPlan) => {
     modals.openModal({
       title: 'Gerar Calendário',
@@ -567,19 +594,78 @@ export function EditorialPlanPage() {
             </div>
             <div>
               <span className="text-gray-400 text-xs uppercase tracking-wide">Objetivos</span>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {selectedPlan.objectives.map((o) => (
-                  <span key={o} className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                    {o}
-                  </span>
-                ))}
-                {selectedPlan.objectives.length === 0 && (
-                  <span className="text-xs text-gray-400">Nenhum</span>
-                )}
+                 <div className="flex flex-wrap gap-1 mt-1">
+                   {selectedPlan.objectives.map((o) => (
+                     <span key={o} className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                       {o}
+                     </span>
+                   ))}
+                   {selectedPlan.objectives.length === 0 && (
+                     <span className="text-xs text-gray-400">Nenhum</span>
+                   )}
+                 </div>
+               </div>
               </div>
-            </div>
-          </div>
-        </div>
+              </div>
+
+              {/* Auto-Generation Config */}
+              <div className={`${cardClass} mb-6`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Power className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm font-medium">Auto-Generation Recorrente</span>
+                </div>
+                <button
+                  onClick={() => handleToggleAuto(selectedPlan, !selectedPlan.autoGenerate)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    selectedPlan.autoGenerate
+                      ? 'bg-green-500'
+                      : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      selectedPlan.autoGenerate ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400 text-xs uppercase tracking-wide">Janela de Geração</span>
+                  <p className="font-medium mt-1">{selectedPlan.generationWindow || '02:00-06:00'}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400 text-xs uppercase tracking-wide">Limite Mensal</span>
+                  <p className="font-medium mt-1">${selectedPlan.maxCostPerMonth ?? 50}/mês</p>
+                </div>
+                <div>
+                  <span className="text-gray-400 text-xs uppercase tracking-wide">Última Execução</span>
+                  <p className="font-medium mt-1">
+                    {selectedPlan.lastRunAt
+                      ? formatDate(selectedPlan.lastRunAt)
+                      : <span className="text-gray-400">Nunca</span>
+                    }
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-400 text-xs uppercase tracking-wide">Falhas Consecutivas</span>
+                  <p className={`font-medium mt-1 ${(selectedPlan.consecutiveFails ?? 0) > 0 ? 'text-red-500' : ''}`}>
+                    {selectedPlan.consecutiveFails ?? 0}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/5">
+                <Button
+                  onClick={() => handleRunGeneration(selectedPlan)}
+                  loading={autoGenerating === selectedPlan.id}
+                  disabled={!selectedPlan.autoGenerate}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Executar Agora
+                </Button>
+              </div>
+              </div>
 
         {/* Slots */}
         {slotsLoading ? (

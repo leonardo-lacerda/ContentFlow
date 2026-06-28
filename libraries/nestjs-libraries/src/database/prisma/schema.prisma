@@ -1077,6 +1077,13 @@ enum CarouselProjectStatus {
   FAILED
 }
 
+enum ApprovalStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model CarouselProject {
   id             String                @id @default(uuid())
   organizationId String
@@ -1088,6 +1095,10 @@ model CarouselProject {
   status         CarouselProjectStatus @default(DRAFT)
   slides         Json
   metadata       Json?
+  approvalStatus ApprovalStatus @default(NONE)
+  approvedBy     String?
+  approvedAt     DateTime?
+  rejectionReason String?
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
   organization   Organization          @relation(fields: [organizationId], references: [id])
@@ -1163,6 +1174,10 @@ model EditorialPlan {
   timezone         String   @default("America/Sao_Paulo")
   blackoutDates    String[] @default([])
   autoGenerate     Boolean  @default(false)
+  generationWindow String   @default("02:00-06:00")
+  maxCostPerMonth  Float    @default(50)
+  lastRunAt        DateTime?
+  consecutiveFails Int      @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

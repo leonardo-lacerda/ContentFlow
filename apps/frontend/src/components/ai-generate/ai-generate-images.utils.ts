@@ -66,6 +66,9 @@ export type SlideRenderSpec = {
   colorPrompt?: string;
   brandColors?: string;
   typographyPrompt?: string;
+  // Quando há logos de marca nas referências, sinaliza para incluir
+  // instrução de posicionamento sutil no prompt da imagem.
+  hasBrandLogos?: boolean;
   // Contexto de marca/segurança (CTA, termos proibidos, logo, estratégia).
   brief?: string;
   hasInspirations?: boolean;
@@ -90,6 +93,7 @@ export function buildSlideImagePrompt(
     brief,
     hasInspirations,
     inspirationsLeadVisual,
+    hasBrandLogos,
     adjustment,
   } = spec;
 
@@ -144,6 +148,21 @@ export function buildSlideImagePrompt(
       hasInspirations &&
         'As imagens de referencia anexadas sao apoio de composicao e atmosfera, equilibradas com o estilo acima.'
     );
+
+    // Reforça cores de marca como restrição de paleta proeminente
+    // (mesmo quando colorPrompt já existe — garante visibilidade da marca).
+    if (brandColors?.trim()) {
+      parts.push(
+        `Use estas cores de marca de forma proeminente na composicao: ${brandColors.trim()}.`
+      );
+    }
+
+    // Se há logos de marca, instrui posicionamento sutil.
+    if (hasBrandLogos) {
+      parts.push(
+        'Inclua posicionamento sutil do logo da marca conforme as diretrizes de identidade visual.'
+      );
+    }
   }
 
   parts.push(

@@ -20,6 +20,10 @@ export interface EditorialPlan {
   timezone: string;
   blackoutDates: string[];
   autoGenerate: boolean;
+  generationWindow?: string;
+  maxCostPerMonth?: number;
+  lastRunAt?: string;
+  consecutiveFails?: number;
   createdAt: string;
   updatedAt: string;
 }

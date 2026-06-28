@@ -1,4 +1,6 @@
 import { Button } from '@gitroom/react/form/button';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { inputClass } from './ai-generate-images.constants';
 import { formatCurrency } from './ai-generate-images.utils';
@@ -41,6 +43,7 @@ type ImageGenerationPanelProps = {
   saveCarouselToMedia: () => void;
   savedCarouselCount: number;
   savedCarouselProject: string;
+  savedCarouselProjectId: string;
   savingCarousel: boolean;
   setAllowOverBudget: (value: boolean) => void;
   setCostLimitBrl: (value: number) => void;
@@ -54,6 +57,8 @@ type ImageGenerationPanelProps = {
 };
 
 export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
+  const router = useRouter();
+  const [navigating, setNavigating] = useState(false);
   const {
     allowOverBudget,
     canSaveCarousel,
@@ -81,6 +86,7 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
     saveCarouselToMedia,
     savedCarouselCount,
     savedCarouselProject,
+    savedCarouselProjectId,
     savingCarousel,
     setAllowOverBudget,
     setCostLimitBrl,
@@ -95,6 +101,24 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
     isOverSoftLimit,
     isOverUserLimit,
   } = props;
+
+  const hasGeneratedImages = Object.keys(slideImages).length > 0;
+
+  const handleCreatePost = async () => {
+    setNavigating(true);
+    try {
+      if (savedCarouselCount === 0) {
+        await saveCarouselToMedia();
+      }
+      const params = new URLSearchParams();
+      if (savedCarouselProjectId) {
+        params.set('carouselProjectId', savedCarouselProjectId);
+      }
+      router.push(`/launches?${params.toString()}`);
+    } catch {
+      setNavigating(false);
+    }
+  };
 
   return (
     <div className="rounded-[18px] border border-black/10 bg-white p-[32px] shadow-sm dark:border-white/10 dark:bg-[#101010]">
@@ -376,6 +400,15 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
             className="rounded-[10px] !h-[48px] !px-8 text-[15px] font-[700]"
           >
             Exportar pacote .zip
+          </Button>
+          <Button
+            type="button"
+            loading={savingCarousel || navigating}
+            disabled={!hasGeneratedImages || savingCarousel || generatingImages}
+            onClick={handleCreatePost}
+            className="rounded-[10px] !h-[48px] !px-8 text-[15px] font-[700]"
+          >
+            Criar post / Agendar
           </Button>
 
           {Object.keys(slideImages).length > 0 && (

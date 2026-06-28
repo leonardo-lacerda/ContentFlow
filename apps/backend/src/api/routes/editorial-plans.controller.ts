@@ -85,4 +85,19 @@ export class EditorialPlansController {
   async updateSlot(@Param('slotId') slotId: string, @Body() body: Record<string, unknown>) {
     return this.editorialPlanService.updateSlot(slotId, body);
   }
+
+  @Post('/:id/run-generation')
+  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  async runGeneration(@Param('id') id: string) {
+    return this.editorialPlanService.runGeneration(id);
+  }
+
+  @Post('/:id/toggle-auto')
+  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  async toggleAutoGeneration(
+    @Param('id') id: string,
+    @Body() body: { autoGenerate: boolean }
+  ) {
+    return this.editorialPlanService.toggleAutoGeneration(id, body.autoGenerate);
+  }
 }

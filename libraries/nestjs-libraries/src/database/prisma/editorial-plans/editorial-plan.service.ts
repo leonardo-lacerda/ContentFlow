@@ -107,4 +107,28 @@ export class EditorialPlanService {
 
     return { generated: slots.length, slots };
   }
+
+  async runGeneration(planId: string) {
+    const plan = await this.repository.findById(planId);
+    if (!plan) throw new Error('Editorial plan not found');
+    if (!plan.autoGenerate) throw new Error('Auto-generation is not enabled for this plan');
+
+    // Generate calendar for next 30 days if no slots exist
+    const existingSlots = await this.repository.findSlotsByPlan(planId);
+    if (existingSlots.length === 0) {
+      await this.generateCalendar(planId, 30);
+    }
+
+    // Update lastRunAt and reset consecutive fails
+    await this.repository.update(planId, {
+      lastRunAt: new Date(),
+      consecutiveFails: 0,
+    });
+
+    return { success: true, message: 'Generation triggered successfully' };
+  }
+
+  async toggleAutoGeneration(planId: string, autoGenerate: boolean) {
+    return this.repository.update(planId, { autoGenerate });
+  }
 }
