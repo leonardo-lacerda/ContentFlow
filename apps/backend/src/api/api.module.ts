@@ -53,6 +53,9 @@ import { ContentIdeaService } from '@gitroom/nestjs-libraries/database/prisma/co
 import { ContentIdeaRepository } from '@gitroom/nestjs-libraries/database/prisma/content-ideas/content-idea.repository';
 import { CarouselProjectService } from '@gitroom/nestjs-libraries/database/prisma/carousel-projects/carousel-project.service';
 import { CarouselProjectRepository } from '@gitroom/nestjs-libraries/database/prisma/carousel-projects/carousel-project.repository';
+import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.service';
+import { GenerationJobRepository } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.repository';
+import { GenerationJobController } from '@gitroom/backend/api/routes/generation-jobs.controller';
 import { GithubProvider } from '@gitroom/backend/services/auth/providers/github.provider';
 import { GoogleProvider } from '@gitroom/backend/services/auth/providers/google.provider';
 import { FarcasterProvider } from '@gitroom/backend/services/auth/providers/farcaster.provider';
@@ -83,6 +86,7 @@ const authenticatedController = [
   BrandsController,
   ContentIdeaController,
   CarouselProjectController,
+  GenerationJobController,
 ];
 @Module({
   imports: [UploadModule],
@@ -126,6 +130,8 @@ const authenticatedController = [
     ContentIdeaRepository,
     CarouselProjectService,
     CarouselProjectRepository,
+    GenerationJobService,
+    GenerationJobRepository,
   ],
   get exports() {
     return [...this.imports, ...this.providers];

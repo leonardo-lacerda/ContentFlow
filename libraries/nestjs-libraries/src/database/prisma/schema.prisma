@@ -46,6 +46,7 @@ model Organization {
   brandProfiles       BrandProfile[]
   contentIdeas        ContentIdea[]
   carouselProjects    CarouselProject[]
+  generationJobs      GenerationJob[]
 
   @@index([apiKey])
   @@index([streakSince])
@@ -1095,4 +1096,53 @@ model CarouselProject {
   @@index([brandProfileId])
   @@index([status])
   @@index([contentIdeaId])
+}
+
+enum GenerationJobStatus {
+  QUEUED
+  RUNNING
+  WAITING_PROVIDER
+  COMPLETED
+  FAILED
+  CANCELLED
+  PARTIAL
+}
+
+enum GenerationJobType {
+  BRAND_DNA_EXTRACTION
+  IDEA_GENERATION
+  CAROUSEL_PLAN
+  IMAGE_GENERATION
+  CAPTION_GENERATION
+  BULK_GENERATION
+}
+
+model GenerationJob {
+  id             String               @id @default(uuid())
+  organizationId String
+  brandProfileId String?
+  carouselProjectId String?
+  type           GenerationJobType
+  status         GenerationJobStatus  @default(QUEUED)
+  progress       Json?
+  result         Json?
+  error          String?
+  model          String?
+  provider       String?
+  promptVersion  String?
+  schemaVersion  String?
+  usage          Json?
+  costEstimate   Float?
+  idempotencyKey String?              @unique
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  startedAt      DateTime?
+  completedAt    DateTime?
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([type])
+  @@index([carouselProjectId])
+  @@index([idempotencyKey])
 }
