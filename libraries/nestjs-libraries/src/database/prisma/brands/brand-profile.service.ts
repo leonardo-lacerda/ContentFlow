@@ -7,6 +7,7 @@ import { Organization } from '@prisma/client';
 import { CreateBrandProfileDto } from '@gitroom/nestjs-libraries/dtos/settings/create-brand-profile.dto';
 import { UpdateBrandProfileDto } from '@gitroom/nestjs-libraries/dtos/settings/update-brand-profile.dto';
 import { AnalyzeBrandDto } from '@gitroom/nestjs-libraries/dtos/settings/analyze-brand.dto';
+import { CreateBrandDnaSnapshotDto } from '@gitroom/nestjs-libraries/dtos/settings/create-brand-dna-snapshot.dto';
 import { BrandDnaExtractionService } from '@gitroom/nestjs-libraries/ai-generate/brand-dna-extraction.service';
 
 @Injectable()
@@ -120,5 +121,38 @@ export class BrandProfileService {
     }
 
     return this.brandProfileRepository.findByOrganization(orgId);
+  }
+
+  async createDnaSnapshot(orgId: string, brandId: string, dto: CreateBrandDnaSnapshotDto) {
+    const brand = await this.brandProfileRepository.findById(brandId);
+    if (!brand || brand.organizationId !== orgId) {
+      throw new Error('Brand not found');
+    }
+
+    const latest = await this.brandDnaSnapshotRepository.findLatest(brandId);
+    const nextVersion = latest ? latest.version + 1 : 1;
+
+    return this.brandDnaSnapshotRepository.create({
+      brandProfileId: brandId,
+      version: nextVersion,
+      sourceType: dto.sourceType,
+      sourceUrl: dto.sourceUrl,
+      summary: dto.summary,
+      voice: dto.voice,
+      audience: dto.audience,
+      offer: dto.offer,
+      visual: dto.visual,
+      constraints: dto.constraints,
+      promptVersion: 'manual',
+      model: 'manual',
+    });
+  }
+
+  async approveAsset(assetId: string) {
+    return this.brandAssetRepository.approve(assetId);
+  }
+
+  async deleteAsset(assetId: string) {
+    return this.brandAssetRepository.softDelete(assetId);
   }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -8,6 +8,7 @@ import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/b
 import { CreateBrandProfileDto } from '@gitroom/nestjs-libraries/dtos/settings/create-brand-profile.dto';
 import { UpdateBrandProfileDto } from '@gitroom/nestjs-libraries/dtos/settings/update-brand-profile.dto';
 import { AnalyzeBrandDto } from '@gitroom/nestjs-libraries/dtos/settings/analyze-brand.dto';
+import { CreateBrandDnaSnapshotDto } from '@gitroom/nestjs-libraries/dtos/settings/create-brand-dna-snapshot.dto';
 
 @ApiTags('Brands')
 @Controller('/brands')
@@ -99,5 +100,31 @@ export class BrandsController {
     @Param('id') id: string
   ) {
     return this.brandProfileService.getLatestDnaSnapshot(id);
+  }
+
+  @Post('/:id/dna')
+  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  async createBrandDnaSnapshot(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string,
+    @Body() body: CreateBrandDnaSnapshotDto
+  ) {
+    return this.brandProfileService.createDnaSnapshot(org.id, id, body);
+  }
+
+  @Patch('/:id/assets/:assetId/approve')
+  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  async approveAsset(
+    @Param('assetId') assetId: string
+  ) {
+    return this.brandProfileService.approveAsset(assetId);
+  }
+
+  @Delete('/:id/assets/:assetId')
+  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  async deleteAsset(
+    @Param('assetId') assetId: string
+  ) {
+    return this.brandProfileService.deleteAsset(assetId);
   }
 }
