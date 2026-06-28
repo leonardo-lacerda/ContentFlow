@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useIdeasByBrand, mutateIdeasByBrand } from './content-ideas.hooks';
 import { ContentIdea, ContentIdeaStatus } from './content-ideas.types';
 import { approveIdea, rejectIdea, saveIdea, createFromIdea } from './content-ideas.service';
@@ -41,6 +42,7 @@ const statusLabels: Record<ContentIdeaStatus, string> = {
 };
 
 export function ContentSwipe({ brandId }: { brandId: string }) {
+  const router = useRouter();
   const { data: ideas, isLoading, error } = useIdeasByBrand(brandId);
   const toaster = useToaster();
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -99,16 +101,16 @@ export function ContentSwipe({ brandId }: { brandId: string }) {
       setProcessingId(idea.id);
       try {
         const project = await createFromIdea(idea.id);
-        toaster.show('Carrossel criado! 🎉', 'success');
+        toaster.show('Carrossel criado! Redirecionando...', 'success');
         mutateIdeasByBrand(brandId);
-        // Navigate to the project (future: router.push)
+        router.push('/ai-generate-images');
       } catch (err: any) {
         toaster.show(err.message || 'Erro ao criar carrossel', 'warning');
       } finally {
         setProcessingId(null);
       }
     },
-    [brandId, toaster]
+    [brandId, toaster, router]
   );
 
   if (isLoading) {
