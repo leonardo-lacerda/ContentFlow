@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useIdeasByBrand, mutateIdeasByBrand } from './content-ideas.hooks';
 import { ContentIdea, ContentIdeaStatus } from './content-ideas.types';
-import { approveIdea, rejectIdea, saveIdea } from './content-ideas.service';
+import { approveIdea, rejectIdea, saveIdea, createFromIdea } from './content-ideas.service';
 import { Button } from '@gitroom/react/form/button';
 import { useToaster } from '@gitroom/react/toaster/toaster';
 import {
@@ -18,6 +18,7 @@ import {
   Loader,
   ChevronLeft,
   ChevronRight,
+  Play,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -92,6 +93,23 @@ export function ContentSwipe({ brandId }: { brandId: string }) {
       setCurrentIndex(currentIndex - 1);
     }
   };
+
+  const handleCreateCarousel = useCallback(
+    async (idea: ContentIdea) => {
+      setProcessingId(idea.id);
+      try {
+        const project = await createFromIdea(idea.id);
+        toaster.show('Carrossel criado! 🎉', 'success');
+        mutateIdeasByBrand(brandId);
+        // Navigate to the project (future: router.push)
+      } catch (err: any) {
+        toaster.show(err.message || 'Erro ao criar carrossel', 'warning');
+      } finally {
+        setProcessingId(null);
+      }
+    },
+    [brandId, toaster]
+  );
 
   if (isLoading) {
     return (
@@ -256,6 +274,15 @@ export function ContentSwipe({ brandId }: { brandId: string }) {
               >
                 <ThumbsUp className="w-4 h-4" />
                 Aprovar
+              </Button>
+
+              <Button
+                onClick={() => handleCreateCarousel(currentIdea)}
+                disabled={!!processingId}
+                className="!px-4 !py-2"
+              >
+                <Play className="w-4 h-4" />
+                Criar Carrossel
               </Button>
             </div>
 

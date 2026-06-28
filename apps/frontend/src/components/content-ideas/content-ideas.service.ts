@@ -105,3 +105,7 @@ export async function updateProjectStatus(id: string, status: string) {
     body: JSON.stringify({ status }),
   });
 }
+
+export async function createFromIdea(ideaId: string) {
+  return api(`${PROJECTS_BASE}/from-idea/${ideaId}`, { method: 'POST' });
+}
