@@ -12,6 +12,7 @@ import {
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { useMediaDirectory } from '@gitroom/react/helpers/use.media.directory';
 import { useToaster } from '@gitroom/react/toaster/toaster';
+import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
 
 import type {
   CarouselIdea,
@@ -65,11 +66,15 @@ import {
   sumCosts,
 } from './ai-generate-images.utils';
 import { aiGenerateImagesApi } from './ai-generate-images.api';
+import { fetchTemplates, fetchRecommendations, trackTemplateUsage } from './template-registry';
+import type { BackendTemplateDefinition, TemplateRecommendation } from './template-registry.types';
 
 export function useAiGenerateImagesStudio() {
   const fetch = useFetch();
   const mediaDirectory = useMediaDirectory();
   const toaster = useToaster();
+  const { data: selectedBrand } = useSelectedBrand();
+  const brandProfileId = selectedBrand?.id || selectedBrand?.data?.id || undefined;
   const referenceDataUrlCache = useRef(new Map<string, string>());
   const generationAbortRef = useRef<AbortController | null>(null);
   const importProjectInputRef = useRef<HTMLInputElement | null>(null);
@@ -195,6 +200,11 @@ export function useAiGenerateImagesStudio() {
   const [selectedStyleReferenceId, setSelectedStyleReferenceId] = useState('');
   const [loadingStyleReferences, setLoadingStyleReferences] = useState(false);
   const [styleReferencesError, setStyleReferencesError] = useState('');
+  const [backendTemplates, setBackendTemplates] = useState<BackendTemplateDefinition[]>([]);
+  const [templateRecommendations, setTemplateRecommendations] = useState<TemplateRecommendation[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [templatesLoaded, setTemplatesLoaded] = useState(false);
+  const [selectedNiche, setSelectedNiche] = useState('');
   const setClampedSlideCount = useCallback((value: number) => {
     const nextValue = Number(value);
     if (!Number.isFinite(nextValue)) {
@@ -1074,6 +1084,15 @@ export function useAiGenerateImagesStudio() {
     };
   }, []);
 
+  useEffect(() => {
+    fetchTemplates(fetch).then((result) => {
+      if (result.ok && result.templates) {
+        setBackendTemplates(result.templates);
+        setTemplatesLoaded(true);
+      }
+    });
+  }, []);
+
   const applyTemplate = (templateId: string) => {
     const nextTemplate =
       carouselTemplates.find((item) => item.id === templateId) ||
@@ -1083,7 +1102,23 @@ export function useAiGenerateImagesStudio() {
     setTone(nextTemplate.tone);
     setClampedSlideCount(nextTemplate.slideCount);
     setVisualStyle(nextTemplate.visualStyle);
+    trackTemplateUsage(fetch, templateId, 'select').catch(() => {});
   };
+
+  const requestRecommendations = useCallback(async () => {
+    if (!trimmedTopic && !goal) return;
+    setLoadingRecommendations(true);
+    const result = await fetchRecommendations(fetch, {
+      topic: trimmedTopic || undefined,
+      goal: goal || undefined,
+      platform: platform || undefined,
+      niche: selectedNiche || undefined,
+    });
+    if (result.ok && result.data?.recommendations) {
+      setTemplateRecommendations(result.data.recommendations);
+    }
+    setLoadingRecommendations(false);
+  }, [trimmedTopic, goal, platform, selectedNiche]);
 
   const updateSlide = (
     index: number,
@@ -1337,6 +1372,7 @@ export function useAiGenerateImagesStudio() {
             forbiddenTerms: forbiddenTerms.trim() || undefined,
             defaultCta: defaultCta.trim() || undefined,
             textModel: trimmedTextModel,
+            brandProfileId,
           }
         );
 
@@ -1417,6 +1453,7 @@ export function useAiGenerateImagesStudio() {
         language: 'pt-BR',
         textModel: trimmedTextModel,
         existingTitles: existingTitles.length ? existingTitles : undefined,
+        brandProfileId,
       });
 
       if (!ok) {
@@ -1550,6 +1587,8 @@ export function useAiGenerateImagesStudio() {
           brandNotes: brandBrief,
           language: 'pt-BR',
           textModel: trimmedTextModel,
+          templateId: selectedTemplate,
+          brandProfileId,
         }
       );
 
@@ -1562,6 +1601,7 @@ export function useAiGenerateImagesStudio() {
 
       const nextPlan = data;
       setPlan(nextPlan);
+      trackTemplateUsage(fetch, selectedTemplate, 'generate').catch(() => {});
       setFinalCreativeBrief(
         buildLimitedBrief(
           [
@@ -2014,6 +2054,7 @@ export function useAiGenerateImagesStudio() {
           prompt: buildSlidePromptFor(slide),
           model: trimmedImageModel,
           n: 1,
+          brandProfileId,
         };
 
         if (imageProvider === 'ia_generate') {
@@ -2072,6 +2113,7 @@ export function useAiGenerateImagesStudio() {
         prompt: buildSlidePromptFor(slide),
         model: trimmedImageModel,
         n: 1,
+        brandProfileId,
       };
 
       if (imageProvider === 'ia_generate') {
@@ -2651,5 +2693,12 @@ export function useAiGenerateImagesStudio() {
     styleReferencesError,
     loadStyleReferences,
     selectStyleReference,
+    backendTemplates,
+    templateRecommendations,
+    loadingRecommendations,
+    templatesLoaded,
+    requestRecommendations,
+    selectedNiche,
+    setSelectedNiche,
   };
 }
