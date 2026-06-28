@@ -5,11 +5,16 @@ import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.reque
 import { CheckPolicies } from '@gitroom/backend/services/auth/permissions/permissions.ability';
 import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
 import { ContentIdeaService } from '@gitroom/nestjs-libraries/database/prisma/content-ideas/content-idea.service';
+import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
+import { CreateContentIdeaDto } from '@gitroom/nestjs-libraries/dtos/content-ideas/create-content-idea.dto';
 
 @ApiTags('Content Ideas')
 @Controller('/content-ideas')
 export class ContentIdeaController {
-  constructor(private contentIdeaService: ContentIdeaService) {}
+  constructor(
+    private contentIdeaService: ContentIdeaService,
+    private brandProfileService: BrandProfileService
+  ) {}
 
   @Get('/')
   async getIdeas(@GetOrgFromRequest() org: Organization) {
@@ -33,17 +38,9 @@ export class ContentIdeaController {
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async createIdea(
     @GetOrgFromRequest() org: Organization,
-    @Body() body: {
-      brandProfileId: string;
-      title: string;
-      hook: string;
-      goal: string;
-      angle: string;
-      templateSuggestion?: string;
-      platformSuggestion?: string;
-      score?: number;
-    }
+    @Body() body: CreateContentIdeaDto
   ) {
+    await this.brandProfileService.validateBrandOwnership(org.id, body.brandProfileId);
     return this.contentIdeaService.createIdea({
       organizationId: org.id,
       ...body,

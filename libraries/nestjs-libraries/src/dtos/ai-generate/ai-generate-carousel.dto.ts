@@ -79,4 +79,14 @@ export class AiGenerateCarouselDto {
   @IsOptional()
   @MaxLength(16_000)
   reviewPayload?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(80)
+  templateId?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(128)
+  brandProfileId?: string;
 }

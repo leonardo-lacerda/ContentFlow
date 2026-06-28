@@ -113,4 +113,9 @@ export class AiGenerateImageDto {
   @IsBoolean()
   @IsOptional()
   persist?: boolean;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(128)
+  brandProfileId?: string;
 }

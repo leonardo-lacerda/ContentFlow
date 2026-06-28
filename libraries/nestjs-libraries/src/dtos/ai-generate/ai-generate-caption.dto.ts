@@ -45,4 +45,9 @@ export class AiGenerateCaptionDto {
   @IsOptional()
   @MaxLength(128)
   textModel?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(128)
+  brandProfileId?: string;
 }

@@ -28,6 +28,11 @@ export class AiGenerateCarouselIdeasDto {
   @MaxLength(128)
   textModel?: string;
 
+  @IsString()
+  @IsOptional()
+  @MaxLength(128)
+  brandProfileId?: string;
+
   /**
    * Títulos de ideias já geradas/salvas anteriormente. A IA recebe essa lista
    * para evitar repetir ideias e gerar apenas temas inéditos.

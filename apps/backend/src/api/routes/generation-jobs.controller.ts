@@ -5,11 +5,16 @@ import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.reque
 import { CheckPolicies } from '@gitroom/backend/services/auth/permissions/permissions.ability';
 import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
 import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.service';
+import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
+import { CreateGenerationJobDto } from '@gitroom/nestjs-libraries/dtos/generation-jobs/create-generation-job.dto';
 
 @ApiTags('Generation Jobs')
 @Controller('/generation-jobs')
 export class GenerationJobController {
-  constructor(private generationJobService: GenerationJobService) {}
+  constructor(
+    private generationJobService: GenerationJobService,
+    private brandProfileService: BrandProfileService
+  ) {}
 
   @Get('/')
   async getJobs(@GetOrgFromRequest() org: Organization) {
@@ -25,18 +30,11 @@ export class GenerationJobController {
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async createJob(
     @GetOrgFromRequest() org: Organization,
-    @Body() body: {
-      brandProfileId?: string;
-      carouselProjectId?: string;
-      type: string;
-      idempotencyKey?: string;
-      model?: string;
-      provider?: string;
-      promptVersion?: string;
-      schemaVersion?: string;
-      costEstimate?: number;
-    }
+    @Body() body: CreateGenerationJobDto
   ) {
+    if (body.brandProfileId) {
+      await this.brandProfileService.validateBrandOwnership(org.id, body.brandProfileId);
+    }
     return this.generationJobService.createJob({
       organizationId: org.id,
       ...body,

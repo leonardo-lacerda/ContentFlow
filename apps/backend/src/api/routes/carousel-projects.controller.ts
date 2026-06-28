@@ -6,13 +6,16 @@ import { CheckPolicies } from '@gitroom/backend/services/auth/permissions/permis
 import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
 import { CarouselProjectService } from '@gitroom/nestjs-libraries/database/prisma/carousel-projects/carousel-project.service';
 import { ContentIdeaService } from '@gitroom/nestjs-libraries/database/prisma/content-ideas/content-idea.service';
+import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
+import { CreateCarouselProjectDto } from '@gitroom/nestjs-libraries/dtos/content-ideas/create-carousel-project.dto';
 
 @ApiTags('Carousel Projects')
 @Controller('/carousel-projects')
 export class CarouselProjectController {
   constructor(
     private carouselProjectService: CarouselProjectService,
-    private contentIdeaService: ContentIdeaService
+    private contentIdeaService: ContentIdeaService,
+    private brandProfileService: BrandProfileService
   ) {}
 
   @Get('/')
@@ -37,16 +40,9 @@ export class CarouselProjectController {
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async createProject(
     @GetOrgFromRequest() org: Organization,
-    @Body() body: {
-      brandProfileId: string;
-      contentIdeaId?: string;
-      title: string;
-      slides: any;
-      caption?: string;
-      hashtags?: string[];
-      metadata?: any;
-    }
+    @Body() body: CreateCarouselProjectDto
   ) {
+    await this.brandProfileService.validateBrandOwnership(org.id, body.brandProfileId);
     return this.carouselProjectService.createProject({
       organizationId: org.id,
       ...body,
