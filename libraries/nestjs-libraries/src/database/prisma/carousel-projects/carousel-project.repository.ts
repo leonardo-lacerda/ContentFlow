@@ -47,6 +47,10 @@ export class CarouselProjectRepository {
     hashtags?: string[];
     status?: CarouselProjectStatus;
     metadata?: any;
+    approvalStatus?: string;
+    approvedBy?: string;
+    approvedAt?: Date;
+    rejectionReason?: string;
   }) {
     return this.prisma.carouselProject.update({
       where: { id },

@@ -38,6 +38,10 @@ export class CarouselProjectService {
     hashtags?: string[];
     status?: CarouselProjectStatus;
     metadata?: any;
+    approvalStatus?: string;
+    approvedBy?: string;
+    approvedAt?: Date;
+    rejectionReason?: string;
   }) {
     return this.carouselProjectRepository.update(id, data);
   }

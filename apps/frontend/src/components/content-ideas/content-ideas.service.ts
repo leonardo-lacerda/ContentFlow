@@ -109,3 +109,20 @@ export async function updateProjectStatus(id: string, status: string) {
 export async function createFromIdea(ideaId: string) {
   return api(`${PROJECTS_BASE}/from-idea/${ideaId}`, { method: 'POST' });
 }
+
+// --- Approval Workflow ---
+
+export async function requestApproval(id: string) {
+  return api(`${PROJECTS_BASE}/${id}/request-approval`, { method: 'POST' });
+}
+
+export async function approveProject(id: string) {
+  return api(`${PROJECTS_BASE}/${id}/approve`, { method: 'POST' });
+}
+
+export async function rejectProject(id: string, reason?: string) {
+  return api(`${PROJECTS_BASE}/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+}

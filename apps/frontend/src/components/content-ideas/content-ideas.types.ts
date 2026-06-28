@@ -1,5 +1,7 @@
 export type ContentIdeaStatus = 'NEW' | 'APPROVED' | 'REJECTED' | 'SAVED' | 'USED' | 'ARCHIVED';
 
+export type ApprovalStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+
 export interface ContentIdea {
   id: string;
   organizationId: string;
@@ -38,6 +40,10 @@ export interface CarouselProject {
   status: CarouselProjectStatus;
   slides: CarouselSlide[];
   metadata?: Record<string, unknown>;
+  approvalStatus?: ApprovalStatus;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
 }
