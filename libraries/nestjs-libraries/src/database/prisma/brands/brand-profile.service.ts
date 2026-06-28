@@ -155,4 +155,11 @@ export class BrandProfileService {
   async deleteAsset(assetId: string) {
     return this.brandAssetRepository.softDelete(assetId);
   }
+
+  async validateBrandOwnership(orgId: string, brandId: string): Promise<void> {
+    const valid = await this.brandProfileRepository.validateOwnership(brandId, orgId);
+    if (!valid) {
+      throw new Error('Brand not found or access denied');
+    }
+  }
 }

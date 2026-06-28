@@ -119,6 +119,27 @@ export const useMenuItem = () => {
       path: '/media',
     },
     {
+      name: 'Brands',
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="21"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <path
+            d="M12 7V3M12 21V17M7 12H3M21 12H17M19.07 4.93L16.24 7.76M16.24 16.24L19.07 19.07M4.93 19.07L7.76 16.24M7.76 7.76L4.93 4.93"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ),
+      path: '/brands',
+    },
+    {
       name: 'Onboarding',
       icon: (
         <svg

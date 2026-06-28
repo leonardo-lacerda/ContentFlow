@@ -64,4 +64,11 @@ export class BrandProfileRepository {
       where: { organizationId: orgId, deletedAt: null },
     });
   }
+
+  async validateOwnership(brandId: string, orgId: string): Promise<boolean> {
+    const brand = await this.prisma.brandProfile.findFirst({
+      where: { id: brandId, organizationId: orgId, deletedAt: null },
+    });
+    return !!brand;
+  }
 }
