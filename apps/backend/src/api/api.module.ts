@@ -42,6 +42,11 @@ import { AdminController } from '@gitroom/backend/api/routes/admin.controller';
 import { AiGenerateController } from '@gitroom/backend/api/routes/ai-generate.controller';
 import { AiGenerateService } from '@gitroom/nestjs-libraries/ai-generate/ai-generate.service';
 import { AuthProviderManager } from '@gitroom/backend/services/auth/providers/providers.manager';
+import { BrandsController } from '@gitroom/backend/api/routes/brands.controller';
+import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
+import { BrandProfileRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.repository';
+import { BrandDnaSnapshotRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-dna-snapshot.repository';
+import { BrandAssetRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-asset.repository';
 import { GithubProvider } from '@gitroom/backend/services/auth/providers/github.provider';
 import { GoogleProvider } from '@gitroom/backend/services/auth/providers/google.provider';
 import { FarcasterProvider } from '@gitroom/backend/services/auth/providers/farcaster.provider';
@@ -69,6 +74,7 @@ const authenticatedController = [
   AnnouncementsController,
   AdminController,
   AiGenerateController,
+  BrandsController,
 ];
 @Module({
   imports: [UploadModule],
@@ -104,6 +110,10 @@ const authenticatedController = [
     FarcasterProvider,
     WalletProvider,
     OauthProvider,
+    BrandProfileService,
+    BrandProfileRepository,
+    BrandDnaSnapshotRepository,
+    BrandAssetRepository,
   ],
   get exports() {
     return [...this.imports, ...this.providers];

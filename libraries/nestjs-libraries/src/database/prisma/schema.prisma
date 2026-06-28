@@ -43,6 +43,7 @@ model Organization {
   webhooks            Webhooks[]
   oauthApp            OAuthApp[]
   oauthAuthorizations OAuthAuthorization[]
+  brandProfiles       BrandProfile[]
 
   @@index([apiKey])
   @@index([streakSince])
@@ -956,4 +957,72 @@ model Announcement {
   description String
   color       AnnouncementColor @default(INFO)
   createdAt   DateTime          @default(now())
+}
+
+enum BrandProfileStatus {
+  DRAFT
+  ANALYZING
+  NEEDS_REVIEW
+  ACTIVE
+  FAILED
+}
+
+model BrandProfile {
+  id             String             @id @default(uuid())
+  organizationId String
+  name           String
+  website        String?
+  industry       String?
+  status         BrandProfileStatus @default(DRAFT)
+  selected       Boolean            @default(false)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  dnaSnapshots   BrandDnaSnapshot[]
+  assets         BrandAsset[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([deletedAt])
+  @@index([organizationId, selected])
+}
+
+model BrandDnaSnapshot {
+  id             String       @id @default(uuid())
+  brandProfileId String
+  version        Int
+  sourceType     String
+  sourceUrl      String?
+  summary        Json
+  voice          Json
+  audience       Json
+  offer          Json
+  visual         Json
+  constraints    Json
+  confidence     Json?
+  promptVersion  String
+  model          String
+  createdAt      DateTime     @default(now())
+  brandProfile   BrandProfile @relation(fields: [brandProfileId], references: [id])
+
+  @@index([brandProfileId])
+  @@index([brandProfileId, version])
+}
+
+model BrandAsset {
+  id             String       @id @default(uuid())
+  brandProfileId String
+  mediaId        String?
+  type           String
+  sourceUrl      String?
+  metadata       Json?
+  approved       Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  deletedAt      DateTime?
+  brandProfile   BrandProfile @relation(fields: [brandProfileId], references: [id])
+
+  @@index([brandProfileId])
+  @@index([type])
+  @@index([deletedAt])
 }

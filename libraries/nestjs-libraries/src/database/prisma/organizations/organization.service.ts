@@ -10,6 +10,7 @@ import { Organization, ShortLinkPreference } from '@prisma/client';
 import { CompanyProfileDto } from '@gitroom/nestjs-libraries/dtos/settings/company-profile.dto';
 import { CompanyProfileSummaryDto } from '@gitroom/nestjs-libraries/dtos/settings/company-profile-summary.dto';
 import { ExtractContentService } from '@gitroom/nestjs-libraries/openai/extract.content.service';
+import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
 
 const COMPANY_PROFILE_TYPE = 'company_profile_v1';
 const COMPANY_PROFILE_COLLECTION_TYPE = 'company_profiles_v2';
@@ -373,7 +374,8 @@ export class OrganizationService {
   constructor(
     private _organizationRepository: OrganizationRepository,
     private _notificationsService: NotificationService,
-    private _extractContentService: ExtractContentService
+    private _extractContentService: ExtractContentService,
+    private brandProfileService: BrandProfileService
   ) {}
 
   private emptyCompany(org?: { name?: string | null } | null): CompanyProfile {
@@ -816,5 +818,9 @@ export class OrganizationService {
       selectedCompanyId: targetId,
       model: usedModel,
     };
+  }
+
+  async migrateCompanyProfiles(org: Organization) {
+    return this.brandProfileService.migrateFromLegacy(org.id, org);
   }
 }

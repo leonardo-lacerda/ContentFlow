@@ -130,4 +130,12 @@ export class SettingsController {
   ) {
     return this._organizationService.generateCompanyVisualIdentity(org.id, body);
   }
+
+  @Post('/migrate-company-profiles')
+  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  async migrateCompanyProfiles(
+    @GetOrgFromRequest() org: Organization
+  ) {
+    return this._organizationService.migrateCompanyProfiles(org);
+  }
 }

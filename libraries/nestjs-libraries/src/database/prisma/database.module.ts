@@ -43,6 +43,10 @@ import { AnnouncementsRepository } from '@gitroom/nestjs-libraries/database/pris
 import { AnnouncementsService } from '@gitroom/nestjs-libraries/database/prisma/announcements/announcements.service';
 import { ErrorsRepository } from '@gitroom/nestjs-libraries/database/prisma/errors/errors.repository';
 import { ErrorsService } from '@gitroom/nestjs-libraries/database/prisma/errors/errors.service';
+import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
+import { BrandProfileRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.repository';
+import { BrandDnaSnapshotRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-dna-snapshot.repository';
+import { BrandAssetRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-asset.repository';
 import { TemporalService } from 'nestjs-temporal-core';
 
 // Quando o Temporal esta desabilitado (DISABLE_TEMPORAL=true), o modulo global
@@ -116,6 +120,10 @@ const temporalStubProvider = temporalDisabled
     AnnouncementsService,
     ErrorsRepository,
     ErrorsService,
+    BrandProfileService,
+    BrandProfileRepository,
+    BrandDnaSnapshotRepository,
+    BrandAssetRepository,
     ...temporalStubProvider,
   ],
   get exports() {
