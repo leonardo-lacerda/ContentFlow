@@ -44,6 +44,8 @@ model Organization {
   oauthApp            OAuthApp[]
   oauthAuthorizations OAuthAuthorization[]
   brandProfiles       BrandProfile[]
+  contentIdeas        ContentIdea[]
+  carouselProjects    CarouselProject[]
 
   @@index([apiKey])
   @@index([streakSince])
@@ -981,6 +983,8 @@ model BrandProfile {
   organization   Organization       @relation(fields: [organizationId], references: [id])
   dnaSnapshots   BrandDnaSnapshot[]
   assets         BrandAsset[]
+  contentIdeas   ContentIdea[]
+  carouselProjects CarouselProject[]
 
   @@index([organizationId])
   @@index([status])
@@ -1025,4 +1029,70 @@ model BrandAsset {
   @@index([brandProfileId])
   @@index([type])
   @@index([deletedAt])
+}
+
+enum ContentIdeaStatus {
+  NEW
+  APPROVED
+  REJECTED
+  SAVED
+  USED
+  ARCHIVED
+}
+
+model ContentIdea {
+  id             String            @id @default(uuid())
+  organizationId String
+  brandProfileId String
+  title          String
+  hook           String
+  goal           String
+  angle          String
+  templateSuggestion String?
+  platformSuggestion String?
+  score          Float?
+  status         ContentIdeaStatus @default(NEW)
+  rejectionReason String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  brandProfile   BrandProfile      @relation(fields: [brandProfileId], references: [id])
+  carouselProject CarouselProject?
+
+  @@index([organizationId])
+  @@index([brandProfileId])
+  @@index([status])
+  @@index([brandProfileId, status])
+}
+
+enum CarouselProjectStatus {
+  DRAFT
+  GENERATING
+  REVIEW
+  READY
+  PUBLISHED
+  FAILED
+}
+
+model CarouselProject {
+  id             String                @id @default(uuid())
+  organizationId String
+  brandProfileId String
+  contentIdeaId  String?           @unique
+  title          String
+  caption        String?
+  hashtags       String[]
+  status         CarouselProjectStatus @default(DRAFT)
+  slides         Json
+  metadata       Json?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  brandProfile   BrandProfile          @relation(fields: [brandProfileId], references: [id])
+  contentIdea    ContentIdea?          @relation(fields: [contentIdeaId], references: [id])
+
+  @@index([organizationId])
+  @@index([brandProfileId])
+  @@index([status])
+  @@index([contentIdeaId])
 }

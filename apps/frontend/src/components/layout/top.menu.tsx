@@ -140,6 +140,27 @@ export const useMenuItem = () => {
       path: '/brands',
     },
     {
+      name: 'Content Swipe',
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="21"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <path
+            d="M14 9l3 3-3 3M10 9l-3 3 3 3M5 12h14"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ),
+      path: '/content-swipe',
+    },
+    {
       name: 'Onboarding',
       icon: (
         <svg

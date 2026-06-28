@@ -43,10 +43,16 @@ import { AiGenerateController } from '@gitroom/backend/api/routes/ai-generate.co
 import { AiGenerateService } from '@gitroom/nestjs-libraries/ai-generate/ai-generate.service';
 import { AuthProviderManager } from '@gitroom/backend/services/auth/providers/providers.manager';
 import { BrandsController } from '@gitroom/backend/api/routes/brands.controller';
+import { ContentIdeaController } from '@gitroom/backend/api/routes/content-ideas.controller';
+import { CarouselProjectController } from '@gitroom/backend/api/routes/carousel-projects.controller';
 import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
 import { BrandProfileRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.repository';
 import { BrandDnaSnapshotRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-dna-snapshot.repository';
 import { BrandAssetRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-asset.repository';
+import { ContentIdeaService } from '@gitroom/nestjs-libraries/database/prisma/content-ideas/content-idea.service';
+import { ContentIdeaRepository } from '@gitroom/nestjs-libraries/database/prisma/content-ideas/content-idea.repository';
+import { CarouselProjectService } from '@gitroom/nestjs-libraries/database/prisma/carousel-projects/carousel-project.service';
+import { CarouselProjectRepository } from '@gitroom/nestjs-libraries/database/prisma/carousel-projects/carousel-project.repository';
 import { GithubProvider } from '@gitroom/backend/services/auth/providers/github.provider';
 import { GoogleProvider } from '@gitroom/backend/services/auth/providers/google.provider';
 import { FarcasterProvider } from '@gitroom/backend/services/auth/providers/farcaster.provider';
@@ -75,6 +81,8 @@ const authenticatedController = [
   AdminController,
   AiGenerateController,
   BrandsController,
+  ContentIdeaController,
+  CarouselProjectController,
 ];
 @Module({
   imports: [UploadModule],
@@ -114,6 +122,10 @@ const authenticatedController = [
     BrandProfileRepository,
     BrandDnaSnapshotRepository,
     BrandAssetRepository,
+    ContentIdeaService,
+    ContentIdeaRepository,
+    CarouselProjectService,
+    CarouselProjectRepository,
   ],
   get exports() {
     return [...this.imports, ...this.providers];
