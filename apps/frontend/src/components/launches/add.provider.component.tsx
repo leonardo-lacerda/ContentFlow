@@ -503,7 +503,7 @@ export const AddProviderComponent: FC<{
             // RN WebView doesn't always route them through the native
             // navigation intercept. The backend redirects back to the
             // app via `contentflow://` once OAuth completes.
-            const rn = (window as any).ReactNativeWebView;
+            const rn = window.ReactNativeWebView;
             if (rn && typeof rn.postMessage === 'function') {
               rn.postMessage(JSON.stringify({ type: 'open-external', url }));
               return;
@@ -710,7 +710,7 @@ export const AddProviderComponent: FC<{
               >
                 <div>
                   {item.identifier === 'youtube' ? (
-                    <img src={`/icons/platforms/youtube.svg`} />
+                    <img src={`/icons/platforms/youtube.svg`} alt="YouTube" />
                   ) : (
                     <img
                       className={clsx(
@@ -719,6 +719,7 @@ export const AddProviderComponent: FC<{
                           'rounded-full'
                       )}
                       src={`/icons/platforms/${item.identifier}.png`}
+                      alt={item.identifier}
                     />
                   )}
                 </div>

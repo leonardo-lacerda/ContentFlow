@@ -13,8 +13,8 @@ export class GenerationJobRepository {
     });
   }
 
-  findById(id: string) {
-    return this.prisma.generationJob.findUnique({ where: { id } });
+  findById(id: string, orgId: string) {
+    return this.prisma.generationJob.findFirst({ where: { id, organizationId: orgId } });
   }
 
   findByIdempotencyKey(key: string) {

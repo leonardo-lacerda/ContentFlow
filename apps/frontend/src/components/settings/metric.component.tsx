@@ -26,7 +26,6 @@ const MetricComponent = () => {
 
   const changeTimezone = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
-    console.log(value);
     setTimezone(value);
     localStorage.setItem('timezone', value);
     dayjs.tz.setDefault(value);

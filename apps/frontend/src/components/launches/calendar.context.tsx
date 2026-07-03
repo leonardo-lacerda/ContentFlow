@@ -5,6 +5,7 @@ import {
   createContext,
   FC,
   ReactNode,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -32,7 +33,7 @@ export const CalendarContext = createContext({
   customer: null as string | null,
   loading: true,
   sets: [] as { name: string; id: string; content: string[] }[],
-  signature: undefined as any,
+  signature: undefined as { id: string; content: string } | undefined,
   comments: [] as Array<{
     date: string;
     total: number;
@@ -130,12 +131,12 @@ function getDateRange(display: string, referenceDate?: string) {
   }
 }
 
-export const CalendarWeekProvider: FC<{
+const CalendarWeekProviderInner: FC<{
   children: ReactNode;
   integrations: Integrations[];
 }> = ({ children, integrations }) => {
   const fetch = useFetch();
-  const [internalData, setInternalData] = useState([] as any[]);
+  const [internalData, setInternalData] = useState<Post[]>([]);
   const [trendings] = useState<string[]>([]);
   const searchParams = useSearchParams();
   const [displaySaved, setDisplaySaved] = useCookie('calendar-display', 'week');
@@ -344,6 +345,19 @@ export const CalendarWeekProvider: FC<{
     >
       {children}
     </CalendarContext.Provider>
+  );
+};
+
+export const CalendarWeekProvider: FC<{
+  children: ReactNode;
+  integrations: Integrations[];
+}> = ({ children, integrations }) => {
+  return (
+    <Suspense fallback={null}>
+      <CalendarWeekProviderInner integrations={integrations}>
+        {children}
+      </CalendarWeekProviderInner>
+    </Suspense>
   );
 };
 

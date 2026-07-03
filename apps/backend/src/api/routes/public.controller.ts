@@ -23,6 +23,7 @@ import { Nowpayments } from '@gitroom/nestjs-libraries/crypto/nowpayments';
 import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/subscription.service';
 import { AuthService } from '@gitroom/helpers/auth/auth.service';
 import { pricing } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/pricing';
+import { timingSafeEqual } from 'crypto';
 import { Readable, pipeline } from 'stream';
 import { promisify } from 'util';
 import { OnlyURL } from '@gitroom/nestjs-libraries/dtos/webhooks/webhooks.dto';
@@ -43,11 +44,13 @@ export class PublicController {
   ) {}
   @Post('/agent')
   async createAgent(@Body() body: { text: string; apiKey: string }) {
-    if (
-      !body.apiKey ||
-      !process.env.AGENT_API_KEY ||
-      body.apiKey !== process.env.AGENT_API_KEY
-    ) {
+    if (!body.apiKey || !process.env.AGENT_API_KEY) {
+      return;
+    }
+    // Timing-safe comparison to prevent timing attacks
+    const provided = Buffer.from(body.apiKey, 'utf-8');
+    const expected = Buffer.from(process.env.AGENT_API_KEY, 'utf-8');
+    if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
       return;
     }
     return this._agentGraphInsertService.newPost(body.text);

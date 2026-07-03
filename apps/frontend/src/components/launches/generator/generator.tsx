@@ -46,11 +46,11 @@ const FirstStep: FC = (props) => {
   const generateStep = useCallback(
     async (reader: ReadableStreamDefaultReader) => {
       const decoder = new TextDecoder('utf-8');
-      let lastResponse = {} as any;
+      let lastResponse: { data?: { output?: unknown } } = {};
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
-        if (done) return lastResponse.data.output;
+        if (done) return lastResponse?.data?.output;
 
         // Convert chunked binary data to string
         const chunkStr = decoder.decode(value, {

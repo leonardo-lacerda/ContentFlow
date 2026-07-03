@@ -26,8 +26,11 @@ export class BrandsController {
   }
 
   @Get('/:id')
-  async getBrand(@Param('id') id: string) {
-    return this.brandProfileService.getBrand(id);
+  async getBrand(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.brandProfileService.getBrand(id, org.id);
   }
 
   @Post('/')
@@ -42,16 +45,20 @@ export class BrandsController {
   @Put('/:id')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async updateBrand(
+    @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
     @Body() body: UpdateBrandProfileDto
   ) {
-    return this.brandProfileService.updateBrand(id, body);
+    return this.brandProfileService.updateBrand(id, org.id, body);
   }
 
   @Delete('/:id')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async deleteBrand(@Param('id') id: string) {
-    return this.brandProfileService.deleteBrand(id);
+  async deleteBrand(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.brandProfileService.deleteBrand(id, org.id);
   }
 
   @Post('/:id/select')
@@ -64,15 +71,23 @@ export class BrandsController {
   }
 
   @Get('/:id/dna')
-  async getDnaSnapshots(@Param('id') id: string) {
+  async getDnaSnapshots(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    const brand = await this.brandProfileService.getBrand(id, org.id);
+    if (!brand) throw new Error('Brand not found');
     return this.brandProfileService.getDnaSnapshots(id);
   }
 
   @Get('/:id/assets')
   async getAssets(
+    @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
     @Body() body?: { type?: string }
   ) {
+    const brand = await this.brandProfileService.getBrand(id, org.id);
+    if (!brand) throw new Error('Brand not found');
     return this.brandProfileService.getAssets(id, body?.type);
   }
 
@@ -97,8 +112,11 @@ export class BrandsController {
 
   @Get('/:id/dna/latest')
   async getLatestDna(
+    @GetOrgFromRequest() org: Organization,
     @Param('id') id: string
   ) {
+    const brand = await this.brandProfileService.getBrand(id, org.id);
+    if (!brand) throw new Error('Brand not found');
     return this.brandProfileService.getLatestDnaSnapshot(id);
   }
 

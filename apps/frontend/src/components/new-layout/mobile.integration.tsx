@@ -5,7 +5,7 @@ import { AddProviderComponent } from '@gitroom/frontend/components/launches/add.
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 
 export const MobileIntegration: FC = () => {
-  const [integrations, setIntegrations] = useState(null as any);
+  const [integrations, setIntegrations] = useState<Record<string, unknown> | null>(null);
   const fetch = useFetch();
 
   const loadIntegrations = useCallback(async () => {

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpException,
+  Logger,
   Param,
   Post,
   Delete,
@@ -19,6 +20,7 @@ import { ImportMediaDto } from '@gitroom/nestjs-libraries/dtos/third-party/impor
 @ApiTags('Third Party')
 @Controller('/third-party')
 export class ThirdPartyController {
+  private readonly logger = new Logger(ThirdPartyController.name);
   private storage = UploadFactory.createStorage();
 
   constructor(
@@ -200,7 +202,7 @@ export class ThirdPartyController {
         id: save.id,
       };
     } catch (e) {
-      console.log(e);
+      this.logger.error('Failed to create third-party integration', e);
       throw new HttpException('Integration Already Exists', 400);
     }
   }

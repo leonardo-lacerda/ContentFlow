@@ -244,7 +244,7 @@ export function EditorialReviewPanel(props: EditorialReviewPanelProps) {
           {/* Backend review issues */}
           {hasReviewIssues && (
             <div className="flex flex-col gap-[6px]">
-              {editorialReview!.issues.map((issue, index) => {
+              {editorialReview?.issues?.map((issue, index) => {
                 const config = getSeverityConfig(issue.severity);
                 const SeverityIcon = config.icon;
                 return (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ReactNode, useCallback } from 'react';
+import React, { memo, ReactNode, useCallback, useMemo } from 'react';
 import { Logo } from '@gitroom/frontend/components/new-layout/logo';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 const ModeComponent = dynamic(
@@ -49,13 +49,14 @@ const jakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
 });
 
-export const LayoutComponent = ({ children }: { children: ReactNode }) => {
+export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
   const fetch = useFetch();
 
   const { backendUrl, billingEnabled, isGeneral } = useVariables();
 
   // Feedback icon component attaches Sentry feedback to a top-bar icon when DSN is present
   const searchParams = useSearchParams();
+  const checkParam = useMemo(() => searchParams.get('check') || '', [searchParams]);
   const load = useCallback(async (path: string) => {
     return await (await fetch(path)).json();
   }, []);
@@ -79,7 +80,7 @@ export const LayoutComponent = ({ children }: { children: ReactNode }) => {
         <MantineWrapper>
           <ToolTip />
           <Toaster />
-          <CheckPayment check={searchParams.get('check') || ''} mutate={mutate}>
+          <CheckPayment check={checkParam} mutate={mutate}>
             <ShowMediaBoxModal />
             <ShowLinkedinCompany />
             <MediaSettingsLayout />
@@ -147,4 +148,4 @@ export const LayoutComponent = ({ children }: { children: ReactNode }) => {
       </CopilotKit>
     </ContextWrapper>
   );
-};
+});

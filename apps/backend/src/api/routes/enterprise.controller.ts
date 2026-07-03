@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, Res } from '@nestjs/common';
+import { Body, Controller, HttpException, HttpStatus, Logger, Param, Post, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthService } from '@gitroom/helpers/auth/auth.service';
 import { ioRedis } from '@gitroom/nestjs-libraries/redis/redis.service';
@@ -6,10 +6,13 @@ import { IntegrationManager } from '@gitroom/nestjs-libraries/integrations/integ
 import { OrganizationService } from '@gitroom/nestjs-libraries/database/prisma/organizations/organization.service';
 import { IntegrationService } from '@gitroom/nestjs-libraries/database/prisma/integrations/integration.service';
 import { PostsService } from '@gitroom/nestjs-libraries/database/prisma/posts/posts.service';
+import { UrlValidator } from '@gitroom/nestjs-libraries/security/url-validator';
 
 @ApiTags('Enterprise')
 @Controller('/enterprise')
 export class EnterpriseController {
+  private readonly logger = new Logger(EnterpriseController.name);
+
   constructor(
     private _integrationManager: IntegrationManager,
     private _organizationService: OrganizationService,
@@ -82,13 +85,26 @@ export class EnterpriseController {
         await ioRedis.set(`refresh:${state}`, load.refreshId, 'EX', 3600);
       }
 
-      await ioRedis.set(`webhookUrl:${state}`, load.webhookUrl, 'EX', 3600);
+      // SSRF protection — validate webhookUrl before storing
+      if (load.webhookUrl) {
+        const urlValidation = await UrlValidator.validate(load.webhookUrl);
+        if (!urlValidation.valid) {
+          throw new HttpException(
+            `Webhook URL inválida: ${urlValidation.error}`,
+            HttpStatus.BAD_REQUEST
+          );
+        }
+        await ioRedis.set(`webhookUrl:${state}`, load.webhookUrl, 'EX', 3600);
+      }
+
       await ioRedis.set(`redirect:${state}`, load.redirectUrl, 'EX', 3600);
       await ioRedis.set(`organization:${state}`, org.id, 'EX', 3600);
       await ioRedis.set(`login:${state}`, codeVerifier, 'EX', 3600);
 
       return url;
-    } catch (err) {}
+    } catch (err) {
+      this.logger.warn('Failed to redirect params', err);
+    }
   }
 
   @Post('/delete-channel')

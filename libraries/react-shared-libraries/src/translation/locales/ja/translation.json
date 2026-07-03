@@ -692,5 +692,6 @@
   "watch_tutorial_title": "ContentFlowの使い方を学ぶ",
   "watch_tutorial_description": "この短い動画を見て、ContentFlowを最大限に活用する方法を学びましょう",
   "back": "戻る",
-  "get_started": "開始"
+  "get_started": "開始",
+  "kick_select_channel": "Select Channel"
 }

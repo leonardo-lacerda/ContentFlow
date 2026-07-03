@@ -41,14 +41,19 @@ jobs:
           cache-dependency-path: |
             **/pnpm-lock.yaml
 
+      - name: Install pnpm
+        run: npm install --global pnpm@10.6.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Install ESLint
         run: |
-          npm install eslint
-          npm install @microsoft/eslint-formatter-sarif@2.1.7
+          pnpm add -Dw eslint @microsoft/eslint-formatter-sarif@2.1.7
 
       - name: Run ESLint
         run: npx eslint apps/${{ matrix.service }}/
-          --config apps/${{ matrix.service }}/.eslintrc.json
+          --config eslint.config.mjs
           --format @microsoft/eslint-formatter-sarif
           --output-file apps/${{ matrix.service }}/eslint-results.sarif
         continue-on-error: true

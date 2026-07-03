@@ -23,8 +23,8 @@ export class CarouselProjectRepository {
     });
   }
 
-  findById(id: string) {
-    return this.prisma.carouselProject.findUnique({ where: { id } });
+  findById(id: string, orgId: string) {
+    return this.prisma.carouselProject.findFirst({ where: { id, organizationId: orgId } });
   }
 
   create(data: {
@@ -40,7 +40,7 @@ export class CarouselProjectRepository {
     return this.prisma.carouselProject.create({ data });
   }
 
-  update(id: string, data: {
+  async update(id: string, orgId: string, data: {
     title?: string;
     slides?: any;
     caption?: string;
@@ -52,13 +52,17 @@ export class CarouselProjectRepository {
     approvedAt?: Date;
     rejectionReason?: string;
   }) {
+    const existing = await this.prisma.carouselProject.findFirst({ where: { id, organizationId: orgId } });
+    if (!existing) throw new Error('Carousel project not found');
     return this.prisma.carouselProject.update({
       where: { id },
       data,
     });
   }
 
-  updateStatus(id: string, status: CarouselProjectStatus) {
+  async updateStatus(id: string, orgId: string, status: CarouselProjectStatus) {
+    const existing = await this.prisma.carouselProject.findFirst({ where: { id, organizationId: orgId } });
+    if (!existing) throw new Error('Carousel project not found');
     return this.prisma.carouselProject.update({
       where: { id },
       data: { status },

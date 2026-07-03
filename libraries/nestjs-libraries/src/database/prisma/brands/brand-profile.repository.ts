@@ -13,9 +13,9 @@ export class BrandProfileRepository {
     });
   }
 
-  findById(id: string) {
+  findById(id: string, orgId: string) {
     return this.prisma.brandProfile.findFirst({
-      where: { id, deletedAt: null },
+      where: { id, organizationId: orgId, deletedAt: null },
     });
   }
 
@@ -34,14 +34,18 @@ export class BrandProfileRepository {
     });
   }
 
-  update(id: string, data: { name?: string; website?: string; industry?: string; status?: BrandProfileStatus; selected?: boolean }) {
+  async update(id: string, orgId: string, data: { name?: string; website?: string; industry?: string; status?: BrandProfileStatus; selected?: boolean }) {
+    const existing = await this.prisma.brandProfile.findFirst({ where: { id, organizationId: orgId, deletedAt: null } });
+    if (!existing) throw new Error('Brand not found');
     return this.prisma.brandProfile.update({
       where: { id },
       data,
     });
   }
 
-  softDelete(id: string) {
+  async softDelete(id: string, orgId: string) {
+    const existing = await this.prisma.brandProfile.findFirst({ where: { id, organizationId: orgId, deletedAt: null } });
+    if (!existing) throw new Error('Brand not found');
     return this.prisma.brandProfile.update({
       where: { id },
       data: { deletedAt: new Date() },

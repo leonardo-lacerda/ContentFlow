@@ -14,6 +14,7 @@ import { CarouselPreviewPanel } from './ai-generate-images-preview';
 import { SlideEditorPanel } from './ai-generate-images-slide-editor';
 import { ImageGenerationPanel } from './ai-generate-images-generation-panel';
 import { EditorialReviewPanel } from './editorial-review-panel';
+import { EditorialBlockModal } from './editorial-block-modal';
 import { ReferenceLibraryPanel } from './reference-library-panel';
 import { PlanGeneratingState } from './ai-generate-images.loaders';
 
@@ -232,6 +233,10 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     loadingRecommendations,
     templatesLoaded,
     requestRecommendations,
+    scoreThreshold,
+    setScoreThreshold,
+    showBlockModal,
+    setShowBlockModal,
   } = studio;
 
   return (
@@ -448,6 +453,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
 
             <SlideEditorPanel
               generateSlideImage={generateSlideImage}
+              exportSingleSlide={exportSingleSlide}
               plan={plan}
               regenerateSlideCopy={regenerateSlideCopy}
               restoreImageVersion={restoreImageVersion}
@@ -536,6 +542,25 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
           slideImages={slideImages}
           setLightboxIndex={setLightboxIndex}
         />
+
+        {/* Editorial score block modal */}
+        {showBlockModal && editorialReview && (
+          <EditorialBlockModal
+            review={editorialReview}
+            threshold={scoreThreshold}
+            onFix={() => {
+              setShowBlockModal(false);
+              fixCarouselWithAi();
+            }}
+            onOverride={() => {
+              setAllowGenerateWithReviewIssues(true);
+              setShowBlockModal(false);
+              generateCarouselImages();
+            }}
+            onDismiss={() => setShowBlockModal(false)}
+            correcting={correctingEditorial}
+          />
+        )}
       </div>
     </div>
   );

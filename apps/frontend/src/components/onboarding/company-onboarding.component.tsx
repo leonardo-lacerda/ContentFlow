@@ -23,335 +23,26 @@ import {
   Plus,
 } from 'lucide-react';
 import { useVariables } from '@gitroom/react/helpers/variable.context';
-
-type VisualIdentityAsset = {
-  id: string;
-  name: string;
-  type: string;
-  dataUrl: string;
-  description: string;
-};
-
-type BrandPalette = {
-  id: string;
-  name: string;
-  colors: string[];
-  usage: string;
-};
-
-type BrandFontPreset = {
-  id: string;
-  name: string;
-  headline: string;
-  body: string;
-  usage: string;
-};
-
-type BrandLogoAsset = {
-  id: string;
-  name: string;
-  dataUrl: string;
-  usage: string;
-  description: string;
-};
-
-type StyleRule = {
-  id: string;
-  type: 'do' | 'dont';
-  text: string;
-};
-
-type CompanyInspiration = {
-  id: string;
-  name: string;
-  src: string;
-  source: string;
-  category: string;
-  favorite: boolean;
-  approved: boolean;
-  description: string;
-};
-
-type CompanyProfile = {
-  id?: string;
-  companyName: string;
-  website: string;
-  industry: string;
-  targetAudience: string;
-  productsOrServices: string;
-  differentials: string;
-  toneOfVoice: string;
-  summary: string;
-  visualIdentitySummary: string;
-  brandColors: string;
-  brandFonts: string;
-  defaultCta: string;
-  forbiddenTerms: string;
-  contentPreferences: string;
-  visualIdentityAssets: VisualIdentityAsset[];
-  brandPalettes: BrandPalette[];
-  brandFontPresets: BrandFontPreset[];
-  brandLogos: BrandLogoAsset[];
-  styleRules: StyleRule[];
-  inspirationLibrary: CompanyInspiration[];
-  updatedAt: string;
-  hasProfile?: boolean;
-};
-
-const inputClass =
-  'h-[48px] w-full rounded-[10px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] px-[42px] text-[15px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-black dark:text-white transition duration-200 focus:border-black/40 dark:focus:border-white/40 focus:ring-4 focus:ring-black/5 dark:focus:ring-white/5 hover:border-black/20 dark:hover:border-white/20';
-const textAreaClass =
-  'w-full resize-y rounded-[10px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] p-[16px] text-[15px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-black dark:text-white transition duration-200 focus:border-black/40 dark:focus:border-white/40 focus:ring-4 focus:ring-black/5 dark:focus:ring-white/5 hover:border-black/20 dark:hover:border-white/20';
-
-const defaultProfile: CompanyProfile = {
-  companyName: '',
-  website: '',
-  industry: '',
-  targetAudience: '',
-  productsOrServices: '',
-  differentials: '',
-  toneOfVoice: '',
-  summary: '',
-  visualIdentitySummary: '',
-  brandColors: '',
-  brandFonts: '',
-  defaultCta: '',
-  forbiddenTerms: '',
-  contentPreferences: '',
-  visualIdentityAssets: [],
-  brandPalettes: [],
-  brandFontPresets: [],
-  brandLogos: [],
-  styleRules: [],
-  inspirationLibrary: [],
-  updatedAt: '',
-};
-
-const makeDraftAssetId = () =>
-  `brand_asset_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-const makeBrandKitId = (prefix: string) =>
-  `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-const fontStylePresets = [
-  'Editorial e sofisticada nos títulos, simples e legível no apoio',
-  'Moderna, limpa e direta, com títulos fortes',
-  'Amigável e humana, com aparência leve e acessível',
-  'Premium e minimalista, com bastante espaço em branco',
-];
-
-// ---- Bibliotecas de opções (reduzem digitação: o usuário só clica) ----
-const industryOptions = [
-  'SaaS B2B',
-  'E-commerce',
-  'Educação',
-  'Saúde e bem-estar',
-  'Finanças',
-  'Agência / Marketing',
-  'Indústria',
-  'Serviços locais',
-  'Imobiliário',
-  'Alimentação',
-  'Moda e beleza',
-  'Tecnologia',
-];
-
-const audienceOptions = [
-  'Empreendedores',
-  'Pequenas empresas',
-  'Grandes empresas',
-  'Profissionais de marketing',
-  'Desenvolvedores',
-  'Designers',
-  'Criadores de conteúdo',
-  'Estudantes',
-  'Consumidor final (B2C)',
-  'Gestores / C-level',
-];
-
-const toneOptions = [
-  'Profissional',
-  'Descontraído',
-  'Inspirador',
-  'Técnico',
-  'Educacional',
-  'Autoral',
-  'Provocador',
-  'Amigável',
-  'Premium',
-  'Divertido',
-];
-
-const differentialOptions = [
-  'Preço competitivo',
-  'Qualidade premium',
-  'Atendimento próximo',
-  'Especialização / Expertise',
-  'Rapidez de entrega',
-  'Personalização',
-  'Tecnologia própria',
-  'Resultados comprovados',
-  'Comunidade engajada',
-  'Sustentabilidade',
-];
-
-const ctaOptions = [
-  'Salve para rever depois',
-  'Comente sua opinião',
-  'Compartilhe com quem precisa',
-  'Acesse o link na bio',
-  'Mande uma DM',
-  'Agende uma demonstração',
-  'Conheça nossos planos',
-  'Baixe o material gratuito',
-];
-
-const contentPreferenceOptions = [
-  'Educacional',
-  'Storytelling',
-  'Data-driven',
-  'Bastidores',
-  'Promocional',
-  'Inspiracional',
-  'Tutoriais',
-  'Cases de clientes',
-  'Tendências do setor',
-  'Dicas rápidas',
-];
-
-const styleDoLibrary = [
-  'Usar composições limpas e texto legível',
-  'Manter bastante respiro / espaço em branco',
-  'Priorizar contraste alto entre texto e fundo',
-  'Usar imagens reais e de boa qualidade',
-  'Aplicar a paleta da marca de forma consistente',
-];
-
-const styleDontLibrary = [
-  'Evitar visual genérico e poluído',
-  'Não usar mais de 2 fontes diferentes',
-  'Evitar texto pequeno demais',
-  'Não usar emojis em excesso',
-  'Evitar clichês visuais de banco de imagem',
-];
-
-const listToArray = (value: string) =>
-  (value || '')
-    .split(/[,;\n]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-const arrayToList = (items: string[]) => items.join(', ');
-
-const compressImageFile = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Não foi possível ler a imagem.'));
-    reader.onload = () => {
-      const image = new Image();
-      image.onerror = () => reject(new Error('Formato de imagem inválido.'));
-      image.onload = () => {
-        const maxSize = 1200;
-        const ratio = Math.min(1, maxSize / Math.max(image.width, image.height));
-        const width = Math.max(1, Math.round(image.width * ratio));
-        const height = Math.max(1, Math.round(image.height * ratio));
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const context = canvas.getContext('2d');
-        if (!context) {
-          reject(new Error('Não foi possível processar a imagem.'));
-          return;
-        }
-        context.drawImage(image, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.78));
-      };
-      image.src = String(reader.result || '');
-    };
-    reader.readAsDataURL(file);
-  });
-
-// ---- UI helpers ----
-const OptionChip = ({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`rounded-full border px-[14px] py-[9px] text-[13px] font-[700] transition ${
-      active
-        ? 'border-stone-900 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-stone-900'
-        : 'border-black/10 bg-white/70 text-black/65 hover:border-stone-500/50 hover:text-stone-900 dark:border-white/10 dark:bg-white/5 dark:text-white/65 dark:hover:text-stone-100'
-    }`}
-  >
-    {children}
-  </button>
-);
-
-const TagInput = ({
-  value,
-  onChange,
-  placeholder,
-}: {
-  value: string;
-  onChange: (next: string) => void;
-  placeholder: string;
-}) => {
-  const [draft, setDraft] = useState('');
-  const tags = listToArray(value);
-
-  const add = (raw: string) => {
-    const item = raw.trim().replace(/,$/, '').trim();
-    if (!item || tags.includes(item)) {
-      setDraft('');
-      return;
-    }
-    onChange(arrayToList([...tags, item]));
-    setDraft('');
-  };
-
-  const remove = (tag: string) =>
-    onChange(arrayToList(tags.filter((item) => item !== tag)));
-
-  return (
-    <div className="flex flex-col gap-[10px]">
-      <div className="flex min-h-[48px] flex-wrap items-center gap-[8px] rounded-[10px] border border-black/10 bg-white p-[8px] dark:border-white/10 dark:bg-[#171717]">
-        {tags.map((tag) => (
-          <span
-            key={tag}
-            className="flex items-center gap-[6px] rounded-full bg-stone-900/10 px-[10px] py-[5px] text-[12px] font-[700] text-black/80 dark:bg-white/10 dark:text-white/80"
-          >
-            {tag}
-            <button type="button" onClick={() => remove(tag)} aria-label={`Remover ${tag}`}>
-              <X className="h-[12px] w-[12px]" />
-            </button>
-          </span>
-        ))}
-        <input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ',') {
-              event.preventDefault();
-              add(draft);
-            } else if (event.key === 'Backspace' && !draft && tags.length) {
-              remove(tags[tags.length - 1]);
-            }
-          }}
-          onBlur={() => add(draft)}
-          placeholder={tags.length ? '' : placeholder}
-          className="min-w-[120px] flex-1 bg-transparent px-[6px] text-[14px] text-black outline-none placeholder:text-black/35 dark:text-white dark:placeholder:text-white/35"
-        />
-      </div>
-    </div>
-  );
-};
+import {
+  CompanyProfile,
+  VisualIdentityAsset,
+  defaultProfile,
+  makeDraftAssetId,
+  makeBrandKitId,
+  listToArray,
+  arrayToList,
+  compressImageFile,
+  industryOptions,
+} from './company-onboarding.types';
+import { OptionChip, TagInput, SectionTitle, FieldLabel } from './company-onboarding.ui-helpers';
+import {
+  StepProps,
+  IdentityStep,
+  PositioningStep,
+  VisualStep,
+  VoiceRulesStep,
+  ReviewStep,
+} from './company-onboarding.steps';
 
 const STEPS = [
   { id: 'identity', label: 'Identidade', icon: Building2 },
@@ -417,7 +108,7 @@ export const CompanyOnboardingComponent = () => {
     []
   );
 
-  // Alterna um valor dentro de um campo armazenado como lista separada por vírgula.
+  // Toggle a value within a comma-separated field.
   const toggleInField = useCallback(
     (field: keyof CompanyProfile, value: string, max?: number) => {
       setProfile((current) => {
@@ -657,6 +348,15 @@ export const CompanyOnboardingComponent = () => {
     }));
   };
 
+  const removeStyleRuleByContent = (type: 'do' | 'dont', text: string) => {
+    setProfile((current) => ({
+      ...current,
+      styleRules: (current.styleRules || []).filter(
+        (rule) => !(rule.type === type && rule.text === text)
+      ),
+    }));
+  };
+
   const generateVisualIdentity = async () => {
     if (!(profile.visualIdentityAssets || []).length) {
       setError('Envie pelo menos uma imagem, logo ou post de referência visual.');
@@ -775,7 +475,6 @@ export const CompanyOnboardingComponent = () => {
 
   const goNext = async () => {
     setError('');
-    // Salva silenciosamente o progresso ao avançar (o backend aceita perfil parcial).
     await saveProfile({ silent: true });
     setStep((current) => Math.min(current + 1, STEPS.length - 1));
   };
@@ -797,6 +496,33 @@ export const CompanyOnboardingComponent = () => {
     profile.industry && !industryOptions.includes(profile.industry)
   );
 
+  // Build the props object for step components
+  const stepProps: StepProps = {
+    profile,
+    update,
+    toggleInField,
+    generating,
+    generateSummary,
+    industryIsCustom,
+    selectedTones,
+    uploadVisualAssets,
+    removeVisualAsset,
+    updateVisualAssetDescription,
+    promoteAssetToLogo,
+    removeBrandKitItem,
+    generateVisualIdentity,
+    describingVisualIdentity,
+    saveCurrentFontPreset,
+    addStyleRule,
+    updateStyleRule,
+    removeStyleRuleByContent,
+    contentPillars,
+    postIdeas,
+    deleteCompany,
+    selectedCompanyId,
+    saving,
+  };
+
   if (loading) {
     return (
       <div className="relative min-h-[600px] w-full">
@@ -810,23 +536,12 @@ export const CompanyOnboardingComponent = () => {
     );
   }
 
-  const SectionTitle = ({ title, subtitle }: { title: string; subtitle: string }) => (
-    <div className="flex flex-col gap-[4px]">
-      <h3 className="text-[22px] font-[800] tracking-tight text-black dark:text-white">{title}</h3>
-      <p className="text-[14px] leading-relaxed text-black/55 dark:text-white/55">{subtitle}</p>
-    </div>
-  );
-
-  const FieldLabel = ({ children }: { children: ReactNode }) => (
-    <span className="text-[14px] font-[700] text-black/90 dark:text-white/90">{children}</span>
-  );
-
   return (
     <div className="relative min-h-[calc(100vh-100px)] w-full">
       <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_10%_0%,rgba(120,113,108,0.12),transparent_28%),linear-gradient(180deg,rgba(245,245,244,0.08),transparent_40%)] dark:bg-[radial-gradient(circle_at_10%_0%,rgba(120,113,108,0.16),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.04),transparent_40%)]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[920px] flex-col gap-[20px] pb-[60px] pt-[20px]">
-        {/* Header + switcher de empresa (fora do fluxo principal) */}
+        {/* Header + company switcher */}
         <div className="flex flex-col gap-[16px] rounded-[18px] border border-black/10 bg-[#f7f2ea] p-[24px] shadow-sm dark:border-white/10 dark:bg-[#141312]">
           <div className="flex flex-wrap items-center justify-between gap-[12px]">
             <div className="inline-flex w-fit items-center gap-[8px] rounded-full border border-black/10 bg-white/70 px-[12px] py-[6px] dark:border-white/10 dark:bg-white/5">
@@ -900,547 +615,15 @@ export const CompanyOnboardingComponent = () => {
           </div>
         </div>
 
-        {/* Conteúdo do passo */}
+        {/* Step content */}
         <div className="rounded-[18px] border border-black/10 bg-white p-[28px] shadow-sm dark:border-white/10 dark:bg-[#101010]">
-          {/* PASSO 1 — IDENTIDADE */}
-          {step === 0 && (
-            <div className="flex flex-col gap-[24px]">
-              <SectionTitle
-                title="Identidade básica"
-                subtitle="Comece com o nome e o site. Nós analisamos o site e já adiantamos o resto pra você."
-              />
+          {step === 0 && <IdentityStep {...stepProps} />}
+          {step === 1 && <PositioningStep {...stepProps} />}
+          {step === 2 && <VisualStep {...stepProps} />}
+          {step === 3 && <VoiceRulesStep {...stepProps} />}
+          {step === 4 && <ReviewStep {...stepProps} />}
 
-              <div className="grid grid-cols-1 gap-[16px] md:grid-cols-2">
-                <label className="group flex flex-col gap-[10px]">
-                  <FieldLabel>Nome da empresa</FieldLabel>
-                  <div className="relative">
-                    <div className="absolute left-[14px] top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40">
-                      <Building2 className="h-[18px] w-[18px]" />
-                    </div>
-                    <input
-                      value={profile.companyName}
-                      onChange={(event) => update({ companyName: event.target.value })}
-                      className={inputClass}
-                      placeholder="Ex: TechFlow"
-                      maxLength={120}
-                    />
-                  </div>
-                </label>
-
-                <label className="group flex flex-col gap-[10px]">
-                  <FieldLabel>Website oficial</FieldLabel>
-                  <div className="relative">
-                    <div className="absolute left-[14px] top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40">
-                      <Globe className="h-[18px] w-[18px]" />
-                    </div>
-                    <input
-                      value={profile.website}
-                      onChange={(event) => update({ website: event.target.value })}
-                      placeholder="https://seusite.com"
-                      className={inputClass}
-                      maxLength={300}
-                    />
-                  </div>
-                </label>
-              </div>
-
-              <div className="flex flex-col gap-[10px] rounded-[16px] border border-stone-500/20 bg-stone-500/5 p-[18px]">
-                <div className="flex items-center gap-[8px]">
-                  <Sparkles className="h-[18px] w-[18px] text-stone-600 dark:text-stone-300" />
-                  <span className="text-[14px] font-[800] text-black dark:text-white">Preenchimento automático</span>
-                </div>
-                <p className="text-[13px] leading-relaxed text-black/55 dark:text-white/55">
-                  Analisamos o conteúdo do seu site para gerar o resumo da empresa, pilares e ideias de conteúdo. Você só revisa e ajusta.
-                </p>
-                <Button
-                  type="button"
-                  onClick={generateSummary}
-                  loading={generating}
-                  className="!bg-stone-950 hover:!bg-stone-800 border-none !text-white shadow-none dark:!bg-stone-100 dark:!text-stone-950 dark:hover:!bg-white w-fit"
-                >
-                  <Sparkles className="mr-2 h-4 w-4 inline-block" />
-                  Analisar meu site
-                </Button>
-              </div>
-
-              <div className="flex flex-col gap-[12px]">
-                <FieldLabel>Setor / Nicho</FieldLabel>
-                <div className="flex flex-wrap gap-[8px]">
-                  {industryOptions.map((option) => (
-                    <OptionChip
-                      key={option}
-                      active={profile.industry === option}
-                      onClick={() => update({ industry: profile.industry === option ? '' : option })}
-                    >
-                      {option}
-                    </OptionChip>
-                  ))}
-                </div>
-                {industryIsCustom && (
-                  <input
-                    value={profile.industry}
-                    onChange={(event) => update({ industry: event.target.value })}
-                    placeholder="Setor personalizado"
-                    className="h-[44px] w-full max-w-[360px] rounded-[10px] border border-black/10 bg-white px-[14px] text-[14px] text-black outline-none dark:border-white/10 dark:bg-[#171717] dark:text-white"
-                    maxLength={160}
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => update({ industry: industryIsCustom ? '' : ' ' })}
-                  className="w-fit text-[12px] font-[700] text-black/45 underline-offset-2 hover:underline dark:text-white/45"
-                >
-                  {industryIsCustom ? 'Usar opções acima' : 'Outro setor (digitar)'}
-                </button>
-              </div>
-
-              <div className="flex flex-col gap-[12px]">
-                <div>
-                  <FieldLabel>Público-alvo</FieldLabel>
-                  <p className="mt-[2px] text-[12px] text-black/50 dark:text-white/50">Selecione um ou mais.</p>
-                </div>
-                <div className="flex flex-wrap gap-[8px]">
-                  {audienceOptions.map((option) => (
-                    <OptionChip
-                      key={option}
-                      active={listToArray(profile.targetAudience).includes(option)}
-                      onClick={() => toggleInField('targetAudience', option)}
-                    >
-                      {option}
-                    </OptionChip>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PASSO 2 — POSICIONAMENTO */}
-          {step === 1 && (
-            <div className="flex flex-col gap-[24px]">
-              <SectionTitle
-                title="Posicionamento"
-                subtitle="O que você oferece, o que te diferencia e como soa a sua marca."
-              />
-
-              <label className="flex flex-col gap-[10px]">
-                <FieldLabel>Produtos ou serviços</FieldLabel>
-                <p className="-mt-[4px] text-[12px] text-black/50 dark:text-white/50">
-                  Se você analisou o site, isto pode já vir no resumo. Ajuste em uma linha.
-                </p>
-                <textarea
-                  value={profile.productsOrServices}
-                  onChange={(event) => update({ productsOrServices: event.target.value })}
-                  placeholder="Ex: Plataforma de agendamento de posts para redes sociais."
-                  className={`${textAreaClass} min-h-[90px]`}
-                  maxLength={500}
-                />
-              </label>
-
-              <div className="flex flex-col gap-[12px]">
-                <div>
-                  <FieldLabel>Diferenciais competitivos</FieldLabel>
-                  <p className="mt-[2px] text-[12px] text-black/50 dark:text-white/50">Selecione o que mais combina com a sua marca.</p>
-                </div>
-                <div className="flex flex-wrap gap-[8px]">
-                  {differentialOptions.map((option) => (
-                    <OptionChip
-                      key={option}
-                      active={listToArray(profile.differentials).includes(option)}
-                      onClick={() => toggleInField('differentials', option)}
-                    >
-                      {option}
-                    </OptionChip>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-[12px]">
-                <div>
-                  <FieldLabel>Tom de voz da marca</FieldLabel>
-                  <p className="mt-[2px] text-[12px] text-black/50 dark:text-white/50">
-                    Escolha até 3 ({selectedTones.length}/3).
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-[8px]">
-                  {toneOptions.map((option) => (
-                    <OptionChip
-                      key={option}
-                      active={selectedTones.includes(option)}
-                      onClick={() => toggleInField('toneOfVoice', option, 3)}
-                    >
-                      {option}
-                    </OptionChip>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PASSO 3 — VISUAL */}
-          {step === 2 && (
-            <div className="flex flex-col gap-[24px]">
-              <SectionTitle
-                title="Identidade visual"
-                subtitle="Envie referências e nós descrevemos o estilo. Depois é só confirmar cores e letras."
-              />
-
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-[10px] rounded-[18px] border border-dashed border-black/20 bg-white/70 p-[24px] text-center transition hover:border-stone-500/50 hover:bg-stone-50 dark:border-white/20 dark:bg-black/20 dark:hover:bg-white/5">
-                <UploadCloud className="h-[28px] w-[28px] text-stone-500 dark:text-stone-300" />
-                <div>
-                  <p className="text-[14px] font-[800] text-black dark:text-white">Enviar referências visuais</p>
-                  <p className="mt-[2px] text-[12px] text-black/55 dark:text-white/55">
-                    Posts, logos, banners ou prints. Até 8 imagens.
-                  </p>
-                </div>
-                <input type="file" accept="image/*" multiple className="hidden" onChange={uploadVisualAssets} />
-              </label>
-
-              {!!(profile.visualIdentityAssets || []).length && (
-                <div className="grid grid-cols-1 gap-[14px] md:grid-cols-2">
-                  {(profile.visualIdentityAssets || []).map((asset) => (
-                    <div
-                      key={asset.id}
-                      className="overflow-hidden rounded-[16px] border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#151824]"
-                    >
-                      <div className="relative aspect-[4/3] bg-black/5 dark:bg-white/5">
-                        <img src={asset.dataUrl} alt={asset.name} className="h-full w-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => removeVisualAsset(asset.id)}
-                          className="absolute right-[10px] top-[10px] flex h-[32px] w-[32px] items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-red-600"
-                          aria-label="Remover referência visual"
-                        >
-                          <X className="h-[16px] w-[16px]" />
-                        </button>
-                      </div>
-                      <div className="flex flex-col gap-[8px] p-[12px]">
-                        <div className="flex items-center gap-[8px] text-[12px] font-[700] text-black/70 dark:text-white/70">
-                          <ImageIcon className="h-[14px] w-[14px]" />
-                          <span className="truncate">{asset.name}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => promoteAssetToLogo(asset)}
-                          className="w-fit rounded-[9px] border border-stone-500/20 bg-stone-500/10 px-[10px] py-[7px] text-[11px] font-[900] text-stone-800 hover:bg-stone-500/15 dark:text-stone-200"
-                        >
-                          Usar como logo oficial
-                        </button>
-                        <textarea
-                          value={asset.description}
-                          onChange={(event) => updateVisualAssetDescription(asset.id, event.target.value)}
-                          placeholder="Descrição editável. O sistema preenche após a análise."
-                          className={`${textAreaClass} min-h-[80px] p-[12px] text-[12px]`}
-                          maxLength={1600}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!!(profile.brandLogos || []).length && (
-                <div className="rounded-[16px] border border-stone-500/20 bg-stone-500/10 p-[14px]">
-                  <div className="mb-[10px] text-[13px] font-[900] text-stone-800 dark:text-stone-100">Logos oficiais</div>
-                  <div className="grid grid-cols-1 gap-[10px] md:grid-cols-2">
-                    {(profile.brandLogos || []).map((logo) => (
-                      <div key={logo.id} className="flex gap-[10px] rounded-[12px] border border-stone-500/20 bg-white/70 p-[10px] dark:bg-black/20">
-                        <img src={logo.dataUrl} alt={logo.name} className="h-[58px] w-[58px] rounded-[10px] object-cover" />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-[12px] font-[900] text-black dark:text-white">{logo.name}</div>
-                          <button type="button" onClick={() => removeBrandKitItem('brandLogos', logo.id)} className="mt-[6px] text-[11px] font-[800] text-red-400">
-                            remover logo
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-wrap items-center gap-[12px]">
-                <Button
-                  type="button"
-                  onClick={generateVisualIdentity}
-                  loading={describingVisualIdentity}
-                  className="!bg-stone-950 hover:!bg-stone-800 border-none !text-white shadow-none dark:!bg-stone-100 dark:!text-stone-950 dark:hover:!bg-white"
-                >
-                  <FileText className="mr-2 h-4 w-4 inline-block" />
-                  Analisar identidade visual
-                </Button>
-              </div>
-
-              {/* As cores da marca agora são escolhidas no Estúdio (/ai-generate-images). */}
-
-              {/* Letras */}
-              <div className="flex flex-col gap-[12px] rounded-[16px] border border-black/10 bg-white/60 p-[18px] dark:border-white/10 dark:bg-black/20">
-                <div>
-                  <FieldLabel>Estilo das letras</FieldLabel>
-                  <p className="mt-[2px] text-[12px] text-black/50 dark:text-white/50">Como os textos dentro das imagens devem parecer.</p>
-                </div>
-                <div className="grid grid-cols-1 gap-[8px]">
-                  {fontStylePresets.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => update({ brandFonts: preset })}
-                      className={`rounded-[12px] border px-[12px] py-[10px] text-left text-[13px] font-[700] transition ${
-                        profile.brandFonts === preset
-                          ? 'border-stone-900 bg-stone-900/5 text-stone-900 dark:border-white dark:bg-white/5 dark:text-stone-100'
-                          : 'border-black/10 bg-black/5 text-black/65 hover:border-stone-500/40 dark:border-white/10 dark:bg-white/5 dark:text-white/65'
-                      }`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={saveCurrentFontPreset}
-                  className="w-fit rounded-[10px] border border-stone-500/20 bg-stone-500/10 px-[12px] py-[8px] text-[12px] font-[800] text-stone-800 transition hover:bg-stone-500/15 dark:text-stone-200"
-                >
-                  Salvar estilo de letras
-                </button>
-              </div>
-
-              {profile.visualIdentitySummary && (
-                <label className="flex flex-col gap-[8px]">
-                  <FieldLabel>Resumo visual da marca</FieldLabel>
-                  <textarea
-                    value={profile.visualIdentitySummary}
-                    onChange={(event) => update({ visualIdentitySummary: event.target.value })}
-                    className={`${textAreaClass} min-h-[120px]`}
-                    maxLength={4000}
-                  />
-                </label>
-              )}
-            </div>
-          )}
-
-          {/* PASSO 4 — VOZ E REGRAS */}
-          {step === 3 && (
-            <div className="flex flex-col gap-[24px]">
-              <SectionTitle
-                title="Voz e regras"
-                subtitle="Defina chamada padrão, o que evitar e o estilo dos seus conteúdos."
-              />
-
-              <div className="flex flex-col gap-[12px]">
-                <FieldLabel>Chamada para ação (CTA) padrão</FieldLabel>
-                <div className="grid grid-cols-1 gap-[8px] sm:grid-cols-2">
-                  {ctaOptions.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => update({ defaultCta: profile.defaultCta === option ? '' : option })}
-                      className={`rounded-[12px] border px-[14px] py-[11px] text-left text-[13px] font-[700] transition ${
-                        profile.defaultCta === option
-                          ? 'border-stone-900 bg-stone-900/5 text-stone-900 dark:border-white dark:bg-white/5 dark:text-stone-100'
-                          : 'border-black/10 bg-black/5 text-black/65 hover:border-stone-500/40 dark:border-white/10 dark:bg-white/5 dark:text-white/65'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  value={ctaOptions.includes(profile.defaultCta) ? '' : profile.defaultCta}
-                  onChange={(event) => update({ defaultCta: event.target.value })}
-                  placeholder="Ou escreva um CTA personalizado"
-                  className="h-[44px] w-full rounded-[10px] border border-black/10 bg-white px-[14px] text-[14px] text-black outline-none dark:border-white/10 dark:bg-[#171717] dark:text-white"
-                  maxLength={240}
-                />
-              </div>
-
-              <div className="flex flex-col gap-[12px]">
-                <div>
-                  <FieldLabel>Preferências de conteúdo</FieldLabel>
-                  <p className="mt-[2px] text-[12px] text-black/50 dark:text-white/50">Que tipos de post você prefere.</p>
-                </div>
-                <div className="flex flex-wrap gap-[8px]">
-                  {contentPreferenceOptions.map((option) => (
-                    <OptionChip
-                      key={option}
-                      active={listToArray(profile.contentPreferences).includes(option)}
-                      onClick={() => toggleInField('contentPreferences', option)}
-                    >
-                      {option}
-                    </OptionChip>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-[10px]">
-                <div>
-                  <FieldLabel>Termos proibidos</FieldLabel>
-                  <p className="mt-[2px] text-[12px] text-black/50 dark:text-white/50">Digite e pressione Enter para adicionar.</p>
-                </div>
-                <TagInput
-                  value={profile.forbiddenTerms}
-                  onChange={(next) => update({ forbiddenTerms: next })}
-                  placeholder="Ex: garantido, milagre, sem esforço"
-                />
-              </div>
-
-              <div className="flex flex-col gap-[12px]">
-                <FieldLabel>Regras de estilo</FieldLabel>
-                <div className="grid grid-cols-1 gap-[14px] md:grid-cols-2">
-                  <div className="flex flex-col gap-[8px]">
-                    <span className="text-[12px] font-[900] uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300">Usar</span>
-                    {styleDoLibrary.map((text) => {
-                      const active = (profile.styleRules || []).some((rule) => rule.type === 'do' && rule.text === text);
-                      return (
-                        <button
-                          key={text}
-                          type="button"
-                          onClick={() =>
-                            active
-                              ? setProfile((current) => ({
-                                  ...current,
-                                  styleRules: (current.styleRules || []).filter((rule) => !(rule.type === 'do' && rule.text === text)),
-                                }))
-                              : addStyleRule('do', text)
-                          }
-                          className={`rounded-[10px] border px-[12px] py-[9px] text-left text-[12px] font-[700] transition ${
-                            active
-                              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200'
-                              : 'border-black/10 bg-black/5 text-black/60 hover:border-emerald-500/40 dark:border-white/10 dark:bg-white/5 dark:text-white/60'
-                          }`}
-                        >
-                          {active ? '✓ ' : '+ '}
-                          {text}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="flex flex-col gap-[8px]">
-                    <span className="text-[12px] font-[900] uppercase tracking-[0.12em] text-red-700 dark:text-red-300">Evitar</span>
-                    {styleDontLibrary.map((text) => {
-                      const active = (profile.styleRules || []).some((rule) => rule.type === 'dont' && rule.text === text);
-                      return (
-                        <button
-                          key={text}
-                          type="button"
-                          onClick={() =>
-                            active
-                              ? setProfile((current) => ({
-                                  ...current,
-                                  styleRules: (current.styleRules || []).filter((rule) => !(rule.type === 'dont' && rule.text === text)),
-                                }))
-                              : addStyleRule('dont', text)
-                          }
-                          className={`rounded-[10px] border px-[12px] py-[9px] text-left text-[12px] font-[700] transition ${
-                            active
-                              ? 'border-red-500/40 bg-red-500/10 text-red-800 dark:text-red-200'
-                              : 'border-black/10 bg-black/5 text-black/60 hover:border-red-500/40 dark:border-white/10 dark:bg-white/5 dark:text-white/60'
-                          }`}
-                        >
-                          {active ? '✓ ' : '+ '}
-                          {text}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Regras personalizadas adicionadas (editáveis) */}
-                {(profile.styleRules || []).some(
-                  (rule) => ![...styleDoLibrary, ...styleDontLibrary].includes(rule.text)
-                ) && (
-                  <div className="grid grid-cols-1 gap-[8px] md:grid-cols-2">
-                    {(profile.styleRules || [])
-                      .filter((rule) => ![...styleDoLibrary, ...styleDontLibrary].includes(rule.text))
-                      .map((rule) => (
-                        <div key={rule.id} className={`rounded-[12px] border p-[10px] ${rule.type === 'do' ? 'border-emerald-500/20 bg-emerald-500/10' : 'border-red-500/20 bg-red-500/10'}`}>
-                          <div className="mb-[6px] flex items-center justify-between gap-[8px]">
-                            <span className="text-[11px] font-[900] uppercase tracking-[0.12em] text-black/60 dark:text-white/60">
-                              {rule.type === 'do' ? 'Usar' : 'Evitar'}
-                            </span>
-                            <button type="button" onClick={() => removeBrandKitItem('styleRules', rule.id)} className="text-[11px] font-[800] text-red-400">remover</button>
-                          </div>
-                          <textarea
-                            value={rule.text}
-                            onChange={(event) => updateStyleRule(rule.id, event.target.value)}
-                            className="min-h-[60px] w-full resize-y rounded-[10px] border border-black/10 bg-white/60 p-[10px] text-[12px] text-black outline-none dark:border-white/10 dark:bg-black/20 dark:text-white"
-                            maxLength={500}
-                          />
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* PASSO 5 — REVISÃO */}
-          {step === 4 && (
-            <div className="flex flex-col gap-[24px]">
-              <SectionTitle
-                title="Revisão final"
-                subtitle="Confira o resumo gerado e ajuste se necessário. Depois é só concluir."
-              />
-
-              {!profile.summary && (
-                <div className="rounded-[14px] border border-amber-500/30 bg-amber-500/10 p-[14px] text-[13px] text-amber-700 dark:text-amber-200">
-                  Você ainda não gerou o resumo da empresa. Volte ao passo 1 e clique em “Analisar meu site” para um resultado melhor (mas você já pode concluir mesmo assim).
-                </div>
-              )}
-
-              <label className="flex flex-col gap-[10px]">
-                <FieldLabel>Resumo de contexto</FieldLabel>
-                <textarea
-                  value={profile.summary}
-                  onChange={(event) => update({ summary: event.target.value })}
-                  className={`${textAreaClass} min-h-[150px] text-[13px] leading-relaxed`}
-                  placeholder="Resumo gerado pela análise do site. Você pode editar."
-                  maxLength={4000}
-                />
-              </label>
-
-              {contentPillars.length > 0 && (
-                <div className="flex flex-col gap-[10px]">
-                  <h3 className="flex items-center gap-[8px] text-[15px] font-[700] text-black dark:text-white">
-                    <Target className="h-[16px] w-[16px] text-stone-500 dark:text-stone-300" />
-                    Pilares de conteúdo
-                  </h3>
-                  <div className="flex flex-wrap gap-[8px]">
-                    {contentPillars.map((pillar, index) => (
-                      <span key={`${pillar}-${index}`} className="rounded-full border border-stone-500/20 bg-stone-500/10 px-[12px] py-[6px] text-[12px] font-medium text-stone-700 dark:text-stone-200">
-                        {pillar}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {postIdeas.length > 0 && (
-                <div className="flex flex-col gap-[10px]">
-                  <h3 className="flex items-center gap-[8px] text-[15px] font-[700] text-black dark:text-white">
-                    <Lightbulb className="h-[16px] w-[16px] text-stone-500 dark:text-stone-300" />
-                    Ideias iniciais
-                  </h3>
-                  <div className="flex flex-col gap-[8px]">
-                    {postIdeas.map((idea, index) => (
-                      <div key={`${idea}-${index}`} className="rounded-[12px] border border-black/5 bg-black/5 p-[12px] text-[13px] leading-relaxed text-black/80 dark:border-white/5 dark:bg-white/5 dark:text-white/80">
-                        {idea}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={deleteCompany}
-                disabled={!selectedCompanyId || saving}
-                className="flex w-fit items-center gap-[8px] text-[13px] font-[700] text-red-400 transition hover:text-red-500 disabled:opacity-40"
-              >
-                <Trash2 className="h-[15px] w-[15px]" />
-                Excluir esta empresa
-              </button>
-            </div>
-          )}
-
-          {/* Mensagens */}
+          {/* Messages */}
           {error && (
             <div className="mt-[20px] flex items-center gap-[12px] rounded-[14px] border border-red-500/30 bg-red-500/10 p-[14px]">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-400">!</div>
@@ -1478,7 +661,7 @@ export const CompanyOnboardingComponent = () => {
             </div>
           )}
 
-          {/* Navegação */}
+          {/* Navigation */}
           <div className="mt-[28px] flex items-center justify-between gap-[12px] border-t border-black/5 pt-[20px] dark:border-white/5">
             <button
               type="button"

@@ -32,8 +32,11 @@ export class CarouselProjectController {
   }
 
   @Get('/:id')
-  async getProject(@Param('id') id: string) {
-    return this.carouselProjectService.getProject(id);
+  async getProject(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.carouselProjectService.getProject(id, org.id);
   }
 
   @Post('/')
@@ -56,13 +59,13 @@ export class CarouselProjectController {
     @Param('ideaId') ideaId: string
   ) {
     // 1. Fetch the idea
-    const idea = await this.contentIdeaService.getIdea(ideaId);
-    if (!idea || idea.organizationId !== org.id) {
+    const idea = await this.contentIdeaService.getIdea(ideaId, org.id);
+    if (!idea) {
       throw new Error('Idea not found');
     }
 
     // 2. Mark idea as used
-    await this.contentIdeaService.markAsUsed(ideaId);
+    await this.contentIdeaService.markAsUsed(ideaId, org.id);
 
     // 3. Create a CarouselProject with initial draft slides
     const project = await this.carouselProjectService.createProject({
@@ -88,6 +91,7 @@ export class CarouselProjectController {
   @Patch('/:id')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async updateProject(
+    @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
     @Body() body: {
       title?: string;
@@ -98,22 +102,26 @@ export class CarouselProjectController {
       metadata?: any;
     }
   ) {
-    return this.carouselProjectService.updateProject(id, body as any);
+    return this.carouselProjectService.updateProject(id, org.id, body as any);
   }
 
   @Patch('/:id/status')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async updateStatus(
+    @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
     @Body() body: { status: string }
   ) {
-    return this.carouselProjectService.updateStatus(id, body.status as any);
+    return this.carouselProjectService.updateStatus(id, org.id, body.status as any);
   }
 
   @Post('/:id/request-approval')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async requestApproval(@Param('id') id: string) {
-    return this.carouselProjectService.updateProject(id, { approvalStatus: 'PENDING' } as any);
+  async requestApproval(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.carouselProjectService.updateProject(id, org.id, { approvalStatus: 'PENDING' } as any);
   }
 
   @Post('/:id/approve')
@@ -122,7 +130,7 @@ export class CarouselProjectController {
     @GetOrgFromRequest() org: Organization,
     @Param('id') id: string
   ) {
-    return this.carouselProjectService.updateProject(id, {
+    return this.carouselProjectService.updateProject(id, org.id, {
       approvalStatus: 'APPROVED',
       approvedBy: org.id,
       approvedAt: new Date(),
@@ -132,10 +140,11 @@ export class CarouselProjectController {
   @Post('/:id/reject')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async rejectProject(
+    @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
     @Body() body: { reason?: string }
   ) {
-    return this.carouselProjectService.updateProject(id, {
+    return this.carouselProjectService.updateProject(id, org.id, {
       approvalStatus: 'REJECTED',
       rejectionReason: body.reason,
     } as any);

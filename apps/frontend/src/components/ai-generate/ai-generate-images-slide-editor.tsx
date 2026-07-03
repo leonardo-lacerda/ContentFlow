@@ -18,39 +18,102 @@ import {
   Copy,
   ChevronLeft,
   ChevronRight,
+  Download,
+  GripVertical,
 } from 'lucide-react';
+import { memo, useCallback, useMemo } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type SlideEditorPanelProps = {
   addSlide: (afterIndex: number) => void;
   duplicateSlide: (index: number) => void;
+  exportSingleSlide: (slideId: string) => void;
   generateSlideImage: (slide: CarouselSlide) => void;
   moveSlide: (fromIndex: number, toIndex: number) => void;
   plan: CarouselPlan;
   regenerateSlideCopy: (slide: CarouselSlide, mode: string) => void;
   removeSlide: (index: number) => void;
-  restoreImageVersion: (slideIndex: number, historyIndex: number) => void;
-  restoreSlideVersion: (slideIndex: number, historyIndex: number) => void;
+  restoreImageVersion: (slideId: string, historyIndex: number) => void;
+  restoreSlideVersion: (slideId: string, historyIndex: number) => void;
   selectedReferences: ReferenceImage[];
   setLightboxIndex: (index: number) => void;
   setPlan: (plan: CarouselPlan) => void;
-  slideHistory: Record<number, CarouselSlide[]>;
-  slideImageHistory: Record<number, SlideImageResult[]>;
-  slideImageAdjustments: Record<number, string>;
-  setSlideImageAdjustment: (slideIndex: number, value: string) => void;
-  slideImages: Record<number, SlideImageResult>;
-  slideLoading: Record<number, string>;
+  slideHistory: Record<string, CarouselSlide[]>;
+  slideImageHistory: Record<string, SlideImageResult[]>;
+  slideImageAdjustments: Record<string, string>;
+  setSlideImageAdjustment: (slideId: string, value: string) => void;
+  slideImages: Record<string, SlideImageResult>;
+  slideLoading: Record<string, string>;
   trimmedImageModel: string;
   updateSlide: (
-    slideIndex: number,
+    slideId: string,
     field: keyof CarouselSlide,
     value: string
   ) => void;
 };
 
-export function SlideEditorPanel(props: SlideEditorPanelProps) {
+/** Wrapper that makes a slide draggable via @dnd-kit/sortable. */
+const SortableSlide = memo(function SortableSlide({
+  slide,
+  slideIndex,
+  children,
+}: {
+  slide: CarouselSlide;
+  slideIndex: number;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: slide.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <div className="flex items-start gap-[8px]">
+        <button
+          type="button"
+          className="mt-[20px] flex items-center justify-center h-7 w-7 rounded-[6px] border border-newTableBorder text-textItemBlur cursor-grab active:cursor-grabbing hover:border-primary hover:text-primary transition"
+          title="Arrastar para reordenar"
+          {...listeners}
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
+        <div className="flex-1">{children}</div>
+      </div>
+    </div>
+  );
+});
+export const SlideEditorPanel = memo(function SlideEditorPanel(props: SlideEditorPanelProps) {
   const {
     addSlide,
     duplicateSlide,
+    exportSingleSlide,
     generateSlideImage,
     moveSlide,
     plan,
@@ -70,6 +133,19 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
     trimmedImageModel,
     updateSlide,
   } = props;
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !plan) return;
+
+    const fromSlide = plan.slides.find((s) => s.id === active.id);
+    const toSlide = plan.slides.find((s) => s.id === over.id);
+    if (fromSlide && toSlide) {
+      moveSlide(fromSlide.index, toSlide.index);
+    }
+  }, [plan, moveSlide]);
+
+  const slideIds = useMemo(() => plan.slides.map((s) => s.id), [plan.slides]);
 
   return (
     <div className="rounded-[18px] border border-black/10 bg-white p-[32px] shadow-sm dark:border-white/10 dark:bg-[#101010]">
@@ -106,16 +182,24 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
           <h4 className="text-[16px] font-[600] border-b border-newTableBorder pb-2">
             Slides do Carrossel
           </h4>
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={slideIds}
+              strategy={verticalListSortingStrategy}
+            >
           {plan.slides.map((slide, slideIndex) => {
-            const result = slideImages[slide.index];
+            const result = slideImages[slide.id];
             const src = imageSrc(result?.image);
-            const loadingMode = slideLoading[slide.index];
+            const loadingMode = slideLoading[slide.id];
             const isLoading = !!loadingMode;
             const loadingImage = loadingMode === 'imagem';
 
             return (
+              <SortableSlide key={slide.id} slide={slide} slideIndex={slideIndex}>
               <div
-                key={slide.index}
                 aria-busy={isLoading}
                 className={`flex flex-col md:flex-row gap-[24px] rounded-[16px] border p-[20px] bg-newBgColorInner transition-colors ${
                   isLoading ? 'border-primary/40' : 'border-newTableBorder'
@@ -136,7 +220,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       )}
                       <button
                         type="button"
-                        onClick={() => moveSlide(slideIndex, slideIndex - 1)}
+                        onClick={() => moveSlide(slide.index, slide.index - 1)}
                         disabled={slideIndex === 0 || isLoading}
                         className="flex items-center justify-center h-7 w-7 rounded-[6px] border border-newTableBorder text-textItemBlur transition hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
                         title="Mover slide para esquerda"
@@ -145,7 +229,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => moveSlide(slideIndex, slideIndex + 1)}
+                        onClick={() => moveSlide(slide.index, slide.index + 1)}
                         disabled={slideIndex === plan.slides.length - 1 || isLoading}
                         className="flex items-center justify-center h-7 w-7 rounded-[6px] border border-newTableBorder text-textItemBlur transition hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
                         title="Mover slide para direita"
@@ -154,7 +238,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => duplicateSlide(slideIndex)}
+                        onClick={() => duplicateSlide(slide.index)}
                         disabled={isLoading}
                         className="flex items-center justify-center h-7 w-7 rounded-[6px] border border-newTableBorder text-textItemBlur transition hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
                         title="Duplicar slide"
@@ -163,7 +247,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => addSlide(slideIndex)}
+                        onClick={() => addSlide(slide.index)}
                         disabled={isLoading}
                         className="flex items-center justify-center h-7 w-7 rounded-[6px] border border-newTableBorder text-textItemBlur transition hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
                         title="Adicionar slide após este"
@@ -172,12 +256,21 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => removeSlide(slideIndex)}
-                        disabled={plan.slides.length <= 1 || isLoading}
+                        onClick={() => removeSlide(slide.index)}
+                        disabled={plan.slides.length <= 2 || isLoading}
                         className="flex items-center justify-center h-7 w-7 rounded-[6px] border border-red-500/30 text-red-400 transition hover:border-red-500 hover:bg-red-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
                         title="Remover slide"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => exportSingleSlide(slide.id)}
+                        disabled={!src}
+                        className="flex items-center justify-center h-7 w-7 rounded-[6px] border border-newTableBorder text-textItemBlur transition hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Exportar slide como PNG"
+                      >
+                        <Download className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -188,7 +281,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                     <button
                       type="button"
                       onClick={() => regenerateSlideCopy(slide, 'copy')}
-                      disabled={!!slideLoading[slide.index]}
+                      disabled={!!slideLoading[slide.id]}
                       className="rounded-[8px] border border-newTableBorder px-[10px] py-[7px] text-[12px] font-[600] hover:border-primary"
                     >
                       Regenerar copy
@@ -198,7 +291,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       onClick={() =>
                         regenerateSlideCopy(slide, 'estilo')
                       }
-                      disabled={!!slideLoading[slide.index]}
+                      disabled={!!slideLoading[slide.id]}
                       className="rounded-[8px] border border-newTableBorder px-[10px] py-[7px] text-[12px] font-[600] hover:border-primary"
                     >
                       Variar estilo
@@ -208,7 +301,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       onClick={() =>
                         regenerateSlideCopy(slide, 'direto')
                       }
-                      disabled={!!slideLoading[slide.index]}
+                      disabled={!!slideLoading[slide.id]}
                       className="rounded-[8px] border border-newTableBorder px-[10px] py-[7px] text-[12px] font-[600] hover:border-primary"
                     >
                       Mais direto
@@ -218,7 +311,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       onClick={() =>
                         regenerateSlideCopy(slide, 'premium')
                       }
-                      disabled={!!slideLoading[slide.index]}
+                      disabled={!!slideLoading[slide.id]}
                       className="rounded-[8px] border border-newTableBorder px-[10px] py-[7px] text-[12px] font-[600] hover:border-primary"
                     >
                       Mais premium
@@ -228,7 +321,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       onClick={() =>
                         regenerateSlideCopy(slide, 'provocativo')
                       }
-                      disabled={!!slideLoading[slide.index]}
+                      disabled={!!slideLoading[slide.id]}
                       className="rounded-[8px] border border-newTableBorder px-[10px] py-[7px] text-[12px] font-[600] hover:border-primary"
                     >
                       Mais provocativo
@@ -238,7 +331,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       onClick={() =>
                         regenerateSlideCopy(slide, 'marca')
                       }
-                      disabled={!!slideLoading[slide.index]}
+                      disabled={!!slideLoading[slide.id]}
                       className="rounded-[8px] border border-stone-500/20 bg-stone-500/10 px-[10px] py-[7px] text-[12px] font-[700] text-stone-700 hover:border-stone-500/40 dark:text-stone-100"
                     >
                       Mais fiel à marca
@@ -249,7 +342,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                         regenerateSlideCopy(slide, 'inspiracao')
                       }
                       disabled={
-                        !!slideLoading[slide.index] ||
+                        !!slideLoading[slide.id] ||
                         !selectedReferences.length
                       }
                       className="rounded-[8px] border border-stone-500/20 bg-stone-500/10 px-[10px] py-[7px] text-[12px] font-[700] text-stone-700 hover:border-stone-500/40 disabled:cursor-not-allowed disabled:opacity-45 dark:text-stone-100"
@@ -261,7 +354,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       onClick={() =>
                         regenerateSlideCopy(slide, 'menos-inspiracao')
                       }
-                      disabled={!!slideLoading[slide.index]}
+                      disabled={!!slideLoading[slide.id]}
                       className="rounded-[8px] border border-newTableBorder px-[10px] py-[7px] text-[12px] font-[600] hover:border-primary"
                     >
                       Menos inspiração
@@ -271,7 +364,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       onClick={() =>
                         regenerateSlideCopy(slide, 'espaco-texto')
                       }
-                      disabled={!!slideLoading[slide.index]}
+                      disabled={!!slideLoading[slide.id]}
                       className="rounded-[8px] border border-newTableBorder px-[10px] py-[7px] text-[12px] font-[600] hover:border-primary"
                     >
                       Mais espaço p/ texto
@@ -281,7 +374,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       onClick={() =>
                         regenerateSlideCopy(slide, 'metafora')
                       }
-                      disabled={!!slideLoading[slide.index]}
+                      disabled={!!slideLoading[slide.id]}
                       className="rounded-[8px] border border-newTableBorder px-[10px] py-[7px] text-[12px] font-[600] hover:border-primary"
                     >
                       Trocar metáfora
@@ -291,24 +384,24 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       onClick={() =>
                         regenerateSlideCopy(slide, 'manter-layout')
                       }
-                      disabled={!!slideLoading[slide.index]}
+                      disabled={!!slideLoading[slide.id]}
                       className="rounded-[8px] border border-newTableBorder px-[10px] py-[7px] text-[12px] font-[600] hover:border-primary"
                     >
                       Manter layout
                     </button>
                   </div>
 
-                  {!!slideHistory[slide.index]?.length && (
+                  {!!slideHistory[slide.id]?.length && (
                     <div className="flex flex-wrap items-center gap-[8px] rounded-[10px] border border-newTableBorder bg-newBgColor p-[10px]">
                       <span className="text-[12px] font-[700] text-textItemBlur">
                         Histórico:
                       </span>
-                      {slideHistory[slide.index].map((_, historyIndex) => (
+                      {slideHistory[slide.id].map((_, historyIndex) => (
                         <button
-                          key={`${slide.index}-history-${historyIndex}`}
+                          key={`${slide.id}-history-${historyIndex}`}
                           type="button"
                           onClick={() =>
-                            restoreSlideVersion(slide.index, historyIndex)
+                            restoreSlideVersion(slide.id, historyIndex)
                           }
                           className="rounded-[8px] border border-newTableBorder px-[8px] py-[5px] text-[11px] font-[700] hover:border-primary"
                         >
@@ -326,13 +419,22 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       value={slide.headline}
                       onChange={(event) =>
                         updateSlide(
-                          slide.index,
+                          slide.id,
                           'headline',
                           event.target.value
                         )
                       }
                       className={`${textAreaClass} min-h-[72px] text-[16px] font-[700]`}
                     />
+                    <span className={`text-[11px] text-right ${
+                      slide.headline.length > 78
+                        ? 'text-red-500'
+                        : slide.headline.length > 78 * 0.8
+                          ? 'text-yellow-500'
+                          : 'text-green-500'
+                    }`}>
+                      {slide.headline.length}/78
+                    </span>
                   </label>
 
                   <label className="flex flex-col gap-[6px]">
@@ -343,13 +445,22 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       value={slide.body}
                       onChange={(event) =>
                         updateSlide(
-                          slide.index,
+                          slide.id,
                           'body',
                           event.target.value
                         )
                       }
                       className={`${textAreaClass} min-h-[80px]`}
                     />
+                    <span className={`text-[11px] text-right ${
+                      slide.body.length > 150
+                        ? 'text-red-500'
+                        : slide.body.length > 150 * 0.8
+                          ? 'text-yellow-500'
+                          : 'text-green-500'
+                    }`}>
+                      {slide.body.length}/150
+                    </span>
                   </label>
 
                   <label className="flex flex-col gap-[6px]">
@@ -360,13 +471,22 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       value={slide.cta}
                       onChange={(event) =>
                         updateSlide(
-                          slide.index,
+                          slide.id,
                           'cta',
                           event.target.value
                         )
                       }
                       className={inputClass}
                     />
+                    <span className={`text-[11px] text-right ${
+                      slide.cta.length > 30
+                        ? 'text-red-500'
+                        : slide.cta.length > 30 * 0.8
+                          ? 'text-yellow-500'
+                          : 'text-blue-500'
+                    }`}>
+                      {slide.cta.length}/30
+                    </span>
                   </label>
 
                   <label className="flex flex-col gap-[6px]">
@@ -377,13 +497,16 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       value={slide.imagePrompt}
                       onChange={(event) =>
                         updateSlide(
-                          slide.index,
+                          slide.id,
                           'imagePrompt',
                           event.target.value
                         )
                       }
                       className={`${textAreaClass} min-h-[80px]`}
                     />
+                    <span className="text-[11px] text-right text-textItemBlur">
+                      {slide.imagePrompt.length} caracteres
+                    </span>
                   </label>
                 </div>
 
@@ -396,7 +519,7 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       type="button"
                       onClick={() => generateSlideImage(slide)}
                       disabled={
-                        !!slideLoading[slide.index] ||
+                        !!slideLoading[slide.id] ||
                         !trimmedImageModel
                       }
                       className="flex items-center gap-[6px] rounded-[8px] border border-newTableBorder px-[9px] py-[6px] text-[12px] font-[600] hover:border-primary disabled:opacity-60"
@@ -408,15 +531,15 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
 
                   <div className="flex flex-col gap-[6px]">
                     <input
-                      value={slideImageAdjustments[slide.index] || ''}
+                      value={slideImageAdjustments[slide.id] || ''}
                       onChange={(event) =>
-                        setSlideImageAdjustment(slide.index, event.target.value)
+                        setSlideImageAdjustment(slide.id, event.target.value)
                       }
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') {
                           event.preventDefault();
                           if (
-                            !slideLoading[slide.index] &&
+                            !slideLoading[slide.id] &&
                             trimmedImageModel
                           ) {
                             generateSlideImage(slide);
@@ -424,11 +547,11 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                         }
                       }}
                       placeholder="Ajuste rápido: ex. mais escuro, menos texto…"
-                      disabled={!!slideLoading[slide.index]}
+                      disabled={!!slideLoading[slide.id]}
                       className={`${inputClass} text-[12px]`}
                     />
                     <span className="text-[11px] text-textItemBlur">
-                      Descreva o ajuste e clique em “Regenerar imagem” (ou Enter)
+                      Descreva o ajuste e clique em "Regenerar imagem" (ou Enter)
                       para aplicar só neste slide.
                     </span>
                   </div>
@@ -484,19 +607,19 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                       {result.error}
                     </div>
                   )}
-                  {!!slideImageHistory[slide.index]?.length && (
+                  {!!slideImageHistory[slide.id]?.length && (
                     <div className="flex flex-wrap items-center gap-[7px] rounded-[10px] border border-newTableBorder bg-newBgColor p-[9px]">
                       <span className="text-[11px] font-[700] text-textItemBlur">
                         Imagens antigas:
                       </span>
-                      {slideImageHistory[slide.index].map(
+                      {slideImageHistory[slide.id].map(
                         (_, historyIndex) => (
                           <button
-                            key={`${slide.index}-image-history-${historyIndex}`}
+                            key={`${slide.id}-image-history-${historyIndex}`}
                             type="button"
                             onClick={() =>
                               restoreImageVersion(
-                                slide.index,
+                                slide.id,
                                 historyIndex
                               )
                             }
@@ -510,10 +633,13 @@ export function SlideEditorPanel(props: SlideEditorPanelProps) {
                   )}
                 </div>
               </div>
+              </SortableSlide>
             );
           })}
+          </SortableContext>
+        </DndContext>
         </div>
       </div>
     </div>
   );
-}
+});

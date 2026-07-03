@@ -188,7 +188,6 @@ export class PublicIntegrationsController {
       );
     }
 
-    console.log(JSON.stringify(body, null, 2));
     return this._postsService.createPost(org.id, body);
   }
 

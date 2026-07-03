@@ -88,12 +88,12 @@ export const PlugPop: FC<{
     if (!data?.data) {
       return {};
     }
-    return JSON.parse(data.data).reduce((acc: any, current: any) => {
+    return JSON.parse(data.data).reduce((acc: Record<string, string>, current: { name: string; value: string }) => {
       return {
         ...acc,
         [current.name]: current.value,
       };
-    }, {} as any);
+    }, {} as Record<string, string>);
   }, []);
   const yupSchema = useMemo(() => {
     return object(

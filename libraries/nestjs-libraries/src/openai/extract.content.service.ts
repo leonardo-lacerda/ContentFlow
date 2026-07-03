@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { JSDOM } from 'jsdom';
+import { UrlValidator } from '../security/url-validator';
 
 function findDepth(element: Element) {
   let depth = 0;
@@ -14,8 +15,22 @@ function findDepth(element: Element) {
 
 @Injectable()
 export class ExtractContentService {
+  private readonly logger = new Logger(ExtractContentService.name);
+
   async extractContent(url: string) {
-    const load = await (await fetch(url)).text();
+    // SSRF protection — validate URL and use safe fetch
+    const result = await UrlValidator.safeFetch(url, {
+      timeout: 10_000,
+      maxSize: 5 * 1024 * 1024, // 5MB
+      maxRedirects: 5,
+    });
+
+    if (!result.ok) {
+      this.logger.warn(`URL fetch blocked/failed for ${url}: ${result.error}`);
+      throw new Error(`URL fetch failed: ${result.error}`);
+    }
+
+    const load = result.text!;
     const dom = new JSDOM(load);
 
     // only element that has a title

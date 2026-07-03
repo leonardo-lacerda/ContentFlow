@@ -14,8 +14,8 @@ export class CarouselProjectService {
     return this.carouselProjectRepository.findByBrandProfile(brandProfileId, status);
   }
 
-  async getProject(id: string) {
-    return this.carouselProjectRepository.findById(id);
+  async getProject(id: string, orgId: string) {
+    return this.carouselProjectRepository.findById(id, orgId);
   }
 
   async createProject(data: {
@@ -31,7 +31,7 @@ export class CarouselProjectService {
     return this.carouselProjectRepository.create(data);
   }
 
-  async updateProject(id: string, data: {
+  async updateProject(id: string, orgId: string, data: {
     title?: string;
     slides?: any;
     caption?: string;
@@ -43,11 +43,11 @@ export class CarouselProjectService {
     approvedAt?: Date;
     rejectionReason?: string;
   }) {
-    return this.carouselProjectRepository.update(id, data);
+    return this.carouselProjectRepository.update(id, orgId, data);
   }
 
-  async updateStatus(id: string, status: CarouselProjectStatus) {
-    return this.carouselProjectRepository.updateStatus(id, status);
+  async updateStatus(id: string, orgId: string, status: CarouselProjectStatus) {
+    return this.carouselProjectRepository.updateStatus(id, orgId, status);
   }
 
   async countByBrandAndStatus(brandProfileId: string, status: CarouselProjectStatus) {

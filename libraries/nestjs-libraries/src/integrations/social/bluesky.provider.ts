@@ -27,6 +27,9 @@ import { timer } from '@gitroom/helpers/utils/timer';
 import axios from 'axios';
 import { stripHtmlValidation } from '@gitroom/helpers/utils/strip.html.validation';
 import { Rules } from '@gitroom/nestjs-libraries/chat/rules.description.decorator';
+import { Logger } from '@nestjs/common';
+
+const logger = new Logger('BlueskyProvider');
 
 async function reduceImageBySize(url: string, maxSizeKB = 976) {
   try {
@@ -86,7 +89,7 @@ async function uploadVideo(
 
   const video = await downloadVideo(videoPath);
 
-  console.log('Downloaded video', videoPath, video.size);
+  logger.debug('Downloaded video', videoPath, video.size);
 
   const uploadUrl = new URL(
     'https://video.bsky.app/xrpc/app.bsky.video.uploadVideo'
@@ -105,7 +108,7 @@ async function uploadVideo(
   });
 
   const jobStatus = (await uploadResponse.json()) as AppBskyVideoDefs.JobStatus;
-  console.log('JobId:', jobStatus.jobId);
+  logger.debug('JobId:', jobStatus.jobId);
   let blob: BlobRef | undefined = jobStatus.blob;
   const videoAgent = new AtpAgent({ service: 'https://video.bsky.app' });
 
@@ -113,7 +116,7 @@ async function uploadVideo(
     const { data: status } = await videoAgent.app.bsky.video.getJobStatus({
       jobId: jobStatus.jobId,
     });
-    console.log(
+    logger.debug(
       'Status:',
       status.jobStatus.state,
       status.jobStatus.progress || ''
@@ -134,7 +137,7 @@ async function uploadVideo(
     await timer(30000);
   }
 
-  console.log('posting video...');
+  logger.debug('posting video...');
 
   return {
     $type: 'app.bsky.embed.video',
@@ -235,7 +238,7 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
         username: profile.data.handle!,
       };
     } catch (e) {
-      console.log(e);
+      logger.error('Bluesky authentication failed', e);
       return 'Invalid credentials';
     }
   }

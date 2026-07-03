@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import Link from 'next/link';
@@ -37,7 +38,8 @@ type Inputs = {
   providerToken: string;
   provider: string;
 };
-export function Register() {
+
+function RegisterContent() {
   const getQuery = useSearchParams();
   const fetch = useFetch();
   const [provider] = useState(getQuery?.get('provider')?.toUpperCase());
@@ -70,6 +72,14 @@ export function Register() {
   }
   return (
     <RegisterAfter token={code} provider={provider?.toUpperCase() || 'LOCAL'} />
+  );
+}
+
+export function Register() {
+  return (
+    <Suspense fallback={<LoadingComponent />}>
+      <RegisterContent />
+    </Suspense>
   );
 }
 function getHelpfulReasonForRegistrationFailure(httpCode: number) {

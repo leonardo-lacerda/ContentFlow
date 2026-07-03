@@ -52,6 +52,15 @@ import { BrandAssetRepository } from '@gitroom/nestjs-libraries/database/prisma/
 import { BrandDnaExtractionService } from '@gitroom/nestjs-libraries/ai-generate/brand-dna-extraction.service';
 import { EditorialPlanService } from '@gitroom/nestjs-libraries/database/prisma/editorial-plans/editorial-plan.service';
 import { EditorialPlanRepository } from '@gitroom/nestjs-libraries/database/prisma/editorial-plans/editorial-plan.repository';
+import { CarouselPerformanceRepository } from '@gitroom/nestjs-libraries/database/prisma/carousel-performance/carousel-performance.repository';
+import { CarouselPerformanceService } from '@gitroom/nestjs-libraries/database/prisma/carousel-performance/carousel-performance.service';
+import { RecommendationService } from '@gitroom/nestjs-libraries/database/prisma/carousel-performance/recommendation.service';
+import { BrandLearningService } from '@gitroom/nestjs-libraries/database/prisma/brand-learning/brand-learning.service';
+import { BrandLearningRepository } from '@gitroom/nestjs-libraries/database/prisma/brand-learning/brand-learning.repository';
+import { GenerationCostService } from '@gitroom/nestjs-libraries/database/prisma/generation-costs/generation-cost.service';
+import { GenerationCostRepository } from '@gitroom/nestjs-libraries/database/prisma/generation-costs/generation-cost.repository';
+import { CarouselDraftService } from '@gitroom/nestjs-libraries/database/prisma/carousel-drafts/carousel-draft.service';
+import { CarouselDraftRepository } from '@gitroom/nestjs-libraries/database/prisma/carousel-drafts/carousel-draft.repository';
 import { TemporalService } from 'nestjs-temporal-core';
 
 // Quando o Temporal esta desabilitado (DISABLE_TEMPORAL=true), o modulo global
@@ -134,6 +143,15 @@ const temporalStubProvider = temporalDisabled
     BrandDnaExtractionService,
     EditorialPlanService,
     EditorialPlanRepository,
+    CarouselPerformanceRepository,
+    CarouselPerformanceService,
+    RecommendationService,
+    BrandLearningService,
+    BrandLearningRepository,
+    GenerationCostService,
+    GenerationCostRepository,
+    CarouselDraftService,
+    CarouselDraftRepository,
     ...temporalStubProvider,
   ],
   get exports() {

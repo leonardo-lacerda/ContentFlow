@@ -1,4 +1,5 @@
-import { useIntegration } from '@gitroom/frontend/components/launches/helpers/use.integration';
+import { sanitizeHtml } from '@gitroom/frontend/components/layout/sanitize-html';
+1|import { useIntegration } from '@gitroom/frontend/components/launches/helpers/use.integration';
 import { useLaunchStore } from '@gitroom/frontend/components/new-launch/store';
 import { useMediaDirectory } from '@gitroom/react/helpers/use.media.directory';
 import { stripHtmlValidation } from '@gitroom/helpers/utils/strip.html.validation';
@@ -320,7 +321,7 @@ export const LinkedinPreview: FC<{
       <div
         className="text-[14px] font-[400] whitespace-pre-line"
         dangerouslySetInnerHTML={{
-          __html: renderContent?.[0]?.text,
+          __html: sanitizeHtml(renderContent?.[0]?.text || ''),
         }}
       />
       {!!renderContent?.[0]?.images?.length && (
@@ -454,7 +455,7 @@ export const LinkedinPreview: FC<{
                   <div
                     className="whitespace-pre-line text-[14px] font-[400]"
                     dangerouslySetInnerHTML={{
-                      __html: value.text,
+                      __html: sanitizeHtml(value.text),
                     }}
                   />
                   <div className="flex gap-[6px] font-[400] text-[12px] text-textLinkedin items-center">

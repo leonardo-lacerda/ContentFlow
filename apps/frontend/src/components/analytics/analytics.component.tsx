@@ -9,7 +9,12 @@ import { LoadingComponent } from '@gitroom/frontend/components/layout/loading';
 export const AnalyticsComponent: FC = () => {
   const fetch = useFetch();
   const load = useCallback(async (path: string) => {
-    return await (await fetch(path)).json();
+    try {
+      return await (await fetch(path)).json();
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+      return null;
+    }
   }, []);
   const { isLoading: isLoadingAnalytics, data: analytics } = useSWR(
     '/analytics',

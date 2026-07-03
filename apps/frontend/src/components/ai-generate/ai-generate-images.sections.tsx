@@ -251,7 +251,7 @@ export function SessionCostSummary({ brl, visible }: SessionCostSummaryProps) {
 type CarouselLightboxProps = {
   lightboxIndex: number | null;
   plan: CarouselPlan | null;
-  slideImages: Record<number, SlideImageResult>;
+  slideImages: Record<string, SlideImageResult>;
   setLightboxIndex: Dispatch<SetStateAction<number | null>>;
 };
 
@@ -266,7 +266,7 @@ export function CarouselLightbox({
   }
 
   const currentSlide = plan.slides[lightboxIndex];
-  const currentImage = imageSrc(slideImages[currentSlide.index]?.image);
+  const currentImage = imageSrc(slideImages[currentSlide.id]?.image);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-sm">

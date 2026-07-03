@@ -1,7 +1,9 @@
 import { Resend } from 'resend';
+import { Logger } from '@nestjs/common';
 import { EmailInterface } from '@gitroom/nestjs-libraries/emails/email.interface';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_132');
+const logger = new Logger('ResendProvider');
 
 export class ResendProvider implements EmailInterface {
   name = 'resend';
@@ -25,7 +27,7 @@ export class ResendProvider implements EmailInterface {
 
       return sends;
     } catch (err) {
-      console.log(err);
+      logger.error('Failed to send email via Resend', err);
     }
 
     return { sent: false };

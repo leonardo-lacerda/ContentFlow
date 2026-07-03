@@ -1,5 +1,6 @@
 import { imageSrc } from './ai-generate-images.utils';
 import { Spinner } from './ai-generate-images.loaders';
+import { memo } from 'react';
 import type {
   CarouselPlan,
   CarouselTemplate,
@@ -16,11 +17,11 @@ type CarouselPreviewPanelProps = {
   platform: string;
   setActivePreview: (index: number) => void;
   setLightboxIndex: (index: number) => void;
-  slideImages: Record<number, SlideImageResult>;
+  slideImages: Record<string, SlideImageResult>;
   template: CarouselTemplate;
 };
 
-export function CarouselPreviewPanel(props: CarouselPreviewPanelProps) {
+export const CarouselPreviewPanel = memo(function CarouselPreviewPanel(props: CarouselPreviewPanelProps) {
   const {
     activePreview,
     brandName,
@@ -54,12 +55,12 @@ export function CarouselPreviewPanel(props: CarouselPreviewPanelProps) {
 
       <div className="flex gap-[14px] overflow-x-auto pb-[8px]">
         {plan.slides.map((slide, index) => {
-          const src = imageSrc(slideImages[slide.index]?.image);
-          const pending = generatingImages && !src && !slideImages[slide.index]?.error;
+          const src = imageSrc(slideImages[slide.id]?.image);
+          const pending = generatingImages && !src && !slideImages[slide.id]?.error;
 
           return (
             <button
-              key={`preview-${slide.index}`}
+              key={`preview-${slide.id}`}
               type="button"
               onClick={() => {
                 setActivePreview(index);
@@ -141,4 +142,4 @@ export function CarouselPreviewPanel(props: CarouselPreviewPanelProps) {
     )}
     </>
   );
-}
+});

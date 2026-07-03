@@ -1,7 +1,7 @@
 'use client';
 
 import { Slider } from '@gitroom/react/form/slider';
-import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { FC, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@gitroom/react/form/button';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { Subscription } from '@prisma/client';
@@ -220,7 +220,7 @@ const billingDisplayName = (name: string) => {
   return name.charAt(0) + name.slice(1).toLowerCase();
 };
 
-export const MainBillingComponent: FC<{
+const MainBillingContent: FC<{
   sub?: Subscription;
 }> = (props) => {
   const { sub } = props;
@@ -591,5 +591,15 @@ export const MainBillingComponent: FC<{
         <LogoutComponent />
       </div>
     </div>
+  );
+};
+
+export const MainBillingComponent: FC<{
+  sub?: Subscription;
+}> = (props) => {
+  return (
+    <Suspense fallback={null}>
+      <MainBillingContent {...props} />
+    </Suspense>
   );
 };

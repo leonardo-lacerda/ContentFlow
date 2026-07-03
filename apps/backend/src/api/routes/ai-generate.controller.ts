@@ -8,6 +8,7 @@ import { AiGenerateCaptionDto } from '@gitroom/nestjs-libraries/dtos/ai-generate
 import { AiGenerateImageDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/ai-generate-image.dto';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { recordTemplateUsage } from '@gitroom/nestjs-libraries/ai-generate/templates/template-usage-tracker';
+import { TEMPLATE_SCHEMA_VERSION } from '@gitroom/nestjs-libraries/ai-generate/templates/template-definitions';
 import { TemplateRecommenderService } from '@gitroom/nestjs-libraries/ai-generate/templates/template-recommender.service';
 import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
 
@@ -29,13 +30,15 @@ export class AiGenerateController {
     @Query('category') category?: string,
     @Query('goal') goal?: string
   ) {
+    let templates;
     if (category) {
-      return this._templateRecommender.getByCategory(category);
+      templates = this._templateRecommender.getByCategory(category);
+    } else if (goal) {
+      templates = this._templateRecommender.getByGoal(goal);
+    } else {
+      templates = this._templateRecommender.getActive();
     }
-    if (goal) {
-      return this._templateRecommender.getByGoal(goal);
-    }
-    return this._templateRecommender.getActive();
+    return { templates, schemaVersion: TEMPLATE_SCHEMA_VERSION };
   }
 
   @Get('/templates/summary')

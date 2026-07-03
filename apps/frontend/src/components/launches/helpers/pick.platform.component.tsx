@@ -141,12 +141,8 @@ export const PickPlatforms: FC<{
     const newIntegrations = [...notToRemove, ...toAdd]
       .map((id) => integrations.find((p) => p.id === id)!)
       .filter((p) => p);
-    setSelectedAccounts(newIntegrations, () => {
-      console.log('changed');
-    });
-    onChange(newIntegrations, () => {
-      console.log('changed');
-    });
+    setSelectedAccounts(newIntegrations);
+    onChange(newIntegrations);
   };
   useCopilotReadable({
     description: isMain

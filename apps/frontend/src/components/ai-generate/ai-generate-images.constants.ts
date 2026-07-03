@@ -314,4 +314,5 @@ export const textAreaClass =
 export const GENERATED_IMAGE_CONCURRENCY = 2;
 export const MIN_CAROUSEL_SLIDES = 2;
 export const MAX_CAROUSEL_SLIDES = 10;
+export const MAX_UNDO_HISTORY = 50;
 export const REFERENCE_PAGE_SIZE = 72;

@@ -1,10 +1,10 @@
 'use client';
-import { FC, ReactNode } from 'react';
+import { FC, ReactNode, memo } from 'react';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 import Link from 'next/link';
 
-export const MenuItem: FC<{ label: string; icon: ReactNode; path: string; onClick?: () => void }> = ({
+export const MenuItem: FC<{ label: string; icon: ReactNode; path: string; onClick?: () => void }> = memo(({
   label,
   icon,
   path,
@@ -38,4 +38,4 @@ export const MenuItem: FC<{ label: string; icon: ReactNode; path: string; onClic
       <div className="text-[10px]">{label}</div>
     </Link>
   );
-};
+}));

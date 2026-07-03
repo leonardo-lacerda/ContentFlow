@@ -50,7 +50,7 @@ export class StripeController {
           return { ok: true };
       }
     } catch (e) {
-      throw new HttpException(e, 500);
+      throw new HttpException({ msg: 'Webhook processing failed' }, 500);
     }
   }
 

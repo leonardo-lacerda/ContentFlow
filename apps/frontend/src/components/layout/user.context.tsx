@@ -36,7 +36,7 @@ export const ContextWrapper: FC<{
         ...user,
         tier: pricing[user.tier],
       }
-    : ({} as any);
+    : undefined;
   return <UserContext.Provider value={values}>{children}</UserContext.Provider>;
 };
 export const useUser = () => useContext(UserContext);

@@ -135,9 +135,10 @@ export function BrandAssetList({ brandId }: { brandId: string }) {
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
-                    (
-                      e.target as HTMLImageElement
-                    ).parentElement!.classList.add('flex', 'items-center', 'justify-center');
+                    const parent = (e.target as HTMLImageElement).parentElement;
+                    if (parent) {
+                      parent.classList.add('flex', 'items-center', 'justify-center');
+                    }
                   }}
                 />
               ) : (

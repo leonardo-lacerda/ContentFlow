@@ -23,8 +23,8 @@ export class ContentIdeaRepository {
     });
   }
 
-  findById(id: string) {
-    return this.prisma.contentIdea.findUnique({ where: { id } });
+  findById(id: string, orgId: string) {
+    return this.prisma.contentIdea.findFirst({ where: { id, organizationId: orgId } });
   }
 
   create(data: {
@@ -41,7 +41,9 @@ export class ContentIdeaRepository {
     return this.prisma.contentIdea.create({ data });
   }
 
-  updateStatus(id: string, status: ContentIdeaStatus, rejectionReason?: string) {
+  async updateStatus(id: string, orgId: string, status: ContentIdeaStatus, rejectionReason?: string) {
+    const existing = await this.prisma.contentIdea.findFirst({ where: { id, organizationId: orgId } });
+    if (!existing) throw new Error('Content idea not found');
     return this.prisma.contentIdea.update({
       where: { id },
       data: { status, rejectionReason },

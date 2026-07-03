@@ -10,8 +10,8 @@ export class GenerationJobService {
     return this.generationJobRepository.findByOrganization(orgId);
   }
 
-  async getJob(id: string) {
-    return this.generationJobRepository.findById(id);
+  async getJob(id: string, orgId: string) {
+    return this.generationJobRepository.findById(id, orgId);
   }
 
   async createJob(data: {

@@ -30,7 +30,8 @@ export type CostEstimate = {
 };
 
 export type CarouselSlide = {
-  index: number;
+  id: string;          // UUID estável — PK para todos os Record states internos
+  index: number;       // Posição (1-based) — recalculado após operações CRUD
   headline: string;
   body: string;
   cta: string;

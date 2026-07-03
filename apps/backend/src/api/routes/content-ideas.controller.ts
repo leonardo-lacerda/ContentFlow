@@ -30,8 +30,11 @@ export class ContentIdeaController {
   }
 
   @Get('/:id')
-  async getIdea(@Param('id') id: string) {
-    return this.contentIdeaService.getIdea(id);
+  async getIdea(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.contentIdeaService.getIdea(id, org.id);
   }
 
   @Post('/')
@@ -49,28 +52,38 @@ export class ContentIdeaController {
 
   @Patch('/:id/approve')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async approveIdea(@Param('id') id: string) {
-    return this.contentIdeaService.approveIdea(id);
+  async approveIdea(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.contentIdeaService.approveIdea(id, org.id);
   }
 
   @Patch('/:id/reject')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async rejectIdea(
+    @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
     @Body() body?: { reason?: string }
   ) {
-    return this.contentIdeaService.rejectIdea(id, body?.reason);
+    return this.contentIdeaService.rejectIdea(id, org.id, body?.reason);
   }
 
   @Patch('/:id/save')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async saveIdea(@Param('id') id: string) {
-    return this.contentIdeaService.saveIdea(id);
+  async saveIdea(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.contentIdeaService.saveIdea(id, org.id);
   }
 
   @Patch('/:id/archive')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async archiveIdea(@Param('id') id: string) {
-    return this.contentIdeaService.archiveIdea(id);
+  async archiveIdea(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.contentIdeaService.archiveIdea(id, org.id);
   }
 }

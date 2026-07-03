@@ -8,6 +8,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
+import { sanitizeHtml } from '@gitroom/frontend/components/layout/sanitize-html';
 import { CopilotChat, CopilotKitCSSProperties } from '@copilotkit/react-ui';
 import {
   InputProps,
@@ -90,18 +91,20 @@ You can also use me as an MCP Server, check Settings >> Public API
 const LoadMessages: FC<{ id: string }> = ({ id }) => {
   const { setMessages } = useCopilotMessagesContext();
   const fetch = useFetch();
-
   const loadMessages = useCallback(async (idToSet: string) => {
-    const data = await (await fetch(`/copilot/${idToSet}/list`)).json();
-    console.log(data);
-    setMessages(
-      data.messages.map((p: any) => {
-        return new TextMessage({
-          content: p.content.content,
-          role: p.role,
-        });
-      })
-    );
+    try {
+      const data = await (await fetch(`/copilot/${idToSet}/list`)).json();
+      setMessages(
+        data.messages.map((p: any) => {
+          return new TextMessage({
+            content: p.content.content,
+            role: p.role,
+          });
+        })
+      );
+    } catch (err) {
+      console.error('Failed to load messages:', err);
+    }
   }, []);
 
   useEffect(() => {
@@ -122,7 +125,7 @@ const Message: FC<UserMessageProps> = (props) => {
         return `<video controls class="h-[150px] w-[150px] rounded-[8px] mb-[10px]"><source src="${p1.trim()}" type="video/mp4">Your browser does not support the video tag.</video>`;
       })
       .replace(/Image: (http.*\n)/g, (match, p1) => {
-        return `<img src="${p1.trim()}" class="h-[150px] w-[150px] max-w-full border border-newBgColorInner" />`;
+        return `<img src="${p1.trim()}" alt="Generated image" class="h-[150px] w-[150px] max-w-full border border-newBgColorInner" />`;
       })
       .replace(/\[\-\-Media\-\-\](.*)\[\-\-Media\-\-\]/g, (match, p1) => {
         return `<div class="flex justify-center mt-[20px]">${p1}</div>`;
@@ -137,7 +140,7 @@ const Message: FC<UserMessageProps> = (props) => {
   return (
     <div
       className="copilotKitMessage copilotKitUserMessage min-w-[300px]"
-      dangerouslySetInnerHTML={{ __html: convertContentToImagesAndVideo }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(convertContentToImagesAndVideo) }}
     />
   );
 };

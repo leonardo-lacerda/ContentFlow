@@ -14,8 +14,8 @@ export class ContentIdeaService {
     return this.contentIdeaRepository.findByBrandProfile(brandProfileId, status);
   }
 
-  async getIdea(id: string) {
-    return this.contentIdeaRepository.findById(id);
+  async getIdea(id: string, orgId: string) {
+    return this.contentIdeaRepository.findById(id, orgId);
   }
 
   async createIdea(data: {
@@ -32,24 +32,24 @@ export class ContentIdeaService {
     return this.contentIdeaRepository.create(data);
   }
 
-  async approveIdea(id: string) {
-    return this.contentIdeaRepository.updateStatus(id, ContentIdeaStatus.APPROVED);
+  async approveIdea(id: string, orgId: string) {
+    return this.contentIdeaRepository.updateStatus(id, orgId, ContentIdeaStatus.APPROVED);
   }
 
-  async rejectIdea(id: string, reason?: string) {
-    return this.contentIdeaRepository.updateStatus(id, ContentIdeaStatus.REJECTED, reason);
+  async rejectIdea(id: string, orgId: string, reason?: string) {
+    return this.contentIdeaRepository.updateStatus(id, orgId, ContentIdeaStatus.REJECTED, reason);
   }
 
-  async saveIdea(id: string) {
-    return this.contentIdeaRepository.updateStatus(id, ContentIdeaStatus.SAVED);
+  async saveIdea(id: string, orgId: string) {
+    return this.contentIdeaRepository.updateStatus(id, orgId, ContentIdeaStatus.SAVED);
   }
 
-  async archiveIdea(id: string) {
-    return this.contentIdeaRepository.updateStatus(id, ContentIdeaStatus.ARCHIVED);
+  async archiveIdea(id: string, orgId: string) {
+    return this.contentIdeaRepository.updateStatus(id, orgId, ContentIdeaStatus.ARCHIVED);
   }
 
-  async markAsUsed(id: string) {
-    return this.contentIdeaRepository.updateStatus(id, ContentIdeaStatus.USED);
+  async markAsUsed(id: string, orgId: string) {
+    return this.contentIdeaRepository.updateStatus(id, orgId, ContentIdeaStatus.USED);
   }
 
   async getExistingTitles(brandProfileId: string) {

@@ -169,7 +169,7 @@ export async function proxy(request: NextRequest) {
 
     return topResponse;
   } catch (err) {
-    console.log('err', err);
+    // Auth error — redirect to logout
     return NextResponse.redirect(new URL('/auth/logout', nextUrl.href));
   }
 }

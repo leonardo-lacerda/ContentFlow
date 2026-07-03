@@ -68,7 +68,12 @@ export const AgentList: FC<{ onChange: (arr: any[]) => void }> = ({
   const [selected, setSelected] = useState([]);
 
   const load = useCallback(async () => {
-    return (await (await fetch('/integrations/list')).json()).integrations;
+    try {
+      return (await (await fetch('/integrations/list')).json()).integrations;
+    } catch (err) {
+      console.error('Failed to load integrations:', err);
+      return [];
+    }
   }, []);
 
   const [collapseMenu, setCollapseMenu] = useCookie('collapseMenu', '0');
@@ -215,7 +220,12 @@ const Threads: FC = () => {
   const pathname = usePathname();
   const t = useT();
   const threads = useCallback(async () => {
-    return (await fetch('/copilot/list')).json();
+    try {
+      return await (await fetch('/copilot/list')).json();
+    } catch (err) {
+      console.error('Failed to load threads:', err);
+      return [];
+    }
   }, []);
   const { id } = useParams<{ id: string }>();
 

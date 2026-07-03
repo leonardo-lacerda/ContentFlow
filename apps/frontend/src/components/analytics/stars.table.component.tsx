@@ -2,6 +2,7 @@
 
 import {
   FC,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -19,7 +20,7 @@ import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import ReactLoading from '@gitroom/frontend/components/layout/loading';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
 
-export const UpDown: FC<{
+const UpDownInner: FC<{
   name: string;
   param: string;
 }> = (props) => {
@@ -87,7 +88,19 @@ export const UpDown: FC<{
     </div>
   );
 };
-export const StarsTableComponent = () => {
+
+export const UpDown: FC<{
+  name: string;
+  param: string;
+}> = (props) => {
+  return (
+    <Suspense fallback={null}>
+      <UpDownInner {...props} />
+    </Suspense>
+  );
+};
+
+const StarsTableContent = () => {
   const t = useT();
   const fetch = useFetch();
   const router = useRouter();
@@ -258,5 +271,13 @@ export const StarsTableComponent = () => {
         )}
       </div>
     </div>
+  );
+};
+
+export const StarsTableComponent = () => {
+  return (
+    <Suspense fallback={null}>
+      <StarsTableContent />
+    </Suspense>
   );
 };

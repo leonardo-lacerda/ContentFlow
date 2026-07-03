@@ -15,6 +15,13 @@ export interface PricingInnerInterface {
   public_api: boolean;
   webhooks: number;
   autoPost: boolean;
+  // Phase 7.2: Brand DNA limits
+  brand_profiles: number;
+  carousel_generations_per_month: number;
+  dna_extractions_per_month: number;
+  content_ideas_per_month: number;
+  editorial_plans: number;
+  team_member_count: number;
 }
 export interface PricingInterface {
   [key: string]: PricingInnerInterface;
@@ -37,6 +44,12 @@ export const pricing: PricingInterface = {
     webhooks: 0,
     autoPost: false,
     generate_videos: 0,
+    brand_profiles: 1,
+    carousel_generations_per_month: 5,
+    dna_extractions_per_month: 1,
+    content_ideas_per_month: 10,
+    editorial_plans: 0,
+    team_member_count: 1,
   },
   STANDARD: {
     current: 'STANDARD',
@@ -109,5 +122,11 @@ export const pricing: PricingInterface = {
     webhooks: 10000,
     autoPost: true,
     generate_videos: 60,
+    brand_profiles: 100,
+    carousel_generations_per_month: -1,
+    dna_extractions_per_month: -1,
+    content_ideas_per_month: -1,
+    editorial_plans: -1,
+    team_member_count: -1,
   },
 };

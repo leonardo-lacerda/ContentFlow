@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, Logger, Param, Post, Req } from '@nestjs/common';
 import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/subscription.service';
 import { StripeService } from '@gitroom/nestjs-libraries/services/stripe.service';
 import { CaktoService } from '@gitroom/nestjs-libraries/services/cakto.service';
@@ -15,6 +15,8 @@ import { AuthService } from '@gitroom/helpers/auth/auth.service';
 @ApiTags('Billing')
 @Controller('/billing')
 export class BillingController {
+  private readonly logger = new Logger(BillingController.name);
+
   constructor(
     private _subscriptionService: SubscriptionService,
     private _stripeService: StripeService,
@@ -59,7 +61,9 @@ export class BillingController {
   async finishTrial(@GetOrgFromRequest() org: Organization) {
     try {
       await this._stripeService.finishTrial(org.paymentId);
-    } catch (err) {}
+    } catch (err) {
+      this.logger.warn('Failed to finish trial', err);
+    }
     return {
       finish: true,
     };

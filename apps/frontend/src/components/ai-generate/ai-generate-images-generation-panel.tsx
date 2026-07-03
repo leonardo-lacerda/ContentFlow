@@ -52,7 +52,7 @@ type ImageGenerationPanelProps = {
   setImageModel: (value: string) => void;
   setImageProvider: (value: 'ia_generate' | 'openai_official') => void;
   setIncludePdfExport: (value: boolean) => void;
-  slideImages: Record<number, SlideImageResult>;
+  slideImages: Record<string, SlideImageResult>;
   showAdvanced: boolean;
 };
 
@@ -143,7 +143,7 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
               <select
                 value={imageProvider}
                 onChange={(event) =>
-                  setImageProvider(event.target.value as any)
+                  setImageProvider(event.target.value as 'ia_generate' | 'openai_official')
                 }
                 className={inputClass}
               >

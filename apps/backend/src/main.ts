@@ -43,7 +43,7 @@ async function start() {
       ],
       origin: [
         process.env.FRONTEND_URL,
-        'http://localhost:6274',
+        ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:6274'] : []),
         ...(process.env.MAIN_URL ? [process.env.MAIN_URL] : []),
       ],
     },
@@ -72,7 +72,7 @@ async function start() {
 
   try {
     await app.listen(port);
-    console.log('Backend started successfully on port ' + port);
+    Logger.log('Backend started successfully on port ' + port);
 
     checkConfiguration(); // Do this last, so that users will see obvious issues at the end of the startup log without having to scroll up.
 

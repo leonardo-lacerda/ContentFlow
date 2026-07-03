@@ -11,7 +11,12 @@ import { useT } from '@gitroom/react/translation/get.transation.service.client';
 const useApprovedApps = () => {
   const fetch = useFetch();
   const load = useCallback(async () => {
-    return (await fetch('/user/approved-apps')).json();
+    try {
+      return await (await fetch('/user/approved-apps')).json();
+    } catch (err) {
+      console.error('Failed to load approved apps:', err);
+      return [];
+    }
   }, []);
   return useSWR('approved-apps', load, {
     revalidateOnFocus: false,

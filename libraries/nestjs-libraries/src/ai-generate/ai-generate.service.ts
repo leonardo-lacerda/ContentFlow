@@ -11,6 +11,10 @@ import {
   validateAiResponse,
   buildAiMetadata,
 } from './ai-response-validator';
+import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.service';
+import { GenerationCostService } from '@gitroom/nestjs-libraries/database/prisma/generation-costs/generation-cost.service';
+import { CircuitBreakerService } from './circuit-breaker.service';
+import { PromptInjectionGuard } from './prompt-injection-guard';
 
 type AiGenerateImage = {
   url?: string;
@@ -27,30 +31,6 @@ type AiGenerateResponse = {
 };
 
 type ImageProvider = 'ia_generate' | 'openai_official';
-
-type CarouselImageJobStatus = 'queued' | 'running' | 'completed' | 'failed';
-
-type CarouselImageJobSlide = {
-  slideIndex: number;
-  status: CarouselImageJobStatus;
-  request: AiGenerateImageDto;
-  result?: unknown;
-  error?: string;
-  startedAt?: string;
-  completedAt?: string;
-};
-
-type CarouselImageJob = {
-  id: string;
-  orgId: string;
-  status: CarouselImageJobStatus;
-  total: number;
-  completed: number;
-  failed: number;
-  createdAt: string;
-  updatedAt: string;
-  slides: CarouselImageJobSlide[];
-};
 
 type AiGenerateCostLedgerEntry = {
   id: string;
@@ -80,18 +60,12 @@ type CarouselPlan = {
   slides: CarouselSlide[];
 };
 
-const carouselImageJobs = new Map<string, CarouselImageJob>();
-const costLedger = new Map<string, AiGenerateCostLedgerEntry[]>();
 // Cache do brief visual das inspirações: evita re-descrever as mesmas imagens
 // a cada slide do mesmo carrossel (economiza chamadas do modelo de visão).
 const referenceBriefCache = new Map<
   string,
   { promise: Promise<{ model: string; text: string }>; expires: number }
 >();
-
-function makeLedgerId() {
-  return `cost_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-}
 
 function estimateSyntheticCost(tokens: NormalizedUsage): CostEstimate {
   return estimateCostInUsdAndBrl({
@@ -407,12 +381,15 @@ export class AiGenerateService {
 
   constructor(
     private _mediaService: MediaService,
-    private _extractContentService: ExtractContentService
+    private _extractContentService: ExtractContentService,
+    private _generationJobService: GenerationJobService,
+    private _generationCostService: GenerationCostService,
+    private _circuitBreaker: CircuitBreakerService
   ) {}
 
   private recordCost(
     orgId: string,
-    type: AiGenerateCostLedgerEntry['type'],
+    type: 'text' | 'image' | 'estimate',
     label: string,
     cost: CostEstimate | null | undefined
   ) {
@@ -420,43 +397,24 @@ export class AiGenerateService {
       return;
     }
 
-    const current = costLedger.get(orgId) || [];
-    costLedger.set(
-      orgId,
-      [
-        {
-          id: makeLedgerId(),
-          orgId,
-          type,
-          label,
-          cost,
-          createdAt: new Date().toISOString(),
-        },
-        ...current,
-      ].slice(0, 200)
-    );
+    // Fire-and-forget: persist to DB without blocking the caller
+    void this._generationCostService.recordCost({
+      organizationId: orgId,
+      type,
+      label,
+      costUsd: cost.usd,
+      costBrl: cost.brl,
+      usdToBrl: cost.usdToBrl,
+      tokens: cost.tokens as unknown as Record<string, number>,
+    }).catch((err) => {
+      this.logger.warn(`Failed to persist cost record: ${err?.message || err}`);
+    });
   }
 
-  getCostHistory(orgId: string) {
-    const entries = (costLedger.get(orgId) || []).filter(
-      (entry) => entry.type !== 'estimate'
-    );
-    const totals = entries.reduce(
-      (acc, entry) => ({
-        usd: acc.usd + entry.cost.usd,
-        brl: acc.brl + entry.cost.brl,
-        tokens: acc.tokens + entry.cost.tokens.totalTokens,
-      }),
-      { usd: 0, brl: 0, tokens: 0 }
-    );
-
+  async getCostHistory(orgId: string) {
+    const result = await this._generationCostService.getCostHistory(orgId);
     return {
-      entries,
-      totals: {
-        usd: Number(totals.usd.toFixed(6)),
-        brl: Number(totals.brl.toFixed(6)),
-        tokens: totals.tokens,
-      },
+      ...result,
       softLimitBrl: readEnvNumber('AI_GENERATE_WORKSPACE_SOFT_LIMIT_BRL', 50),
       hardLimitBrl: readEnvNumber('AI_GENERATE_WORKSPACE_HARD_LIMIT_BRL', 100),
     };
@@ -893,6 +851,16 @@ export class AiGenerateService {
       }
     }
     sourceContent = sourceContent.slice(0, 12000);
+
+    // Prompt injection protection — sanitize external content
+    const { sanitized: safeContent, suspiciousPatterns } =
+      PromptInjectionGuard.sanitize(sourceContent);
+    if (suspiciousPatterns.length > 0) {
+      this.logger.warn(
+        `Prompt injection patterns detected in source content: ${suspiciousPatterns.join(', ')}`
+      );
+    }
+    sourceContent = safeContent;
 
     if (!topic && !sourceContent) {
       throw new HttpException(
@@ -1361,7 +1329,7 @@ Se estiver bom, issues pode ser vazio. Use pt-BR.`,
     return result;
   }
 
-  startCarouselImageJob(
+  async startCarouselImageJob(
     orgId: string,
     body: { slides?: Array<{ slideIndex?: number; request?: AiGenerateImageDto }> }
   ) {
@@ -1381,107 +1349,160 @@ Se estiver bom, issues pode ser vazio. Use pt-BR.`,
       );
     }
 
-    const now = new Date().toISOString();
-    const id = `carousel_job_${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2, 10)}`;
-    const job: CarouselImageJob = {
-      id,
-      orgId,
-      status: 'queued',
-      total: normalizedSlides.length,
-      completed: 0,
-      failed: 0,
-      createdAt: now,
-      updatedAt: now,
-      slides: normalizedSlides.map((slide) => ({
-        slideIndex: slide.slideIndex,
-        status: 'queued',
-        request: slide.request!,
-      })),
-    };
-
-    carouselImageJobs.set(id, job);
-    void this.runCarouselImageJob(job);
-
-    return this.publicCarouselImageJob(job);
-  }
-
-  getCarouselImageJob(orgId: string, id: string) {
-    const job = carouselImageJobs.get(id);
-    if (!job || job.orgId !== orgId) {
-      throw new HttpException('Carousel image job not found', HttpStatus.NOT_FOUND);
+    // Verificar concorrência por org (max 2 jobs simultâneos)
+    const activeCount = await this._generationJobService.countActiveJobs(orgId);
+    if (activeCount >= 2) {
+      throw new HttpException(
+        'Too many active jobs. Wait for existing jobs to complete.',
+        HttpStatus.TOO_MANY_REQUESTS
+      );
     }
 
-    return this.publicCarouselImageJob(job);
-  }
+    // Criar job no Prisma
+    const job = await this._generationJobService.createJob({
+      organizationId: orgId,
+      type: 'IMAGE_GENERATION',
+      progress: {
+        total: normalizedSlides.length,
+        completed: 0,
+        failed: 0,
+        slides: normalizedSlides.map(s => ({
+          slideIndex: s.slideIndex,
+          status: 'queued',
+        })),
+      },
+    });
 
-  private publicCarouselImageJob(job: CarouselImageJob) {
+    // Executar job em background
+    void this.runCarouselImageJobPersisted(job.id, orgId, normalizedSlides);
+
     return {
       id: job.id,
       status: job.status,
-      total: job.total,
-      completed: job.completed,
-      failed: job.failed,
+      total: normalizedSlides.length,
+      completed: 0,
+      failed: 0,
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
-      slides: job.slides.map((slide) => ({
-        slideIndex: slide.slideIndex,
-        status: slide.status,
-        result: slide.result,
-        error: slide.error,
-        startedAt: slide.startedAt,
-        completedAt: slide.completedAt,
+    };
+  }
+
+  async getCarouselImageJob(orgId: string, id: string) {
+    const job = await this._generationJobService.getJob(id, orgId);
+    if (!job) {
+      throw new HttpException('Carousel image job not found', HttpStatus.NOT_FOUND);
+    }
+
+    const progress = (job.progress as any) || {};
+    return {
+      id: job.id,
+      status: job.status.toLowerCase(),
+      total: progress.total || 0,
+      completed: progress.completed || 0,
+      failed: progress.failed || 0,
+      createdAt: job.createdAt,
+      updatedAt: job.updatedAt,
+      slides: (progress.slides || []).map((s: any) => ({
+        slideIndex: s.slideIndex,
+        status: s.status,
+        result: s.result,
+        error: s.error,
+        startedAt: s.startedAt,
+        completedAt: s.completedAt,
       })),
     };
   }
 
-  private async runCarouselImageJob(job: CarouselImageJob) {
-    job.status = 'running';
-    job.updatedAt = new Date().toISOString();
+  private async runCarouselImageJobPersisted(
+    jobId: string,
+    orgId: string,
+    slides: Array<{ slideIndex: number; request: AiGenerateImageDto }>
+  ) {
+    await this._generationJobService.startJob(jobId);
 
     const concurrency = Math.max(
       1,
-      Math.min(4, Number(process.env.AI_GENERATE_JOB_CONCURRENCY || 2))
+      Math.min(2, Number(process.env.AI_GENERATE_JOB_CONCURRENCY || 2))
     );
-    const queue = [...job.slides];
+
+    const maxRetries = 3;
+    const backoffMs = [1000, 4000, 16000];
+    const results: any[] = [];
+    const queue = [...slides];
+
     const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
       while (queue.length) {
         const slide = queue.shift();
-        if (!slide) {
-          return;
+        if (!slide) return;
+
+        let lastError: string | undefined;
+        let attempts = 0;
+
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          attempts = attempt + 1;
+
+          try {
+            const result = await this.generateImage(orgId, slide.request);
+            results.push({
+              slideIndex: slide.slideIndex,
+              status: 'completed',
+              result,
+              attempts,
+            });
+            lastError = undefined;
+            break;
+          } catch (error: unknown) {
+            lastError =
+              error instanceof HttpException
+                ? String(error.getResponse())
+                : error instanceof Error
+                ? error.message
+                : 'Image generation failed';
+
+            if (attempt < maxRetries - 1) {
+              const delay = backoffMs[attempt] || 16000;
+              await new Promise((resolve) => setTimeout(resolve, delay));
+            }
+          }
         }
 
-        slide.status = 'running';
-        slide.startedAt = new Date().toISOString();
-        job.updatedAt = slide.startedAt;
-
-        try {
-          slide.result = await this.generateImage(job.orgId, slide.request);
-          slide.status = 'completed';
-          job.completed += 1;
-        } catch (error: unknown) {
-          slide.status = 'failed';
-          slide.error =
-            error instanceof HttpException
-              ? String(error.getResponse())
-              : error instanceof Error
-              ? error.message
-              : 'Image generation failed';
-          job.failed += 1;
-        } finally {
-          slide.completedAt = new Date().toISOString();
-          job.updatedAt = slide.completedAt;
+        if (lastError) {
+          results.push({
+            slideIndex: slide.slideIndex,
+            status: 'failed',
+            error: lastError,
+            attempts,
+          });
         }
+
+        // Atualizar progresso parcial
+        const completedCount = results.filter(r => r.status === 'completed').length;
+        const failedCount = results.filter(r => r.status === 'failed').length;
+        
+        await this._generationJobService.updateProgress(jobId, {
+          total: slides.length,
+          completed: completedCount,
+          failed: failedCount,
+          currentSlide: slide.slideIndex,
+          slides: results,
+        });
       }
     });
 
     await Promise.all(workers);
-    job.status = job.failed === job.total ? 'failed' : 'completed';
-    job.updatedAt = new Date().toISOString();
 
-    const ttlMs = Number(process.env.AI_GENERATE_JOB_TTL_MS || 1000 * 60 * 60 * 6);
-    setTimeout(() => carouselImageJobs.delete(job.id), ttlMs).unref?.();
+    // Determinar status final
+    const allFailed = results.every(r => r.status === 'failed');
+    const someFailed = results.some(r => r.status === 'failed');
+    const finalStatus = allFailed ? 'FAILED' : someFailed ? 'PARTIAL' : 'COMPLETED';
+
+    if (finalStatus === 'COMPLETED') {
+      await this._generationJobService.completeJob(jobId, { results });
+    } else if (finalStatus === 'PARTIAL') {
+      await this._generationJobService.completeJob(jobId, { results });
+    } else {
+      await this._generationJobService.failJob(jobId, 'All slides failed');
+    }
   }
 
   async generateImage(orgId: string, body: AiGenerateImageDto) {

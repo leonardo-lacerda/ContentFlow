@@ -339,6 +339,22 @@ export function getEditorialIssues(
             });
           }
         }
+
+        // Generic regex pattern check from editorialChecks[].pattern
+        if (check.pattern) {
+          try {
+            const regex = new RegExp(check.pattern, 'i');
+            if (regex.test(combinedText)) {
+              issues.push({
+                slide: slide.index,
+                label: msg,
+                tone: check.severity === 'error' ? 'danger' : 'warning',
+              });
+            }
+          } catch {
+            // Invalid regex pattern — skip silently
+          }
+        }
       }
     }
 

@@ -145,6 +145,7 @@ export const aiGenerateImagesApi = {
       language: string;
       textModel: string;
       existingTitles?: string[];
+      brandProfileId?: string;
     }
   ) =>
     postJson<{ ideas?: CarouselIdea[] }>(
@@ -170,6 +171,7 @@ export const aiGenerateImagesApi = {
       forbiddenTerms?: string;
       defaultCta?: string;
       textModel?: string;
+      brandProfileId?: string;
     }
   ) =>
     postJson<{ caption?: string; hashtags?: string[]; platform?: string }>(
@@ -229,7 +231,7 @@ export const aiGenerateImagesApi = {
         alt: string;
       }>;
     }
-  ) => postJson<unknown[]>(fetcher, '/media/carousel', payload),
+  ) => postJson<Array<{ id: string; path: string }>>(fetcher, '/media/carousel', payload),
 
   /** Fetch all active carousel templates from the backend. */
   listTemplates: async (fetcher: AiGenerateFetcher) =>

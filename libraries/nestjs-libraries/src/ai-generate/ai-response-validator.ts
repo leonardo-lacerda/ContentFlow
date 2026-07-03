@@ -5,11 +5,19 @@ import {
   validateCarouselPlan,
   validateEditorialReview,
   validateCaptionPackage,
+  validateSocialPost,
+  validateAdCreative,
+  validateEmailCampaign,
+  validateVideoScript,
   BRAND_DNA_EXTRACTION_VERSION,
   CAROUSEL_IDEA_VERSION,
   CAROUSEL_PLAN_VERSION,
   EDITORIAL_REVIEW_VERSION,
   CAPTION_PACKAGE_VERSION,
+  SOCIAL_POST_VERSION,
+  AD_CREATIVE_VERSION,
+  EMAIL_CAMPAIGN_VERSION,
+  VIDEO_SCRIPT_VERSION,
 } from './schemas';
 
 export type ValidationResult<T> = {
@@ -26,7 +34,11 @@ export type SchemaType =
   | 'carousel-idea'
   | 'carousel-plan'
   | 'editorial-review'
-  | 'caption-package';
+  | 'caption-package'
+  | 'social-post'
+  | 'ad-creative'
+  | 'email-campaign'
+  | 'video-script';
 
 const SCHEMA_VERSIONS: Record<SchemaType, string> = {
   'brand-dna-extraction': BRAND_DNA_EXTRACTION_VERSION,
@@ -34,6 +46,10 @@ const SCHEMA_VERSIONS: Record<SchemaType, string> = {
   'carousel-plan': CAROUSEL_PLAN_VERSION,
   'editorial-review': EDITORIAL_REVIEW_VERSION,
   'caption-package': CAPTION_PACKAGE_VERSION,
+  'social-post': SOCIAL_POST_VERSION,
+  'ad-creative': AD_CREATIVE_VERSION,
+  'email-campaign': EMAIL_CAMPAIGN_VERSION,
+  'video-script': VIDEO_SCRIPT_VERSION,
 };
 
 const SCHEMA_VALIDATORS: Record<
@@ -45,6 +61,10 @@ const SCHEMA_VALIDATORS: Record<
   'carousel-plan': validateCarouselPlan,
   'editorial-review': validateEditorialReview,
   'caption-package': validateCaptionPackage,
+  'social-post': validateSocialPost,
+  'ad-creative': validateAdCreative,
+  'email-campaign': validateEmailCampaign,
+  'video-script': validateVideoScript,
 };
 
 /**
@@ -246,6 +266,10 @@ export function getPromptVersion(schemaType: SchemaType): string {
     'carousel-plan': '1.0.0',
     'editorial-review': '1.0.0',
     'caption-package': '1.0.0',
+    'social-post': '1.0.0',
+    'ad-creative': '1.0.0',
+    'email-campaign': '1.0.0',
+    'video-script': '1.0.0',
   };
   return promptVersions[schemaType] || '0.0.0';
 }

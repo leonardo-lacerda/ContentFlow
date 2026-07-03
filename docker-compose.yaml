@@ -3,6 +3,12 @@ services:
     image: contentflow-contentflow-local:ai-generate
     container_name: contentflow
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     environment:
       # === Required Settings
       MAIN_URL: '${MAIN_URL:-http://localhost:4007}'
@@ -140,7 +146,7 @@ services:
     container_name: contentflow-postgres
     restart: always
     environment:
-      POSTGRES_PASSWORD: contentflow-password
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:-contentflow-password}'
       POSTGRES_USER: contentflow-user
       POSTGRES_DB: contentflow-db-local
     volumes:

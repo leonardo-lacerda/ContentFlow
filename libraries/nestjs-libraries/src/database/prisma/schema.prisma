@@ -47,6 +47,11 @@ model Organization {
   contentIdeas        ContentIdea[]
   carouselProjects    CarouselProject[]
   generationJobs      GenerationJob[]
+  generationCosts     GenerationCost[]
+  adCreatives         AdCreative[]
+  emailCampaigns      EmailCampaign[]
+  shortVideoProjects  ShortVideoProject[]
+  affiliates          Affiliate[]
 
   @@index([apiKey])
   @@index([streakSince])
@@ -430,6 +435,11 @@ model Post {
   submittedForOrder          Orders?                   @relation(fields: [submittedForOrderId], references: [id])
   submittedForOrganization   Organization?             @relation("submittedForOrg", fields: [submittedForOrganizationId], references: [id])
   tags                       TagsPosts[]
+  carouselProjectId          String?
+  carouselProject            CarouselProject?  @relation(fields: [carouselProjectId], references: [id])
+  contentIdeaId              String?
+  socialPostMetadata         Json?
+  contentIdea                ContentIdea?      @relation(fields: [contentIdeaId], references: [id])
 
   @@index([group])
   @@index([deletedAt])
@@ -445,6 +455,8 @@ model Post {
   @@index([updatedAt])
   @@index([releaseURL])
   @@index([integrationId])
+  @@index([carouselProjectId])
+  @@index([contentIdeaId])
 }
 
 model Notifications {
@@ -987,6 +999,10 @@ model BrandProfile {
   contentIdeas   ContentIdea[]
   carouselProjects CarouselProject[]
   editorialPlans EditorialPlan[]
+  learning       BrandLearning[]
+  adCreatives    AdCreative[]
+  emailCampaigns EmailCampaign[]
+  shortVideoProjects ShortVideoProject[]
 
   @@index([organizationId])
   @@index([status])
@@ -1061,6 +1077,9 @@ model ContentIdea {
   brandProfile   BrandProfile      @relation(fields: [brandProfileId], references: [id])
   carouselProject CarouselProject?
   editorialSlots EditorialSlot[]
+  socialPosts     Post[]
+  emailCampaigns EmailCampaign[]
+  shortVideoProjects ShortVideoProject[]
 
   @@index([organizationId])
   @@index([brandProfileId])
@@ -1105,6 +1124,10 @@ model CarouselProject {
   brandProfile   BrandProfile          @relation(fields: [brandProfileId], references: [id])
   contentIdea    ContentIdea?          @relation(fields: [contentIdeaId], references: [id])
   editorialSlots EditorialSlot[]
+  performances    CarouselPerformance[]
+  posts            Post[]
+  emailCampaigns EmailCampaign[]
+  shortVideoProjects ShortVideoProject[]
 
   @@index([organizationId])
   @@index([brandProfileId])
@@ -1129,6 +1152,11 @@ enum GenerationJobType {
   IMAGE_GENERATION
   CAPTION_GENERATION
   BULK_GENERATION
+  SOCIAL_POST_GENERATION
+  AD_CREATIVE_GENERATION
+  EMAIL_GENERATION
+  VIDEO_GENERATION
+  VIDEO_SCRIPT
 }
 
 model GenerationJob {
@@ -1153,6 +1181,7 @@ model GenerationJob {
   startedAt      DateTime?
   completedAt    DateTime?
   organization   Organization         @relation(fields: [organizationId], references: [id])
+  generationCosts GenerationCost[]
 
   @@index([organizationId])
   @@index([status])
@@ -1223,4 +1252,501 @@ enum EditorialSlotStatus {
   CAROUSEL_CREATED
   SCHEDULED
   PUBLISHED
+}
+
+model CarouselPerformance {
+  id                String   @id @default(uuid())
+  carouselProjectId String
+  postId            String?
+  organizationId    String
+  brandProfileId    String
+  platform          String
+  impressions       Int      @default(0)
+  reach             Int      @default(0)
+  saves             Int      @default(0)
+  shares            Int      @default(0)
+  comments          Int      @default(0)
+  clicks            Int      @default(0)
+  likes             Int      @default(0)
+  engagementRate    Float    @default(0)
+  reachRate         Float    @default(0)
+  normalizedScore   Float    @default(0)
+  rawMetrics        Json?
+  collectedAt       DateTime @default(now())
+  periodStart       DateTime?
+  periodEnd         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  carouselProject   CarouselProject @relation(fields: [carouselProjectId], references: [id])
+
+  @@index([carouselProjectId])
+  @@index([organizationId])
+  @@index([brandProfileId])
+  @@index([platform])
+  @@index([collectedAt])
+}
+
+enum BrandLearningStatus {
+  SUGGESTED
+  APPROVED
+  REJECTED
+  APPLIED
+}
+
+enum BrandLearningType {
+  HOOK
+  CTA
+  THEME
+  STYLE_RULE
+  TEMPLATE_PERFORMANCE
+  BEST_TIME
+  BEST_CHANNEL
+}
+
+model BrandLearning {
+  id             String               @id @default(uuid())
+  brandProfileId String
+  organizationId String
+  type           BrandLearningType
+  title          String
+  description    String
+  evidence       Json?
+  confidence     Float                @default(0)
+  status         BrandLearningStatus  @default(SUGGESTED)
+  appliedAt      DateTime?
+  appliedVersion Int?
+  metadata       Json?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  brandProfile   BrandProfile         @relation(fields: [brandProfileId], references: [id])
+
+  @@index([brandProfileId])
+  @@index([organizationId])
+  @@index([type])
+  @@index([status])
+  @@index([brandProfileId, status])
+}
+
+// ===== Fase 6.7.2: Ad Creative =====
+
+enum AdCreativeType {
+  STATIC
+  CAROUSEL
+}
+
+enum AdObjective {
+  AWARENESS
+  CONSIDERATION
+  CONVERSION
+  LEAD_GENERATION
+  TRAFFIC
+  ENGAGEMENT
+}
+
+enum AdPlatform {
+  META_FACEBOOK
+  META_INSTAGRAM
+  LINKEDIN
+}
+
+model AdCreative {
+  id                String            @id @default(uuid())
+  organizationId    String
+  brandProfileId    String
+  contentIdeaId     String?
+  carouselProjectId String?
+  type              AdCreativeType
+  platform          AdPlatform
+  objective         AdObjective
+  adTemplateId      String?
+  headline          String
+  primaryText       String
+  description       String?
+  ctaButton         String
+  destinationUrl    String?
+  imageUrl          String?
+  metadata          Json?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deletedAt         DateTime?
+
+  // Carousel-specific fields
+  slides            Json?
+  slideCount        Int?
+
+  // Ad policy / compliance
+  policyWarnings    Json?
+  claimsFlags       Json?
+
+  // Image references
+  mediaAssets       Json?
+
+  // Generation tracking
+  generationJobId   String?
+  schemaVersion     String?
+  promptVersion     String?
+
+  // Status tracking
+  status            String            @default("DRAFT")
+
+  // Relations
+  generationJob     GenerationJob?    @relation(fields: [generationJobId], references: [id])
+  contentIdea       ContentIdea?      @relation(fields: [contentIdeaId], references: [id])
+  carouselProject   CarouselProject?  @relation(fields: [carouselProjectId], references: [id])
+
+  organization      Organization      @relation(fields: [organizationId], references: [id])
+  brandProfile      BrandProfile      @relation(fields: [brandProfileId], references: [id])
+
+  @@index([organizationId])
+  @@index([brandProfileId])
+  @@index([contentIdeaId])
+  @@index([carouselProjectId])
+  @@index([platform])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ===== Fase 6.7.3: Email Campaign =====
+
+enum EmailCampaignType {
+  NEWSLETTER
+  WELCOME_SEQUENCE
+  PROMOTIONAL
+}
+
+enum EmailCampaignStatus {
+  DRAFT
+  GENERATING
+  READY
+  EXPORTED
+  FAILED
+}
+
+model EmailCampaign {
+  id                String             @id @default(uuid())
+  organizationId    String
+  brandProfileId    String
+  contentIdeaId     String?
+  carouselProjectId String?
+  type              EmailCampaignType
+  name              String
+  status            EmailCampaignStatus @default(DRAFT)
+  subject           String
+  preheader         String?
+  bodyHtml          String
+  bodyJson          Json?
+  ctaText           String?
+  ctaUrl            String?
+  ctaColor          String?
+  headerImageUrl    String?
+  logoUrl           String?
+  primaryColor      String?
+  secondaryColor    String?
+  sequenceIndex     Int?
+  sequenceTotal     Int?
+  sequenceDelayDays Int?
+  generationJobId   String?
+  promptVersion     String?
+  schemaVersion     String?
+  generationMeta    Json?
+  model             String?
+  provider          String?
+  exportCount       Int                @default(0)
+  lastExportedAt    DateTime?
+  deletedAt         DateTime?
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  organization      Organization       @relation(fields: [organizationId], references: [id])
+  brandProfile      BrandProfile       @relation(fields: [brandProfileId], references: [id])
+  contentIdea       ContentIdea?       @relation(fields: [contentIdeaId], references: [id])
+  carouselProject   CarouselProject?   @relation(fields: [carouselProjectId], references: [id])
+  @@index([organizationId])
+  @@index([brandProfileId])
+  @@index([contentIdeaId])
+  @@index([carouselProjectId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([sequenceIndex, sequenceTotal])
+}
+
+// ===== Fase 6.7.4: Short Video =====
+
+enum ShortVideoFormat {
+  REELS
+  TIKTOK
+  SHORTS
+  STORIES
+  CUSTOM
+}
+
+enum ShortVideoStatus {
+  DRAFT
+  SCRIPT_GENERATED
+  RENDERING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model ShortVideoProject {
+  id                String            @id @default(uuid())
+  organizationId    String
+  brandProfileId    String
+  carouselProjectId String
+  contentIdeaId     String?
+  name              String
+  format            ShortVideoFormat  @default(REELS)
+  status            ShortVideoStatus  @default(DRAFT)
+  aspectRatio       String            @default("9:16")
+  maxDurationSec    Int               @default(60)
+
+  // Script/storyboard (JSON)
+  script            Json?
+  totalDurationSec  Float?
+
+  // Render results
+  videoUrl          String?
+  thumbnailUrl      String?
+  renderProvider    String?
+  renderJobId       String?
+  renderResult      Json?
+
+  // Cost tracking
+  scriptCostEstimate  Float?
+  renderCostEstimate  Float?
+  totalCostEstimate   Float?
+  renderCostActual    Float?
+
+  metadata          Json?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  organization      Organization      @relation(fields: [organizationId], references: [id])
+  brandProfile      BrandProfile      @relation(fields: [brandProfileId], references: [id])
+  carouselProject   CarouselProject   @relation(fields: [carouselProjectId], references: [id])
+  contentIdea       ContentIdea?      @relation(fields: [contentIdeaId], references: [id])
+
+  @@index([organizationId])
+  @@index([brandProfileId])
+  @@index([carouselProjectId])
+  @@index([status])
+}
+
+// ===== Fase 7.3: Affiliate Program =====
+
+enum AffiliateStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum ReferralStatus {
+  CLICKED
+  SIGNED_UP
+  CONVERTED
+  COMMISSION_PAID
+  CANCELLED
+}
+
+model Affiliate {
+  id                String           @id @default(uuid())
+  organizationId    String
+  code              String           @unique
+  name              String
+  email             String
+  status            AffiliateStatus  @default(PENDING)
+  commissionRate    Float            @default(0.20)
+  totalReferrals    Int              @default(0)
+  totalConversions  Int              @default(0)
+  totalEarnings     Float            @default(0)
+  paidEarnings      Float            @default(0)
+  metadata          Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  deletedAt         DateTime?
+
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  referrals         Referral[]
+
+  @@index([organizationId])
+  @@index([code])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model Referral {
+  id                String           @id @default(uuid())
+  affiliateId       String
+  referralCode      String
+  visitorIp         String?
+  userAgent         String?
+  referredOrgId     String?
+  status            ReferralStatus   @default(CLICKED)
+  commissionAmount  Float?
+  convertedAt       DateTime?
+  paidAt            DateTime?
+  metadata          Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  affiliate         Affiliate        @relation(fields: [affiliateId], references: [id])
+
+  @@index([affiliateId])
+  @@index([referralCode])
+  @@index([status])
+  @@index([referredOrgId])
+  @@index([createdAt])
+}
+
+// ===== Fase 8.2: Template Marketplace =====
+
+enum TemplateSource {
+  OFFICIAL
+  COMMUNITY
+  PRIVATE
+}
+
+enum TemplateStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+model MarketplaceTemplate {
+  id              String           @id @default(uuid())
+  creatorOrgId    String?
+  name            String
+  description     String
+  category        String
+  source          TemplateSource   @default(COMMUNITY)
+  status          TemplateStatus   @default(DRAFT)
+  version         Int              @default(1)
+  templateData    Json
+  previewImageUrl String?
+  tags            String[]
+  usageCount      Int              @default(0)
+  installCount    Int              @default(0)
+  rating          Float            @default(0)
+  metadata        Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+
+  installations   TemplateInstallation[]
+
+  @@index([source])
+  @@index([status])
+  @@index([category])
+  @@index([creatorOrgId])
+  @@index([deletedAt])
+}
+
+model TemplateInstallation {
+  id              String   @id @default(uuid())
+  organizationId  String
+  templateId      String
+  installedVersion Int
+  active          Boolean  @default(true)
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  template        MarketplaceTemplate @relation(fields: [templateId], references: [id])
+
+  @@unique([organizationId, templateId])
+  @@index([organizationId])
+  @@index([templateId])
+}
+
+// ===== Fase 8.3: Webhooks and Integrations =====
+
+enum WebhookStatus {
+  ACTIVE
+  PAUSED
+  FAILED
+  DELETED
+}
+
+model Webhook {
+  id              String        @id @default(uuid())
+  organizationId  String
+  url             String
+  events          String[]
+  secret          String
+  status          WebhookStatus @default(ACTIVE)
+  failureCount    Int           @default(0)
+  lastTriggeredAt DateTime?
+  lastResponseStatus Int?
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  deliveries      WebhookDelivery[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model WebhookDelivery {
+  id              String   @id @default(uuid())
+  webhookId       String
+  event           String
+  payload         Json
+  responseStatus  Int?
+  responseBody    String?
+  success         Boolean  @default(false)
+  attemptCount    Int      @default(1)
+  createdAt       DateTime @default(now())
+
+  webhook         Webhook  @relation(fields: [webhookId], references: [id])
+
+  @@index([webhookId])
+  @@index([createdAt])
+}
+
+model GenerationCost {
+  id              String        @id @default(uuid())
+  organizationId  String
+  generationJobId String?
+  type            String        // 'text' | 'image' | 'estimate'
+  label           String
+  costUsd         Float
+  costBrl         Float
+  usdToBrl        Float
+  tokens          Json          // NormalizedUsage
+  provider        String?
+  model           String?
+  createdAt       DateTime      @default(now())
+
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  generationJob   GenerationJob? @relation(fields: [generationJobId], references: [id])
+
+  @@index([organizationId])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model CarouselDraft {
+  id              String        @id @default(uuid())
+  organizationId  String
+  brandProfileId  String?
+  status          String        @default("draft") // draft | completed
+  data            Json          // Full state: plan, ideas, review, caption, slideImages refs
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([updatedAt])
 }

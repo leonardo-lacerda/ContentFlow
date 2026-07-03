@@ -23,8 +23,8 @@ export class BrandProfileService {
     return this.brandProfileRepository.findByOrganization(orgId);
   }
 
-  async getBrand(id: string) {
-    return this.brandProfileRepository.findById(id);
+  async getBrand(id: string, orgId: string) {
+    return this.brandProfileRepository.findById(id, orgId);
   }
 
   async getSelectedBrand(orgId: string) {
@@ -40,12 +40,12 @@ export class BrandProfileService {
     });
   }
 
-  async updateBrand(id: string, dto: UpdateBrandProfileDto) {
-    return this.brandProfileRepository.update(id, dto);
+  async updateBrand(id: string, orgId: string, dto: UpdateBrandProfileDto) {
+    return this.brandProfileRepository.update(id, orgId, dto);
   }
 
-  async deleteBrand(id: string) {
-    return this.brandProfileRepository.softDelete(id);
+  async deleteBrand(id: string, orgId: string) {
+    return this.brandProfileRepository.softDelete(id, orgId);
   }
 
   async selectBrand(orgId: string, brandId: string) {
@@ -69,8 +69,8 @@ export class BrandProfileService {
   }
 
   async analyzeBrand(orgId: string, brandId: string, dto: AnalyzeBrandDto) {
-    const brand = await this.brandProfileRepository.findById(brandId);
-    if (!brand || brand.organizationId !== orgId) {
+    const brand = await this.brandProfileRepository.findById(brandId, orgId);
+    if (!brand) {
       throw new Error('Brand not found');
     }
     return this.brandDnaExtractionService.analyze(brandId, dto.url);
@@ -124,8 +124,8 @@ export class BrandProfileService {
   }
 
   async createDnaSnapshot(orgId: string, brandId: string, dto: CreateBrandDnaSnapshotDto) {
-    const brand = await this.brandProfileRepository.findById(brandId);
-    if (!brand || brand.organizationId !== orgId) {
+    const brand = await this.brandProfileRepository.findById(brandId, orgId);
+    if (!brand) {
       throw new Error('Brand not found');
     }
 

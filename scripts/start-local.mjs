@@ -17,7 +17,7 @@ const PROD = process.argv.includes('--prod') || process.argv.includes('-p');
 const ENV_PATH = path.join(ROOT, '.env');
 
 // Credenciais reais do postgres local (docker-compose.dev.yaml + volume existente)
-const LOCAL_DB_URL  = 'postgresql://contentflow-user:contentflow-local-pwd@localhost:5432/contentflow-db-local';
+const LOCAL_DB_URL  = 'postgresql://contentflow-local:contentflow-local-pwd@localhost:5432/contentflow-db-local';
 const LOCAL_REDIS   = 'redis://localhost:6379';
 
 // Portas (o .env aponta tudo para 4007, que no Docker era o nginx)

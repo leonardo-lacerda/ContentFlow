@@ -1,4 +1,5 @@
-'use client';
+import { sanitizeHtml } from '@gitroom/frontend/components/layout/sanitize-html';
+1|'use client';
 
 import { FC, useCallback } from 'react';
 import {
@@ -37,7 +38,7 @@ const RenderRedditComponent: FC<{
     case 'self':
       return (
         <div
-          dangerouslySetInnerHTML={{ __html: firstPost?.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(firstPost?.content || '') }}
           style={{
             whiteSpace: 'pre-wrap',
             fontSize: '14px',
@@ -139,7 +140,7 @@ const RedditPreview: FC = (props) => {
                         {integration?.name}
                       </div>
                       <div
-                        dangerouslySetInnerHTML={{ __html: p.text }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.text) }}
                         style={{
                           whiteSpace: 'pre-wrap',
                         }}

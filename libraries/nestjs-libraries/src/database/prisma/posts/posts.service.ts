@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   ValidationPipe,
 } from '@nestjs/common';
 import { PostsRepository } from '@gitroom/nestjs-libraries/database/prisma/posts/posts.repository';
@@ -45,6 +46,7 @@ type PostWithConditionals = Post & {
 
 @Injectable()
 export class PostsService {
+  private readonly logger = new Logger(PostsService.name);
   private storage = UploadFactory.createStorage();
   constructor(
     private _postRepository: PostsRepository,
@@ -116,7 +118,7 @@ export class PostsService {
         getIntegration.token
       );
     } catch (e) {
-      console.log(e);
+      this.logger.error('Failed to get missing content', e);
       if (e instanceof RefreshToken) {
         return this.getMissingContent(orgId, postId, true);
       }
@@ -203,7 +205,7 @@ export class PostsService {
       );
       return loadAnalytics;
     } catch (e) {
-      console.log(e);
+      this.logger.error('Failed to check post analytics', e);
       if (e instanceof RefreshToken) {
         return this.checkPostAnalytics(orgId, postId, date, true);
       }
