@@ -17,7 +17,7 @@ services:
     volumes:
       - postgres-volume:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - 5433:5432
     networks:
       - contentflow-network
   contentflow-redis:
@@ -26,7 +26,7 @@ services:
     container_name: contentflow-redis
     restart: always
     ports:
-      - 6379:6379
+      - 6380:6379
     networks:
       - contentflow-network
   contentflow-pg-admin:
@@ -35,7 +35,7 @@ services:
     container_name: contentflow-pg-admin
     restart: always
     ports:
-      - 8081:80
+      - 8082:80
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin

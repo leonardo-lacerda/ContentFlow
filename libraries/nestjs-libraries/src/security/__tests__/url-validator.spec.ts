@@ -1,4 +1,4 @@
-import { UrlValidator } from '../security/url-validator';
+import { UrlValidator } from '../url-validator';
 
 describe('UrlValidator', () => {
   describe('validate', () => {

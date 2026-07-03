@@ -52,6 +52,7 @@ model Organization {
   emailCampaigns      EmailCampaign[]
   shortVideoProjects  ShortVideoProject[]
   affiliates          Affiliate[]
+  CarouselDraft       CarouselDraft[]
 
   @@index([apiKey])
   @@index([streakSince])
@@ -436,10 +437,10 @@ model Post {
   submittedForOrganization   Organization?             @relation("submittedForOrg", fields: [submittedForOrganizationId], references: [id])
   tags                       TagsPosts[]
   carouselProjectId          String?
-  carouselProject            CarouselProject?  @relation(fields: [carouselProjectId], references: [id])
+  carouselProject            CarouselProject?          @relation(fields: [carouselProjectId], references: [id])
   contentIdeaId              String?
   socialPostMetadata         Json?
-  contentIdea                ContentIdea?      @relation(fields: [contentIdeaId], references: [id])
+  contentIdea                ContentIdea?              @relation(fields: [contentIdeaId], references: [id])
 
   @@index([group])
   @@index([deletedAt])
@@ -983,25 +984,25 @@ enum BrandProfileStatus {
 }
 
 model BrandProfile {
-  id             String             @id @default(uuid())
-  organizationId String
-  name           String
-  website        String?
-  industry       String?
-  status         BrandProfileStatus @default(DRAFT)
-  selected       Boolean            @default(false)
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  deletedAt      DateTime?
-  organization   Organization       @relation(fields: [organizationId], references: [id])
-  dnaSnapshots   BrandDnaSnapshot[]
-  assets         BrandAsset[]
-  contentIdeas   ContentIdea[]
-  carouselProjects CarouselProject[]
-  editorialPlans EditorialPlan[]
-  learning       BrandLearning[]
-  adCreatives    AdCreative[]
-  emailCampaigns EmailCampaign[]
+  id                 String              @id @default(uuid())
+  organizationId     String
+  name               String
+  website            String?
+  industry           String?
+  status             BrandProfileStatus  @default(DRAFT)
+  selected           Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+  organization       Organization        @relation(fields: [organizationId], references: [id])
+  dnaSnapshots       BrandDnaSnapshot[]
+  assets             BrandAsset[]
+  contentIdeas       ContentIdea[]
+  carouselProjects   CarouselProject[]
+  editorialPlans     EditorialPlan[]
+  learning           BrandLearning[]
+  adCreatives        AdCreative[]
+  emailCampaigns     EmailCampaign[]
   shortVideoProjects ShortVideoProject[]
 
   @@index([organizationId])
@@ -1059,27 +1060,28 @@ enum ContentIdeaStatus {
 }
 
 model ContentIdea {
-  id             String            @id @default(uuid())
-  organizationId String
-  brandProfileId String
-  title          String
-  hook           String
-  goal           String
-  angle          String
+  id                 String              @id @default(uuid())
+  organizationId     String
+  brandProfileId     String
+  title              String
+  hook               String
+  goal               String
+  angle              String
   templateSuggestion String?
   platformSuggestion String?
-  score          Float?
-  status         ContentIdeaStatus @default(NEW)
-  rejectionReason String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  organization   Organization      @relation(fields: [organizationId], references: [id])
-  brandProfile   BrandProfile      @relation(fields: [brandProfileId], references: [id])
-  carouselProject CarouselProject?
-  editorialSlots EditorialSlot[]
-  socialPosts     Post[]
-  emailCampaigns EmailCampaign[]
+  score              Float?
+  status             ContentIdeaStatus   @default(NEW)
+  rejectionReason    String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  organization       Organization        @relation(fields: [organizationId], references: [id])
+  brandProfile       BrandProfile        @relation(fields: [brandProfileId], references: [id])
+  carouselProject    CarouselProject?
+  editorialSlots     EditorialSlot[]
+  socialPosts        Post[]
+  emailCampaigns     EmailCampaign[]
   shortVideoProjects ShortVideoProject[]
+  AdCreative         AdCreative[]
 
   @@index([organizationId])
   @@index([brandProfileId])
@@ -1104,30 +1106,31 @@ enum ApprovalStatus {
 }
 
 model CarouselProject {
-  id             String                @id @default(uuid())
-  organizationId String
-  brandProfileId String
-  contentIdeaId  String?           @unique
-  title          String
-  caption        String?
-  hashtags       String[]
-  status         CarouselProjectStatus @default(DRAFT)
-  slides         Json
-  metadata       Json?
-  approvalStatus ApprovalStatus @default(NONE)
-  approvedBy     String?
-  approvedAt     DateTime?
-  rejectionReason String?
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-  organization   Organization          @relation(fields: [organizationId], references: [id])
-  brandProfile   BrandProfile          @relation(fields: [brandProfileId], references: [id])
-  contentIdea    ContentIdea?          @relation(fields: [contentIdeaId], references: [id])
-  editorialSlots EditorialSlot[]
-  performances    CarouselPerformance[]
-  posts            Post[]
-  emailCampaigns EmailCampaign[]
+  id                 String                @id @default(uuid())
+  organizationId     String
+  brandProfileId     String
+  contentIdeaId      String?               @unique
+  title              String
+  caption            String?
+  hashtags           String[]
+  status             CarouselProjectStatus @default(DRAFT)
+  slides             Json
+  metadata           Json?
+  approvalStatus     ApprovalStatus        @default(NONE)
+  approvedBy         String?
+  approvedAt         DateTime?
+  rejectionReason    String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  organization       Organization          @relation(fields: [organizationId], references: [id])
+  brandProfile       BrandProfile          @relation(fields: [brandProfileId], references: [id])
+  contentIdea        ContentIdea?          @relation(fields: [contentIdeaId], references: [id])
+  editorialSlots     EditorialSlot[]
+  performances       CarouselPerformance[]
+  posts              Post[]
+  emailCampaigns     EmailCampaign[]
   shortVideoProjects ShortVideoProject[]
+  AdCreative         AdCreative[]
 
   @@index([organizationId])
   @@index([brandProfileId])
@@ -1160,28 +1163,29 @@ enum GenerationJobType {
 }
 
 model GenerationJob {
-  id             String               @id @default(uuid())
-  organizationId String
-  brandProfileId String?
+  id                String              @id @default(uuid())
+  organizationId    String
+  brandProfileId    String?
   carouselProjectId String?
-  type           GenerationJobType
-  status         GenerationJobStatus  @default(QUEUED)
-  progress       Json?
-  result         Json?
-  error          String?
-  model          String?
-  provider       String?
-  promptVersion  String?
-  schemaVersion  String?
-  usage          Json?
-  costEstimate   Float?
-  idempotencyKey String?              @unique
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  startedAt      DateTime?
-  completedAt    DateTime?
-  organization   Organization         @relation(fields: [organizationId], references: [id])
-  generationCosts GenerationCost[]
+  type              GenerationJobType
+  status            GenerationJobStatus @default(QUEUED)
+  progress          Json?
+  result            Json?
+  error             String?
+  model             String?
+  provider          String?
+  promptVersion     String?
+  schemaVersion     String?
+  usage             Json?
+  costEstimate      Float?
+  idempotencyKey    String?             @unique
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  startedAt         DateTime?
+  completedAt       DateTime?
+  organization      Organization        @relation(fields: [organizationId], references: [id])
+  generationCosts   GenerationCost[]
+  AdCreative        AdCreative[]
 
   @@index([organizationId])
   @@index([status])
@@ -1191,51 +1195,51 @@ model GenerationJob {
 }
 
 model EditorialPlan {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   brandProfileId   String
   organizationId   String
   name             String
-  frequencyPerWeek Int      @default(3)
-  platforms        String[] @default(["instagram"])
-  pillars          String[] @default([])
-  objectives       String[] @default([])
-  languages        String[] @default(["pt-BR"])
-  timezone         String   @default("America/Sao_Paulo")
-  blackoutDates    String[] @default([])
-  autoGenerate     Boolean  @default(false)
-  generationWindow String   @default("02:00-06:00")
-  maxCostPerMonth  Float    @default(50)
+  frequencyPerWeek Int       @default(3)
+  platforms        String[]  @default(["instagram"])
+  pillars          String[]  @default([])
+  objectives       String[]  @default([])
+  languages        String[]  @default(["pt-BR"])
+  timezone         String    @default("America/Sao_Paulo")
+  blackoutDates    String[]  @default([])
+  autoGenerate     Boolean   @default(false)
+  generationWindow String    @default("02:00-06:00")
+  maxCostPerMonth  Float     @default(50)
   lastRunAt        DateTime?
-  consecutiveFails Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  consecutiveFails Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  brandProfile     BrandProfile       @relation(fields: [brandProfileId], references: [id])
-  slots            EditorialSlot[]
+  brandProfile BrandProfile    @relation(fields: [brandProfileId], references: [id])
+  slots        EditorialSlot[]
 
   @@index([brandProfileId])
   @@index([organizationId])
 }
 
 model EditorialSlot {
-  id                String   @id @default(uuid())
+  id                String              @id @default(uuid())
   editorialPlanId   String
   brandProfileId    String
   organizationId    String
   scheduledDate     DateTime
   pillar            String?
   objective         String?
-  platform          String   @default("instagram")
+  platform          String              @default("instagram")
   status            EditorialSlotStatus @default(PLANNED)
   contentIdeaId     String?
   carouselProjectId String?
   notes             String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 
-  editorialPlan     EditorialPlan     @relation(fields: [editorialPlanId], references: [id])
-  contentIdea       ContentIdea?      @relation(fields: [contentIdeaId], references: [id])
-  carouselProject   CarouselProject?  @relation(fields: [carouselProjectId], references: [id])
+  editorialPlan   EditorialPlan    @relation(fields: [editorialPlanId], references: [id])
+  contentIdea     ContentIdea?     @relation(fields: [contentIdeaId], references: [id])
+  carouselProject CarouselProject? @relation(fields: [carouselProjectId], references: [id])
 
   @@index([editorialPlanId])
   @@index([brandProfileId])
@@ -1255,30 +1259,30 @@ enum EditorialSlotStatus {
 }
 
 model CarouselPerformance {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   carouselProjectId String
   postId            String?
   organizationId    String
   brandProfileId    String
   platform          String
-  impressions       Int      @default(0)
-  reach             Int      @default(0)
-  saves             Int      @default(0)
-  shares            Int      @default(0)
-  comments          Int      @default(0)
-  clicks            Int      @default(0)
-  likes             Int      @default(0)
-  engagementRate    Float    @default(0)
-  reachRate         Float    @default(0)
-  normalizedScore   Float    @default(0)
+  impressions       Int       @default(0)
+  reach             Int       @default(0)
+  saves             Int       @default(0)
+  shares            Int       @default(0)
+  comments          Int       @default(0)
+  clicks            Int       @default(0)
+  likes             Int       @default(0)
+  engagementRate    Float     @default(0)
+  reachRate         Float     @default(0)
+  normalizedScore   Float     @default(0)
   rawMetrics        Json?
-  collectedAt       DateTime @default(now())
+  collectedAt       DateTime  @default(now())
   periodStart       DateTime?
   periodEnd         DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  carouselProject   CarouselProject @relation(fields: [carouselProjectId], references: [id])
+  carouselProject CarouselProject @relation(fields: [carouselProjectId], references: [id])
 
   @@index([carouselProjectId])
   @@index([organizationId])
@@ -1305,22 +1309,22 @@ enum BrandLearningType {
 }
 
 model BrandLearning {
-  id             String               @id @default(uuid())
+  id             String              @id @default(uuid())
   brandProfileId String
   organizationId String
   type           BrandLearningType
   title          String
   description    String
   evidence       Json?
-  confidence     Float                @default(0)
-  status         BrandLearningStatus  @default(SUGGESTED)
+  confidence     Float               @default(0)
+  status         BrandLearningStatus @default(SUGGESTED)
   appliedAt      DateTime?
   appliedVersion Int?
   metadata       Json?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
-  brandProfile   BrandProfile         @relation(fields: [brandProfileId], references: [id])
+  brandProfile BrandProfile @relation(fields: [brandProfileId], references: [id])
 
   @@index([brandProfileId])
   @@index([organizationId])
@@ -1352,7 +1356,7 @@ enum AdPlatform {
 }
 
 model AdCreative {
-  id                String            @id @default(uuid())
+  id                String         @id @default(uuid())
   organizationId    String
   brandProfileId    String
   contentIdeaId     String?
@@ -1368,36 +1372,36 @@ model AdCreative {
   destinationUrl    String?
   imageUrl          String?
   metadata          Json?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   deletedAt         DateTime?
 
   // Carousel-specific fields
-  slides            Json?
-  slideCount        Int?
+  slides     Json?
+  slideCount Int?
 
   // Ad policy / compliance
-  policyWarnings    Json?
-  claimsFlags       Json?
+  policyWarnings Json?
+  claimsFlags    Json?
 
   // Image references
-  mediaAssets       Json?
+  mediaAssets Json?
 
   // Generation tracking
-  generationJobId   String?
-  schemaVersion     String?
-  promptVersion     String?
+  generationJobId String?
+  schemaVersion   String?
+  promptVersion   String?
 
   // Status tracking
-  status            String            @default("DRAFT")
+  status String @default("DRAFT")
 
   // Relations
-  generationJob     GenerationJob?    @relation(fields: [generationJobId], references: [id])
-  contentIdea       ContentIdea?      @relation(fields: [contentIdeaId], references: [id])
-  carouselProject   CarouselProject?  @relation(fields: [carouselProjectId], references: [id])
+  generationJob   GenerationJob?   @relation(fields: [generationJobId], references: [id])
+  contentIdea     ContentIdea?     @relation(fields: [contentIdeaId], references: [id])
+  carouselProject CarouselProject? @relation(fields: [carouselProjectId], references: [id])
 
-  organization      Organization      @relation(fields: [organizationId], references: [id])
-  brandProfile      BrandProfile      @relation(fields: [brandProfileId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  brandProfile BrandProfile @relation(fields: [brandProfileId], references: [id])
 
   @@index([organizationId])
   @@index([brandProfileId])
@@ -1426,7 +1430,7 @@ enum EmailCampaignStatus {
 }
 
 model EmailCampaign {
-  id                String             @id @default(uuid())
+  id                String              @id @default(uuid())
   organizationId    String
   brandProfileId    String
   contentIdeaId     String?
@@ -1454,16 +1458,17 @@ model EmailCampaign {
   generationMeta    Json?
   model             String?
   provider          String?
-  exportCount       Int                @default(0)
+  exportCount       Int                 @default(0)
   lastExportedAt    DateTime?
   deletedAt         DateTime?
   metadata          Json?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  organization      Organization       @relation(fields: [organizationId], references: [id])
-  brandProfile      BrandProfile       @relation(fields: [brandProfileId], references: [id])
-  contentIdea       ContentIdea?       @relation(fields: [contentIdeaId], references: [id])
-  carouselProject   CarouselProject?   @relation(fields: [carouselProjectId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  organization      Organization        @relation(fields: [organizationId], references: [id])
+  brandProfile      BrandProfile        @relation(fields: [brandProfileId], references: [id])
+  contentIdea       ContentIdea?        @relation(fields: [contentIdeaId], references: [id])
+  carouselProject   CarouselProject?    @relation(fields: [carouselProjectId], references: [id])
+
   @@index([organizationId])
   @@index([brandProfileId])
   @@index([contentIdeaId])
@@ -1494,42 +1499,42 @@ enum ShortVideoStatus {
 }
 
 model ShortVideoProject {
-  id                String            @id @default(uuid())
+  id                String           @id @default(uuid())
   organizationId    String
   brandProfileId    String
   carouselProjectId String
   contentIdeaId     String?
   name              String
-  format            ShortVideoFormat  @default(REELS)
-  status            ShortVideoStatus  @default(DRAFT)
-  aspectRatio       String            @default("9:16")
-  maxDurationSec    Int               @default(60)
+  format            ShortVideoFormat @default(REELS)
+  status            ShortVideoStatus @default(DRAFT)
+  aspectRatio       String           @default("9:16")
+  maxDurationSec    Int              @default(60)
 
   // Script/storyboard (JSON)
-  script            Json?
-  totalDurationSec  Float?
+  script           Json?
+  totalDurationSec Float?
 
   // Render results
-  videoUrl          String?
-  thumbnailUrl      String?
-  renderProvider    String?
-  renderJobId       String?
-  renderResult      Json?
+  videoUrl       String?
+  thumbnailUrl   String?
+  renderProvider String?
+  renderJobId    String?
+  renderResult   Json?
 
   // Cost tracking
-  scriptCostEstimate  Float?
-  renderCostEstimate  Float?
-  totalCostEstimate   Float?
-  renderCostActual    Float?
+  scriptCostEstimate Float?
+  renderCostEstimate Float?
+  totalCostEstimate  Float?
+  renderCostActual   Float?
 
-  metadata          Json?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  organization      Organization      @relation(fields: [organizationId], references: [id])
-  brandProfile      BrandProfile      @relation(fields: [brandProfileId], references: [id])
-  carouselProject   CarouselProject   @relation(fields: [carouselProjectId], references: [id])
-  contentIdea       ContentIdea?      @relation(fields: [contentIdeaId], references: [id])
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  brandProfile    BrandProfile    @relation(fields: [brandProfileId], references: [id])
+  carouselProject CarouselProject @relation(fields: [carouselProjectId], references: [id])
+  contentIdea     ContentIdea?    @relation(fields: [contentIdeaId], references: [id])
 
   @@index([organizationId])
   @@index([brandProfileId])
@@ -1555,24 +1560,24 @@ enum ReferralStatus {
 }
 
 model Affiliate {
-  id                String           @id @default(uuid())
-  organizationId    String
-  code              String           @unique
-  name              String
-  email             String
-  status            AffiliateStatus  @default(PENDING)
-  commissionRate    Float            @default(0.20)
-  totalReferrals    Int              @default(0)
-  totalConversions  Int              @default(0)
-  totalEarnings     Float            @default(0)
-  paidEarnings      Float            @default(0)
-  metadata          Json?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  deletedAt         DateTime?
+  id               String          @id @default(uuid())
+  organizationId   String
+  code             String          @unique
+  name             String
+  email            String
+  status           AffiliateStatus @default(PENDING)
+  commissionRate   Float           @default(0.20)
+  totalReferrals   Int             @default(0)
+  totalConversions Int             @default(0)
+  totalEarnings    Float           @default(0)
+  paidEarnings     Float           @default(0)
+  metadata         Json?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  deletedAt        DateTime?
 
-  organization      Organization     @relation(fields: [organizationId], references: [id])
-  referrals         Referral[]
+  organization Organization @relation(fields: [organizationId], references: [id])
+  referrals    Referral[]
 
   @@index([organizationId])
   @@index([code])
@@ -1581,21 +1586,21 @@ model Affiliate {
 }
 
 model Referral {
-  id                String           @id @default(uuid())
-  affiliateId       String
-  referralCode      String
-  visitorIp         String?
-  userAgent         String?
-  referredOrgId     String?
-  status            ReferralStatus   @default(CLICKED)
-  commissionAmount  Float?
-  convertedAt       DateTime?
-  paidAt            DateTime?
-  metadata          Json?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  id               String         @id @default(uuid())
+  affiliateId      String
+  referralCode     String
+  visitorIp        String?
+  userAgent        String?
+  referredOrgId    String?
+  status           ReferralStatus @default(CLICKED)
+  commissionAmount Float?
+  convertedAt      DateTime?
+  paidAt           DateTime?
+  metadata         Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
-  affiliate         Affiliate        @relation(fields: [affiliateId], references: [id])
+  affiliate Affiliate @relation(fields: [affiliateId], references: [id])
 
   @@index([affiliateId])
   @@index([referralCode])
@@ -1621,26 +1626,26 @@ enum TemplateStatus {
 }
 
 model MarketplaceTemplate {
-  id              String           @id @default(uuid())
+  id              String         @id @default(uuid())
   creatorOrgId    String?
   name            String
   description     String
   category        String
-  source          TemplateSource   @default(COMMUNITY)
-  status          TemplateStatus   @default(DRAFT)
-  version         Int              @default(1)
+  source          TemplateSource @default(COMMUNITY)
+  status          TemplateStatus @default(DRAFT)
+  version         Int            @default(1)
   templateData    Json
   previewImageUrl String?
   tags            String[]
-  usageCount      Int              @default(0)
-  installCount    Int              @default(0)
-  rating          Float            @default(0)
+  usageCount      Int            @default(0)
+  installCount    Int            @default(0)
+  rating          Float          @default(0)
   metadata        Json?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   deletedAt       DateTime?
 
-  installations   TemplateInstallation[]
+  installations TemplateInstallation[]
 
   @@index([source])
   @@index([status])
@@ -1650,16 +1655,16 @@ model MarketplaceTemplate {
 }
 
 model TemplateInstallation {
-  id              String   @id @default(uuid())
-  organizationId  String
-  templateId      String
+  id               String   @id @default(uuid())
+  organizationId   String
+  templateId       String
   installedVersion Int
-  active          Boolean  @default(true)
-  metadata        Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  active           Boolean  @default(true)
+  metadata         Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  template        MarketplaceTemplate @relation(fields: [templateId], references: [id])
+  template MarketplaceTemplate @relation(fields: [templateId], references: [id])
 
   @@unique([organizationId, templateId])
   @@index([organizationId])
@@ -1676,59 +1681,59 @@ enum WebhookStatus {
 }
 
 model Webhook {
-  id              String        @id @default(uuid())
-  organizationId  String
-  url             String
-  events          String[]
-  secret          String
-  status          WebhookStatus @default(ACTIVE)
-  failureCount    Int           @default(0)
-  lastTriggeredAt DateTime?
+  id                 String        @id @default(uuid())
+  organizationId     String
+  url                String
+  events             String[]
+  secret             String
+  status             WebhookStatus @default(ACTIVE)
+  failureCount       Int           @default(0)
+  lastTriggeredAt    DateTime?
   lastResponseStatus Int?
-  metadata        Json?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  deletedAt       DateTime?
+  metadata           Json?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  deletedAt          DateTime?
 
-  deliveries      WebhookDelivery[]
+  deliveries WebhookDelivery[]
 
   @@index([organizationId])
   @@index([status])
 }
 
 model WebhookDelivery {
-  id              String   @id @default(uuid())
-  webhookId       String
-  event           String
-  payload         Json
-  responseStatus  Int?
-  responseBody    String?
-  success         Boolean  @default(false)
-  attemptCount    Int      @default(1)
-  createdAt       DateTime @default(now())
+  id             String   @id @default(uuid())
+  webhookId      String
+  event          String
+  payload        Json
+  responseStatus Int?
+  responseBody   String?
+  success        Boolean  @default(false)
+  attemptCount   Int      @default(1)
+  createdAt      DateTime @default(now())
 
-  webhook         Webhook  @relation(fields: [webhookId], references: [id])
+  webhook Webhook @relation(fields: [webhookId], references: [id])
 
   @@index([webhookId])
   @@index([createdAt])
 }
 
 model GenerationCost {
-  id              String        @id @default(uuid())
+  id              String   @id @default(uuid())
   organizationId  String
   generationJobId String?
-  type            String        // 'text' | 'image' | 'estimate'
+  type            String // 'text' | 'image' | 'estimate'
   label           String
   costUsd         Float
   costBrl         Float
   usdToBrl        Float
-  tokens          Json          // NormalizedUsage
+  tokens          Json // NormalizedUsage
   provider        String?
   model           String?
-  createdAt       DateTime      @default(now())
+  createdAt       DateTime @default(now())
 
-  organization    Organization  @relation(fields: [organizationId], references: [id])
-  generationJob   GenerationJob? @relation(fields: [generationJobId], references: [id])
+  organization  Organization   @relation(fields: [organizationId], references: [id])
+  generationJob GenerationJob? @relation(fields: [generationJobId], references: [id])
 
   @@index([organizationId])
   @@index([createdAt])
@@ -1736,15 +1741,15 @@ model GenerationCost {
 }
 
 model CarouselDraft {
-  id              String        @id @default(uuid())
-  organizationId  String
-  brandProfileId  String?
-  status          String        @default("draft") // draft | completed
-  data            Json          // Full state: plan, ideas, review, caption, slideImages refs
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id             String   @id @default(uuid())
+  organizationId String
+  brandProfileId String?
+  status         String   @default("draft") // draft | completed
+  data           Json // Full state: plan, ideas, review, caption, slideImages refs
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  organization    Organization  @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
   @@index([status])
