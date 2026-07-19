@@ -68,7 +68,7 @@ export function ChannelsPage() {
                 return (
                   <div
                     key={n.id}
-                    className="rounded-[12px] border border-newTableBorder bg-newBgColorInner p-4 flex flex-col gap-2"
+                    className="rounded-[12px] border border-newTableBorder bg-newBgColorInner p-4 flex flex-col gap-2 hover:shadow-cfSm hover:border-[color:var(--cf-line-strong,#d6d3d1)] transition-all duration-200"
                   >
                     <div className="text-sm font-[700] text-newTextColor">
                       {n.label}

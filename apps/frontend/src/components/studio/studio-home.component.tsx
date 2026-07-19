@@ -217,7 +217,7 @@ export function StudioHome() {
                 key={card.href}
                 type="button"
                 onClick={() => router.push(card.href)}
-                className="text-left rounded-[12px] border border-newTableBorder bg-newSettings p-4 hover:bg-boxHover transition-colors"
+                className="text-left rounded-[12px] border border-newTableBorder bg-newSettings p-4 hover:bg-boxHover hover:shadow-cfSm hover:border-[color:var(--cf-line-strong,#d6d3d1)] transition-all duration-200"
               >
                 <card.icon className="w-5 h-5 text-textItemFocused mb-3" />
                 <div className="text-sm font-[700] text-newTextColor">
@@ -231,7 +231,7 @@ export function StudioHome() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <SectionCard title={t('studio_status_title', 'Status')}>
               <ul className="space-y-3 text-sm">
-                <li className="flex items-center justify-between gap-3">
+                <li className="flex items-center justify-between gap-3 py-1">
                   <span className="text-textItemBlur">Brand DNA</span>
                   <span className="font-[700] text-newTextColor">
                     {!brand
@@ -239,7 +239,7 @@ export function StudioHome() {
                       : (dna?.status || brand.status || '—')}
                   </span>
                 </li>
-                <li className="flex items-center justify-between gap-3">
+                <li className="flex items-center justify-between gap-3 py-1">
                   <span className="text-textItemBlur">
                     {t('studio_status_channels', 'Canais')}
                   </span>
@@ -248,7 +248,7 @@ export function StudioHome() {
                     {connectedCount}
                   </span>
                 </li>
-                <li className="flex items-center justify-between gap-3">
+                <li className="flex items-center justify-between gap-3 py-1">
                   <span className="text-textItemBlur">
                     {t('studio_status_jobs', 'Gerações ativas')}
                   </span>

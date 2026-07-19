@@ -477,7 +477,7 @@ body.dark {
   -webkit-text-fill-color: white !important;
 }
 div div .set-font-family {
-  font-family: 'Helvetica Neue', Helvetica !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
   font-stretch: 100% !important;
   font-style: normal !important;
   font-weight: 400 !important;
@@ -866,4 +866,121 @@ html[dir='rtl'] [dir='ltr'] {
 .text-shadow-tags {
   text-shadow: -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black,
     1px 1px 0 black;
+}
+
+/* ============================================================
+   Design Refinements — Smooth transitions & polish
+   ============================================================ */
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar — refined thin style */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--cf-stone-300, #d6d3d1);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cf-muted, #78716c);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cf-stone-300, #d6d3d1) transparent;
+}
+
+/* Global smooth transitions for interactive elements */
+a, button, [role="button"], input, select, textarea, label {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced focus ring — amber glow */
+:focus-visible {
+  box-shadow: 0 0 0 4px rgba(180, 83, 10, 0.08) !important;
+}
+
+/* Enhanced backdrop blur for modals */
+.mantine-Modal-inner {
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+
+
+.mantine-Overlay-root {
+  background: rgba(28, 25, 23, 0.25) !important;
+}
+
+/* Enhanced dropdown menu */
+
+/* Refined SweetAlert2 */
+.swal2-popup {
+  border-radius: 16px !important;
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.swal2-styled {
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  transition: all 150ms ease !important;
+}
+
+/* Refined table rows */
+.table1 tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.table1 tbody tr:hover {
+  background-color: var(--new-box-hover, #f7f2ea);
+}
+
+.table1 tbody td {
+  border-bottom: 1px solid var(--new-table-border);
+}
+
+/* Refined tags */
+.react-tags__tag {
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 120ms ease;
+}
+
+/* Smooth image loading */
+img {
+  transition: opacity 200ms ease;
+}
+
+/* Refined code blocks */
+.ProseMirror code, .wmde-markdown code {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  background: var(--cf-cream, #f7f2ea);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--cf-line-solid, #e7e5e4);
+}
+
+/* Refined pre blocks */
+.ProseMirror pre, .wmde-markdown pre {
+  background: var(--cf-ink, #1c1917);
+  color: var(--cf-offwhite, #fafafa);
+  padding: 16px 20px;
+  border-radius: 10px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  border: none;
 }

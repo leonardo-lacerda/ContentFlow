@@ -13,7 +13,8 @@ export const SectionCard: FC<{
   return (
     <div
       className={clsx(
-        'bg-newBgColorInner border border-newTableBorder rounded-[14px] p-[16px] shadow-cfSm',
+        'bg-newBgColorInner border border-newTableBorder rounded-[14px] p-[16px]',
+        'shadow-cfSm hover:shadow-cf transition-shadow duration-200',
         className
       )}
     >
@@ -21,7 +22,7 @@ export const SectionCard: FC<{
         <div className="flex items-start gap-[12px] mb-[12px]">
           <div className="flex-1 min-w-0">
             {title ? (
-              <h3 className="text-[14px] font-[600] text-newTextColor tracking-[-0.01em]">
+              <h3 className="text-[14px] font-[700] text-newTextColor tracking-[-0.01em]">
                 {title}
               </h3>
             ) : null}

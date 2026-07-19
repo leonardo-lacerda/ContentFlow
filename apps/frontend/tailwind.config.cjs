@@ -8,10 +8,9 @@ module.exports = {
         sans: [
           'var(--font-cf-sans)',
           'Inter',
+          'system-ui',
           '-apple-system',
           'BlinkMacSystemFont',
-          'Segoe UI',
-          'Roboto',
           'sans-serif',
         ],
         serif: [
@@ -152,9 +151,7 @@ module.exports = {
         loginBox: 'url(/auth/login-box.png)',
         loginBg: 'url(/auth/bg-login.png)',
       },
-      fontFamily: {
-        sans: ['Helvetica Neue'],
-      },
+
       animation: {
         fade: 'fadeOut 0.5s ease-in-out',
         normalFadeIn: 'normalFadeIn 0.5s ease-in-out',
@@ -178,6 +175,9 @@ module.exports = {
         cfSm: 'var(--cf-shadow-sm)',
         cfAccent: 'var(--cf-shadow-accent)',
         cfFocus: 'var(--cf-shadow-focus)',
+        cfLg: 'var(--cf-shadow-lg)',
+        cfXl: 'var(--cf-shadow-xl)',
+        cfGlow: 'var(--cf-shadow-glow)',
       },
       borderRadius: {
         cfSm: 'var(--cf-radius-sm)',

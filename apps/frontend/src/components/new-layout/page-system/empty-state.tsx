@@ -31,7 +31,7 @@ export const EmptyState: FC<{
       )}
     >
       {icon ? (
-        <div className="w-[52px] h-[52px] rounded-[14px] bg-cf-cream border border-newTableBorder flex items-center justify-center text-btnPrimary">
+        <div className="w-[56px] h-[56px] rounded-[16px] bg-cf-cream border border-newTableBorder flex items-center justify-center text-btnPrimary shadow-cfSm">
           {icon}
         </div>
       ) : null}

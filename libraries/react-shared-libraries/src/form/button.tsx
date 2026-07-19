@@ -57,12 +57,14 @@ export const Button: FC<
       type={props.type || 'button'}
       ref={ref}
       className={clsx(
-        (props.disabled || loading) && 'opacity-50 pointer-events-none',
+        (props.disabled || loading) && 'opacity-40 pointer-events-none',
         'px-[20px] h-[40px] cursor-pointer items-center justify-center flex relative',
-        'rounded-[10px] text-[14px] font-[600] transition-all duration-150',
+        'rounded-[10px] text-[14px] font-[600] tracking-[-0.01em]',
+        'transition-all duration-[180ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
+        'active:scale-[0.98]',
         secondary
-          ? 'bg-newBgColorInner text-newTextColor border border-newTableBorder hover:bg-newBoxHover'
-          : 'bg-btnPrimary text-white hover:brightness-[0.95] shadow-[0_1px_0_rgba(138,63,8,0.15)]',
+          ? 'bg-newBgColorInner text-newTextColor border border-newTableBorder hover:bg-boxHover hover:border-[color:var(--cf-line-strong,#d6d3d1)] hover:shadow-cfSm'
+          : 'bg-btnPrimary text-white hover:brightness-[0.92] hover:shadow-cfAccent active:brightness-[100]',
         props?.className
       )}
     >

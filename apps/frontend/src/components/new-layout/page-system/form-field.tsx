@@ -9,8 +9,13 @@ import {
 } from 'react';
 import clsx from 'clsx';
 
-const controlClass =
-  'w-full bg-newBgColorInner border border-newTableBorder rounded-[10px] px-[12px] py-[10px] text-[13px] text-newTextColor placeholder:text-textItemBlur outline-none focus:border-btnPrimary focus:shadow-cfFocus transition-[border-color,box-shadow] duration-150 disabled:opacity-50';
+const controlClass = [
+  'w-full bg-newBgColorInner border border-newTableBorder rounded-[10px] px-[12px] py-[10px]',
+  'text-[13px] text-newTextColor placeholder:text-textItemBlur',
+  'outline-none transition-all duration-[180ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
+  'focus:border-btnPrimary focus:shadow-cfGlow',
+  'disabled:opacity-40 disabled:cursor-not-allowed',
+].join(' ');
 
 export const FormField: FC<{
   label: string;
@@ -21,7 +26,7 @@ export const FormField: FC<{
 }> = ({ label, hint, required, children, className }) => {
   return (
     <label className={clsx('flex flex-col gap-[6px]', className)}>
-      <span className="text-[12px] font-[600] text-newTextColor">
+      <span className="text-[12px] font-[700] text-newTextColor tracking-[-0.005em]">
         {label}
         {required ? (
           <span className="text-textItemBlur font-normal"> *</span>

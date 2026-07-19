@@ -13,6 +13,7 @@ export const PageBody: FC<{
     <div
       className={clsx(
         'flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden',
+        'scrollbar-thin scrollbar-thumb-newBorder scrollbar-track-transparent',
         !flush && 'p-[20px] gap-[16px]',
         className
       )}

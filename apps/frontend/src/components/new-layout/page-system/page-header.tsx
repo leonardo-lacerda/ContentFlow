@@ -20,7 +20,7 @@ export const PageHeader: FC<{
       <div className="flex items-center gap-[12px] px-[20px] min-h-[56px] py-[10px]">
         <div className="flex-1 min-w-0">
           {description ? (
-            <p className="text-[13px] text-textItemBlur truncate leading-snug max-w-[720px]">
+            <p className="text-[13px] text-textItemBlur truncate leading-relaxed max-w-[720px] tracking-[-0.005em]">
               {description}
             </p>
           ) : null}

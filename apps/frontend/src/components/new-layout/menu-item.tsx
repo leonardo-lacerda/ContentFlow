@@ -24,10 +24,10 @@ export const MenuItem: FC<{
     'justify-center group-hover/sidebar:justify-start',
     'px-0 group-hover/sidebar:px-[10px]',
     'text-[12px] font-[600] whitespace-nowrap overflow-hidden',
-    'transition-[background-color,color,padding,justify-content] duration-150',
-    'hover:text-textItemFocused hover:bg-boxFocused',
+    'transition-all duration-[180ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
+    'hover:text-textItemFocused hover:bg-boxFocused active:scale-[0.97]',
     isActive
-      ? 'text-textItemFocused bg-boxFocused'
+      ? 'text-textItemFocused bg-boxFocused shadow-cfSm'
       : 'text-textItemBlur'
   );
 
