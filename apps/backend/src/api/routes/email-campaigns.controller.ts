@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { UseGuards, Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization, EmailCampaignType } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -8,6 +9,7 @@ import { EmailCampaignGenerateService } from '@gitroom/nestjs-libraries/ai-gener
 import { EmailCampaignService } from '@gitroom/nestjs-libraries/database/prisma/email-campaigns/email-campaign.service';
 
 @ApiTags('Email Campaigns')
+@UseGuards(V1SurfaceGuard)
 @Controller('/email-campaigns')
 export class EmailCampaignsController {
   constructor(

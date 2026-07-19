@@ -74,12 +74,30 @@ export const socialIntegrationList: Array<SocialAbstract & SocialProvider> = [
   // new MastodonCustomProvider(),
 ];
 
+/**
+ * ContentFlow v1 — redes expostas na UI de "adicionar canal".
+ * Providers legados permanecem em socialIntegrationList para publish de contas já conectadas.
+ */
+export const V1_SOCIAL_ALLOWLIST = new Set([
+  'instagram',
+  'instagram-standalone',
+  'facebook',
+  'linkedin',
+  'linkedin-page',
+  'x',
+  'twitter',
+  'tiktok',
+]);
+
 @Injectable()
 export class IntegrationManager {
   async getAllIntegrations() {
+    const v1Only = socialIntegrationList.filter((p) =>
+      V1_SOCIAL_ALLOWLIST.has(p.identifier)
+    );
     return {
       social: await Promise.all(
-        socialIntegrationList.map(async (p) => ({
+        v1Only.map(async (p) => ({
           name: p.name,
           identifier: p.identifier,
           toolTip: p.toolTip,

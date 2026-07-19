@@ -1,4 +1,4 @@
-import {
+import { UseGuards,
   Body,
   Controller,
   Delete,
@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   UsePipes,
 } from '@nestjs/common';
+import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
 import { CustomFileValidationPipe } from '@gitroom/nestjs-libraries/upload/custom.upload.validation';
 import { ApiTags } from '@nestjs/swagger';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -60,6 +61,7 @@ import { timer } from '@gitroom/helpers/utils/timer';
 import { ioRedis } from '@gitroom/nestjs-libraries/redis/redis.service';
 
 @ApiTags('Public API')
+@UseGuards(V1SurfaceGuard)
 @Controller('/public/v1')
 export class PublicIntegrationsController {
   private storage = UploadFactory.createStorage();

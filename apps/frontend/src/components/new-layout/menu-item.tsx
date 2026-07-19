@@ -4,25 +4,52 @@ import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 import Link from 'next/link';
 
-export const MenuItem: FC<{ label: string; icon: ReactNode; path: string; onClick?: () => void }> = memo(({
-  label,
-  icon,
-  path,
-  onClick,
-}) => {
-  const currentPath = usePathname();
-  const isActive = currentPath.indexOf(path) === 0;
+export const MenuItem: FC<{
+  label: string;
+  icon: ReactNode;
+  path: string;
+  onClick?: () => void;
+}> = memo(({ label, icon, path, onClick }) => {
+  const currentPath = usePathname() || '';
+  // Exact match for home `/`; prefix match for nested routes
+  const isActive =
+    path !== '#' && path.indexOf('http') !== 0
+      ? path === '/'
+        ? currentPath === '/'
+        : currentPath === path || currentPath.startsWith(path + '/')
+      : false;
 
   const className = clsx(
-    'w-full minCustom:h-[54px] custom:h-[30px] py-[8px] px-[6px] gap-[4px] flex flex-col custom:flex-row text-[10px] font-[600] items-center minCustom:justify-center rounded-[12px] hover:text-textItemFocused hover:bg-boxFocused',
+    'w-full h-[40px] gap-[10px] flex flex-row items-center rounded-[10px] shrink-0',
+    'justify-center group-hover/sidebar:justify-start',
+    'px-0 group-hover/sidebar:px-[10px]',
+    'text-[12px] font-[600] whitespace-nowrap overflow-hidden',
+    'transition-[background-color,color,padding,justify-content] duration-150',
+    'hover:text-textItemFocused hover:bg-boxFocused',
     isActive ? 'text-textItemFocused bg-boxFocused' : 'text-textItemBlur'
   );
 
+  const content = (
+    <>
+      <div className="w-[20px] h-[20px] flex items-center justify-center shrink-0 [&>svg]:max-w-[18px] [&>svg]:max-h-[18px]">
+        {icon}
+      </div>
+      <span className="hidden group-hover/sidebar:inline truncate leading-none min-w-0">
+        {label}
+      </span>
+    </>
+  );
+
+  const tooltipProps = {
+    'data-tooltip-id': 'tooltip',
+    'data-tooltip-content': label,
+    'data-tooltip-place': 'right' as const,
+  };
+
   if (onClick) {
     return (
-      <button onClick={onClick} className={className}>
-        <div className="custom:hidden">{icon}</div>
-        <div className="text-[10px]">{label}</div>
+      <button type="button" onClick={onClick} className={className} {...tooltipProps}>
+        {content}
       </button>
     );
   }
@@ -31,11 +58,11 @@ export const MenuItem: FC<{ label: string; icon: ReactNode; path: string; onClic
     <Link
       prefetch={true}
       href={path}
-      {...path.indexOf('http') === 0 && { target: '_blank' }}
+      {...(path.indexOf('http') === 0 ? { target: '_blank' } : {})}
       className={className}
+      {...tooltipProps}
     >
-      <div className="custom:hidden">{icon}</div>
-      <div className="text-[10px]">{label}</div>
+      {content}
     </Link>
   );
-}));
+});

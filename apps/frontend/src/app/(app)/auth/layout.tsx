@@ -29,7 +29,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <div className="relative flex min-h-screen w-screen overflow-x-hidden bg-[#080A12] text-white">
       <ReturnUrlComponent />
       <Link
-        href="/onboarding/company"
+        href="/onboarding"
         className="absolute right-[16px] top-[16px] z-30 rounded-[10px] border border-white/20 bg-white/10 px-[12px] py-[8px] text-[12px] font-[600] text-white transition hover:bg-white/18"
       >
         Onboarding

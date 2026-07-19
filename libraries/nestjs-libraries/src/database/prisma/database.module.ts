@@ -50,6 +50,7 @@ import { BrandProfileRepository } from '@gitroom/nestjs-libraries/database/prism
 import { BrandDnaSnapshotRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-dna-snapshot.repository';
 import { BrandAssetRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-asset.repository';
 import { BrandDnaExtractionService } from '@gitroom/nestjs-libraries/ai-generate/brand-dna-extraction.service';
+import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import { EditorialPlanService } from '@gitroom/nestjs-libraries/database/prisma/editorial-plans/editorial-plan.service';
 import { EditorialPlanRepository } from '@gitroom/nestjs-libraries/database/prisma/editorial-plans/editorial-plan.repository';
 import { CarouselPerformanceRepository } from '@gitroom/nestjs-libraries/database/prisma/carousel-performance/carousel-performance.repository';
@@ -138,6 +139,7 @@ const temporalStubProvider = temporalDisabled
     BrandProfileRepository,
     BrandDnaSnapshotRepository,
     BrandAssetRepository,
+    PlanLimitsService,
     UrlValidationService,
     WebsiteMetadataExtractor,
     BrandDnaExtractionService,

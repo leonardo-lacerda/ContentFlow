@@ -91,5 +91,20 @@ describe('GenerationCostService', () => {
       expect(result.totals.brl).toBe(0);
       expect(result.totals.tokens).toBe(0);
     });
+
+    it('should coerce BigInt token totals for JSON serialization', async () => {
+      repository.findByOrganization.mockResolvedValue([]);
+      repository.aggregateTotals.mockResolvedValue({
+        _sum: { costUsd: 1.5, costBrl: 8.25 },
+      });
+      repository.aggregateTokenTotals.mockResolvedValue({
+        totalTokens: 42n as unknown as number,
+      });
+
+      const result = await service.getCostHistory('org-1');
+
+      expect(result.totals.tokens).toBe(42);
+      expect(() => JSON.stringify(result)).not.toThrow();
+    });
   });
 });

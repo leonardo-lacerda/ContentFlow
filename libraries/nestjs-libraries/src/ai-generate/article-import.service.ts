@@ -25,8 +25,11 @@ export class ArticleImportService {
     },
   ) {
     // Validate brand ownership
-    const brand = await this._brandProfileService.getBrand(data.brandProfileId);
-    if (!brand || brand.organizationId !== orgId) {
+    const brand = await this._brandProfileService.getBrand(
+      data.brandProfileId,
+      orgId
+    );
+    if (!brand) {
       throw new HttpException(
         { msg: 'Brand not found or access denied' },
         HttpStatus.NOT_FOUND,

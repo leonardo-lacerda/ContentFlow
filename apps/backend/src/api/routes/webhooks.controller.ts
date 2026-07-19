@@ -1,4 +1,4 @@
-import {
+import { UseGuards,
   Body,
   Controller,
   Delete,
@@ -8,6 +8,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
+import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { Organization } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
@@ -19,6 +20,7 @@ import {
 import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
 
 @ApiTags('Webhooks')
+@UseGuards(V1SurfaceGuard)
 @Controller('/webhooks')
 export class WebhookController {
   constructor(private _webhooksService: WebhooksService) {}

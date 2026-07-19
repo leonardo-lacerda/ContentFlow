@@ -1,9 +1,22 @@
-import type { GenerateAdsParams, AdCreativeBatch, SavedAdCreative, AdTemplateSummary } from './ads.types';
+'use client';
+
+import { loadVars } from '@gitroom/react/helpers/variable.context';
+import type {
+  GenerateAdsParams,
+  AdCreativeBatch,
+  SavedAdCreative,
+  AdTemplateSummary,
+} from './ads.types';
 
 const BASE = '/ad-creatives';
 
 async function api<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
+  const vars = loadVars();
+  const backendUrl = vars?.backendUrl || '';
+  if (!backendUrl) {
+    throw new Error('Backend URL not configured');
+  }
+  const res = await fetch(backendUrl + path, {
     credentials: 'include',
     ...options,
     headers: {
@@ -16,11 +29,24 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(err.message || err.error || 'API error');
   }
-  return res.json();
+  const text = await res.text();
+  if (!text || !text.trim()) {
+    return null as T;
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null as T;
+  }
 }
 
-export async function generateAds(data: GenerateAdsParams): Promise<AdCreativeBatch> {
-  return api<AdCreativeBatch>(BASE + '/generate', { method: 'POST', body: JSON.stringify(data) });
+export async function generateAds(
+  data: GenerateAdsParams
+): Promise<AdCreativeBatch> {
+  return api<AdCreativeBatch>(BASE + '/generate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function saveAds(data: {
@@ -30,7 +56,10 @@ export async function saveAds(data: {
   carouselProjectId?: string;
   generationJobId?: string;
 }): Promise<SavedAdCreative[]> {
-  return api<SavedAdCreative[]>(BASE + '/save', { method: 'POST', body: JSON.stringify(data) });
+  return api<SavedAdCreative[]>(BASE + '/save', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function listAds(filters?: {
@@ -52,15 +81,24 @@ export async function getAd(id: string): Promise<SavedAdCreative> {
   return api<SavedAdCreative>(`${BASE}/${id}`);
 }
 
-export async function updateAd(id: string, data: Partial<SavedAdCreative>): Promise<SavedAdCreative> {
-  return api<SavedAdCreative>(`${BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export async function updateAd(
+  id: string,
+  data: Partial<SavedAdCreative>
+): Promise<SavedAdCreative> {
+  return api<SavedAdCreative>(`${BASE}/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function deleteAd(id: string): Promise<void> {
   await api<void>(`${BASE}/${id}`, { method: 'DELETE' });
 }
 
-export async function exportAd(adCreativeId: string, format: string): Promise<any> {
+export async function exportAd(
+  adCreativeId: string,
+  format: string
+): Promise<any> {
   return api<any>(BASE + '/export', {
     method: 'POST',
     body: JSON.stringify({ adCreativeId, format }),
@@ -77,7 +115,9 @@ export async function getAdTemplates(filters?: {
   if (filters?.objective) params.set('objective', filters.objective);
   if (filters?.platform) params.set('platform', filters.platform);
   const qs = params.toString();
-  return api<AdTemplateSummary[]>(BASE + '/templates' + (qs ? `?${qs}` : ''));
+  return api<AdTemplateSummary[]>(
+    BASE + '/templates' + (qs ? `?${qs}` : '')
+  );
 }
 
 export async function getAdTemplatesSummary(): Promise<AdTemplateSummary[]> {

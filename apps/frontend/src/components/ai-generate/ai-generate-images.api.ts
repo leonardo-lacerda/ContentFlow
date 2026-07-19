@@ -15,6 +15,10 @@ import type {
   TemplateRecommendResponse,
   TemplateTrackEvent,
 } from './template-registry.types';
+import {
+  brandDnaToCompanyProfile,
+  companyProfileToDnaPayload,
+} from './brand-company-bridge';
 
 export type AiGenerateFetcher = (
   input: string,
@@ -90,16 +94,159 @@ export const aiGenerateImagesApi = {
     };
   },
 
-  loadCompanyProfiles: async (fetcher: AiGenerateFetcher) =>
-    getJson<{ companies?: CompanyProfile[]; selectedCompanyId?: string }>(
-      fetcher,
-      '/settings/company-profiles'
-    ),
+  /**
+   * ContentFlow v1: Brand DNA é a fonte da verdade.
+   * Mapeia /brands + DNA latest → shape CompanyProfile do estúdio.
+   * Assets legados (inspiration library) vêm do company-profiles se existirem.
+   */
+  loadCompanyProfiles: async (fetcher: AiGenerateFetcher) => {
+    const brandsRes = await getJson<any>(fetcher, '/brands');
+    if (!brandsRes.ok) {
+      return getJson<{
+        companies?: CompanyProfile[];
+        selectedCompanyId?: string;
+      }>(fetcher, '/settings/company-profiles');
+    }
 
+    const brands: any[] = Array.isArray(brandsRes.data)
+      ? brandsRes.data
+      : brandsRes.data?.brands || brandsRes.data?.data || [];
+
+    const legacyById = new Map<string, CompanyProfile>();
+    const legacyByName = new Map<string, CompanyProfile>();
+    try {
+      const legacy = await getJson<{
+        companies?: CompanyProfile[];
+        selectedCompanyId?: string;
+      }>(fetcher, '/settings/company-profiles');
+      if (legacy.ok && Array.isArray(legacy.data?.companies)) {
+        for (const c of legacy.data!.companies!) {
+          if (c.id) legacyById.set(c.id, c);
+          if (c.companyName) {
+            legacyByName.set(c.companyName.toLowerCase(), c);
+          }
+        }
+      }
+    } catch {
+      /* optional */
+    }
+
+    if (!brands.length) {
+      if (legacyById.size > 0) {
+        const companies = Array.from(legacyById.values());
+        return {
+          ok: true,
+          data: {
+            companies,
+            selectedCompanyId: companies[0]?.id || '',
+          },
+        };
+      }
+      return { ok: true, data: { companies: [], selectedCompanyId: '' } };
+    }
+
+    const selected = brands.find((b) => b.selected) || brands[0];
+    const companies: CompanyProfile[] = [];
+
+    for (const brand of brands) {
+      let dna: any = null;
+      try {
+        const dnaRes = await getJson<any>(
+          fetcher,
+          `/brands/${brand.id}/dna/latest`
+        );
+        if (dnaRes.ok) {
+          dna = dnaRes.data?.data || dnaRes.data;
+        }
+      } catch {
+        /* optional */
+      }
+
+      const legacy =
+        legacyById.get(brand.id) ||
+        legacyByName.get(String(brand.name || '').toLowerCase()) ||
+        null;
+
+      companies.push(brandDnaToCompanyProfile(brand, dna, legacy));
+    }
+
+    return {
+      ok: true,
+      data: {
+        companies,
+        selectedCompanyId: selected?.id || companies[0]?.id || '',
+      },
+    };
+  },
+
+  /**
+   * Salva Brand Kit no Brand DNA (+ update brand name/website).
+   * Assets de inspiration library ainda podem ir para company-profiles legado.
+   */
   saveCompanyProfile: async (
     fetcher: AiGenerateFetcher,
     company: CompanyProfile
-  ) => postJson<CompanyProfile>(fetcher, '/settings/company-profiles', company),
+  ) => {
+    if (!company.id) {
+      return {
+        ok: false,
+        data: null as CompanyProfile | null,
+        message: 'Marca não selecionada',
+      };
+    }
+
+    try {
+      await fetcher(`/brands/${company.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: company.companyName,
+          website: company.website || undefined,
+          industry: company.industry || undefined,
+        }),
+      });
+    } catch {
+      /* continue */
+    }
+
+    const dnaPayload = companyProfileToDnaPayload(company);
+    const dnaRes = await postJson<any>(
+      fetcher,
+      `/brands/${company.id}/dna`,
+      dnaPayload
+    );
+
+    if (
+      (company.inspirationLibrary && company.inspirationLibrary.length > 0) ||
+      (company.brandLogos && company.brandLogos.length > 0) ||
+      (company.ideasLibrary && company.ideasLibrary.length > 0)
+    ) {
+      try {
+        await postJson(fetcher, '/settings/company-profiles', {
+          ...company,
+          id: company.id,
+          companyName: company.companyName,
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+
+    const brand = {
+      id: company.id,
+      name: company.companyName,
+      website: company.website,
+      industry: company.industry,
+    };
+    const dna = dnaRes.data?.data || dnaRes.data || null;
+    const mapped = brandDnaToCompanyProfile(brand, dna, company);
+
+    return {
+      ok: true,
+      data: mapped,
+      message: dnaRes.ok ? undefined : dnaRes.message,
+    };
+  },
 
   loadImageJob: async (fetcher: AiGenerateFetcher, id: string) =>
     getJson<CarouselImageJob>(

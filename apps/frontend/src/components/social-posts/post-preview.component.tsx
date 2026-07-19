@@ -6,34 +6,39 @@ import { PlatformBadge } from './platform-badge.component';
 
 export function PostPreview({ post }: { post: GeneratedSocialPost }) {
   return (
-    <div className="border rounded-lg p-4 space-y-3" style={{ background: 'var(--background, white)' }}>
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-[10px]">
+      <div className="flex items-center justify-between gap-[8px]">
         <PlatformBadge platform={post.platform} />
-        <span className="text-xs" style={{ color: 'var(--muted, #888)' }}>{post.charCount} chars</span>
+        <span className="text-[11px] text-textItemBlur">
+          {post.charCount} chars
+        </span>
       </div>
-      <div className="whitespace-pre-wrap text-sm">{post.content}</div>
-      {post.hashtags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
+      <div className="whitespace-pre-wrap text-[13px] text-newTextColor leading-relaxed">
+        {post.content}
+      </div>
+      {post.hashtags?.length > 0 ? (
+        <div className="flex flex-wrap gap-[6px]">
           {post.hashtags.map((tag, i) => (
-            <span key={i} className="text-xs" style={{ color: 'var(--primary, #3b82f6)' }}>
+            <span
+              key={i}
+              className="text-[11px] px-[8px] py-[3px] rounded-[6px] bg-newSettings border border-newTableBorder text-textItemBlur"
+            >
               #{tag}
             </span>
           ))}
         </div>
-      )}
-      {post.cta && (
-        <div className="text-xs font-medium" style={{ color: 'var(--success, #22c55e)' }}>
+      ) : null}
+      {post.cta ? (
+        <div className="text-[12px] font-[600] text-newTextColor">
           CTA: {post.cta}
         </div>
-      )}
-      <div className="text-xs italic" style={{ color: 'var(--muted, #888)' }}>
-        Tone: {post.tone}
-      </div>
-      {post.notes && (
-        <div className="text-xs" style={{ color: 'var(--warning, #eab308)' }}>
-          📝 {post.notes}
-        </div>
-      )}
+      ) : null}
+      {post.tone ? (
+        <div className="text-[11px] text-textItemBlur italic">Tom: {post.tone}</div>
+      ) : null}
+      {post.notes ? (
+        <div className="text-[12px] text-amber-400/90">{post.notes}</div>
+      ) : null}
     </div>
   );
 }

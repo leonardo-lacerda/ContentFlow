@@ -21,21 +21,29 @@ import {
   Save,
   Pencil,
   Building2,
+  Loader,
 } from 'lucide-react';
 import { useState } from 'react';
+import {
+  PageShell,
+  PageHeader,
+  PageBody,
+  EmptyState,
+  SectionCard,
+  formControlClass,
+} from '@gitroom/frontend/components/new-layout/page-system';
 
-const inputClass =
-  'h-[48px] w-full rounded-[10px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] px-[16px] text-[15px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-black dark:text-white transition duration-200 focus:border-black/40 dark:focus:border-white/40 focus:ring-4 focus:ring-black/5 dark:focus:ring-white/5 hover:border-black/20 dark:hover:border-white/20';
+const inputClass = formControlClass + ' h-[48px]';
 
-const textAreaClass =
-  'w-full rounded-[10px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] px-[16px] py-[12px] text-[14px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-black dark:text-white resize-none transition duration-200 focus:border-black/40 dark:focus:border-white/40';
+const textAreaClass = formControlClass + ' resize-none min-h-[88px]';
 
-export function BrandDetailPage() {
+export function BrandDetailPage(props: { brandId?: string } = {}) {
+  const brandIdProp = props.brandId;
   const params = useParams();
   const router = useRouter();
   const toaster = useToaster();
   const modals = useModals();
-  const brandId = params.id as string;
+  const brandId = brandIdProp || (params?.id as string);
 
   const { data: brand, isLoading, error, mutate } = useBrand(brandId);
   const { data: latestDna } = useLatestDna(brandId);
@@ -138,7 +146,7 @@ export function BrandDetailPage() {
             <Field label="Evitar (vírgula separada)" value={form.constraintsAvoid} onChange={(v) => { form.constraintsAvoid = v; }} />
             <Field label="Elementos obrigatórios (vírgula separada)" value={form.constraintsRequiredElements} onChange={(v) => { form.constraintsRequiredElements = v; }} />
           </Section>
-          <div className="flex justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10">
+          <div className="flex justify-end gap-3 pt-4 border-t border-newTableBorder">
             <Button onClick={close} secondary>Cancelar</Button>
             <Button onClick={async () => {
               try {
@@ -197,139 +205,161 @@ export function BrandDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[400px]">
-        <div className="w-8 h-8 border-4 border-gray-300 border-t-black dark:border-white/20 dark:border-t-white rounded-full animate-spin" />
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <div className="flex flex-1 items-center justify-center min-h-[320px]">
+            <Loader className="w-8 h-8 animate-spin text-textItemBlur" />
+          </div>
+        </PageBody>
+      </PageShell>
     );
   }
 
   if (error || !brand) {
     return (
-      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <p className="text-gray-500">Marca não encontrada</p>
-        <Button onClick={() => router.push('/brands')}>Voltar para Marcas</Button>
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <EmptyState
+            title="Marca não encontrada"
+            description="Esta marca não existe ou você não tem acesso."
+            actionLabel="Voltar para marcas"
+            onAction={() => router.push('/')}
+          />
+        </PageBody>
+      </PageShell>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-8">
-      {/* Header */}
-      <div>
-        <button
-          onClick={() => router.push('/brands')}
-          className="flex items-center gap-2 text-sm text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Marcas
-        </button>
-
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 flex-wrap">
-              {editingName ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    className={inputClass + ' !h-[40px] !text-[20px] font-bold w-[300px]'}
-                    defaultValue={brand.name}
-                    onChange={(e) => setNameValue(e.target.value)}
-                    autoFocus
-                    onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
-                  />
-                  <Button onClick={handleSaveName}>
-                    <Save className="w-4 h-4" />
-                  </Button>
-                  <Button onClick={() => setEditingName(false)} secondary>Cancelar</Button>
-                </div>
-              ) : (
-                <h1
-                  className="text-2xl font-bold text-black dark:text-white cursor-pointer hover:opacity-70 transition-opacity flex items-center gap-2"
-                  onClick={() => {
-                    setNameValue(brand.name);
-                    setEditingName(true);
-                  }}
-                >
-                  {brand.name}
-                  <Pencil className="w-4 h-4 text-black/30 dark:text-white/30" />
-                </h1>
-              )}
-              <BrandStatusBadge status={brand.status} />
-              {brand.selected && (
-                <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300 px-2 py-0.5 rounded-full">
-                  <CheckCircle className="w-3 h-3" />
-                  Selecionada
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4 mt-2">
-              {brand.website && (
-                <a
-                  href={brand.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  {brand.website}
-                </a>
-              )}
-              {brand.industry && (
-                <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                  {brand.industry}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {!brand.selected && (
-              <Button onClick={handleSelect}>
+    <PageShell>
+      <PageHeader
+        description={brand.industry || 'Detalhes, Brand DNA e assets da marca.'}
+        filters={
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 text-[13px] text-textItemBlur hover:text-newTextColor transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Marcas
+          </button>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            {brand.selected ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-[600] text-emerald-400 bg-emerald-500/15 px-[8px] py-[4px] rounded-full">
+                <CheckCircle className="w-3 h-3" />
+                Selecionada
+              </span>
+            ) : (
+              <Button onClick={handleSelect} className="!h-[36px] !text-[12px]">
                 <CheckCircle className="w-4 h-4" />
                 Selecionar
               </Button>
             )}
           </div>
+        }
+      />
+      <PageBody>
+        <div className="flex flex-col gap-[16px]">
+          <SectionCard>
+            <div className="flex items-start justify-between gap-[12px] flex-wrap">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  {editingName ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <input
+                        className={inputClass + ' !h-[40px] !text-[16px] font-bold w-[280px]'}
+                        defaultValue={brand.name}
+                        onChange={(e) => setNameValue(e.target.value)}
+                        autoFocus
+                        onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                      />
+                      <Button onClick={handleSaveName} className="!h-[36px]">
+                        <Save className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        onClick={() => setEditingName(false)}
+                        secondary
+                        className="!h-[36px]"
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-[18px] font-[700] text-newTextColor hover:opacity-80 transition-opacity flex items-center gap-2"
+                      onClick={() => {
+                        setNameValue(brand.name);
+                        setEditingName(true);
+                      }}
+                    >
+                      {brand.name}
+                      <Pencil className="w-4 h-4 text-textItemBlur" />
+                    </button>
+                  )}
+                  <BrandStatusBadge status={brand.status} />
+                </div>
+                <div className="flex items-center gap-4 mt-2 flex-wrap">
+                  {brand.website ? (
+                    <a
+                      href={brand.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] text-textItemBlur hover:text-newTextColor flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      {brand.website}
+                    </a>
+                  ) : null}
+                  {brand.industry ? (
+                    <span className="text-[11px] text-textItemBlur bg-newBgColorInner border border-newTableBorder px-[8px] py-[2px] rounded-[6px]">
+                      {brand.industry}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Análise de site"
+            description="Extraia Brand DNA a partir do website da marca."
+          >
+            <div className="flex items-center gap-2 mb-3 text-textItemBlur">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <AnalyzeSiteButton brandId={brand.id} website={brand.website} />
+          </SectionCard>
+
+          <SectionCard
+            title="Brand DNA"
+            actions={
+              <Button onClick={handleCreateDna} className="!h-[36px] !text-[12px]">
+                <Pencil className="w-4 h-4" />
+                Criar DNA manualmente
+              </Button>
+            }
+          >
+            {dna ? (
+              <DnaSnapshotList brandId={brand.id} />
+            ) : (
+              <div className="text-center py-8 text-textItemBlur">
+                <p className="text-[13px]">Nenhum Brand DNA encontrado.</p>
+                <p className="text-[12px] mt-1">
+                  Analise o site ou crie um DNA manualmente para começar.
+                </p>
+              </div>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Assets da marca">
+            <BrandAssetList brandId={brand.id} />
+          </SectionCard>
         </div>
-      </div>
-
-      {/* Analyze Site */}
-      <section className="rounded-[12px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] p-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Building2 className="w-5 h-5" />
-          Análise de Site
-        </h2>
-        <AnalyzeSiteButton brandId={brand.id} website={brand.website} />
-      </section>
-
-      {/* Brand DNA */}
-      <section className="rounded-[12px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Brand DNA</h2>
-          <Button onClick={handleCreateDna}>
-            <Pencil className="w-4 h-4" />
-            Criar DNA manualmente
-          </Button>
-        </div>
-
-        {dna ? (
-          <DnaSnapshotList brandId={brand.id} />
-        ) : (
-          <div className="text-center py-8 text-black/40 dark:text-white/40">
-            <p className="text-sm">Nenhum Brand DNA encontrado.</p>
-            <p className="text-xs mt-1">
-              Analise o site ou crie um DNA manualmente para começar.
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* Assets */}
-      <section className="rounded-[12px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] p-6">
-        <h2 className="text-lg font-semibold mb-4">Assets da Marca</h2>
-        <BrandAssetList brandId={brand.id} />
-      </section>
-    </div>
+      </PageBody>
+    </PageShell>
   );
 }
 
@@ -337,7 +367,7 @@ export function BrandDetailPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="text-[15px] font-semibold mb-3 text-black dark:text-white border-b border-black/10 dark:border-white/10 pb-2">
+      <h3 className="text-[15px] font-semibold mb-3 text-newTextColor border-b border-newTableBorder pb-2">
         {title}
       </h3>
       <div className="space-y-3">{children}</div>
@@ -358,9 +388,7 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[13px] font-medium text-black/60 dark:text-white/60">
-        {label}
-      </label>
+      <label className="text-[13px] font-medium text-textItemBlur">{label}</label>
       {textarea ? (
         <textarea
           className={textAreaClass}

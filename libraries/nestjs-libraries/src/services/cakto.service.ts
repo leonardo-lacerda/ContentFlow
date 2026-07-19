@@ -140,51 +140,28 @@ export class CaktoService {
     private _organizationService: OrganizationService
   ) {}
 
+  /**
+   * ContentFlow v1: só Profissional na vitrine paga.
+   * FREE (Início) é o default sem checkout.
+   * PRO/TEAM/SCALE deixam de ser vendidos (grandfather no backend).
+   */
   get commercialPlans() {
     return [
       {
         tier: 'starter',
         billing: 'STANDARD',
-        name: 'Starter',
+        name: 'Profissional',
         price: pricing.STANDARD.month_price,
         yearlyPrice: pricing.STANDARD.year_price,
         channels: pricing.STANDARD.channel,
         postsPerMonth: pricing.STANDARD.posts_per_month,
         features: [
-          '3 canais',
-          '3.000 posts por mes',
-          'API publica',
-          'Suporte basico',
-        ],
-      },
-      {
-        tier: 'pro',
-        billing: 'PRO',
-        name: 'Pro',
-        price: pricing.PRO.month_price,
-        yearlyPrice: pricing.PRO.year_price,
-        channels: pricing.PRO.channel,
-        postsPerMonth: pricing.PRO.posts_per_month,
-        features: [
-          '10 canais',
-          '15.000 posts por mes',
-          'IA e imagens',
-          'Suporte prioritario',
-        ],
-      },
-      {
-        tier: 'scale',
-        billing: 'TEAM',
-        name: 'Scale',
-        price: pricing.TEAM.month_price,
-        yearlyPrice: pricing.TEAM.year_price,
-        channels: pricing.TEAM.channel,
-        postsPerMonth: pricing.TEAM.posts_per_month,
-        features: [
-          '25 canais',
-          '60.000 posts por mes',
-          'Equipe liberada',
-          'Suporte avancado',
+          '1 marca (Brand DNA)',
+          `${pricing.STANDARD.channel} canais (IG, FB, LinkedIn, X, TikTok)`,
+          `${pricing.STANDARD.carousel_generations_per_month} carrosséis / mês`,
+          `${pricing.STANDARD.content_ideas_per_month} ideias / mês`,
+          `${pricing.STANDARD.image_generation_count} imagens IA / mês`,
+          'Agendar e publicar',
         ],
       },
     ];

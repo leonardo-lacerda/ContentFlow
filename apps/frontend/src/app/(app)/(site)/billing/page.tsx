@@ -2,14 +2,19 @@ export const dynamic = 'force-dynamic';
 import { BillingComponent } from '@gitroom/frontend/components/billing/billing.component';
 import { Metadata } from 'next';
 import { isGeneralServerSide } from '@gitroom/helpers/utils/is.general.server.side';
+import { PageShell, PageBody } from '@gitroom/frontend/components/new-layout/page-system';
+
 export const metadata: Metadata = {
   title: `${isGeneralServerSide() ? 'ContentFlow' : 'Gitroom'} Billing`,
   description: '',
 };
+
 export default async function Page() {
   return (
-    <div className="bg-newBgColorInner flex-1 flex-col flex p-[20px] gap-[12px]">
-      <BillingComponent />
-    </div>
+    <PageShell>
+      <PageBody className="overflow-y-auto">
+        <BillingComponent />
+      </PageBody>
+    </PageShell>
   );
 }

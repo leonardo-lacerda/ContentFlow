@@ -3,6 +3,7 @@
 import React from 'react';
 import type { GeneratedSocialPost } from './social-posts.types';
 import { PostPreview } from './post-preview.component';
+import { Button } from '@gitroom/react/form/button';
 
 export function SocialPostCard({
   post,
@@ -12,17 +13,19 @@ export function SocialPostCard({
   onUse?: (post: GeneratedSocialPost) => void;
 }) {
   return (
-    <div className="relative">
+    <div className="relative flex flex-col gap-[10px]">
       <PostPreview post={post} />
-      {onUse && (
-        <button
-          onClick={() => onUse(post)}
-          className="mt-2 px-3 py-1 text-white text-xs rounded transition-colors"
-          style={{ background: 'var(--primary, #3b82f6)' }}
-        >
-          Create Draft
-        </button>
-      )}
+      {onUse ? (
+        <div>
+          <Button
+            secondary
+            className="!h-[32px] !text-[12px]"
+            onClick={() => onUse(post)}
+          >
+            Criar rascunho
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

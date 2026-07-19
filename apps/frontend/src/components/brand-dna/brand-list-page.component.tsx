@@ -4,23 +4,30 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@gitroom/react/form/button';
 import { useToaster } from '@gitroom/react/toaster/toaster';
-import { useModals, areYouSure } from '@gitroom/frontend/components/layout/new-modal';
+import { areYouSure } from '@gitroom/frontend/components/layout/new-modal';
 import {
   Plus,
   CheckCircle,
   ExternalLink,
   Trash2,
   Loader,
-  AlertTriangle,
   Building2,
 } from 'lucide-react';
 import { useBrands, mutateBrands } from './brand-dna.hooks';
 import { createBrand, selectBrand, deleteBrand } from './brand-dna.service';
 import { BrandStatusBadge } from './brand-status-badge.component';
 import { BrandProfile } from './brand-dna.types';
-
-const inputClass =
-  'h-[48px] w-full rounded-[10px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] px-[16px] text-[15px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-black dark:text-white transition duration-200 focus:border-black/40 dark:focus:border-white/40 focus:ring-4 focus:ring-black/5 dark:focus:ring-white/5 hover:border-black/20 dark:hover:border-white/20';
+import {
+  PageShell,
+  PageHeader,
+  PageBody,
+  EmptyState,
+  SectionCard,
+  useCreateDrawer,
+  FormField,
+  FormInput,
+  FormSelect,
+} from '@gitroom/frontend/components/new-layout/page-system';
 
 const industryOptions = [
   'SaaS B2B',
@@ -37,91 +44,102 @@ const industryOptions = [
   'Tecnologia',
 ];
 
+function CreateBrandForm({
+  onCreated,
+  onClose,
+}: {
+  onCreated: (id: string) => void;
+  onClose: () => void;
+}) {
+  const toaster = useToaster();
+  const [name, setName] = useState('');
+  const [website, setWebsite] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleCreate = async () => {
+    if (!name.trim()) {
+      toaster.show('O nome é obrigatório', 'warning');
+      return;
+    }
+    setLoading(true);
+    try {
+      const brand = await createBrand({
+        name: name.trim(),
+        website: website.trim() || undefined,
+        industry: industry || undefined,
+      });
+      toaster.show('Marca criada com sucesso!', 'success');
+      mutateBrands();
+      onCreated(brand.id);
+      onClose();
+    } catch (err: any) {
+      toaster.show(err.message || 'Erro ao criar marca', 'warning');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-[16px]">
+      <FormField label="Nome" required>
+        <FormInput
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Ex: Minha Empresa"
+          autoFocus
+        />
+      </FormField>
+      <FormField label="Website" hint="Opcional">
+        <FormInput
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          placeholder="https://exemplo.com"
+        />
+      </FormField>
+      <FormField label="Indústria" hint="Opcional">
+        <FormSelect
+          value={industry}
+          onChange={(e) => setIndustry(e.target.value)}
+        >
+          <option value="">Selecione...</option>
+          {industryOptions.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </FormSelect>
+      </FormField>
+      <div className="flex justify-end gap-[8px]">
+        <Button secondary onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button onClick={handleCreate} loading={loading} disabled={!name.trim()}>
+          Criar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function BrandListPage() {
   const router = useRouter();
   const toaster = useToaster();
-  const modals = useModals();
-  const { data: brands, isLoading, error, mutate } = useBrands();
-  const [creating, setCreating] = useState(false);
+  const { openCreateDrawer } = useCreateDrawer();
+  const { data: brandsRaw, isLoading, error, mutate } = useBrands();
+  const brands: BrandProfile[] = Array.isArray(brandsRaw)
+    ? brandsRaw
+    : brandsRaw?.data || [];
 
-  const handleCreate = () => {
-    let nameValue = '';
-    let websiteValue = '';
-    let industryValue = '';
-
-    modals.openModal({
-      title: 'Nova Marca',
-      closeOnEscape: true,
-      closeOnClickOutside: false,
-      size: '480px',
-      children: (close: () => void) => (
-        <div className="flex flex-col gap-[16px]">
-          <div className="flex flex-col gap-[6px]">
-            <label className="text-[14px] font-[500]">
-              Nome <span className="text-red-500">*</span>
-            </label>
-            <input
-              className={inputClass}
-              placeholder="Ex: Minha Empresa"
-              defaultValue={nameValue}
-              onChange={(e) => { nameValue = e.target.value; }}
-              autoFocus
-            />
-          </div>
-          <div className="flex flex-col gap-[6px]">
-            <label className="text-[14px] font-[500]">Website</label>
-            <input
-              className={inputClass}
-              placeholder="https://exemplo.com"
-              defaultValue={websiteValue}
-              onChange={(e) => { websiteValue = e.target.value; }}
-            />
-          </div>
-          <div className="flex flex-col gap-[6px]">
-            <label className="text-[14px] font-[500]">Indústria</label>
-            <select
-              className={inputClass}
-              defaultValue={industryValue}
-              onChange={(e) => { industryValue = e.target.value; }}
-            >
-              <option value="">Selecione...</option>
-              {industryOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex gap-[12px] justify-end mt-[8px]">
-            <Button onClick={close}>Cancelar</Button>
-            <Button
-              onClick={async () => {
-                if (!nameValue.trim()) {
-                  toaster.show('O nome é obrigatório', 'warning');
-                  return;
-                }
-                close();
-                setCreating(true);
-                try {
-                  const brand = await createBrand({
-                    name: nameValue.trim(),
-                    website: websiteValue.trim() || undefined,
-                    industry: industryValue || undefined,
-                  });
-                  toaster.show('Marca criada com sucesso!', 'success');
-                  mutateBrands();
-                  router.push(`/brands/${brand.id}`);
-                } catch (err: any) {
-                  toaster.show(err.message || 'Erro ao criar marca', 'warning');
-                } finally {
-                  setCreating(false);
-                }
-              }}
-            >
-              Criar
-            </Button>
-          </div>
-        </div>
+  const openCreate = () => {
+    openCreateDrawer({
+      title: 'Nova marca',
+      size: 480,
+      children: (close) => (
+        <CreateBrandForm
+          onClose={close}
+          onCreated={(id) => router.push(`/brands/${id}`)}
+        />
       ),
     });
   };
@@ -143,9 +161,7 @@ export function BrandListPage() {
       approveLabel: 'Excluir',
       cancelLabel: 'Cancelar',
     });
-
     if (!confirmed) return;
-
     try {
       await deleteBrand(brand.id);
       toaster.show('Marca excluída', 'success');
@@ -157,107 +173,125 @@ export function BrandListPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[400px]">
-        <Loader className="w-8 h-8 animate-spin text-gray-400" />
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <div className="flex flex-1 items-center justify-center min-h-[320px]">
+            <Loader className="w-8 h-8 animate-spin text-textItemBlur" />
+          </div>
+        </PageBody>
+      </PageShell>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <AlertTriangle className="w-12 h-12 text-red-400" />
-        <p className="text-gray-500">Erro ao carregar marcas</p>
-        <Button onClick={() => mutate()}>Tentar novamente</Button>
-      </div>
-    );
-  }
-
-  if (!brands || brands.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <Building2 className="w-16 h-16 text-gray-300" />
-        <h2 className="text-xl font-semibold text-gray-500">Nenhuma marca cadastrada</h2>
-        <p className="text-gray-400 text-center max-w-md">
-          Crie sua primeira marca para começar a gerar carrosséis com Brand DNA.
-        </p>
-        <Button onClick={handleCreate} loading={creating}>
-          <Plus className="w-4 h-4" />
-          Criar Primeira Marca
-        </Button>
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <EmptyState
+            title="Erro ao carregar marcas"
+            description="Não foi possível carregar a lista de marcas."
+            actionLabel="Tentar novamente"
+            onAction={() => mutate()}
+          />
+        </PageBody>
+      </PageShell>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Marcas</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {brands.length} {brands.length === 1 ? 'marca' : 'marcas'} cadastrada{brands.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <Button onClick={handleCreate} loading={creating}>
-          <Plus className="w-4 h-4" />
-          Nova Marca
-        </Button>
-      </div>
-
-      <div className="space-y-3">
-        {brands.map((brand) => (
-          <div
-            key={brand.id}
-            className={`rounded-[12px] border p-4 transition-all hover:shadow-sm ${
-              brand.selected
-                ? 'border-green-300 bg-green-50/50 dark:border-green-700 dark:bg-green-900/20'
-                : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#171717]'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium truncate">{brand.name}</span>
-                    {brand.selected && (
-                      <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300 px-2 py-0.5 rounded-full whitespace-nowrap">
-                        <CheckCircle className="w-3 h-3" />
-                        Selecionada
+    <PageShell>
+      <PageHeader
+        description={
+          brands.length
+            ? `${brands.length} ${brands.length === 1 ? 'marca' : 'marcas'} cadastrada${brands.length !== 1 ? 's' : ''}`
+            : 'Gerencie as marcas e o Brand DNA da sua organização.'
+        }
+        actions={
+          <Button onClick={openCreate}>
+            <Plus className="w-4 h-4" />
+            Nova marca
+          </Button>
+        }
+      />
+      <PageBody className={!brands.length ? '!p-0' : undefined}>
+        {!brands.length ? (
+          <EmptyState
+            icon={<Building2 className="w-5 h-5" />}
+            title="Nenhuma marca cadastrada"
+            description="Crie sua primeira marca para gerar carrosséis e conteúdos com Brand DNA."
+            actionLabel="Criar primeira marca"
+            onAction={openCreate}
+          />
+        ) : (
+          <div className="flex flex-col gap-[10px]">
+            {brands.map((brand) => (
+              <SectionCard
+                key={brand.id}
+                className={`!p-[14px] ${
+                  brand.selected
+                    ? '!border-emerald-500/40 bg-emerald-500/5'
+                    : ''
+                }`}
+              >
+                <div className="flex items-center gap-[12px]">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-[8px] flex-wrap">
+                      <span className="text-[14px] font-[600] text-newTextColor truncate">
+                        {brand.name}
                       </span>
-                    )}
-                    <BrandStatusBadge status={brand.status} />
+                      {brand.selected ? (
+                        <span className="inline-flex items-center gap-[4px] text-[11px] font-[600] text-emerald-400 bg-emerald-500/15 px-[8px] py-[2px] rounded-full">
+                          <CheckCircle className="w-3 h-3" />
+                          Selecionada
+                        </span>
+                      ) : null}
+                      <BrandStatusBadge status={brand.status} />
+                    </div>
+                    <div className="flex items-center gap-[8px] mt-[4px] flex-wrap">
+                      {brand.website ? (
+                        <span className="text-[12px] text-textItemBlur truncate">
+                          {brand.website}
+                        </span>
+                      ) : null}
+                      {brand.industry ? (
+                        <span className="text-[11px] text-textItemBlur bg-newSettings border border-newTableBorder px-[8px] py-[2px] rounded-[6px]">
+                          {brand.industry}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 mt-0.5">
-                    {brand.website && (
-                      <p className="text-sm text-gray-400 truncate">{brand.website}</p>
-                    )}
-                    {brand.industry && (
-                      <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                        {brand.industry}
-                      </span>
-                    )}
+                  <div className="flex items-center gap-[8px] shrink-0">
+                    {!brand.selected ? (
+                      <Button
+                        secondary
+                        className="!h-[32px] !text-[12px]"
+                        onClick={() => handleSelect(brand.id)}
+                      >
+                        Selecionar
+                      </Button>
+                    ) : null}
+                    <Button
+                      secondary
+                      className="!h-[32px] !text-[12px]"
+                      onClick={() => router.push(`/brands/${brand.id}`)}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Editar
+                    </Button>
+                    <Button
+                      secondary
+                      className="!h-[32px] !text-[12px]"
+                      onClick={() => handleDelete(brand)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2 ml-4 shrink-0">
-                {!brand.selected && (
-                  <Button onClick={() => handleSelect(brand.id)}>
-                    Selecionar
-                  </Button>
-                )}
-                <Button onClick={() => router.push(`/brands/${brand.id}`)}>
-                  <ExternalLink className="w-4 h-4" />
-                  Editar
-                </Button>
-                <Button onClick={() => handleDelete(brand)}>
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+              </SectionCard>
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
+        )}
+      </PageBody>
+    </PageShell>
   );
 }

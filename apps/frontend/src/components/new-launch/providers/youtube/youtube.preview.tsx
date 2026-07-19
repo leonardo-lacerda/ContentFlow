@@ -1,5 +1,5 @@
 import { sanitizeHtml } from '@gitroom/frontend/components/layout/sanitize-html';
-1|import { FC } from 'react';
+import { FC } from 'react';
 import { useIntegration } from '@gitroom/frontend/components/launches/helpers/use.integration';
 import { useLaunchStore } from '@gitroom/frontend/components/new-launch/store';
 import { useMediaDirectory } from '@gitroom/react/helpers/use.media.directory';

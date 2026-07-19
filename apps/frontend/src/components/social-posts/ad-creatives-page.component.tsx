@@ -1,7 +1,21 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
+import React, { useEffect, useState } from 'react';
+import { Button } from '@gitroom/react/form/button';
+import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
+import {
+  PageShell,
+  PageHeader,
+  PageBody,
+  EmptyState,
+  SectionCard,
+  useCreateDrawer,
+  FormField,
+  FormInput,
+  FormTextarea,
+  FormSelect,
+  FilterChip,
+} from '@gitroom/frontend/components/new-layout/page-system';
 import type {
   GeneratedAdCreative,
   AdCreativeBatch,
@@ -38,52 +52,20 @@ const OBJECTIVES = [
 
 const AD_TYPES = ['AUTO', 'STATIC', 'CAROUSEL'] as const;
 
-function SeverityBadge({ severity }: { severity: string }) {
-  const colors: Record<string, string> = {
-    critical: '#dc2626',
-    warning: '#d97706',
-    info: '#2563eb',
-  };
-  return (
-    <span
-      className="text-xs px-2 py-0.5 rounded-full text-white"
-      style={{ background: colors[severity] || '#6b7280' }}
-    >
-      {severity}
-    </span>
-  );
-}
-
 function PolicyWarningsList({ warnings }: { warnings: PolicyWarning[] }) {
-  if (!warnings || warnings.length === 0) return null;
+  if (!warnings?.length) return null;
   return (
-    <div className="mt-2 space-y-1">
+    <div className="mt-[8px] flex flex-col gap-[6px]">
       {warnings.map((w, i) => (
         <div
           key={i}
-          className="text-xs flex items-start gap-2 p-2 rounded"
-          style={{
-            background:
-              w.severity === 'critical'
-                ? '#fef2f2'
-                : w.severity === 'warning'
-                ? '#fffbeb'
-                : '#eff6ff',
-            color:
-              w.severity === 'critical'
-                ? '#dc2626'
-                : w.severity === 'warning'
-                ? '#d97706'
-                : '#2563eb',
-          }}
+          className="text-[12px] rounded-[8px] border border-newTableBorder bg-newBgColorInner p-[10px] text-textItemBlur"
         >
-          <SeverityBadge severity={w.severity} />
-          <div>
-            <span className="font-medium">[{w.ruleId}]</span> {w.message}
-            {w.suggestion && (
-              <div className="mt-1 opacity-75">Suggestion: {w.suggestion}</div>
-            )}
-          </div>
+          <span className="font-[600] text-newTextColor">[{w.ruleId}]</span>{' '}
+          {w.message}
+          {w.suggestion ? (
+            <div className="mt-[4px] opacity-80">Sugestão: {w.suggestion}</div>
+          ) : null}
         </div>
       ))}
     </div>
@@ -93,123 +75,90 @@ function PolicyWarningsList({ warnings }: { warnings: PolicyWarning[] }) {
 function AdCreativeCard({
   ad,
   onSave,
+  saving,
 }: {
   ad: GeneratedAdCreative;
   onSave?: () => void;
+  saving?: boolean;
 }) {
   return (
-    <div
-      className="border rounded-lg p-4 space-y-3"
-      style={{ background: 'var(--card, white)' }}
-    >
-      <div className="flex items-center gap-2 flex-wrap">
+    <SectionCard className="!p-[14px] flex flex-col gap-[10px]">
+      <div className="flex items-center gap-[6px] flex-wrap">
         <span
-          className="text-xs px-2 py-1 rounded-full text-white font-medium"
-          style={{
-            background: PLATFORM_COLORS[ad.platform] || '#6b7280',
-          }}
+          className="text-[11px] px-[8px] py-[3px] rounded-full text-white font-[600]"
+          style={{ background: PLATFORM_COLORS[ad.platform] || '#6b7280' }}
         >
           {PLATFORM_LABELS[ad.platform] || ad.platform}
         </span>
-        <span className="text-xs px-2 py-0.5 rounded bg-gray-100">
+        <span className="text-[11px] px-[8px] py-[3px] rounded-[6px] bg-newSettings border border-newTableBorder text-textItemBlur">
           {ad.type}
         </span>
-        {ad.adTemplateId && (
-          <span className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-700">
-            {ad.adTemplateId}
+        {ad.policyWarnings?.some((w) => w.severity === 'critical') ? (
+          <span className="text-[11px] px-[8px] py-[3px] rounded-[6px] bg-red-500/15 text-red-400 font-[600]">
+            Compliance
           </span>
-        )}
-        {ad.policyWarnings?.some((w) => w.severity === 'critical') && (
-          <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700 font-medium">
-            Compliance Issue
-          </span>
-        )}
-        {ad.policyWarnings?.some(
-          (w) => w.severity === 'warning' && w.severity !== 'critical'
-        ) && (
-          <span className="text-xs px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">
-            Warnings
-          </span>
-        )}
+        ) : null}
       </div>
 
-      <h3 className="font-semibold text-lg">{ad.headline}</h3>
-      <p className="text-sm" style={{ color: 'var(--foreground, #111)' }}>
-        {ad.primaryText}
-      </p>
-      {ad.description && (
-        <p className="text-xs" style={{ color: 'var(--muted, #888)' }}>
-          {ad.description}
-        </p>
-      )}
+      <h3 className="text-[15px] font-[600] text-newTextColor">{ad.headline}</h3>
+      <p className="text-[13px] text-newTextColor/90">{ad.primaryText}</p>
+      {ad.description ? (
+        <p className="text-[12px] text-textItemBlur">{ad.description}</p>
+      ) : null}
 
-      <div className="flex items-center gap-2 text-xs">
-        <span
-          className="px-3 py-1 rounded font-medium text-white"
-          style={{ background: 'var(--primary, #3b82f6)' }}
-        >
+      <div className="flex items-center gap-[8px] text-[12px]">
+        <span className="px-[10px] py-[4px] rounded-[6px] font-[600] bg-btnPrimary text-btnText">
           {ad.ctaButton}
         </span>
-        {ad.destinationUrl && (
-          <span style={{ color: 'var(--muted, #888)' }} className="truncate max-w-xs">
+        {ad.destinationUrl ? (
+          <span className="text-textItemBlur truncate max-w-[240px]">
             {ad.destinationUrl}
           </span>
-        )}
+        ) : null}
       </div>
 
-      {/* Carousel slides preview */}
-      {ad.slides && ad.slides.length > 0 && (
-        <div className="mt-2">
-          <p className="text-xs font-medium mb-1">
-            Carousel Slides ({ad.slides.length})
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {ad.slides.map((slide, i) => (
-              <div
-                key={i}
-                className="border rounded p-2 text-xs"
-                style={{ background: 'var(--background, #fafafa)' }}
-              >
-                <div className="font-medium">
-                  Slide {slide.index + 1}: {slide.headline}
-                </div>
-                <div style={{ color: 'var(--muted, #888)' }}>{slide.body}</div>
+      {ad.slides && ad.slides.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[8px]">
+          {ad.slides.map((slide, i) => (
+            <div
+              key={i}
+              className="border border-newTableBorder rounded-[8px] p-[10px] text-[12px] bg-newBgColorInner"
+            >
+              <div className="font-[600] text-newTextColor">
+                Slide {slide.index + 1}: {slide.headline}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Image prompts */}
-      {ad.imagePrompts && ad.imagePrompts.length > 0 && (
-        <div className="mt-2">
-          <p className="text-xs font-medium mb-1">Image Prompts</p>
-          {ad.imagePrompts.map((ip, i) => (
-            <div key={i} className="text-xs" style={{ color: 'var(--muted, #888)' }}>
-              <span className="font-medium">{ip.role}:</span> {ip.prompt}
-              {ip.aspectRatio && (
-                <span className="ml-1 text-xs opacity-60">({ip.aspectRatio})</span>
-              )}
+              <div className="text-textItemBlur mt-[2px]">{slide.body}</div>
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
-      <PolicyWarningsList warnings={ad.policyWarnings} />
-    </div>
+      <PolicyWarningsList warnings={ad.policyWarnings || []} />
+
+      {onSave ? (
+        <div className="pt-[4px]">
+          <Button secondary loading={saving} onClick={onSave} className="!h-[32px] !text-[12px]">
+            Salvar
+          </Button>
+        </div>
+      ) : null}
+    </SectionCard>
   );
 }
 
-export function AdCreativesPage() {
+function GenerateAdsForm({
+  brandId,
+  templates,
+  onGenerated,
+  onClose,
+}: {
+  brandId?: string;
+  templates: AdTemplateSummary[];
+  onGenerated: (batch: AdCreativeBatch) => void;
+  onClose: () => void;
+}) {
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<AdCreativeBatch | null>(null);
-  const [savedAds, setSavedAds] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<AdTemplateSummary[]>([]);
-
-  // Form state
-  const [brandProfileId, setBrandProfileId] = useState('');
   const [contentObjective, setContentObjective] = useState('');
   const [productOrService, setProductOrService] = useState('');
   const [objective, setObjective] = useState('CONVERSION');
@@ -220,22 +169,20 @@ export function AdCreativesPage() {
   const [additionalContext, setAdditionalContext] = useState('');
   const [variants, setVariants] = useState(1);
 
-  // Load templates on mount
-  useEffect(() => {
-    getAdTemplates()
-      .then(setTemplates)
-      .catch(() => {});
-  }, []);
+  const togglePlatform = (p: string) => {
+    setPlatforms((prev) =>
+      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
+    );
+  };
 
   const handleGenerate = async () => {
-    if (!brandProfileId || !contentObjective) return;
+    if (!brandId || !contentObjective.trim() || !platforms.length) return;
     setLoading(true);
     setError(null);
-    setResult(null);
     try {
       const data = await generateAds({
-        brandProfileId,
-        contentObjective,
+        brandProfileId: brandId,
+        contentObjective: contentObjective.trim(),
         productOrService: productOrService || undefined,
         platforms,
         objective,
@@ -245,7 +192,8 @@ export function AdCreativesPage() {
         destinationUrl: destinationUrl || undefined,
         additionalContext: additionalContext || undefined,
       });
-      setResult(data);
+      onGenerated(data);
+      onClose();
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -253,16 +201,202 @@ export function AdCreativesPage() {
     }
   };
 
-  const handleSave = async () => {
-    if (!result || !brandProfileId) return;
+  return (
+    <div className="flex flex-col gap-[16px]">
+      {!brandId ? (
+        <div className="text-[13px] text-textItemBlur rounded-[10px] border border-newTableBorder bg-newSettings p-[12px]">
+          Selecione uma marca no seletor do topo antes de gerar.
+        </div>
+      ) : null}
+
+      <FormField label="O que promover" required>
+        <FormInput
+          value={contentObjective}
+          onChange={(e) => setContentObjective(e.target.value)}
+          placeholder="Ex.: promover o novo curso de IA"
+        />
+      </FormField>
+
+      <FormField label="Produto / serviço" hint="Opcional">
+        <FormInput
+          value={productOrService}
+          onChange={(e) => setProductOrService(e.target.value)}
+          placeholder="Ex.: curso online de IA"
+        />
+      </FormField>
+
+      <div className="flex flex-col gap-[8px]">
+        <span className="text-[12px] font-[600] text-newTextColor">
+          Plataformas *
+        </span>
+        <div className="flex flex-wrap gap-[6px]">
+          {Object.keys(PLATFORM_LABELS).map((p) => (
+            <FilterChip
+              key={p}
+              active={platforms.includes(p)}
+              onClick={() => togglePlatform(p)}
+            >
+              {PLATFORM_LABELS[p]}
+            </FilterChip>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-[12px]">
+        <FormField label="Objetivo">
+          <FormSelect
+            value={objective}
+            onChange={(e) => setObjective(e.target.value)}
+          >
+            {OBJECTIVES.map((o) => (
+              <option key={o} value={o}>
+                {o.replace(/_/g, ' ')}
+              </option>
+            ))}
+          </FormSelect>
+        </FormField>
+        <FormField label="Tipo">
+          <FormSelect
+            value={adType}
+            onChange={(e) =>
+              setAdType(e.target.value as 'AUTO' | 'STATIC' | 'CAROUSEL')
+            }
+          >
+            {AD_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </FormSelect>
+        </FormField>
+      </div>
+
+      <div className="grid grid-cols-2 gap-[12px]">
+        <FormField label="Template" hint="Opcional">
+          <FormSelect
+            value={adTemplateId}
+            onChange={(e) => setAdTemplateId(e.target.value)}
+          >
+            <option value="">Automático</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label || t.labelEn || t.id}
+              </option>
+            ))}
+          </FormSelect>
+        </FormField>
+        <FormField label="Variantes">
+          <FormInput
+            type="number"
+            min={1}
+            max={5}
+            value={variants}
+            onChange={(e) => setVariants(Number(e.target.value) || 1)}
+          />
+        </FormField>
+      </div>
+
+      <FormField label="URL de destino" hint="Opcional">
+        <FormInput
+          value={destinationUrl}
+          onChange={(e) => setDestinationUrl(e.target.value)}
+          placeholder="https://"
+        />
+      </FormField>
+
+      <FormField label="Contexto adicional" hint="Opcional">
+        <FormTextarea
+          value={additionalContext}
+          onChange={(e) => setAdditionalContext(e.target.value)}
+          rows={3}
+        />
+      </FormField>
+
+      {error ? (
+        <div className="text-[13px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-[10px] p-[12px]">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="flex justify-end gap-[8px]">
+        <Button secondary onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button
+          onClick={handleGenerate}
+          loading={loading}
+          disabled={!brandId || !contentObjective.trim() || !platforms.length}
+        >
+          Gerar ads
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function AdCreativesPage() {
+  const { data: selectedBrand } = useSelectedBrand();
+  const brandId = selectedBrand?.id as string | undefined;
+  const { openCreateDrawer } = useCreateDrawer();
+
+  const [loadingList, setLoadingList] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [batch, setBatch] = useState<AdCreativeBatch | null>(null);
+  const [savedAds, setSavedAds] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<AdTemplateSummary[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getAdTemplates()
+      .then(setTemplates)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setLoadingList(true);
+      try {
+        if (!brandId) {
+          if (mounted) setSavedAds([]);
+          return;
+        }
+        const ads = await listAds({ brandProfileId: brandId });
+        if (mounted) setSavedAds(Array.isArray(ads) ? ads : []);
+      } catch {
+        if (mounted) setSavedAds([]);
+      } finally {
+        if (mounted) setLoadingList(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [brandId]);
+
+  const openGenerate = () => {
+    openCreateDrawer({
+      title: 'Gerar ad creatives',
+      size: 600,
+      children: (close) => (
+        <GenerateAdsForm
+          brandId={brandId}
+          templates={templates}
+          onClose={close}
+          onGenerated={(data) => setBatch(data)}
+        />
+      ),
+    });
+  };
+
+  const handleSaveBatch = async () => {
+    if (!batch || !brandId) return;
     setSaving(true);
+    setError(null);
     try {
-      const saved = await saveAds({
-        ads: result,
-        brandProfileId,
-      });
-      setSavedAds(saved);
-      setResult(null);
+      const saved = await saveAds({ ads: batch, brandProfileId: brandId });
+      setSavedAds((prev) => [...(Array.isArray(saved) ? saved : []), ...prev]);
+      setBatch(null);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -270,264 +404,85 @@ export function AdCreativesPage() {
     }
   };
 
-  const togglePlatform = (p: string) => {
-    setPlatforms((prev) =>
-      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
-    );
-  };
+  const generatedAds = batch?.ads || [];
+  const hasContent = generatedAds.length > 0 || savedAds.length > 0;
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Ad Creative Generator</h1>
-        <p style={{ color: 'var(--muted, #888)' }}>
-          Generate AI-powered ad creatives for Meta and LinkedIn campaigns with
-          compliance checks.
-        </p>
-      </div>
-
-      {/* Generation Form */}
-      <div
-        className="rounded-lg p-6 space-y-4 border"
-        style={{ background: 'var(--card, white)' }}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Brand Profile ID *
-            </label>
-            <input
-              type="text"
-              value={brandProfileId}
-              onChange={(e) => setBrandProfileId(e.target.value)}
-              className="w-full border rounded px-3 py-2 text-sm"
-              placeholder="Brand profile ID"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Campaign Objective
-            </label>
-            <select
-              value={objective}
-              onChange={(e) => setObjective(e.target.value)}
-              className="w-full border rounded px-3 py-2 text-sm"
-            >
-              {OBJECTIVES.map((o) => (
-                <option key={o} value={o}>
-                  {o.replace(/_/g, ' ')}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Content Objective / What to Promote *
-          </label>
-          <input
-            type="text"
-            value={contentObjective}
-            onChange={(e) => setContentObjective(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm"
-            placeholder="e.g. Promote our new AI course for marketers"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Product / Service
-            </label>
-            <input
-              type="text"
-              value={productOrService}
-              onChange={(e) => setProductOrService(e.target.value)}
-              className="w-full border rounded px-3 py-2 text-sm"
-              placeholder="e.g. Online AI course"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Ad Type</label>
-            <select
-              value={adType}
-              onChange={(e) => setAdType(e.target.value as any)}
-              className="w-full border rounded px-3 py-2 text-sm"
-            >
-              {AD_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Template</label>
-            <select
-              value={adTemplateId}
-              onChange={(e) => setAdTemplateId(e.target.value)}
-              className="w-full border rounded px-3 py-2 text-sm"
-            >
-              <option value="">Auto (AI decides)</option>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.labelEn} — {t.description}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Destination URL
-            </label>
-            <input
-              type="url"
-              value={destinationUrl}
-              onChange={(e) => setDestinationUrl(e.target.value)}
-              className="w-full border rounded px-3 py-2 text-sm"
-              placeholder="https://..."
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Variants</label>
-            <input
-              type="number"
-              min={1}
-              max={5}
-              value={variants}
-              onChange={(e) => setVariants(Number(e.target.value))}
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Additional Context
-            </label>
-            <input
-              type="text"
-              value={additionalContext}
-              onChange={(e) => setAdditionalContext(e.target.value)}
-              className="w-full border rounded px-3 py-2 text-sm"
-              placeholder="Any extra instructions..."
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">Platforms</label>
-          <div className="flex gap-2 flex-wrap">
-            {[
-              { id: 'META_INSTAGRAM', label: 'Instagram' },
-              { id: 'META_FACEBOOK', label: 'Facebook' },
-              { id: 'LINKEDIN', label: 'LinkedIn' },
-            ].map((p) => (
-              <button
-                key={p.id}
-                onClick={() => togglePlatform(p.id)}
-                className="px-4 py-2 rounded-full text-sm font-medium border transition-colors"
-                style={
-                  platforms.includes(p.id)
-                    ? {
-                        background: PLATFORM_COLORS[p.id],
-                        borderColor: PLATFORM_COLORS[p.id],
-                        color: 'white',
-                      }
-                    : {}
-                }
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={handleGenerate}
-            disabled={loading || !brandProfileId || !contentObjective}
-            className="px-6 py-2 text-white rounded text-sm font-medium disabled:opacity-50 transition-opacity"
-            style={{ background: 'var(--primary, #3b82f6)' }}
-          >
-            {loading ? 'Generating...' : 'Generate Ads'}
-          </button>
-          {result && (
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-6 py-2 rounded text-sm font-medium border disabled:opacity-50"
-              style={{
-                borderColor: 'var(--primary, #3b82f6)',
-                color: 'var(--primary, #3b82f6)',
-              }}
-            >
-              {saving ? 'Saving...' : 'Save to Library'}
-            </button>
-          )}
-        </div>
-
-        {error && (
-          <div
-            className="p-3 rounded text-sm"
-            style={{ background: '#fef2f2', color: '#dc2626' }}
-          >
+    <PageShell>
+      <PageHeader
+        description="Crie ads com IA para Meta e LinkedIn, com checagem de compliance."
+        actions={<Button onClick={openGenerate}>Gerar ads</Button>}
+      />
+      <PageBody className={!hasContent && !loadingList ? '!p-0' : undefined}>
+        {error ? (
+          <div className="text-[13px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-[10px] p-[12px]">
             {error}
           </div>
-        )}
-      </div>
+        ) : null}
 
-      {/* Generated Results */}
-      {result?.ads && result.ads.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">
-            Generated Creatives ({result.ads.length})
-          </h2>
-          {result.ads.map((ad, i) => (
-            <AdCreativeCard key={i} ad={ad} />
-          ))}
-        </div>
-      )}
-
-      {/* Saved Ads */}
-      {savedAds.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">
-            Saved to Library ({savedAds.length})
-          </h2>
-          {savedAds.map((ad, i) => (
-            <div
-              key={i}
-              className="border rounded-lg p-4 text-sm"
-              style={{ background: 'var(--card, white)' }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className="text-xs px-2 py-1 rounded-full text-white"
-                  style={{
-                    background: PLATFORM_COLORS[ad.platform] || '#6b7280',
-                  }}
-                >
-                  {PLATFORM_LABELS[ad.platform] || ad.platform}
-                </span>
-                <span className="text-xs px-2 py-0.5 rounded bg-gray-100">
-                  {ad.type}
-                </span>
-                <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">
-                  {ad.status}
-                </span>
+        {loadingList && !hasContent ? (
+          <div className="text-[13px] text-textItemBlur py-[40px] text-center">
+            Carregando...
+          </div>
+        ) : !hasContent ? (
+          <EmptyState
+            icon={
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M4 7H20M4 12H20M4 17H14"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            }
+            title="Nenhum ad creative ainda"
+            description="Gere variações de anúncio a partir do objetivo da campanha e da marca selecionada."
+            actionLabel="Gerar ads"
+            onAction={openGenerate}
+          />
+        ) : (
+          <div className="flex flex-col gap-[20px]">
+            {generatedAds.length > 0 ? (
+              <div className="flex flex-col gap-[12px]">
+                <div className="flex items-center justify-between gap-[12px]">
+                  <div className="text-[13px] font-[600] text-newTextColor">
+                    Gerados agora ({generatedAds.length})
+                  </div>
+                  <Button
+                    onClick={handleSaveBatch}
+                    loading={saving}
+                    className="!h-[32px] !text-[12px]"
+                  >
+                    Salvar todos
+                  </Button>
+                </div>
+                <div className="grid gap-[12px]">
+                  {generatedAds.map((ad: GeneratedAdCreative, i: number) => (
+                    <AdCreativeCard key={`gen-${i}`} ad={ad} />
+                  ))}
+                </div>
               </div>
-              <h3 className="font-semibold">{ad.headline}</h3>
-              <p style={{ color: 'var(--muted, #888)' }}>{ad.primaryText}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            ) : null}
+
+            {savedAds.length > 0 ? (
+              <div className="flex flex-col gap-[12px]">
+                <div className="text-[13px] font-[600] text-newTextColor">
+                  Salvos ({savedAds.length})
+                </div>
+                <div className="grid gap-[12px]">
+                  {savedAds.map((ad: any, i: number) => (
+                    <AdCreativeCard
+                      key={ad.id || `saved-${i}`}
+                      ad={ad as GeneratedAdCreative}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </PageBody>
+    </PageShell>
   );
 }

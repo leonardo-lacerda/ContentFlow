@@ -40,10 +40,16 @@ export class GenerationCostRepository {
   }
 
   aggregateTokenTotals(orgId: string): Promise<{ totalTokens: number } | null> {
+    // Cast the SUM to double precision so Prisma/pg does not return a BigInt
+    // (JSON.stringify cannot serialize BigInt and crashes cost-history with 500).
     return this.prisma.$queryRaw<{ totalTokens: number }[]>`
-      SELECT COALESCE(SUM((tokens->>'totalTokens')::int), 0) as "totalTokens"
+      SELECT COALESCE(SUM((tokens->>'totalTokens')::double precision), 0)::double precision as "totalTokens"
       FROM "GenerationCost"
       WHERE "organizationId" = ${orgId} AND type != 'estimate'
-    `.then(rows => rows[0] ?? null);
+    `.then((rows) => {
+      const row = rows[0];
+      if (!row) return null;
+      return { totalTokens: Number(row.totalTokens) || 0 };
+    });
   }
 }

@@ -55,7 +55,7 @@ const CLUSTERS = {
 };
 
 type PageProps = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 export async function generateStaticParams() {
@@ -63,7 +63,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const cluster = CLUSTERS[params.slug as keyof typeof CLUSTERS];
+  const { slug } = await params;
+  const cluster = CLUSTERS[slug as keyof typeof CLUSTERS];
   if (!cluster) return { title: 'Não encontrado' };
 
   return {
@@ -78,8 +79,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default function SeoPage({ params }: PageProps) {
-  const cluster = CLUSTERS[params.slug as keyof typeof CLUSTERS];
+export default async function SeoPage({ params }: PageProps) {
+  const { slug } = await params;
+  const cluster = CLUSTERS[slug as keyof typeof CLUSTERS];
 
   if (!cluster) {
     return (
@@ -93,7 +95,7 @@ export default function SeoPage({ params }: PageProps) {
 
   return (
     <main className="max-w-3xl mx-auto p-8 space-y-8">
-      <ConversionTracker source={`seo-${params.slug}`} campaign={cluster.title} />
+      <ConversionTracker source={`seo-${slug}`} campaign={cluster.title} />
       <nav className="text-sm" style={{ color: 'var(--muted, #888)' }}>
         <Link href="/">Início</Link> / <span>{cluster.title}</span>
       </nav>

@@ -1,5 +1,5 @@
+'use client';
 import { sanitizeHtml } from '@gitroom/frontend/components/layout/sanitize-html';
-1|'use client';
 
 import { FC, useCallback } from 'react';
 import {

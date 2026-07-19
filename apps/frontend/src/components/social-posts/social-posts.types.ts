@@ -37,13 +37,13 @@ export interface GenerateSocialPostsParams {
   additionalContext?: string;
 }
 
+// ContentFlow v1 — redes do core loop
 export const AVAILABLE_PLATFORMS: SocialPlatform[] = [
   'instagram',
-  'linkedin',
-  'tiktok',
-  'twitter',
-  'threads',
   'facebook',
+  'linkedin',
+  'twitter',
+  'tiktok',
 ];
 
 export const AVAILABLE_TONES: { value: PostTone; label: string }[] = [

@@ -2,8 +2,21 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
-
-// ---- Types ----
+import { Button } from '@gitroom/react/form/button';
+import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
+import {
+  PageShell,
+  PageHeader,
+  PageBody,
+  EmptyState,
+  SectionCard,
+  useCreateDrawer,
+  FormField,
+  FormInput,
+  FormTextarea,
+  FormSelect,
+  FilterChip,
+} from '@gitroom/frontend/components/new-layout/page-system';
 
 type CampaignType = 'NEWSLETTER' | 'WELCOME_SEQUENCE' | 'PROMOTIONAL';
 type CampaignStatus = 'DRAFT' | 'GENERATING' | 'READY' | 'EXPORTED' | 'FAILED';
@@ -38,39 +51,237 @@ interface EmailTemplate {
   exampleSubjects: string[];
 }
 
-// ---- Main Component ----
+const typeLabel = (type: CampaignType) => {
+  switch (type) {
+    case 'NEWSLETTER':
+      return 'Newsletter';
+    case 'WELCOME_SEQUENCE':
+      return 'Boas-vindas';
+    case 'PROMOTIONAL':
+      return 'Promocional';
+    default:
+      return type;
+  }
+};
 
-export function EmailCampaignsPage() {
+const statusClass = (status: CampaignStatus) => {
+  switch (status) {
+    case 'READY':
+      return 'bg-emerald-500/15 text-emerald-400';
+    case 'EXPORTED':
+      return 'bg-btnPrimary/20 text-newTextColor';
+    case 'GENERATING':
+      return 'bg-amber-500/15 text-amber-400';
+    case 'FAILED':
+      return 'bg-red-500/15 text-red-400';
+    default:
+      return 'bg-newSettings text-textItemBlur border border-newTableBorder';
+  }
+};
+
+function GenerateCampaignForm({
+  brandId,
+  templates,
+  onDone,
+  onClose,
+}: {
+  brandId?: string;
+  templates: EmailTemplate[];
+  onDone: () => void;
+  onClose: () => void;
+}) {
   const fetch = useFetch();
-
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'all' | CampaignType>('all');
-
-  // Campaign list
-  const [campaigns, setCampaigns] = useState<EmailCampaign[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Generate dialog
-  const [showGenerate, setShowGenerate] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
-  const [brandProfileId, setBrandProfileId] = useState('');
-  const [campaignType, setCampaignType] = useState<string>('newsletter');
+  const [error, setError] = useState<string | null>(null);
+  const [campaignType, setCampaignType] = useState('newsletter');
   const [campaignName, setCampaignName] = useState('');
   const [templateId, setTemplateId] = useState('');
   const [additionalContext, setAdditionalContext] = useState('');
-
-  // Welcome sequence
   const [sequenceLength, setSequenceLength] = useState(3);
 
-  // Templates
+  const handleGenerate = async () => {
+    if (!brandId) return;
+    if (campaignType !== 'welcome_sequence' && !campaignName.trim()) return;
+
+    setGenerating(true);
+    setError(null);
+    try {
+      const endpoint =
+        campaignType === 'welcome_sequence'
+          ? '/email-campaigns/generate-welcome-sequence'
+          : '/email-campaigns/generate';
+
+      const body =
+        campaignType === 'welcome_sequence'
+          ? { brandProfileId: brandId, sequenceLength, additionalContext }
+          : {
+              brandProfileId: brandId,
+              campaignType,
+              name: campaignName.trim(),
+              templateId: templateId || undefined,
+              additionalContext,
+            };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Falha ao gerar campanha');
+      onDone();
+      onClose();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-[16px]">
+      {!brandId ? (
+        <div className="text-[13px] text-textItemBlur rounded-[10px] border border-newTableBorder bg-newSettings p-[12px]">
+          Selecione uma marca no seletor do topo antes de gerar.
+        </div>
+      ) : null}
+
+      <FormField label="Tipo">
+        <FormSelect
+          value={campaignType}
+          onChange={(e) => setCampaignType(e.target.value)}
+        >
+          <option value="newsletter">Newsletter</option>
+          <option value="promotional">Promocional</option>
+          <option value="welcome_sequence">Sequência de boas-vindas</option>
+        </FormSelect>
+      </FormField>
+
+      {campaignType !== 'welcome_sequence' ? (
+        <FormField label="Nome da campanha" required>
+          <FormInput
+            value={campaignName}
+            onChange={(e) => setCampaignName(e.target.value)}
+            placeholder="Ex.: Newsletter de março"
+          />
+        </FormField>
+      ) : (
+        <FormField label="Tamanho da sequência">
+          <FormInput
+            type="number"
+            min={2}
+            max={8}
+            value={sequenceLength}
+            onChange={(e) => setSequenceLength(Number(e.target.value) || 3)}
+          />
+        </FormField>
+      )}
+
+      {templates.length > 0 && campaignType !== 'welcome_sequence' ? (
+        <FormField label="Template" hint="Opcional">
+          <FormSelect
+            value={templateId}
+            onChange={(e) => setTemplateId(e.target.value)}
+          >
+            <option value="">Automático</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label || t.labelEn}
+              </option>
+            ))}
+          </FormSelect>
+        </FormField>
+      ) : null}
+
+      <FormField label="Contexto adicional" hint="Opcional">
+        <FormTextarea
+          value={additionalContext}
+          onChange={(e) => setAdditionalContext(e.target.value)}
+          rows={3}
+          placeholder="Temas, ofertas, tom..."
+        />
+      </FormField>
+
+      {error ? (
+        <div className="text-[13px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-[10px] p-[12px]">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="flex justify-end gap-[8px]">
+        <Button secondary onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button
+          onClick={handleGenerate}
+          loading={generating}
+          disabled={
+            !brandId ||
+            (campaignType !== 'welcome_sequence' && !campaignName.trim())
+          }
+        >
+          Gerar campanha
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PreviewPanel({
+  campaign,
+  html,
+  onClose,
+  onExport,
+}: {
+  campaign: EmailCampaign;
+  html: string | null;
+  onClose: () => void;
+  onExport: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-[14px]">
+      <div>
+        <div className="text-[14px] font-[600] text-newTextColor">
+          {campaign.name}
+        </div>
+        <div className="text-[12px] text-textItemBlur mt-[2px]">
+          Assunto: {campaign.subject}
+          {campaign.preheader ? ` · Preheader: ${campaign.preheader}` : ''}
+        </div>
+      </div>
+      <div className="rounded-[10px] border border-newTableBorder bg-white overflow-hidden min-h-[280px] max-h-[55vh] overflow-y-auto">
+        {html ? (
+          <iframe
+            title="preview"
+            srcDoc={html}
+            className="w-full min-h-[400px] border-0 bg-white"
+          />
+        ) : (
+          <div className="p-[20px] text-[13px] text-textItemBlur">
+            Carregando preview...
+          </div>
+        )}
+      </div>
+      <div className="flex justify-end gap-[8px]">
+        <Button secondary onClick={onClose}>
+          Fechar
+        </Button>
+        <Button onClick={onExport}>Exportar HTML</Button>
+      </div>
+    </div>
+  );
+}
+
+export function EmailCampaignsPage() {
+  const fetch = useFetch();
+  const { data: selectedBrand } = useSelectedBrand();
+  const brandId = selectedBrand?.id as string | undefined;
+  const { openCreateDrawer } = useCreateDrawer();
+
+  const [activeTab, setActiveTab] = useState<'all' | CampaignType>('all');
+  const [campaigns, setCampaigns] = useState<EmailCampaign[]>([]);
+  const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-
-  // Preview/Export
-  const [previewCampaign, setPreviewCampaign] = useState<EmailCampaign | null>(null);
-  const [htmlPreview, setHtmlPreview] = useState<string | null>(null);
-
-  // ---- Load campaigns ----
 
   const loadCampaigns = useCallback(async () => {
     setLoading(true);
@@ -78,86 +289,36 @@ export function EmailCampaignsPage() {
       const query = activeTab !== 'all' ? `?type=${activeTab}` : '';
       const res = await fetch(`/email-campaigns${query}`);
       if (res.ok) {
-        setCampaigns(await res.json());
+        const data = await res.json();
+        setCampaigns(Array.isArray(data) ? data : data?.items || []);
       }
-    } catch (e) {
-      console.error('Failed to load campaigns', e);
+    } catch {
+      setCampaigns([]);
     } finally {
       setLoading(false);
     }
-  }, [activeTab, fetch]);
+  }, [fetch, activeTab]);
 
   useEffect(() => {
     loadCampaigns();
   }, [loadCampaigns]);
-
-  // ---- Load templates ----
 
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch('/email-campaigns/templates');
         if (res.ok) setTemplates(await res.json());
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     })();
   }, [fetch]);
 
-  // ---- Generate ----
-
-  const handleGenerate = async () => {
-    if (!brandProfileId || !campaignName) return;
-    setGenerating(true);
-    setGenerateError(null);
-
-    try {
-      const endpoint = campaignType === 'welcome_sequence'
-        ? '/email-campaigns/generate-welcome-sequence'
-        : '/email-campaigns/generate';
-
-      const body = campaignType === 'welcome_sequence'
-        ? { brandProfileId, sequenceLength, additionalContext }
-        : { brandProfileId, campaignType, name: campaignName, templateId: templateId || undefined, additionalContext };
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Generation failed');
-
-      setShowGenerate(false);
-      setCampaignName('');
-      setAdditionalContext('');
-      loadCampaigns();
-    } catch (e: any) {
-      setGenerateError(e.message);
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  // ---- Preview ----
-
-  const handlePreview = async (campaign: EmailCampaign) => {
-    setPreviewCampaign(campaign);
-    try {
-      const res = await fetch(`/email-campaigns/${campaign.id}/preview`);
-      if (res.ok) {
-        const data = await res.json();
-        setHtmlPreview(data.html);
-      }
-    } catch {
-      setHtmlPreview(campaign.bodyHtml);
-    }
-  };
-
-  // ---- Export ----
-
   const handleExport = async (campaign: EmailCampaign) => {
     try {
-      const res = await fetch(`/email-campaigns/${campaign.id}/export`, { method: 'POST' });
+      const res = await fetch(`/email-campaigns/${campaign.id}/export`, {
+        method: 'POST',
+      });
       if (res.ok) {
         const data = await res.json();
         const blob = new Blob([data.html], { type: 'text/html' });
@@ -167,341 +328,180 @@ export function EmailCampaignsPage() {
         a.download = data.filename || `${campaign.name}.html`;
         a.click();
         URL.revokeObjectURL(url);
-        loadCampaigns(); // Refresh export count
+        loadCampaigns();
       }
     } catch (e) {
       console.error('Export failed', e);
     }
   };
 
-  // ---- Delete ----
-
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this campaign?')) return;
+    if (!confirm('Excluir esta campanha?')) return;
     try {
       await fetch(`/email-campaigns/${id}`, { method: 'DELETE' });
       loadCampaigns();
-    } catch {}
-  };
-
-  // ---- Helpers ----
-
-  const typeLabel = (type: CampaignType) => {
-    switch (type) {
-      case 'NEWSLETTER': return 'Newsletter';
-      case 'WELCOME_SEQUENCE': return 'Welcome Sequence';
-      case 'PROMOTIONAL': return 'Promotional';
-      default: return type;
+    } catch {
+      /* ignore */
     }
   };
 
-  const statusColor = (status: CampaignStatus) => {
-    switch (status) {
-      case 'READY': return '#22c55e';
-      case 'EXPORTED': return '#3b82f6';
-      case 'GENERATING': return '#f59e0b';
-      case 'FAILED': return '#ef4444';
-      default: return '#9ca3af';
-    }
+  const openGenerate = () => {
+    openCreateDrawer({
+      title: 'Gerar campanha de e-mail',
+      size: 560,
+      children: (close) => (
+        <GenerateCampaignForm
+          brandId={brandId}
+          templates={templates}
+          onClose={close}
+          onDone={loadCampaigns}
+        />
+      ),
+    });
   };
 
-  // ---- Render ----
+  const openPreview = async (campaign: EmailCampaign) => {
+    let html: string | null = campaign.bodyHtml || null;
+    try {
+      const res = await fetch(`/email-campaigns/${campaign.id}/preview`);
+      if (res.ok) {
+        const data = await res.json();
+        html = data.html || html;
+      }
+    } catch {
+      /* keep bodyHtml */
+    }
+
+    openCreateDrawer({
+      title: 'Preview da campanha',
+      size: 800,
+      children: (close) => (
+        <PreviewPanel
+          campaign={campaign}
+          html={html}
+          onClose={close}
+          onExport={() => handleExport(campaign)}
+        />
+      ),
+    });
+  };
+
+  const tabs: Array<{ id: 'all' | CampaignType; label: string }> = [
+    { id: 'all', label: 'Todas' },
+    { id: 'NEWSLETTER', label: 'Newsletter' },
+    { id: 'WELCOME_SEQUENCE', label: 'Boas-vindas' },
+    { id: 'PROMOTIONAL', label: 'Promocional' },
+  ];
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Email Campaign Generator</h1>
-          <p style={{ color: 'var(--muted, #888)' }}>
-            Generate newsletter, welcome sequence, and promotional email campaigns.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowGenerate(true)}
-          className="px-4 py-2 text-white rounded text-sm font-medium"
-          style={{ background: 'var(--primary, #3b82f6)' }}
-        >
-          + Generate Campaign
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b pb-2">
-        {(['all', 'NEWSLETTER', 'WELCOME_SEQUENCE', 'PROMOTIONAL'] as const).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-3 py-1.5 text-sm rounded-t ${activeTab === tab ? 'font-semibold' : ''}`}
-            style={{
-              borderBottom: activeTab === tab ? '2px solid var(--primary, #3b82f6)' : '2px solid transparent',
-              color: activeTab === tab ? 'var(--primary, #3b82f6)' : 'var(--muted, #888)',
-            }}
+    <PageShell>
+      <PageHeader
+        description="Newsletters, sequências de boas-vindas e e-mails promocionais gerados com a voz da marca."
+        tabs={tabs.map((t) => (
+          <FilterChip
+            key={t.id}
+            active={activeTab === t.id}
+            onClick={() => setActiveTab(t.id)}
           >
-            {tab === 'all' ? 'All' : typeLabel(tab as CampaignType)}
-          </button>
+            {t.label}
+          </FilterChip>
         ))}
-      </div>
-
-      {/* Campaign List */}
-      {loading ? (
-        <div className="text-center py-12" style={{ color: 'var(--muted, #888)' }}>Loading campaigns...</div>
-      ) : campaigns.length === 0 ? (
-        <div className="text-center py-12 border rounded-lg" style={{ color: 'var(--muted, #888)' }}>
-          <p className="text-lg mb-2">No campaigns yet</p>
-          <p className="text-sm">Click "Generate Campaign" to create your first email campaign.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {campaigns.map(campaign => (
-            <div
-              key={campaign.id}
-              className="border rounded-lg p-4 flex items-center justify-between hover:shadow-sm transition-shadow"
-              style={{ background: 'var(--card, white)' }}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium truncate">{campaign.name}</span>
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full text-white"
-                    style={{ background: statusColor(campaign.status) }}
-                  >
-                    {campaign.status}
-                  </span>
-                  <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--muted, #f3f4f6)', color: 'var(--muted, #6b7280)' }}>
-                    {typeLabel(campaign.type)}
-                  </span>
-                </div>
-                <div className="text-sm truncate" style={{ color: 'var(--muted, #888)' }}>
-                  Subject: {campaign.subject}
-                  {campaign.sequenceIndex !== undefined && campaign.sequenceTotal !== undefined && (
-                    <span className="ml-2">
-                      (Email {campaign.sequenceIndex + 1}/{campaign.sequenceTotal}
-                      {campaign.sequenceDelayDays !== undefined && `, Day ${campaign.sequenceDelayDays}`})
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs mt-1" style={{ color: 'var(--muted, #aaa)' }}>
-                  {new Date(campaign.createdAt).toLocaleDateString()} · {campaign.exportCount} exports
-                </div>
-              </div>
-              <div className="flex gap-2 ml-4">
-                <button
-                  onClick={() => handlePreview(campaign)}
-                  className="px-3 py-1.5 text-xs border rounded hover:bg-gray-50"
-                >
-                  👁 Preview
-                </button>
-                <button
-                  onClick={() => handleExport(campaign)}
-                  className="px-3 py-1.5 text-xs border rounded hover:bg-gray-50"
-                >
-                  📥 Export
-                </button>
-                <button
-                  onClick={() => handleDelete(campaign.id)}
-                  className="px-3 py-1.5 text-xs border rounded hover:bg-red-50 text-red-500"
-                >
-                  🗑
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Generate Dialog */}
-      {showGenerate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowGenerate(false)}>
-          <div
-            className="rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4"
-            style={{ background: 'var(--card, white)' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-semibold">Generate Email Campaign</h2>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Brand Profile ID *</label>
-              <input
-                type="text"
-                value={brandProfileId}
-                onChange={e => setBrandProfileId(e.target.value)}
-                className="w-full border rounded px-3 py-2 text-sm"
-                placeholder="Brand profile ID"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Campaign Type</label>
-              <select
-                value={campaignType}
-                onChange={e => setCampaignType(e.target.value)}
-                className="w-full border rounded px-3 py-2 text-sm"
-              >
-                <option value="newsletter">Newsletter</option>
-                <option value="welcome_sequence">Welcome Sequence</option>
-                <option value="promotional">Promotional</option>
-              </select>
-            </div>
-
-            {campaignType !== 'welcome_sequence' ? (
-              <>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Campaign Name *</label>
-                  <input
-                    type="text"
-                    value={campaignName}
-                    onChange={e => setCampaignName(e.target.value)}
-                    className="w-full border rounded px-3 py-2 text-sm"
-                    placeholder="e.g. June Newsletter"
-                  />
-                </div>
-
-                {templates.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Template (optional)</label>
-                    <select
-                      value={templateId}
-                      onChange={e => setTemplateId(e.target.value)}
-                      className="w-full border rounded px-3 py-2 text-sm"
-                    >
-                      <option value="">Auto-select</option>
-                      {templates.filter(t => {
-                        if (campaignType === 'newsletter') return t.category === 'newsletter';
-                        if (campaignType === 'promotional') return t.category === 'promotional';
-                        return true;
-                      }).map(t => (
-                        <option key={t.id} value={t.id}>{t.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium mb-1">Sequence Length</label>
-                <select
-                  value={sequenceLength}
-                  onChange={e => setSequenceLength(Number(e.target.value))}
-                  className="w-full border rounded px-3 py-2 text-sm"
-                >
-                  {[3, 4, 5].map(n => (
-                    <option key={n} value={n}>{n} emails</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Additional Context (optional)</label>
-              <textarea
-                value={additionalContext}
-                onChange={e => setAdditionalContext(e.target.value)}
-                className="w-full border rounded px-3 py-2 text-sm"
-                rows={3}
-                placeholder="Any specific instructions for the AI..."
-              />
-            </div>
-
-            {generateError && (
-              <div className="p-3 rounded text-sm" style={{ background: '#fef2f2', color: '#dc2626' }}>
-                {generateError}
-              </div>
-            )}
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => setShowGenerate(false)}
-                className="px-4 py-2 text-sm border rounded hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleGenerate}
-                disabled={generating || !brandProfileId || (campaignType !== 'welcome_sequence' && !campaignName)}
-                className="px-4 py-2 text-white rounded text-sm font-medium disabled:opacity-50"
-                style={{ background: 'var(--primary, #3b82f6)' }}
-              >
-                {generating ? 'Generating...' : 'Generate'}
-              </button>
-            </div>
+        actions={<Button onClick={openGenerate}>Gerar campanha</Button>}
+      />
+      <PageBody className={!loading && campaigns.length === 0 ? '!p-0' : undefined}>
+        {loading ? (
+          <div className="text-[13px] text-textItemBlur py-[40px] text-center">
+            Carregando campanhas...
           </div>
-        </div>
-      )}
-
-      {/* Preview Modal */}
-      {previewCampaign && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => { setPreviewCampaign(null); setHtmlPreview(null); }}>
-          <div
-            className="rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
-            style={{ background: 'var(--card, white)' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold">{previewCampaign.name}</h2>
-                <p className="text-sm" style={{ color: 'var(--muted, #888)' }}>
-                  Subject: {previewCampaign.subject}
-                  {previewCampaign.preheader && ` · Preheader: ${previewCampaign.preheader}`}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleExport(previewCampaign)}
-                  className="px-3 py-1.5 text-xs border rounded hover:bg-gray-50"
-                >
-                  📥 Export HTML
-                </button>
-                <button
-                  onClick={() => { setPreviewCampaign(null); setHtmlPreview(null); }}
-                  className="px-3 py-1.5 text-xs border rounded hover:bg-gray-50"
-                >
-                  ✕ Close
-                </button>
-              </div>
-            </div>
-
-            {htmlPreview ? (
-              <div className="border rounded overflow-hidden">
-                <div className="bg-gray-100 px-4 py-2 text-xs flex gap-4" style={{ color: 'var(--muted, #888)' }}>
-                  <span>Desktop (600px)</span>
-                </div>
-                <iframe
-                  srcDoc={htmlPreview}
-                  className="w-full border-t"
-                  style={{ height: '500px' }}
-                  title="Email Preview"
+        ) : campaigns.length === 0 ? (
+          <EmptyState
+            icon={
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M4 6H20V18H4V6Z"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinejoin="round"
                 />
-              </div>
-            ) : (
-              <div className="text-center py-12" style={{ color: 'var(--muted, #888)' }}>
-                Loading preview...
-              </div>
-            )}
-
-            {/* Block summary */}
-            {previewCampaign.bodyJson?.blocks && (
-              <div className="mt-4 space-y-1">
-                <h3 className="text-sm font-medium">Content Blocks:</h3>
-                {previewCampaign.bodyJson.blocks.map((block: any, i: number) => (
-                  <div
-                    key={i}
-                    className="text-sm p-2 rounded flex items-center gap-2"
-                    style={{ background: 'var(--muted, #f5f5f5)' }}
-                  >
-                    <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--primary, #3b82f6)', color: 'white' }}>
-                      {block.type}
+                <path
+                  d="M4 7L12 13L20 7"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            }
+            title="Nenhuma campanha ainda"
+            description="Gere a primeira campanha de e-mail com a marca selecionada."
+            actionLabel="Gerar campanha"
+            onAction={openGenerate}
+          />
+        ) : (
+          <div className="flex flex-col gap-[10px]">
+            {campaigns.map((campaign) => (
+              <SectionCard
+                key={campaign.id}
+                className="!p-[14px] flex items-center gap-[12px]"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-[8px] flex-wrap mb-[4px]">
+                    <span className="text-[14px] font-[600] text-newTextColor truncate">
+                      {campaign.name}
                     </span>
-                    <span className="truncate" style={{ color: 'var(--muted, #555)' }}>
-                      {block.content || block.text || block.alt || block.url || ''}
+                    <span
+                      className={`text-[11px] px-[8px] py-[2px] rounded-full font-[600] ${statusClass(
+                        campaign.status
+                      )}`}
+                    >
+                      {campaign.status}
+                    </span>
+                    <span className="text-[11px] px-[8px] py-[2px] rounded-[6px] bg-newSettings border border-newTableBorder text-textItemBlur">
+                      {typeLabel(campaign.type)}
                     </span>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div className="text-[12px] text-textItemBlur truncate">
+                    Assunto: {campaign.subject}
+                    {campaign.sequenceIndex !== undefined &&
+                    campaign.sequenceTotal !== undefined
+                      ? ` · E-mail ${campaign.sequenceIndex + 1}/${
+                          campaign.sequenceTotal
+                        }`
+                      : ''}
+                  </div>
+                  <div className="text-[11px] text-textItemBlur mt-[4px]">
+                    {new Date(campaign.createdAt).toLocaleDateString('pt-BR')} ·{' '}
+                    {campaign.exportCount} exports
+                  </div>
+                </div>
+                <div className="flex items-center gap-[8px] shrink-0">
+                  <Button
+                    secondary
+                    className="!h-[32px] !text-[12px]"
+                    onClick={() => openPreview(campaign)}
+                  >
+                    Preview
+                  </Button>
+                  <Button
+                    secondary
+                    className="!h-[32px] !text-[12px]"
+                    onClick={() => handleExport(campaign)}
+                  >
+                    Exportar
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(campaign.id)}
+                    className="text-[12px] text-textItemBlur hover:text-red-400 px-[8px] h-[32px]"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </SectionCard>
+            ))}
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </PageBody>
+    </PageShell>
   );
 }

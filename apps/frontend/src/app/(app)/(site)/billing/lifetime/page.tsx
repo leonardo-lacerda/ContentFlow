@@ -1,11 +1,3 @@
-import { LifetimeDeal } from '@gitroom/frontend/components/billing/lifetime.deal';
 export const dynamic = 'force-dynamic';
-import { Metadata } from 'next';
-import { isGeneralServerSide } from '@gitroom/helpers/utils/is.general.server.side';
-export const metadata: Metadata = {
-  title: `${isGeneralServerSide() ? 'ContentFlow' : 'Gitroom'} Lifetime deal`,
-  description: '',
-};
-export default async function Page() {
-  return <LifetimeDeal />;
-}
+import { redirect } from 'next/navigation';
+export default function Index() { redirect('/billing'); }

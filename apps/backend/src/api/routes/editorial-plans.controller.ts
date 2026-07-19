@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { UseGuards, Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -8,6 +9,7 @@ import { EditorialPlanService } from '@gitroom/nestjs-libraries/database/prisma/
 import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
 
 @ApiTags('Editorial Plans')
+@UseGuards(V1SurfaceGuard)
 @Controller('/editorial-plans')
 export class EditorialPlansController {
   constructor(

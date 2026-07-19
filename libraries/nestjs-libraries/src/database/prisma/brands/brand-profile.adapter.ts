@@ -2,7 +2,9 @@ import { Organization } from '@prisma/client';
 
 export interface LegacyCompanyProfile {
   id: string;
-  name: string;
+  /** Alguns legados usam `name`; o JSON normalizado usa `companyName`. */
+  name?: string;
+  companyName?: string;
   website?: string;
   industry?: string;
   targetAudience?: string;
@@ -38,7 +40,7 @@ export class BrandProfileAdapter {
    */
   static fromLegacyCompanyProfile(company: LegacyCompanyProfile): BrandProfileInput {
     return {
-      name: company.name || 'Minha Marca',
+      name: company.companyName || company.name || 'Minha Marca',
       website: company.website || undefined,
       industry: company.industry || undefined,
     };
@@ -50,8 +52,8 @@ export class BrandProfileAdapter {
   static extractDnaFromLegacy(company: LegacyCompanyProfile): any {
     return {
       summary: {
-        tagline: company.summary || '',
-        description: '',
+        tagline: '',
+        description: company.summary || '',
         industry: company.industry || '',
         targetAudience: company.targetAudience || '',
       },
@@ -59,22 +61,22 @@ export class BrandProfileAdapter {
         tone: company.toneOfVoice || '',
         style: '',
         personality: '',
-        forbiddenWords: company.forbiddenTerms || '',
+        forbiddenWords: String(company.forbiddenTerms || '').split(/[,;]/).map((s) => s.trim()).filter(Boolean),
       },
       audience: {
         demographics: '',
-        painPoints: '',
-        desires: '',
-        objections: '',
+        painPoints: [] as string[],
+        desires: [] as string[],
+        objections: [] as string[],
       },
       offer: {
-        products: company.productsOrServices || '',
-        services: '',
-        uniqueSellingPoints: company.differentials || '',
+        products: String(company.productsOrServices || '').split(/[,;]/).map((s) => s.trim()).filter(Boolean),
+        services: [] as string[],
+        uniqueSellingPoints: String(company.differentials || '').split(/[,;]/).map((s) => s.trim()).filter(Boolean),
         pricingHint: '',
       },
       visual: {
-        colors: company.brandColors || '',
+        colors: String(company.brandColors || '').split(/[,;]/).map((s) => s.trim()).filter(Boolean),
         style: company.visualIdentitySummary || '',
         typographyHint: company.brandFonts || '',
       },
@@ -93,7 +95,12 @@ export class BrandProfileAdapter {
     if (!org.description) return false;
     try {
       const parsed = JSON.parse(org.description);
-      return !!(parsed.companies || parsed.name || parsed.website);
+      return !!(
+        parsed.companies ||
+        parsed.name ||
+        parsed.companyName ||
+        parsed.website
+      );
     } catch {
       return false;
     }
@@ -109,7 +116,7 @@ export class BrandProfileAdapter {
       if (parsed.companies && Array.isArray(parsed.companies)) {
         return parsed.companies as LegacyCompanyProfile[];
       }
-      if (parsed.name) {
+      if (parsed.name || parsed.companyName) {
         return [parsed as LegacyCompanyProfile];
       }
       return [];

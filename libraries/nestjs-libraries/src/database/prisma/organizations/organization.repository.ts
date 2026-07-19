@@ -420,6 +420,37 @@ export class OrganizationRepository {
     });
   }
 
+  getOnboardingStatus(orgId: string) {
+    return this._organization.model.organization.findUnique({
+      where: {
+        id: orgId,
+      },
+      select: {
+        onboardingCompletedAt: true,
+        onboardingProgress: true,
+      },
+    });
+  }
+
+  updateOnboardingStatus(
+    orgId: string,
+    data: {
+      onboardingCompletedAt?: Date | null;
+      onboardingProgress?: object | null;
+    }
+  ) {
+    return this._organization.model.organization.update({
+      where: {
+        id: orgId,
+      },
+      data,
+      select: {
+        onboardingCompletedAt: true,
+        onboardingProgress: true,
+      },
+    });
+  }
+
   getCompanyProfile(orgId: string) {
     return this._organization.model.organization.findUnique({
       where: {

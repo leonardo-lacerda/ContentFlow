@@ -6,7 +6,7 @@ export function HowItWorksSection() {
       <div className="container">
         <div className="section-head reveal">
           <span className="eyebrow">Como funciona</span>
-          <h2>Do site ao carrossel pronto, em três passos.</h2>
+          <h2>Da URL ao post pronto, em três passos.</h2>
         </div>
         <div className="steps__grid">
           {STEPS.map((step) => (

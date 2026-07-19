@@ -193,9 +193,9 @@ export const ContinueIntegration: FC<{
       }
 
       navigateOrShow(
-        `/launches?added=${provider}&msg=Channel Updated${
-          onboarding ? '&onboarding=true' : ''
-        }`,
+        onboarding
+          ? `/onboarding?step=connect-channels&added=${provider}`
+          : `/launches?added=${provider}&msg=Channel Updated`,
         returnURL,
         'Channel Updated'
       );
@@ -232,9 +232,9 @@ export const ContinueIntegration: FC<{
         }
 
         navigateOrShow(
-          `/launches?added=${provider}&msg=Channel Added${
-            twoStepState.onboarding ? '&onboarding=true' : ''
-          }`,
+          twoStepState.onboarding
+            ? `/onboarding?step=connect-channels&added=${provider}`
+            : `/launches?added=${provider}&msg=Channel Added`,
           twoStepState.returnURL,
           'Channel Added'
         );
@@ -394,7 +394,7 @@ export const ContinueIntegration: FC<{
                 'An error occurred. Please try again.'
               )}
           </div>
-          {logged && <Redirect url="/launches" delay={3000} />}
+          {logged && <Redirect url="/publish" delay={3000} />}
         </div>
       </div>
     );

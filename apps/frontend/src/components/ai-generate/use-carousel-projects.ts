@@ -89,6 +89,7 @@ export interface UseCarouselProjectsParams {
   setCompanyIdeas: React.Dispatch<React.SetStateAction<CarouselIdea[]>>;
   setCompanyProfiles: React.Dispatch<React.SetStateAction<CompanyProfile[]>>;
   setLoadingSavedProjects: React.Dispatch<React.SetStateAction<boolean>>;
+  setSavedProjects: React.Dispatch<React.SetStateAction<SavedAiProject[]>>;
   setLoadingIdeas: React.Dispatch<React.SetStateAction<boolean>>;
   setIdeasError: React.Dispatch<React.SetStateAction<string>>;
   setReferenceImages: React.Dispatch<React.SetStateAction<any[]>>;
@@ -185,6 +186,7 @@ export function useCarouselProjects(
     setCompanyIdeas,
     setCompanyProfiles,
     setLoadingSavedProjects,
+    setSavedProjects,
     setLoadingIdeas,
     setIdeasError,
     setReferenceImages,

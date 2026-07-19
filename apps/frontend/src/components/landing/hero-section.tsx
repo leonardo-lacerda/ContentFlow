@@ -3,26 +3,25 @@ export function HeroSection() {
     <section className="hero">
       <div className="container hero__grid">
         <div className="hero__copy reveal">
-          <span className="eyebrow">De URL para carrossel pronto</span>
+          <span className="eyebrow">ContentFlow</span>
           <h1 className="hero__title">
-            Cole o site. A IA cria carrosséis com a{" "}
-            <em>cara da sua marca</em>.
+            Cole a URL da sua marca. Em minutos, publique conteúdo com a{" "}
+            <em>sua cara</em>.
           </h1>
           <p className="hero__sub">
-            ContentFlow extrai o DNA da sua marca — cores, tom, público — e
-            gera carrosséis, posts e legendas automaticamente. Pronto em
-            minutos.
+            A IA aprende seu DNA e gera carrosséis e posts prontos pra postar —
+            sem contratar freelancer ou agência.
           </p>
           <div className="hero__cta">
             <a href="/auth" className="btn btn--primary btn--lg">
-              Comece com sua URL
+              Começar grátis
             </a>
-            <a href="#recursos" className="btn btn--text btn--lg">
+            <a href="#como-funciona" className="btn btn--text btn--lg">
               Ver como funciona →
             </a>
           </div>
           <p className="hero__trust">
-            Sem cartão de crédito · Primeiros carrosséis grátis
+            Sem cartão · DNA → Swipe → Publicar · IG, LinkedIn, X, FB, TikTok
           </p>
         </div>
 

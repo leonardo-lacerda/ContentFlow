@@ -1,105 +1,219 @@
-/** Landing page data constants */
+/** Landing page data constants — ContentFlow v1 */
 
 export const FAQ_ITEMS = [
   {
-    question: "Que tipos de conteúdo posso gerar?",
+    question: 'Que tipos de conteúdo posso gerar?',
     answer:
-      "Carrosséis, posts de imagem única, legendas e variações da mesma ideia para diferentes formatos e redes.",
+      'Carrosséis, posts de imagem única, legendas e variações da mesma ideia para Instagram, LinkedIn, X, Facebook e TikTok.',
   },
   {
-    question: "Como vocês mantêm a identidade da minha marca?",
+    question: 'Como vocês mantêm a identidade da minha marca?',
     answer:
-      "Você cadastra sua empresa com cores, fontes e tom de voz. A IA usa esse contexto em todos os carrosséis, mantendo tudo consistente — e você pode cadastrar várias empresas.",
+      'Você cola a URL do site. A IA monta o Brand DNA (cores, tom de voz, público, oferta) e usa esse perfil em todo conteúdo.',
   },
   {
-    question: "Posso editar o resultado?",
+    question: 'Posso editar o resultado?',
     answer:
-      "Sim. Toda copy e cada elemento podem ser ajustados antes de exportar — a IA dá o ponto de partida, você tem o controle final.",
+      'Sim. Toda copy e cada slide podem ser ajustados antes de exportar ou publicar — a IA dá o ponto de partida, você tem o controle final.',
   },
   {
-    question: "As imagens geradas são minhas?",
+    question: 'As imagens geradas são minhas?',
     answer:
-      "Sim. Os carrosséis que você cria são seus para usar como quiser nas suas redes e campanhas.",
+      'Sim. Os carrosséis que você cria são seus para usar como quiser nas suas redes.',
   },
   {
-    question: "Preciso saber design?",
+    question: 'Preciso saber design?',
     answer:
-      "Não. O briefing é por seleção e o estúdio cuida da composição. Você foca na mensagem, não nas ferramentas.",
+      'Não. O estúdio cuida da composição. Você foca na mensagem, não nas ferramentas.',
   },
   {
-    question: "O que é Brand DNA?",
+    question: 'O que é Brand DNA?',
     answer:
-      "É o perfil persistente da sua marca: cores, tom de voz, público, diferenciais. O ContentFlow extrai automaticamente do seu site e usa em todo conteúdo gerado.",
+      'É o perfil persistente da sua marca: cores, tom de voz, público, diferenciais. O ContentFlow extrai do seu site e usa em todo conteúdo gerado.',
   },
   {
-    question: "Funciona para agências?",
+    question: 'Serve para agências com vários clientes?',
     answer:
-      "Sim. Você pode cadastrar múltiplas marcas, cada uma com seu próprio Brand DNA, e gerar conteúdo independente para cada cliente.",
+      'O v1 é feito para o founder solo / uma marca. Multi-marca e times entram depois, se o core provar valor.',
   },
 ] as const;
 
 export const PRICING_PLANS = [
   {
-    name: "Início",
-    price: "R$ 0",
-    period: "/mês",
-    description: "Para experimentar o fluxo completo: URL → DNA → carrossel",
+    name: 'Início',
+    price: 'R$ 0',
+    period: '/mês',
+    description: 'Para experimentar o fluxo completo: URL → DNA → carrossel',
     features: [
-      "1 empresa cadastrada",
-      "10 carrosséis por mês (até 10 imagens cada)",
-      "Edição de copy e visual",
+      '1 marca (Brand DNA)',
+      '5 carrosséis por mês',
+      '10 ideias por mês',
+      '1 canal social',
+      'Edição de copy e visual',
     ],
-    cta: { label: "Criar grátis", href: "/auth", variant: "ghost" as const },
+    cta: { label: 'Criar grátis', href: '/auth', variant: 'ghost' as const },
     featured: false,
-    tag: undefined,
+    tag: undefined as string | undefined,
   },
   {
-    name: "Profissional",
-    price: "R$ 79",
-    period: "/mês",
+    name: 'Profissional',
+    price: 'R$ 79',
+    period: '/mês',
     description:
-      "Para quem usa Brand DNA e calendário editorial todos os dias",
+      'Para o founder que posta todo dia com a cara da marca — sem freelancer',
     features: [
-      "Carrosséis ilimitados (até 10 imagens)",
-      "5 empresas cadastradas",
-      "Todos os formatos e variações por rede",
-      "Export em alta qualidade",
+      '1 marca (Brand DNA)',
+      '40 carrosséis por mês',
+      '100 ideias / Content Swipe',
+      '5 canais (IG, FB, LinkedIn, X, TikTok)',
+      '200 imagens IA / mês',
+      'Agendar e publicar',
     ],
     cta: {
-      label: "Assinar Profissional",
-      href: "/auth",
-      variant: "primary" as const,
+      label: 'Assinar Profissional',
+      href: '/auth',
+      variant: 'primary' as const,
     },
     featured: true,
-    tag: "Mais popular",
-  },
-  {
-    name: "Estúdio",
-    price: "R$ 199",
-    period: "/mês",
-    description: "Para agências que gerenciam múltiplas marcas com DNA próprio",
-    features: [
-      "Tudo do Profissional",
-      "Empresas cadastradas ilimitadas",
-      "Membros da equipe",
-      "Biblioteca de mídia compartilhada",
-    ],
-    cta: {
-      label: "Falar com vendas",
-      href: "/auth",
-      variant: "ghost" as const,
-    },
-    featured: false,
-    tag: undefined,
+    tag: 'Mais popular',
   },
 ] as const;
 
 export const COMPARISON_ROWS = [
-  { feature: "Brand DNA persistente", contentflow: true, canva: false, chatgpt: false, scheduling: false },
-  { feature: "Geração com IA", contentflow: true, canva: "partial", chatgpt: true, scheduling: false },
-  { feature: "Calendário integrado", contentflow: true, canva: false, chatgpt: false, scheduling: true },
-  { feature: "Publicação direta", contentflow: true, canva: false, chatgpt: false, scheduling: true },
-  { feature: "Multi-marca", contentflow: true, canva: false, chatgpt: false, scheduling: true },
+  {
+    feature: 'Brand DNA persistente',
+    contentflow: true,
+    canva: false,
+    chatgpt: false,
+    scheduling: false,
+  },
+  {
+    feature: 'Geração com IA',
+    contentflow: true,
+    canva: 'partial',
+    chatgpt: true,
+    scheduling: false,
+  },
+  {
+    feature: 'Content Swipe (ideias)',
+    contentflow: true,
+    canva: false,
+    chatgpt: false,
+    scheduling: false,
+  },
+  {
+    feature: 'Calendário integrado',
+    contentflow: true,
+    canva: false,
+    chatgpt: false,
+    scheduling: true,
+  },
+  {
+    feature: 'Publicar nas redes',
+    contentflow: true,
+    canva: false,
+    chatgpt: false,
+    scheduling: true,
+  },
+] as const;
+
+export const HERO = {
+  eyebrow: 'ContentFlow',
+  title: 'Cole a URL da sua marca. Em minutos, publique conteúdo com a sua cara.',
+  subtitle:
+    'A IA aprende seu DNA e gera carrosséis e posts prontos pra postar — sem contratar freelancer ou agência.',
+  primaryCta: { label: 'Começar grátis', href: '/auth' },
+  secondaryCta: { label: 'Ver como funciona', href: '#como-funciona' },
+} as const;
+
+export const HOW_IT_WORKS = [
+  {
+    step: '1',
+    title: 'Cole a URL',
+    description: 'A IA analisa o site e monta o Brand DNA.',
+  },
+  {
+    step: '2',
+    title: 'Revise o DNA',
+    description: 'Voz, público, oferta e visual — você ajusta em um minuto.',
+  },
+  {
+    step: '3',
+    title: 'Gere conteúdo',
+    description: 'Swipe de ideias, carrosséis e posts com a cara da marca.',
+  },
+  {
+    step: '4',
+    title: 'Publique',
+    description: 'Agende no Instagram, LinkedIn, X, Facebook ou TikTok.',
+  },
+] as const;
+
+/** Alias usado por how-it-works-section.tsx */
+export const STEPS = [
+  {
+    number: '01',
+    title: 'Cole a URL',
+    description: 'A IA analisa o site e monta o Brand DNA da marca.',
+  },
+  {
+    number: '02',
+    title: 'Revise o DNA',
+    description: 'Ajuste voz, público, oferta e visual em um minuto.',
+  },
+  {
+    number: '03',
+    title: 'Gere e publique',
+    description:
+      'Swipe de ideias, carrosséis e posts — agende no IG, LinkedIn, X, FB ou TikTok.',
+  },
+] as const;
+
+export const DEEP_DIVES = [
+  {
+    eyebrow: 'Marca',
+    title: 'Brand DNA',
+    description:
+      'Um perfil vivo da marca. Cores, tipografia e tom de voz aplicados em cada peça.',
+    features: [
+      'Extração automática a partir da URL',
+      'Edição manual de voz e visual',
+      'Snapshots versionados do DNA',
+    ],
+    reverse: false,
+  },
+  {
+    eyebrow: 'Ideias',
+    title: 'Content Swipe',
+    description:
+      'Ideias no ritmo do Tinder: aprove o que serve, descarte o resto, gere o carrossel.',
+    features: [
+      'Ideias alinhadas ao DNA',
+      'Aprovar / rejeitar em segundos',
+      'Um toque para virar carrossel',
+    ],
+    reverse: true,
+  },
+  {
+    eyebrow: 'Publicar',
+    title: 'Do estúdio ao feed',
+    description:
+      'Agende e publique nas redes que importam — sem exportar ZIP.',
+    features: [
+      'Instagram, Facebook, LinkedIn, X, TikTok',
+      'Calendário integrado',
+      'Biblioteca de mídia',
+    ],
+    reverse: false,
+  },
+] as const;
+
+export const NAV_LINKS = [
+  { label: "Recursos", href: "#recursos" },
+  { label: "Formatos", href: "#formatos" },
+  { label: "Exemplos", href: "#exemplos" },
+  { label: "Preços", href: "#precos" },
+  { label: "FAQ", href: "#faq" },
 ] as const;
 
 export const FEATURES = [
@@ -132,25 +246,73 @@ export const FEATURES = [
   },
 ] as const;
 
-export const STEPS = [
+export const GALLERY_ITEMS = [
   {
-    number: 1,
-    title: "Cole a URL da sua marca",
-    description:
-      "O ContentFlow analisa o site e extrai o Brand DNA: cores, tom de voz, público-alvo e proposta de valor.",
+    brand: "MARCA A",
+    title: "3 ideias para esta semana",
+    cta: "Salve →",
+    variant: "photo" as const,
+    image: "https://picsum.photos/seed/contentflow-a/640/800",
   },
   {
-    number: 2,
-    title: "A IA gera ideias e carrosséis",
-    description:
-      "Com o DNA em mãos, a inteligência cria ideias, roteiros e slides alinhados à sua marca.",
+    brand: "MARCA B",
+    title: "Como dobrar seu alcance",
+    cta: "Veja como →",
+    variant: "ink" as const,
+    image: null as string | null,
   },
   {
-    number: 3,
-    title: "Revise, agende e publique",
-    description:
-      "Aprove ideias no Content Swipe, edite slides e agende direto no calendário editorial.",
+    brand: "MARCA C",
+    title: "Mitos &amp; verdades",
+    cta: "Descubra →",
+    variant: "photo" as const,
+    image: "https://picsum.photos/seed/contentflow-c/640/800",
   },
+  {
+    brand: "MARCA D",
+    title: "O método em 4 passos",
+    cta: "Comece →",
+    variant: "sand" as const,
+    image: null as string | null,
+  },
+  {
+    brand: "MARCA E",
+    title: "Antes &amp; depois",
+    cta: "Compare →",
+    variant: "photo" as const,
+    image: "https://picsum.photos/seed/contentflow-e/640/800",
+  },
+  {
+    brand: "MARCA F",
+    title: "Guia rápido para iniciantes",
+    cta: "Aprenda →",
+    variant: "cream" as const,
+    image: null as string | null,
+  },
+] as const;
+
+export const CHANNELS = [
+  "Carrosséis",
+  "Posts únicos",
+  "Legendas",
+  "Stories",
+  "Threads",
+  "Capas",
+  "Variações por rede",
+] as const;
+
+export const PROBLEM_ITEMS = [
+  "Horas no Canva e na copy, toda semana",
+  "Conteúdo que foge da identidade da marca",
+  "Bloqueio criativo e falta de ideias",
+  "Cada rede pedindo um formato diferente",
+] as const;
+
+export const SOLUTION_ITEMS = [
+  "Carrosséis prontos em minutos, não em horas",
+  "Identidade da marca aplicada automaticamente",
+  "Ideias e copy geradas a partir do seu tema",
+  "Uma ideia, adaptada para cada formato e rede",
 ] as const;
 
 export const FLOW_STEPS = [
@@ -158,7 +320,7 @@ export const FLOW_STEPS = [
   { emoji: "🧬", title: "DNA", description: "Cores, tom de voz, público-alvo e diferenciais — salvos e reutilizáveis." },
   { emoji: "💡", title: "Ideias", description: "A IA sugere temas, ângulos e roteiros alinhados ao DNA da marca." },
   { emoji: "🎨", title: "Carrossel", description: "Slides com copy dentro da imagem, identidade aplicada automaticamente." },
-  { emoji: "📅", title: "Calendário", description: "Agende no calendário editorial e acompanhe toda a sua produção." },
+  { emoji: "📅", title: "Calendário", description: "Agende no Instagram, LinkedIn, X, Facebook ou TikTok." },
 ] as const;
 
 export const SOCIAL_PROOF_METRICS = [
@@ -187,135 +349,7 @@ export const TESTIMONIALS = [
     quote:
       "\"Atendo mais clientes na agência porque a produção de conteúdo deixou de ser gargalo.\"",
     name: "Camila S.",
-    role: "Agência",
+    role: "Founder",
     avatar: "https://i.pravatar.cc/80?img=32",
-  },
-] as const;
-
-export const GALLERY_ITEMS = [
-  {
-    brand: "MARCA A",
-    title: "3 ideias para esta semana",
-    cta: "Salve →",
-    variant: "photo" as const,
-    image: "https://picsum.photos/seed/contentflow-a/640/800",
-  },
-  {
-    brand: "MARCA B",
-    title: "Como dobrar seu alcance",
-    cta: "Veja como →",
-    variant: "ink" as const,
-    image: null,
-  },
-  {
-    brand: "MARCA C",
-    title: "Mitos &amp; verdades",
-    cta: "Descubra →",
-    variant: "photo" as const,
-    image: "https://picsum.photos/seed/contentflow-c/640/800",
-  },
-  {
-    brand: "MARCA D",
-    title: "O método em 4 passos",
-    cta: "Comece →",
-    variant: "sand" as const,
-    image: null,
-  },
-  {
-    brand: "MARCA E",
-    title: "Antes &amp; depois",
-    cta: "Compare →",
-    variant: "photo" as const,
-    image: "https://picsum.photos/seed/contentflow-e/640/800",
-  },
-  {
-    brand: "MARCA F",
-    title: "Guia rápido para iniciantes",
-    cta: "Aprenda →",
-    variant: "cream" as const,
-    image: null,
-  },
-] as const;
-
-export const SOCIAL_PLATFORMS = [
-  { name: "Instagram", icon: "instagram" },
-  { name: "LinkedIn", icon: "linkedin" },
-  { name: "TikTok", icon: "tiktok" },
-  { name: "YouTube", icon: "youtube" },
-  { name: "X", icon: "x" },
-  { name: "Facebook", icon: "facebook" },
-] as const;
-
-export const CHANNELS = [
-  "Carrosséis",
-  "Posts únicos",
-  "Legendas",
-  "Stories",
-  "Threads",
-  "Capas",
-  "Variações por rede",
-] as const;
-
-export const NAV_LINKS = [
-  { label: "Recursos", href: "#recursos" },
-  { label: "Formatos", href: "#formatos" },
-  { label: "Exemplos", href: "#exemplos" },
-  { label: "Preços", href: "#precos" },
-  { label: "FAQ", href: "#faq" },
-] as const;
-
-export const PROBLEM_ITEMS = [
-  "Horas no Canva e na copy, toda semana",
-  "Conteúdo que foge da identidade da marca",
-  "Bloqueio criativo e falta de ideias",
-  "Cada rede pedindo um formato diferente",
-] as const;
-
-export const SOLUTION_ITEMS = [
-  "Carrosséis prontos em minutos, não em horas",
-  "Identidade da marca aplicada automaticamente",
-  "Ideias e copy geradas a partir do seu tema",
-  "Uma ideia, adaptada para cada formato e rede",
-] as const;
-
-export const DEEP_DIVES = [
-  {
-    eyebrow: "Estúdio de Carrosséis",
-    title: "Carrosséis editoriais, sem esforço de design.",
-    description:
-      "Descreva o tema e o estúdio monta a sequência: gancho, desenvolvimento e fechamento — com a copy dentro da imagem e a cara da sua marca.",
-    features: [
-      "Briefing guiado, quase tudo por seleção",
-      "Copy de cada slide gerada com IA",
-      "Edite qualquer texto antes de exportar",
-    ],
-    frameTitle: "Estúdio",
-    reverse: false,
-  },
-  {
-    eyebrow: "Posts e legendas",
-    title: "Não é só carrossel — é todo o seu feed.",
-    description:
-      "Gere posts de imagem única e a legenda combinando, no mesmo tom. Tudo coerente, do visual ao texto.",
-    features: [
-      "Imagem e legenda no mesmo tom",
-      "Sugestões de hook e CTA",
-      "Pronto para copiar e publicar",
-    ],
-    frameTitle: "Post + legenda",
-    reverse: true,
-  },
-  {
-    eyebrow: "Empresas cadastradas",
-    title: "Cadastre sua marca uma vez. Use em tudo.",
-    description:
-      "Cadastre a empresa com cores, fontes e tom de voz. A inteligência aplica esse contexto em cada carrossel — e você pode cadastrar quantas marcas quiser.",
-    features: [
-      "Cores e tipografia da marca em todo carrossel",
-      "Tom de voz aprendido a partir da sua marca",
-      "Cadastre várias empresas e alterne entre elas",
-    ],
-    frameTitle: "Empresa",
-    reverse: false,
   },
 ] as const;

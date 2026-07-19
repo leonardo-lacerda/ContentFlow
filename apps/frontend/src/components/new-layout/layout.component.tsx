@@ -37,11 +37,11 @@ import { LanguageComponent } from '@gitroom/frontend/components/layout/language.
 import { ChromeExtensionComponent } from '@gitroom/frontend/components/layout/chrome.extension.component';
 import NotificationComponent from '@gitroom/frontend/components/notifications/notification.component';
 import { OrganizationSelector } from '@gitroom/frontend/components/layout/organization.selector';
-import { BrandSelector } from '@gitroom/frontend/components/brand-dna/brand-selector.component';
 import { StreakComponent } from '@gitroom/frontend/components/layout/streak.component';
+import { JobsIndicator } from '@gitroom/frontend/components/generation-jobs/jobs-indicator.component';
+import { OnboardingGate } from '@gitroom/frontend/components/layout/onboarding-gate.component';
 import { PreConditionComponent } from '@gitroom/frontend/components/layout/pre-condition.component';
 import { AttachToFeedbackIcon } from '@gitroom/frontend/components/new-layout/sentry.feedback.component';
-import { FirstBillingComponent } from '@gitroom/frontend/components/billing/first.billing.component';
 
 const jakartaSans = Plus_Jakarta_Sans({
   weight: ['600', '500', '700'],
@@ -52,7 +52,7 @@ const jakartaSans = Plus_Jakarta_Sans({
 export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
   const fetch = useFetch();
 
-  const { backendUrl, billingEnabled, isGeneral } = useVariables();
+  const { backendUrl } = useVariables();
 
   // Feedback icon component attaches Sentry feedback to a top-bar icon when DSN is present
   const searchParams = useSearchParams();
@@ -95,25 +95,28 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
               )}
             >
               <div>{user?.admin ? <Impersonate /> : <div />}</div>
-              {user.tier === 'FREE' && isGeneral && billingEnabled ? (
-                <FirstBillingComponent />
-              ) : (
+              {/* ContentFlow v1: FREE tem acesso ao loop (limites no backend). Sem paywall full-screen. */}
+              <OnboardingGate>
                 <>
                   <AnnouncementBanner />
                   <div className="flex-1 flex gap-[8px]">
                     <Support />
-                    <div className="flex flex-col bg-newBgColorInner w-[80px] rounded-[12px]">
-                      <div
-                        id="left-menu"
-                        className={clsx(
-                          'fixed h-full w-[64px] start-[17px] flex flex-1 top-0',
-                          user?.admin && 'pt-[60px] max-h-[1000px]:w-[500px]'
-                        )}
-                      >
-                        <div className="flex flex-col h-full gap-[32px] flex-1 py-[12px]">
-                          <Logo />
-                          <TopMenu />
-                        </div>
+                    {/* Spacer keeps content offset; actual menu is fixed and expands on hover */}
+                    <div className="flex flex-col w-[72px] shrink-0" aria-hidden />
+                    <div
+                      id="left-menu"
+                      className={clsx(
+                        'group/sidebar fixed z-[200] start-[12px] top-[12px]',
+                        'h-[calc(100dvh-24px)] w-[72px] hover:w-[228px]',
+                        'flex flex-col bg-newBgColorInner rounded-[12px]',
+                        'overflow-hidden transition-[width,box-shadow] duration-200 ease-out',
+                        'hover:shadow-[0_8px_32px_rgba(0,0,0,0.35)]',
+                        user?.admin && 'pt-[48px]'
+                      )}
+                    >
+                      <div className="flex flex-col h-full gap-[10px] flex-1 py-[12px] px-[8px] min-h-0">
+                        <Logo />
+                        <TopMenu />
                       </div>
                     </div>
                     <div className="flex-1 bg-newBgLineColor rounded-[12px] overflow-hidden flex flex-col gap-[1px] blurMe">
@@ -125,11 +128,11 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
                           <StreakComponent />
                           <div className="w-[1px] h-[20px] bg-blockSeparator" />
                           <OrganizationSelector />
-                          <BrandSelector />
                           <div className="hover:text-newTextColor">
                             <ModeComponent />
                           </div>
                           <div className="w-[1px] h-[20px] bg-blockSeparator" />
+                          <JobsIndicator />
                           <LanguageComponent />
                           <ChromeExtensionComponent />
                           <div className="w-[1px] h-[20px] bg-blockSeparator" />
@@ -141,7 +144,7 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
                     </div>
                   </div>
                 </>
-              )}
+              </OnboardingGate>
             </div>
           </CheckPayment>
         </MantineWrapper>

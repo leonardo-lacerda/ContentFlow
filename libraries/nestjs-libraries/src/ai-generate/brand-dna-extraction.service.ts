@@ -44,7 +44,7 @@ export class BrandDnaExtractionService {
     const { url } = validation.data;
 
     // 2. Atualizar status para ANALYZING
-    await this.brandProfileRepository.update(brandProfileId, {
+    await this.brandProfileRepository.updateById(brandProfileId, {
       status: BrandProfileStatus.ANALYZING,
     });
 
@@ -60,7 +60,7 @@ export class BrandDnaExtractionService {
 
       if (!llmResult) {
         errors.push('AI returned null or empty response');
-        await this.brandProfileRepository.update(brandProfileId, {
+        await this.brandProfileRepository.updateById(brandProfileId, {
           status: BrandProfileStatus.FAILED,
         });
         return { success: false, errors };
@@ -72,7 +72,7 @@ export class BrandDnaExtractionService {
         errors.push(
           'AI response validation failed: ' + validationResult.error.message,
         );
-        await this.brandProfileRepository.update(brandProfileId, {
+        await this.brandProfileRepository.updateById(brandProfileId, {
           status: BrandProfileStatus.FAILED,
         });
         return { success: false, errors };
@@ -133,16 +133,33 @@ export class BrandDnaExtractionService {
       }
 
       // 10. Atualizar status para NEEDS_REVIEW
-      await this.brandProfileRepository.update(brandProfileId, {
+      await this.brandProfileRepository.updateById(brandProfileId, {
         status: BrandProfileStatus.NEEDS_REVIEW,
       });
 
-      return { success: true, snapshot, assets };
+      // Serialize Prisma models to plain JSON-safe objects (no Decimal/BigInt surprises)
+      return {
+        success: true,
+        snapshot: JSON.parse(
+          JSON.stringify(snapshot, (_k, v) =>
+            typeof v === 'bigint' ? v.toString() : v
+          )
+        ),
+        assets: JSON.parse(
+          JSON.stringify(assets, (_k, v) =>
+            typeof v === 'bigint' ? v.toString() : v
+          )
+        ),
+      };
     } catch (error: any) {
       errors.push(error.message || 'Extraction failed');
-      await this.brandProfileRepository.update(brandProfileId, {
-        status: BrandProfileStatus.FAILED,
-      });
+      try {
+        await this.brandProfileRepository.updateById(brandProfileId, {
+          status: BrandProfileStatus.FAILED,
+        });
+      } catch {
+        // ignore secondary failure
+      }
       return { success: false, errors };
     }
   }

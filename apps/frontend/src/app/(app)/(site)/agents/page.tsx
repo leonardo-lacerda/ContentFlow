@@ -1,11 +1,3 @@
-import { Metadata } from 'next';
+export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
-
-export const metadata: Metadata = {
-  title: 'ContentFlow - IA Generate',
-  description: '',
-};
-
-export default async function Page() {
-  return redirect('/agents/new');
-}
+export default function Index() { redirect('/'); }

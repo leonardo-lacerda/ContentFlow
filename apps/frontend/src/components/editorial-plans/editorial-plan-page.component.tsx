@@ -26,12 +26,18 @@ import { useEditorialPlans, useEditorialSlots, mutateEditorialPlans, mutateEdito
 import { EditorialPlan, EditorialSlot, EditorialSlotStatus } from './editorial-plans.types';
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
 import { createPlan, deletePlan, updatePlan, generateCalendar, updateSlot, runGeneration, toggleAutoGeneration } from './editorial-plans.service';
+import {
+  PageShell,
+  PageHeader,
+  PageBody,
+  EmptyState,
+  formControlClass,
+} from '@gitroom/frontend/components/new-layout/page-system';
 
-const inputClass =
-  'h-[48px] w-full rounded-[10px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] px-[16px] text-[15px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-black dark:text-white transition duration-200 focus:border-black/40 dark:focus:border-white/40 focus:ring-4 focus:ring-black/5 dark:focus:ring-white/5 hover:border-black/20 dark:hover:border-white/20';
+const inputClass = formControlClass + ' h-[48px]';
 
 const cardClass =
-  'rounded-[12px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] p-6';
+  'rounded-[12px] border border-newTableBorder bg-newSettings p-[16px]';
 
 const platformOptions = [
   'Instagram',
@@ -55,7 +61,7 @@ const timezoneOptions = [
 ];
 
 const slotStatusConfig: Record<EditorialSlotStatus, { label: string; color: string; bg: string }> = {
-  PLANNED: { label: 'Planejado', color: 'text-gray-600', bg: 'bg-gray-100 dark:bg-gray-800' },
+  PLANNED: { label: 'Planejado', color: 'text-gray-600', bg: 'bg-newBgColorInner' },
   IDEAS_GENERATED: { label: 'Ideias Geradas', color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/30' },
   APPROVED: { label: 'Aprovado', color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900/30' },
   REJECTED: { label: 'Rejeitado', color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/30' },
@@ -155,7 +161,7 @@ export function EditorialPlanPage() {
                   className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                     platformsValue.includes(p)
                       ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300'
-                      : 'border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-black/20'
+                      : 'border-newTableBorder text-gray-600 dark:text-textItemBlur hover:border-black/20'
                   }`}
                 >
                   {p}
@@ -203,7 +209,7 @@ export function EditorialPlanPage() {
               defaultValue={blackoutValue}
               onChange={(e) => { blackoutValue; e.target.value; }}
             />
-            <p className="text-xs text-gray-400">Adicione datas individualmente</p>
+            <p className="text-xs text-textItemBlur">Adicione datas individualmente</p>
           </div>
           <div className="flex gap-[12px] justify-end mt-[8px]">
             <Button onClick={close}>Cancelar</Button>
@@ -327,7 +333,7 @@ export function EditorialPlanPage() {
                   className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                     platformsValue.includes(p)
                       ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300'
-                      : 'border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-black/20'
+                      : 'border-newTableBorder text-gray-600 dark:text-textItemBlur hover:border-black/20'
                   }`}
                 >
                   {p}
@@ -458,7 +464,7 @@ export function EditorialPlanPage() {
       size: '400px',
       children: (close: () => void) => (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-textItemBlur dark:text-textItemBlur">
             Gere slots para os próximos dias baseados na frequência do plano ({plan.frequencyPerWeek}x/semana).
           </p>
           {[
@@ -472,13 +478,13 @@ export function EditorialPlanPage() {
                 close();
                 handleGenerateCalendar(plan, opt.days);
               }}
-              className="flex items-center justify-between w-full px-4 py-3 rounded-[10px] border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left"
+              className="flex items-center justify-between w-full px-4 py-3 rounded-[10px] border border-newTableBorder hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left"
             >
               <div className="flex items-center gap-3">
-                <CalendarDays className="w-5 h-5 text-gray-400" />
+                <CalendarDays className="w-5 h-5 text-textItemBlur" />
                 <div>
                   <span className="font-medium text-[15px]">{opt.label}</span>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-textItemBlur">
                     ~{Math.ceil((opt.days / 7) * plan.frequencyPerWeek)} slots
                   </p>
                 </div>
@@ -494,33 +500,44 @@ export function EditorialPlanPage() {
   // ---- LOADING ----
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[400px]">
-        <Loader className="w-8 h-8 animate-spin text-gray-400" />
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <div className="flex flex-1 items-center justify-center min-h-[320px]">
+            <Loader className="w-8 h-8 animate-spin text-textItemBlur" />
+          </div>
+        </PageBody>
+      </PageShell>
     );
   }
 
   // ---- ERROR ----
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <AlertTriangle className="w-12 h-12 text-red-400" />
-        <p className="text-gray-500">Erro ao carregar planos editoriais</p>
-        <Button onClick={() => mutate()}>Tentar novamente</Button>
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <EmptyState
+            title="Erro ao carregar planos editoriais"
+            description="Não foi possível carregar os planos. Tente novamente."
+            actionLabel="Tentar novamente"
+            onAction={() => mutate()}
+          />
+        </PageBody>
+      </PageShell>
     );
   }
 
   // ---- NO BRAND ----
   if (!brand?.id) {
     return (
-      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <Calendar className="w-16 h-16 text-gray-300" />
-        <h2 className="text-xl font-semibold text-gray-500">Nenhuma marca selecionada</h2>
-        <p className="text-gray-400 text-center max-w-md">
-          Selecione uma marca em Marcas antes de criar um plano editorial.
-        </p>
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <EmptyState
+            icon={<Calendar className="w-5 h-5" />}
+            title="Nenhuma marca selecionada"
+            description="Selecione uma marca em Marcas antes de criar um plano editorial."
+          />
+        </PageBody>
+      </PageShell>
     );
   }
 
@@ -542,66 +559,69 @@ export function EditorialPlanPage() {
     }, [slots]);
 
     return (
-      <div className="max-w-5xl mx-auto p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={() => setSelectedPlan(null)}
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">{selectedPlan.name}</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {selectedPlan.frequencyPerWeek}x/semana · {selectedPlan.platforms.join(', ')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={() => handleEdit(selectedPlan)}>
-              <Edit3 className="w-4 h-4" />
-              Editar
-            </Button>
-            <Button onClick={() => handleGenerateOptions(selectedPlan)} loading={generating === selectedPlan.id}>
-              <CalendarDays className="w-4 h-4" />
-              Gerar Calendário
-            </Button>
-          </div>
-        </div>
-
+      <PageShell>
+        <PageHeader
+          description={`${selectedPlan.frequencyPerWeek}x/semana · ${selectedPlan.platforms.join(', ')}`}
+          filters={
+            <button
+              type="button"
+              onClick={() => setSelectedPlan(null)}
+              className="flex items-center justify-center w-9 h-9 rounded-[10px] border border-newTableBorder hover:bg-boxHover transition-colors text-textItemBlur"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          }
+          actions={
+            <div className="flex items-center gap-2">
+              <span className="text-[14px] font-[600] text-newTextColor mr-2 max-w-[240px] truncate">
+                {selectedPlan.name}
+              </span>
+              <Button secondary onClick={() => handleEdit(selectedPlan)} className="!h-[36px] !text-[12px]">
+                <Edit3 className="w-4 h-4" />
+                Editar
+              </Button>
+              <Button onClick={() => handleGenerateOptions(selectedPlan)} loading={generating === selectedPlan.id} className="!h-[36px] !text-[12px]">
+                <CalendarDays className="w-4 h-4" />
+                Gerar calendário
+              </Button>
+            </div>
+          }
+        />
+        <PageBody>
         {/* Plan metadata */}
-        <div className={`${cardClass} mb-6`}>
+        <div className={`${cardClass} mb-2`}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <span className="text-gray-400 text-xs uppercase tracking-wide">Frequência</span>
+              <span className="text-textItemBlur text-xs uppercase tracking-wide">Frequência</span>
               <p className="font-medium mt-1">{selectedPlan.frequencyPerWeek}x/semana</p>
             </div>
             <div>
-              <span className="text-gray-400 text-xs uppercase tracking-wide">Timezone</span>
+              <span className="text-textItemBlur text-xs uppercase tracking-wide">Timezone</span>
               <p className="font-medium mt-1">{selectedPlan.timezone}</p>
             </div>
             <div>
-              <span className="text-gray-400 text-xs uppercase tracking-wide">Pilares</span>
+              <span className="text-textItemBlur text-xs uppercase tracking-wide">Pilares</span>
               <div className="flex flex-wrap gap-1 mt-1">
                 {selectedPlan.pillars.map((p) => (
-                  <span key={p} className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                  <span key={p} className="text-xs bg-newBgColorInner px-2 py-0.5 rounded">
                     {p}
                   </span>
                 ))}
                 {selectedPlan.pillars.length === 0 && (
-                  <span className="text-xs text-gray-400">Nenhum</span>
+                  <span className="text-xs text-textItemBlur">Nenhum</span>
                 )}
               </div>
             </div>
             <div>
-              <span className="text-gray-400 text-xs uppercase tracking-wide">Objetivos</span>
+              <span className="text-textItemBlur text-xs uppercase tracking-wide">Objetivos</span>
                  <div className="flex flex-wrap gap-1 mt-1">
                    {selectedPlan.objectives.map((o) => (
-                     <span key={o} className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                     <span key={o} className="text-xs bg-newBgColorInner px-2 py-0.5 rounded">
                        {o}
                      </span>
                    ))}
                    {selectedPlan.objectives.length === 0 && (
-                     <span className="text-xs text-gray-400">Nenhum</span>
+                     <span className="text-xs text-textItemBlur">Nenhum</span>
                    )}
                  </div>
                </div>
@@ -612,7 +632,7 @@ export function EditorialPlanPage() {
               <div className={`${cardClass} mb-6`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Power className="w-4 h-4 text-gray-400" />
+                  <Power className="w-4 h-4 text-textItemBlur" />
                   <span className="text-sm font-medium">Auto-Generation Recorrente</span>
                 </div>
                 <button
@@ -632,24 +652,24 @@ export function EditorialPlanPage() {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-400 text-xs uppercase tracking-wide">Janela de Geração</span>
+                  <span className="text-textItemBlur text-xs uppercase tracking-wide">Janela de Geração</span>
                   <p className="font-medium mt-1">{selectedPlan.generationWindow || '02:00-06:00'}</p>
                 </div>
                 <div>
-                  <span className="text-gray-400 text-xs uppercase tracking-wide">Limite Mensal</span>
+                  <span className="text-textItemBlur text-xs uppercase tracking-wide">Limite Mensal</span>
                   <p className="font-medium mt-1">${selectedPlan.maxCostPerMonth ?? 50}/mês</p>
                 </div>
                 <div>
-                  <span className="text-gray-400 text-xs uppercase tracking-wide">Última Execução</span>
+                  <span className="text-textItemBlur text-xs uppercase tracking-wide">Última Execução</span>
                   <p className="font-medium mt-1">
                     {selectedPlan.lastRunAt
                       ? formatDate(selectedPlan.lastRunAt)
-                      : <span className="text-gray-400">Nunca</span>
+                      : <span className="text-textItemBlur">Nunca</span>
                     }
                   </p>
                 </div>
                 <div>
-                  <span className="text-gray-400 text-xs uppercase tracking-wide">Falhas Consecutivas</span>
+                  <span className="text-textItemBlur text-xs uppercase tracking-wide">Falhas Consecutivas</span>
                   <p className={`font-medium mt-1 ${(selectedPlan.consecutiveFails ?? 0) > 0 ? 'text-red-500' : ''}`}>
                     {selectedPlan.consecutiveFails ?? 0}
                   </p>
@@ -670,20 +690,20 @@ export function EditorialPlanPage() {
         {/* Slots */}
         {slotsLoading ? (
           <div className="flex items-center justify-center h-[200px]">
-            <Loader className="w-6 h-6 animate-spin text-gray-400" />
+            <Loader className="w-6 h-6 animate-spin text-textItemBlur" />
           </div>
         ) : Object.keys(groupedSlots).length === 0 ? (
           <div className={`${cardClass} flex flex-col items-center justify-center h-[200px] gap-3`}>
             <CalendarDays className="w-10 h-10 text-gray-300" />
-            <p className="text-gray-500">Nenhum slot gerado ainda</p>
-            <p className="text-sm text-gray-400">Clique em &quot;Gerar Calendário&quot; para criar slots</p>
+            <p className="text-textItemBlur">Nenhum slot gerado ainda</p>
+            <p className="text-sm text-textItemBlur">Clique em &quot;Gerar Calendário&quot; para criar slots</p>
           </div>
         ) : (
           <div className="space-y-4">
             {Object.entries(groupedSlots).map(([date, dateSlots]) => (
               <div key={date} className={cardClass}>
                 <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <Calendar className="w-4 h-4 text-textItemBlur" />
                   <span className="text-sm font-medium">
                     {getDayOfWeek(date)}, {formatDate(date)}
                   </span>
@@ -709,7 +729,7 @@ export function EditorialPlanPage() {
                             </span>
                           )}
                           {slot.notes && (
-                            <span className="text-xs text-gray-400 truncate max-w-[200px]">
+                            <span className="text-xs text-textItemBlur truncate max-w-[200px]">
                               {slot.notes}
                             </span>
                           )}
@@ -719,7 +739,7 @@ export function EditorialPlanPage() {
                             {statusConf.label}
                           </span>
                           <select
-                            className="h-7 text-xs rounded border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] px-1 outline-none cursor-pointer"
+                            className="h-7 text-xs rounded border border-newTableBorder bg-newSettings px-1 outline-none cursor-pointer"
                             value={slot.status}
                             onChange={(e) =>
                               handleSlotStatusChange(slot, e.target.value as EditorialSlotStatus)
@@ -740,44 +760,42 @@ export function EditorialPlanPage() {
             ))}
           </div>
         )}
-      </div>
+        </PageBody>
+      </PageShell>
     );
   }
 
   // ---- PLAN LIST VIEW ----
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Calendário Editorial</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {filteredPlans.length} {filteredPlans.length === 1 ? 'plano' : 'planos'} editoria{filteredPlans.length !== 1 ? 'is' : 'l'}
-          </p>
-        </div>
-        <Button onClick={handleCreate}>
-          <Plus className="w-4 h-4" />
-          Novo Plano
-        </Button>
-      </div>
-
-      {filteredPlans.length === 0 ? (
-        <div className={`${cardClass} flex flex-col items-center justify-center h-[300px] gap-4`}>
-          <Calendar className="w-16 h-16 text-gray-300" />
-          <h2 className="text-xl font-semibold text-gray-500">Nenhum plano editorial</h2>
-          <p className="text-gray-400 text-center max-w-md">
-            Crie seu primeiro plano editorial para organizar e automatizar sua estratégia de conteúdo.
-          </p>
+    <PageShell>
+      <PageHeader
+        description={
+          filteredPlans.length
+            ? `${filteredPlans.length} ${filteredPlans.length === 1 ? 'plano' : 'planos'} editoria${filteredPlans.length !== 1 ? 'is' : 'l'}`
+            : 'Organize e automatize a estratégia de conteúdo da marca selecionada.'
+        }
+        actions={
           <Button onClick={handleCreate}>
             <Plus className="w-4 h-4" />
-            Criar Primeiro Plano
+            Novo plano
           </Button>
-        </div>
+        }
+      />
+      <PageBody className={!filteredPlans.length ? '!p-0' : undefined}>
+      {filteredPlans.length === 0 ? (
+        <EmptyState
+          icon={<Calendar className="w-5 h-5" />}
+          title="Nenhum plano editorial"
+          description="Crie seu primeiro plano editorial para organizar e automatizar sua estratégia de conteúdo."
+          actionLabel="Criar primeiro plano"
+          onAction={handleCreate}
+        />
       ) : (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-[10px]">
           {filteredPlans.map((plan: EditorialPlan) => (
             <div
               key={plan.id}
-              className={`${cardClass} transition-all hover:shadow-sm cursor-pointer`}
+              className={`${cardClass} transition-colors hover:bg-boxHover cursor-pointer`}
               onClick={() => setSelectedPlan(plan)}
             >
               <div className="flex items-center justify-between">
@@ -789,17 +807,17 @@ export function EditorialPlanPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                    <div className="flex items-center gap-1 text-xs text-textItemBlur">
                       <Globe className="w-3 h-3" />
                       {plan.platforms.join(', ')}
                     </div>
                     {plan.pillars.length > 0 && (
-                      <div className="flex items-center gap-1 text-xs text-gray-400">
+                      <div className="flex items-center gap-1 text-xs text-textItemBlur">
                         <Tag className="w-3 h-3" />
                         {plan.pillars.length} pilares
                       </div>
                     )}
-                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                    <div className="flex items-center gap-1 text-xs text-textItemBlur">
                       <Clock className="w-3 h-3" />
                       {plan.timezone}
                     </div>
@@ -826,6 +844,7 @@ export function EditorialPlanPage() {
           ))}
         </div>
       )}
-    </div>
+      </PageBody>
+    </PageShell>
   );
 }

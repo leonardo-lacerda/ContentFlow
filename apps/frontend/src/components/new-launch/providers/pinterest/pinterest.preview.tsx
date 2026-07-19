@@ -1,5 +1,5 @@
 import { sanitizeHtml } from '@gitroom/frontend/components/layout/sanitize-html';
-1|import { FC } from 'react';
+import { FC } from 'react';
 import { useIntegration } from '@gitroom/frontend/components/launches/helpers/use.integration';
 import { stripHtmlValidation } from '@gitroom/helpers/utils/strip.html.validation';
 import { textSlicer } from '@gitroom/helpers/utils/count.length';

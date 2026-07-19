@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { Organization } from '@prisma/client';
 import { CheckPolicies } from '@gitroom/backend/services/auth/permissions/permissions.ability';
@@ -7,6 +7,7 @@ import { AddTeamMemberDto } from '@gitroom/nestjs-libraries/dtos/settings/add.te
 import { ShortlinkPreferenceDto } from '@gitroom/nestjs-libraries/dtos/settings/shortlink-preference.dto';
 import { CompanyProfileDto } from '@gitroom/nestjs-libraries/dtos/settings/company-profile.dto';
 import { CompanyProfileSummaryDto } from '@gitroom/nestjs-libraries/dtos/settings/company-profile-summary.dto';
+import { UpdateOnboardingDto } from '@gitroom/nestjs-libraries/dtos/settings/onboarding-status.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
 
@@ -74,6 +75,12 @@ export class SettingsController {
 
   @Get('/company-profiles')
   async getCompanyProfiles(@GetOrgFromRequest() org: Organization) {
+    // ContentFlow v1: best-effort migrate JSON legado → Brand DNA
+    try {
+      await this._organizationService.migrateCompanyProfiles(org);
+    } catch {
+      /* ignore */
+    }
     return this._organizationService.getCompanyProfiles(org.id);
   }
 
@@ -137,5 +144,18 @@ export class SettingsController {
     @GetOrgFromRequest() org: Organization
   ) {
     return this._organizationService.migrateCompanyProfiles(org);
+  }
+
+  @Get('/onboarding')
+  getOnboarding(@GetOrgFromRequest() org: Organization) {
+    return this._organizationService.getOnboardingStatus(org.id);
+  }
+
+  @Patch('/onboarding')
+  updateOnboarding(
+    @GetOrgFromRequest() org: Organization,
+    @Body() body: UpdateOnboardingDto
+  ) {
+    return this._organizationService.updateOnboardingStatus(org.id, body);
   }
 }

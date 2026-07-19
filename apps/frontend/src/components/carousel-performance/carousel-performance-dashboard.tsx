@@ -37,14 +37,20 @@ import {
 } from './carousel-performance.types';
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
 import { EmptyPerformance } from './empty-performance';
+import {
+  PageShell,
+  PageHeader,
+  PageBody,
+  EmptyState,
+} from '@gitroom/frontend/components/new-layout/page-system';
 import { Button } from '@gitroom/react/form/button';
 import { LoadingComponent } from '@gitroom/frontend/components/layout/loading';
 
 const inputClass =
-  'h-[40px] w-full rounded-[10px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] px-[12px] text-[14px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-black dark:text-white transition duration-200 focus:border-black/40 dark:focus:border-white/40';
+  'h-[40px] w-full rounded-[10px] border border-newTableBorder bg-newBgColorInner px-[12px] text-[14px] outline-none placeholder:text-textItemBlur text-newTextColor transition duration-200 focus:border-btnPrimary';
 
 const cardClass =
-  'rounded-[12px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] p-6';
+  'rounded-[12px] border border-newTableBorder bg-newSettings p-6';
 
 const platformColors: Record<string, string> = {
   instagram: '#E1306C',
@@ -113,7 +119,7 @@ function ScoreBar({ score, max = 100 }: { score: number; max?: number }) {
         ? 'bg-amber-500'
         : 'bg-red-500';
   return (
-    <div className="h-[6px] w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+    <div className="h-[6px] w-full rounded-full bg-newBgColorInner overflow-hidden">
       <div
         className={`h-full rounded-full ${color} transition-all`}
         style={{ width: `${pct}%` }}
@@ -146,13 +152,13 @@ function SummaryCard({
         </div>
       </div>
       <div>
-        <p className="text-[24px] font-[700] text-black dark:text-white leading-tight">
+        <p className="text-[24px] font-[700] text-newTextColor leading-tight">
           {value}
         </p>
-        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">{label}</p>
+        <p className="text-[13px] text-textItemBlur mt-1">{label}</p>
       </div>
       {subValue && (
-        <p className="text-[12px] text-gray-400 dark:text-gray-500">{subValue}</p>
+        <p className="text-[12px] text-textItemBlur">{subValue}</p>
       )}
     </div>
   );
@@ -171,46 +177,46 @@ function PlatformRow({ data }: { data: PlatformAggregation }) {
     (data._sum.likes || 0);
 
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-black/5 dark:border-white/5 last:border-0">
+    <div className="flex items-center gap-4 py-3 border-b border-newTableBorder last:border-0">
       <div className="flex items-center gap-3 min-w-[160px]">
         <div
           className="w-[10px] h-[10px] rounded-full"
           style={{ backgroundColor: color }}
         />
-        <span className="text-[14px] font-[500] text-black dark:text-white">
+        <span className="text-[14px] font-[500] text-newTextColor">
           {label}
         </span>
       </div>
       <div className="flex-1 grid grid-cols-5 gap-4 text-center">
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {formatNumber(data._sum.impressions || 0)}
           </p>
-          <p className="text-[11px] text-gray-400">Impressões</p>
+          <p className="text-[11px] text-textItemBlur">Impressões</p>
         </div>
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {formatNumber(data._sum.reach || 0)}
           </p>
-          <p className="text-[11px] text-gray-400">Alcance</p>
+          <p className="text-[11px] text-textItemBlur">Alcance</p>
         </div>
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {formatNumber(totalInteractions)}
           </p>
-          <p className="text-[11px] text-gray-400">Interações</p>
+          <p className="text-[11px] text-textItemBlur">Interações</p>
         </div>
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {formatPercent(data._avg.engagementRate)}
           </p>
-          <p className="text-[11px] text-gray-400">Engajamento</p>
+          <p className="text-[11px] text-textItemBlur">Engajamento</p>
         </div>
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {data._count}
           </p>
-          <p className="text-[11px] text-gray-400">Registros</p>
+          <p className="text-[11px] text-textItemBlur">Registros</p>
         </div>
       </div>
     </div>
@@ -230,14 +236,14 @@ function TopPerformerRow({
   const label = platformLabels[platform] || item.platform;
 
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-black/5 dark:border-white/5 last:border-0">
-      <div className="w-[28px] h-[28px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-        <span className="text-[12px] font-[700] text-gray-500 dark:text-gray-400">
+    <div className="flex items-center gap-4 py-3 border-b border-newTableBorder last:border-0">
+      <div className="w-[28px] h-[28px] rounded-full bg-newBgColorInner flex items-center justify-center">
+        <span className="text-[12px] font-[700] text-textItemBlur">
           {rank}
         </span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-[500] text-black dark:text-white truncate">
+        <p className="text-[14px] font-[500] text-newTextColor truncate">
           {item.carouselProject?.title || 'Carrossel'}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
@@ -245,23 +251,23 @@ function TopPerformerRow({
             className="w-[8px] h-[8px] rounded-full"
             style={{ backgroundColor: color }}
           />
-          <span className="text-[12px] text-gray-400">{label}</span>
-          <span className="text-[12px] text-gray-300 dark:text-gray-600">•</span>
-          <span className="text-[12px] text-gray-400">{formatDate(item.collectedAt)}</span>
+          <span className="text-[12px] text-textItemBlur">{label}</span>
+          <span className="text-[12px] text-textItemBlur">•</span>
+          <span className="text-[12px] text-textItemBlur">{formatDate(item.collectedAt)}</span>
         </div>
       </div>
       <div className="flex items-center gap-6 text-right">
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {formatNumber(item.impressions)}
           </p>
-          <p className="text-[11px] text-gray-400">Impressões</p>
+          <p className="text-[11px] text-textItemBlur">Impressões</p>
         </div>
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {formatPercent(item.engagementRate)}
           </p>
-          <p className="text-[11px] text-gray-400">Engajamento</p>
+          <p className="text-[11px] text-textItemBlur">Engajamento</p>
         </div>
         <div className="min-w-[60px]">
           <div className="flex items-center justify-end gap-1">
@@ -270,7 +276,7 @@ function TopPerformerRow({
               {item.normalizedScore.toFixed(1)}
             </p>
           </div>
-          <p className="text-[11px] text-gray-400">Score</p>
+          <p className="text-[11px] text-textItemBlur">Score</p>
         </div>
       </div>
     </div>
@@ -290,11 +296,11 @@ function TrendChart({ data }: { data: TrendData[] }) {
       <div className="flex items-center gap-4 mb-3">
         <div className="flex items-center gap-1.5">
           <div className="w-[8px] h-[8px] rounded-sm bg-blue-500" />
-          <span className="text-[11px] text-gray-500">Score Normalizado</span>
+          <span className="text-[11px] text-textItemBlur">Score Normalizado</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-[8px] h-[8px] rounded-sm bg-purple-500" />
-          <span className="text-[11px] text-gray-500">Taxa de Engajamento</span>
+          <span className="text-[11px] text-textItemBlur">Taxa de Engajamento</span>
         </div>
       </div>
       {/* Chart */}
@@ -326,10 +332,10 @@ function TrendChart({ data }: { data: TrendData[] }) {
         })}
       </div>
       <div className="flex justify-between mt-2">
-        <span className="text-[11px] text-gray-400">
+        <span className="text-[11px] text-textItemBlur">
           {formatDate(data[0]?.date || '')}
         </span>
-        <span className="text-[11px] text-gray-400">
+        <span className="text-[11px] text-textItemBlur">
           {formatDate(data[data.length - 1]?.date || '')}
         </span>
       </div>
@@ -349,39 +355,39 @@ function TemplatePerformanceRow({
   const engRate = Number(data.avgEngagementRate) || 0;
 
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-black/5 dark:border-white/5 last:border-0">
+    <div className="flex items-center gap-4 py-3 border-b border-newTableBorder last:border-0">
       <div className="flex items-center gap-3 min-w-[180px]">
-        <div className="w-[28px] h-[28px] rounded-[6px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-          <Layout className="w-3.5 h-3.5 text-gray-500" />
+        <div className="w-[28px] h-[28px] rounded-[6px] bg-newBgColorInner flex items-center justify-center">
+          <Layout className="w-3.5 h-3.5 text-textItemBlur" />
         </div>
-        <span className="text-[14px] font-[500] text-black dark:text-white truncate">
+        <span className="text-[14px] font-[500] text-newTextColor truncate">
           {data.template || 'Sem template'}
         </span>
       </div>
       <div className="flex-1 grid grid-cols-4 gap-4 text-center">
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {formatNumber(data.totalImpressions)}
           </p>
-          <p className="text-[11px] text-gray-400">Impressões</p>
+          <p className="text-[11px] text-textItemBlur">Impressões</p>
         </div>
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {formatPercent(engRate)}
           </p>
-          <p className="text-[11px] text-gray-400">Engajamento</p>
+          <p className="text-[11px] text-textItemBlur">Engajamento</p>
         </div>
         <div>
           <p className={`text-[13px] font-[700] ${scoreColor(score)}`}>
             {score.toFixed(1)}
           </p>
-          <p className="text-[11px] text-gray-400">Score Médio</p>
+          <p className="text-[11px] text-textItemBlur">Score Médio</p>
         </div>
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {data.recordCount}
           </p>
-          <p className="text-[11px] text-gray-400">Publicações</p>
+          <p className="text-[11px] text-textItemBlur">Publicações</p>
         </div>
       </div>
       <div className="w-[80px]">
@@ -397,40 +403,40 @@ function ThemePerformanceRow({ data }: { data: ThemeAggregation }) {
   const engRate = Number(data.avgEngagementRate) || 0;
 
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-black/5 dark:border-white/5 last:border-0">
+    <div className="flex items-center gap-4 py-3 border-b border-newTableBorder last:border-0">
       <div className="flex items-center gap-3 min-w-[160px]">
-        <div className="w-[28px] h-[28px] rounded-[6px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-          <Palette className="w-3.5 h-3.5 text-gray-500" />
+        <div className="w-[28px] h-[28px] rounded-[6px] bg-newBgColorInner flex items-center justify-center">
+          <Palette className="w-3.5 h-3.5 text-textItemBlur" />
         </div>
-        <span className="text-[14px] font-[500] text-black dark:text-white truncate">
+        <span className="text-[14px] font-[500] text-newTextColor truncate">
           {data.theme || 'Sem tema'}
         </span>
       </div>
       <div className="flex-1 grid grid-cols-3 gap-4 text-center">
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {formatNumber(data.totalImpressions)}
           </p>
-          <p className="text-[11px] text-gray-400">Impressões</p>
+          <p className="text-[11px] text-textItemBlur">Impressões</p>
         </div>
         <div>
-          <p className="text-[13px] font-[600] text-black dark:text-white">
+          <p className="text-[13px] font-[600] text-newTextColor">
             {formatPercent(engRate)}
           </p>
-          <p className="text-[11px] text-gray-400">Engajamento</p>
+          <p className="text-[11px] text-textItemBlur">Engajamento</p>
         </div>
         <div>
           <p className={`text-[13px] font-[700] ${scoreColor(score)}`}>
             {score.toFixed(1)}
           </p>
-          <p className="text-[11px] text-gray-400">Score</p>
+          <p className="text-[11px] text-textItemBlur">Score</p>
         </div>
       </div>
       <div className="text-right">
-        <p className="text-[13px] font-[600] text-black dark:text-white">
+        <p className="text-[13px] font-[600] text-newTextColor">
           {data.recordCount}
         </p>
-        <p className="text-[11px] text-gray-400">Publicações</p>
+        <p className="text-[11px] text-textItemBlur">Publicações</p>
       </div>
     </div>
   );
@@ -465,7 +471,7 @@ function InteractionBreakdown({ data }: { data: PlatformAggregation }) {
         {interactions.map((item, i) => (
           <div key={i} className="flex items-center gap-1.5">
             <div className={`w-[8px] h-[8px] rounded-full ${item.color}`} />
-            <span className="text-[11px] text-gray-500 dark:text-gray-400">
+            <span className="text-[11px] text-textItemBlur">
               {item.label}: {formatNumber(item.value)}
             </span>
           </div>
@@ -496,14 +502,14 @@ function CollapsibleSection({
       >
         <div className="flex items-center gap-2">
           {icon}
-          <h2 className="text-[16px] font-[600] text-black dark:text-white">
+          <h2 className="text-[16px] font-[600] text-newTextColor">
             {title}
           </h2>
         </div>
         {open ? (
-          <ChevronUp className="w-4 h-4 text-gray-400" />
+          <ChevronUp className="w-4 h-4 text-textItemBlur" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-gray-400" />
+          <ChevronDown className="w-4 h-4 text-textItemBlur" />
         )}
       </button>
       {open && children}
@@ -531,39 +537,39 @@ function BrandSummaryCard({
     <div className={cardClass}>
       <div className="flex items-center gap-2 mb-4">
         <Target className="w-4 h-4 text-blue-500" />
-        <h2 className="text-[16px] font-[600] text-black dark:text-white">
+        <h2 className="text-[16px] font-[600] text-newTextColor">
           Resumo da Marca
         </h2>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-[28px] font-[700] text-black dark:text-white">
+          <p className="text-[28px] font-[700] text-newTextColor">
             {formatNumber(data._sum.impressions)}
           </p>
-          <p className="text-[12px] text-gray-500">Impressões Totais</p>
+          <p className="text-[12px] text-textItemBlur">Impressões Totais</p>
         </div>
         <div>
-          <p className="text-[28px] font-[700] text-black dark:text-white">
+          <p className="text-[28px] font-[700] text-newTextColor">
             {formatNumber(data._sum.reach)}
           </p>
-          <p className="text-[12px] text-gray-500">Alcance Total</p>
+          <p className="text-[12px] text-textItemBlur">Alcance Total</p>
         </div>
         <div>
           <p className={`text-[28px] font-[700] ${scoreColor(score)}`}>
             {score.toFixed(1)}
           </p>
-          <p className="text-[12px] text-gray-500">Score Médio</p>
+          <p className="text-[12px] text-textItemBlur">Score Médio</p>
           <ScoreBar score={score} />
         </div>
         <div>
-          <p className="text-[28px] font-[700] text-black dark:text-white">
+          <p className="text-[28px] font-[700] text-newTextColor">
             {formatPercent(engRate)}
           </p>
-          <p className="text-[12px] text-gray-500">Engajamento Médio</p>
+          <p className="text-[12px] text-textItemBlur">Engajamento Médio</p>
         </div>
       </div>
-      <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/5">
-        <div className="flex items-center justify-between text-[13px] text-gray-500">
+      <div className="mt-4 pt-4 border-t border-newTableBorder">
+        <div className="flex items-center justify-between text-[13px] text-textItemBlur">
           <span>{data._count} registros de performance</span>
           <span>{formatNumber(totalInteractions)} interações totais</span>
         </div>
@@ -636,52 +642,56 @@ export function CarouselPerformanceDashboard() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[400px]">
-        <Loader className="w-8 h-8 animate-spin text-gray-400" />
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <div className="flex flex-1 items-center justify-center min-h-[320px]">
+            <Loader className="w-8 h-8 animate-spin text-textItemBlur" />
+          </div>
+        </PageBody>
+      </PageShell>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <p className="text-[14px] text-gray-500 dark:text-gray-400">
-          Erro ao carregar dados de performance
-        </p>
-        <Button onClick={() => mutate()}>Tentar Novamente</Button>
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <EmptyState
+            title="Erro ao carregar performance"
+            description="Não foi possível carregar os dados de performance dos carrosséis."
+            actionLabel="Tentar novamente"
+            onAction={() => mutate()}
+          />
+        </PageBody>
+      </PageShell>
     );
   }
 
   // Empty state
   if (!hasData) {
-    return <EmptyPerformance />;
+    return (
+      <PageShell>
+        <PageHeader description="Métricas e analytics dos carrosséis publicados." />
+        <PageBody className="!p-0">
+          <EmptyPerformance onCollect={() => mutate()} />
+        </PageBody>
+      </PageShell>
+    );
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[22px] font-[700] text-black dark:text-white">
-            Performance de Carrosséis
-          </h1>
-          <p className="text-[14px] text-gray-500 dark:text-gray-400 mt-1">
-            Métricas e analytics dos seus carrosséis publicados
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={() => mutate()}
-            className="flex items-center gap-2"
-          >
+    <PageShell>
+      <PageHeader
+        description="Métricas e analytics dos carrosséis publicados."
+        actions={
+          <Button onClick={() => mutate()} className="flex items-center gap-2">
             <RefreshCw className="w-4 h-4" />
             Atualizar
           </Button>
-        </div>
-      </div>
-
+        }
+      />
+      <PageBody>
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -732,12 +742,12 @@ export function CarouselPerformanceDashboard() {
           >
             {dashboard?.byPlatform && dashboard.byPlatform.length > 0 ? (
               <div>
-                {dashboard.byPlatform.map((platform) => (
+                {dashboard.byPlatform.map((platform: PlatformAggregation) => (
                   <PlatformRow key={platform.platform} data={platform} />
                 ))}
               </div>
             ) : (
-              <p className="text-[13px] text-gray-400 text-center py-8">
+              <p className="text-[13px] text-textItemBlur text-center py-8">
                 Nenhum dado por plataforma disponível
               </p>
             )}
@@ -750,7 +760,7 @@ export function CarouselPerformanceDashboard() {
               icon={<Layout className="w-4 h-4 text-indigo-500" />}
             >
               <div>
-                {dashboard.byTemplate.map((template, i) => (
+                {dashboard.byTemplate.map((template: TemplateAggregation, i: number) => (
                   <TemplatePerformanceRow
                     key={template.template || i}
                     data={template}
@@ -768,7 +778,7 @@ export function CarouselPerformanceDashboard() {
               icon={<Palette className="w-4 h-4 text-pink-500" />}
             >
               <div>
-                {dashboard.byTheme.map((theme, i) => (
+                {dashboard.byTheme.map((theme: ThemeAggregation, i: number) => (
                   <ThemePerformanceRow
                     key={theme.theme || i}
                     data={theme}
@@ -798,12 +808,12 @@ export function CarouselPerformanceDashboard() {
           >
             {dashboard?.topPerformers && dashboard.topPerformers.length > 0 ? (
               <div>
-                {dashboard.topPerformers.slice(0, 5).map((performer, i) => (
+                {dashboard.topPerformers.slice(0, 5).map((performer: DashboardData['topPerformers'][0], i: number) => (
                   <TopPerformerRow key={performer.id} item={performer} rank={i + 1} />
                 ))}
               </div>
             ) : (
-              <p className="text-[13px] text-gray-400 text-center py-8">
+              <p className="text-[13px] text-textItemBlur text-center py-8">
                 Nenhum performador encontrado
               </p>
             )}
@@ -816,7 +826,7 @@ export function CarouselPerformanceDashboard() {
               icon={<Heart className="w-4 h-4 text-red-500" />}
             >
               <div className="space-y-6">
-                {dashboard.byPlatform.map((platform) => (
+                {dashboard.byPlatform.map((platform: PlatformAggregation) => (
                   <div key={platform.platform}>
                     <div className="flex items-center gap-2 mb-2">
                       <div
@@ -826,7 +836,7 @@ export function CarouselPerformanceDashboard() {
                             platformColors[platform.platform.toLowerCase()] || '#6B7280',
                         }}
                       />
-                      <span className="text-[13px] font-[500] text-black dark:text-white">
+                      <span className="text-[13px] font-[500] text-newTextColor">
                         {platformLabels[platform.platform.toLowerCase()] || platform.platform}
                       </span>
                     </div>
@@ -840,16 +850,16 @@ export function CarouselPerformanceDashboard() {
           {/* Score Methodology */}
           <CollapsibleSection
             title="Sobre o Score"
-            icon={<Info className="w-4 h-4 text-gray-400" />}
+            icon={<Info className="w-4 h-4 text-textItemBlur" />}
             defaultOpen={false}
           >
-            <div className="space-y-3 text-[12px] text-gray-500 dark:text-gray-400">
+            <div className="space-y-3 text-[12px] text-textItemBlur">
               <p>
                 O <strong>Score Normalizado</strong> (0–100) permite comparar
                 carrosséis entre plataformas diferentes de forma justa.
               </p>
               <div className="space-y-1">
-                <p className="font-[600] text-gray-600 dark:text-gray-300">
+                <p className="font-[600] text-textItemBlur">
                   Componentes do score:
                 </p>
                 <ul className="list-disc pl-4 space-y-0.5">
@@ -867,6 +877,7 @@ export function CarouselPerformanceDashboard() {
           </CollapsibleSection>
         </div>
       </div>
-    </div>
+      </PageBody>
+    </PageShell>
   );
 }

@@ -24,6 +24,7 @@ const resolver = classValidatorResolver(ApiKeyDto);
 export const useAddProvider = (update?: () => void, invite?: boolean) => {
   const modal = useModals();
   const fetch = useFetch();
+  // ContentFlow v1: redes do Holo-core
   const allowedIdentifiers = [
     'x',
     'linkedin',
@@ -31,6 +32,7 @@ export const useAddProvider = (update?: () => void, invite?: boolean) => {
     'instagram',
     'instagram-standalone',
     'facebook',
+    'tiktok',
   ];
   return useCallback(async () => {
     const data = await (await fetch('/integrations')).json();

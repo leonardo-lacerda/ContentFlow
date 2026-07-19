@@ -43,6 +43,23 @@ export class BrandProfileRepository {
     });
   }
 
+  /** Internal update by id only (used by extraction/jobs that already validated ownership). */
+  async updateById(
+    id: string,
+    data: {
+      name?: string;
+      website?: string;
+      industry?: string;
+      status?: BrandProfileStatus;
+      selected?: boolean;
+    }
+  ) {
+    return this.prisma.brandProfile.update({
+      where: { id },
+      data,
+    });
+  }
+
   async softDelete(id: string, orgId: string) {
     const existing = await this.prisma.brandProfile.findFirst({ where: { id, organizationId: orgId, deletedAt: null } });
     if (!existing) throw new Error('Brand not found');

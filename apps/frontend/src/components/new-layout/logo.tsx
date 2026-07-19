@@ -4,11 +4,11 @@ export const Logo = () => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="60"
-      height="60"
+      width="40"
+      height="40"
       viewBox="0 0 60 60"
       fill="none"
-      className="mt-[8px] min-w-[60px] min-h-[60px]"
+      className="min-w-[40px] min-h-[40px] w-[40px] h-[40px] shrink-0 mx-auto group-hover/sidebar:mx-0 transition-[margin] duration-200"
     >
       <defs>
         <linearGradient id="slimflow-bg" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">

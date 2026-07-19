@@ -1,4 +1,4 @@
-import {
+import { UseGuards,
   Body,
   Controller,
   Delete,
@@ -9,12 +9,14 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { TemplateMarketplaceService } from '@gitroom/nestjs-libraries/database/prisma/templates/template-marketplace.service';
 
 @ApiTags('Template Marketplace')
+@UseGuards(V1SurfaceGuard)
 @Controller('/template-marketplace')
 export class TemplateMarketplaceController {
   constructor(

@@ -25,7 +25,7 @@ function SnapshotModalView({
     children: React.ReactNode;
   }) => (
     <div className="mb-6">
-      <h3 className="text-[16px] font-semibold mb-2 text-black dark:text-white">
+      <h3 className="text-[16px] font-semibold mb-2 text-newTextColor">
         {title}
       </h3>
       <div className="text-[14px] text-black/70 dark:text-white/70 leading-relaxed">
@@ -36,7 +36,7 @@ function SnapshotModalView({
 
   const Field = ({ label, value }: { label: string; value: string }) => (
     <div className="mb-1.5">
-      <span className="font-medium text-black/60 dark:text-white/60">
+      <span className="font-medium text-textItemBlur">
         {label}:{' '}
       </span>
       {value}
@@ -53,7 +53,7 @@ function SnapshotModalView({
     if (!items || items.length === 0) return null;
     return (
       <div className="mb-1.5">
-        <span className="font-medium text-black/60 dark:text-white/60">
+        <span className="font-medium text-textItemBlur">
           {label}:{' '}
         </span>
         {items.join(', ')}
@@ -131,7 +131,7 @@ function SnapshotModalView({
         </Section>
       )}
 
-      <div className="flex justify-end mt-6 pt-4 border-t border-black/10 dark:border-white/10">
+      <div className="flex justify-end mt-6 pt-4 border-t border-newTableBorder">
         <Button onClick={close}>Fechar</Button>
       </div>
     </div>
@@ -144,7 +144,7 @@ export function DnaSnapshotList({ brandId }: { brandId: string }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12 text-black/50 dark:text-white/50">
+      <div className="flex items-center justify-center py-12 text-textItemBlur">
         <Clock className="w-5 h-5 animate-spin mr-2" />
         Carregando snapshots...
       </div>
@@ -165,7 +165,7 @@ export function DnaSnapshotList({ brandId }: { brandId: string }) {
 
   if (list.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-black/50 dark:text-white/50">
+      <div className="flex flex-col items-center justify-center py-16 text-textItemBlur">
         <FileText className="w-12 h-12 mb-3 opacity-40" />
         <p className="text-sm font-medium">
           Nenhuma análise encontrada.
@@ -203,16 +203,16 @@ export function DnaSnapshotList({ brandId }: { brandId: string }) {
                 'flex items-center gap-4 p-4 rounded-[10px] border transition-all',
                 isLatest
                   ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700'
-                  : 'bg-white dark:bg-[#171717] border-black/10 dark:border-white/10'
+                  : 'bg-newSettings border-newTableBorder'
               )}
             >
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 shrink-0">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-newBgColorInner shrink-0">
                 <Layers className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm text-black dark:text-white">
+                  <span className="font-semibold text-sm text-newTextColor">
                     v{snapshot.version}
                   </span>
                   {isLatest && (
@@ -221,7 +221,7 @@ export function DnaSnapshotList({ brandId }: { brandId: string }) {
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-black/50 dark:text-white/50 mt-0.5 flex items-center gap-3">
+                <div className="text-xs text-textItemBlur mt-0.5 flex items-center gap-3">
                   <span>
                     {new Date(snapshot.createdAt).toLocaleDateString('pt-BR', {
                       day: '2-digit',

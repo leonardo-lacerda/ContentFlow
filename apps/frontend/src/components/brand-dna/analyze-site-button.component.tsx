@@ -50,7 +50,7 @@ export function AnalyzeSiteButton({
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="https://exemplo.com"
-        className="h-[42px] w-[320px] rounded-[10px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] px-4 text-[14px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-black dark:text-white"
+        className="h-[42px] w-[320px] rounded-[10px] border border-newTableBorder bg-newSettings px-4 text-[14px] outline-none placeholder:text-black/35 dark:placeholder:text-white/35 text-newTextColor"
         disabled={loading}
       />
       <Button onClick={handleAnalyze} loading={loading} disabled={loading}>

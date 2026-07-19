@@ -117,7 +117,7 @@ export function ApprovalPanel({
   }, [projectId, rejectReason, onUpdate, toaster]);
 
   return (
-    <div className="rounded-[12px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] p-4">
+    <div className="rounded-[12px] border border-newTableBorder bg-newSettings p-4">
       {/* Status Badge */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -160,7 +160,7 @@ export function ApprovalPanel({
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             placeholder="Motivo da rejeição (opcional)..."
-            className="w-full p-2 text-xs rounded-[8px] border border-black/10 dark:border-white/10 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none"
+            className="w-full p-2 text-xs rounded-[8px] border border-newTableBorder bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none"
             rows={3}
           />
         </div>

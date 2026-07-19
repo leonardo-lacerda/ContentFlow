@@ -48,9 +48,9 @@ export function sumCosts(costs: Array<CostEstimate | null | undefined>) {
       }
 
       return {
-        usd: acc.usd + cost.usd,
-        brl: acc.brl + cost.brl,
-        tokens: acc.tokens + cost.tokens.totalTokens,
+        usd: acc.usd + (Number(cost.usd) || 0),
+        brl: acc.brl + (Number(cost.brl) || 0),
+        tokens: acc.tokens + (Number(cost.tokens?.totalTokens) || 0),
       };
     },
     { usd: 0, brl: 0, tokens: 0 }

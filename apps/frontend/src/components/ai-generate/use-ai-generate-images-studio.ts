@@ -78,7 +78,7 @@ export function useAiGenerateImagesStudio() {
   const importProjectInputRef = useRef<HTMLInputElement | null>(null);
   const [topic, setTopic] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState(
-    carouselTemplates[0].id
+    () => carouselTemplates?.[0]?.id || 'educational'
   );
   const [goal, setGoal] = useState('educar e gerar engajamento');
   const [audience, setAudience] = useState('');
@@ -225,15 +225,15 @@ export function useAiGenerateImagesStudio() {
   const trimmedTextModel = textModel.trim();
   const trimmedImageModel = imageModel.trim();
   const companyProfile =
-    companyProfiles.find((company) => company.id === selectedCompanyId) ||
-    companyProfiles.find((company) => company.summary.trim()) ||
-    companyProfiles[0] ||
+    companyProfiles?.find((company) => company.id === selectedCompanyId) ||
+    companyProfiles?.find((company) => company.summary?.trim()) ||
+    companyProfiles?.[0] ||
     null;
   const hasRequiredCompanySummary = !!companyProfile?.summary?.trim();
   const template =
-    backendTemplates.find((bt) => bt.id === selectedTemplate) ??
-    carouselTemplates.find((item) => item.id === selectedTemplate) ??
-    carouselTemplates[0];
+    backendTemplates?.find((bt) => bt.id === selectedTemplate) ??
+    carouselTemplates?.find((item) => item.id === selectedTemplate) ??
+    carouselTemplates?.[0];
   const hasBrandPalette = !!(
     companyProfile?.brandPalettes?.length || brandColors.trim()
   );
@@ -264,12 +264,12 @@ export function useAiGenerateImagesStudio() {
   const directionDerivedFrom = useMemo(
     () =>
       [
-        template.label,
+        template?.label || selectedTemplate,
         goal,
         platform.charAt(0).toUpperCase() + platform.slice(1),
         hasBrandPalette ? `Brand Kit · ${brandName || 'marca'}` : '',
       ].filter(Boolean),
-    [brandName, goal, hasBrandPalette, platform, template.label]
+    [brandName, goal, hasBrandPalette, platform, selectedTemplate, template?.label]
   );
   const hasGenerationInput =
     !!trimmedTopic || !!sourceUrl.trim() || !!sourceText.trim();
@@ -326,7 +326,7 @@ export function useAiGenerateImagesStudio() {
   const totalCost = {
     usd: (textCost?.usd || 0) + imageCost.usd,
     brl: (textCost?.brl || 0) + imageCost.brl,
-    tokens: (textCost?.tokens.totalTokens || 0) + imageCost.tokens,
+    tokens: (textCost?.tokens?.totalTokens || 0) + imageCost.tokens,
   };
   const estimatedGenerationBrl = preflightEstimate?.brl || 0;
   const projectedCostBrl = (costHistory?.totals.brl || 0) + estimatedGenerationBrl;
@@ -334,7 +334,7 @@ export function useAiGenerateImagesStudio() {
     !!costHistory?.softLimitBrl && projectedCostBrl >= costHistory.softLimitBrl;
   const isOverUserLimit = costLimitBrl > 0 && projectedCostBrl >= costLimitBrl;
   const selectedBackendTemplate =
-    backendTemplates.find((bt) => bt.id === selectedTemplate) || null;
+    backendTemplates?.find((bt) => bt.id === selectedTemplate) || null;
   const editorialIssues = plan
     ? getEditorialIssues(plan.slides, forbiddenTerms, selectedBackendTemplate)
     : [];
@@ -920,6 +920,7 @@ export function useAiGenerateImagesStudio() {
     companyIdeas,
     savedProjects,
     companyProfile,
+    companyProfiles,
     selectedCompanyId,
     setPlan,
     setSlideImages,
@@ -961,6 +962,7 @@ export function useAiGenerateImagesStudio() {
     setCompanyIdeas,
     setCompanyProfiles,
     setLoadingSavedProjects,
+    setSavedProjects,
     setLoadingIdeas,
     setIdeasError,
     setReferenceImages,
@@ -1016,9 +1018,9 @@ export function useAiGenerateImagesStudio() {
   // Carrega as ideias já salvas da empresa selecionada (sem gastar tokens).
   useEffect(() => {
     const comp =
-      companyProfiles.find((item) => item.id === selectedCompanyId) ||
-      companyProfiles.find((item) => item.summary?.trim()) ||
-      companyProfiles[0] ||
+      companyProfiles?.find((item) => item.id === selectedCompanyId) ||
+      companyProfiles?.find((item) => item.summary?.trim()) ||
+      companyProfiles?.[0] ||
       null;
     setCompanyIdeas(comp?.ideasLibrary || []);
     setIdeasError('');
@@ -1168,7 +1170,7 @@ export function useAiGenerateImagesStudio() {
 
   const applyTemplate = (templateId: string) => {
     // Prefer backend templates (enriched with narrative/slide rules) when loaded
-    const backendTmpl = backendTemplates.find((bt) => bt.id === templateId);
+    const backendTmpl = backendTemplates?.find((bt) => bt.id === templateId);
     if (backendTmpl) {
       setSelectedTemplate(templateId);
       setGoal(backendTmpl.goal);
@@ -1180,8 +1182,8 @@ export function useAiGenerateImagesStudio() {
     }
     // Fallback to static frontend templates
     const nextTemplate =
-      carouselTemplates.find((item) => item.id === templateId) ||
-      carouselTemplates[0];
+      carouselTemplates?.find((item) => item.id === templateId) ||
+      carouselTemplates?.[0];
     setSelectedTemplate(templateId);
     setGoal(nextTemplate.goal);
     setTone(nextTemplate.tone);
@@ -1210,7 +1212,7 @@ export function useAiGenerateImagesStudio() {
   // selecionada — para vir pré-preenchido nos próximos carrosséis.
   const saveBrandDefaults = useCallback(async () => {
     if (!companyProfile?.id) {
-      setError('Selecione uma empresa para salvar o padrão da marca.');
+      setError('Selecione a marca para salvar o Brand Kit no DNA.');
       return false;
     }
 
@@ -1379,6 +1381,7 @@ export function useAiGenerateImagesStudio() {
     projectedCostBrl,
     referenceCategoryFilter,
     referenceCategories,
+    referenceDisplayLimit,
     referenceImages,
     refreshCreativeBrief,
     regenerateSlideCopy: generation.regenerateSlideCopy,

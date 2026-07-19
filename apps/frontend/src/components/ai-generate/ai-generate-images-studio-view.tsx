@@ -17,6 +17,7 @@ import { EditorialReviewPanel } from './editorial-review-panel';
 import { EditorialBlockModal } from './editorial-block-modal';
 import { ReferenceLibraryPanel } from './reference-library-panel';
 import { PlanGeneratingState } from './ai-generate-images.loaders';
+import { PageShell } from '@gitroom/frontend/components/new-layout/page-system';
 
 type AiGenerateImagesStudioViewProps = {
   studio: any;
@@ -240,11 +241,9 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
   } = studio;
 
   return (
-    <div className="relative min-h-[calc(100vh-100px)] w-full">
-      {/* Animated Background Elements */}
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_8%_0%,rgba(120,113,108,0.12),transparent_28%),linear-gradient(180deg,rgba(245,245,244,0.08),transparent_40%)] dark:bg-[radial-gradient(circle_at_8%_0%,rgba(120,113,108,0.16),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.04),transparent_40%)]" />
-
-      <div className="relative z-10 mx-auto w-full max-w-[1180px] flex flex-col gap-[24px] pt-[20px] pb-[60px]">
+    <PageShell variant="flush">
+    <div className="relative min-h-0 flex-1 w-full overflow-y-auto">
+      <div className="relative z-10 mx-auto w-full max-w-[1180px] flex flex-col gap-[24px] pt-[20px] pb-[60px] px-[20px]">
         <AiGenerateImagesHeader
           canUndo={canUndo}
           canRedo={canRedo}
@@ -259,7 +258,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
             className="flex w-fit items-center gap-[8px] rounded-[10px] border border-black/10 bg-white px-[14px] py-[9px] text-[13px] font-[800] text-black/70 transition hover:bg-stone-50 dark:border-white/10 dark:bg-white/5 dark:text-white/75 dark:hover:bg-white/10"
           >
             {showSavedProjects ? 'Ocultar galeria' : 'Galeria da empresa'}
-            {companyGallery.length > 0 && (
+            {(companyGallery?.length || 0) > 0 && (
               <span className="rounded-full bg-stone-900/10 px-[8px] py-[2px] text-[11px] font-[900] text-black/70 dark:bg-white/10 dark:text-white/80">
                 {companyGallery.length}
               </span>
@@ -563,5 +562,6 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
         )}
       </div>
     </div>
+    </PageShell>
   );
 }

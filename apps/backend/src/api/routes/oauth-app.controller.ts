@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Post, Put } from '@nestjs/common';
+import { UseGuards, Body, Controller, Delete, Get, Post, Put } from '@nestjs/common';
+import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { Organization } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
@@ -12,6 +13,7 @@ import { CreateOAuthAppDto } from '@gitroom/nestjs-libraries/dtos/oauth/create-o
 import { UpdateOAuthAppDto } from '@gitroom/nestjs-libraries/dtos/oauth/update-oauth-app.dto';
 
 @ApiTags('OAuth App')
+@UseGuards(V1SurfaceGuard)
 @Controller('/user/oauth-app')
 export class OAuthAppController {
   constructor(private _oauthService: OAuthService) {}

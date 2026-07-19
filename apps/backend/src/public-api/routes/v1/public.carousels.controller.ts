@@ -1,4 +1,4 @@
-import {
+import { UseGuards,
   Body,
   Controller,
   Get,
@@ -7,6 +7,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -18,6 +19,7 @@ import { AiGenerateService } from '@gitroom/nestjs-libraries/ai-generate/ai-gene
 import * as Sentry from '@sentry/nestjs';
 
 @ApiTags('Public API - Carousels')
+@UseGuards(V1SurfaceGuard)
 @Controller('/public/v1')
 export class PublicCarouselsController {
   constructor(

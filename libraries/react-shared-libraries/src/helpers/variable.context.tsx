@@ -64,12 +64,18 @@ export const VariableContextComponent: FC<
   }
 > = (props) => {
   const { children, ...otherProps } = props;
+  // Set synchronously during render so loadVars() works for SWR fetchers
+  // that fire in child useEffects before this component's useEffect runs.
+  if (typeof window !== 'undefined') {
+    // @ts-ignore
+    window.vars = otherProps;
+  }
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // @ts-ignore
       window.vars = otherProps;
     }
-  }, []);
+  }, [otherProps]);
   return (
     <VariableContext.Provider value={otherProps}>
       {children}
@@ -79,7 +85,45 @@ export const VariableContextComponent: FC<
 export const useVariables = () => {
   return useContext(VariableContext);
 };
-export const loadVars = () => {
-  // @ts-ignore
-  return window.vars as VariableContextInterface;
+export const loadVars = (): VariableContextInterface => {
+  if (typeof window !== 'undefined') {
+    // @ts-ignore
+    if (window.vars) {
+      // @ts-ignore
+      return window.vars as VariableContextInterface;
+    }
+  }
+  // Fallback for first tick / SSR-safe reads
+  return {
+    stripeClient: '',
+    billingEnabled: false,
+    isGeneral: true,
+    genericOauth: false,
+    oauthLogoUrl: '',
+    oauthDisplayName: '',
+    mcpUrl: '',
+    cloudflareUrl: '',
+    mainUrl: '',
+    frontEndUrl: '',
+    storageProvider: 'local',
+    plontoKey: '',
+    backendUrl:
+      (typeof process !== 'undefined' &&
+        process.env?.NEXT_PUBLIC_BACKEND_URL) ||
+      '',
+    discordUrl: '',
+    uploadDirectory: '',
+    isSecured: false,
+    telegramBotName: '',
+    facebookPixel: '',
+    neynarClientId: '',
+    disableImageCompression: false,
+    disableXAnalytics: false,
+    language: '',
+    dub: false,
+    transloadit: [],
+    sentryDsn: '',
+    extensionId: '',
+    environment: 'production',
+  } as VariableContextInterface;
 };

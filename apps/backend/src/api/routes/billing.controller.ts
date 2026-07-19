@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpException, Logger, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, Logger, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
 import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/subscription.service';
 import { StripeService } from '@gitroom/nestjs-libraries/services/stripe.service';
 import { CaktoService } from '@gitroom/nestjs-libraries/services/cakto.service';
@@ -162,6 +163,8 @@ export class BillingController {
     return this._stripeService.prorate(org.id, body);
   }
 
+  // ContentFlow v1: lifetime deal fora do ICP
+  @UseGuards(V1SurfaceGuard)
   @Post('/lifetime')
   async lifetime(
     @GetOrgFromRequest() org: Organization,
@@ -224,6 +227,8 @@ export class BillingController {
     );
   }
 
+  // ContentFlow v1: crypto checkout fora do ICP
+  @UseGuards(V1SurfaceGuard)
   @Get('/crypto')
   async crypto(@GetOrgFromRequest() org: Organization) {
     return this._nowpayments.createPaymentPage(org.id);

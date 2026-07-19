@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { UseGuards, Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -13,6 +14,7 @@ import {
 import { adTemplateRegistry } from '@gitroom/nestjs-libraries/ai-generate/ad-templates/ad-template-registry';
 
 @ApiTags('Ad Creatives')
+@UseGuards(V1SurfaceGuard)
 @Controller('/ad-creatives')
 export class AdCreativesController {
   constructor(private readonly adCreativeService: AdCreativeGenerateService) {}

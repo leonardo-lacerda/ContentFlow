@@ -9,17 +9,19 @@ datasource db {
 }
 
 model Organization {
-  id                  String               @id @default(uuid())
-  name                String
-  description         String?
-  apiKey              String?
-  paymentId           String?
-  streakSince         DateTime?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  allowTrial          Boolean              @default(false)
-  isTrailing          Boolean              @default(false)
-  shortlink           ShortLinkPreference  @default(ASK)
+  id                     String               @id @default(uuid())
+  name                   String
+  description            String?
+  apiKey                 String?
+  paymentId              String?
+  streakSince            DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  allowTrial             Boolean              @default(false)
+  isTrailing             Boolean              @default(false)
+  shortlink              ShortLinkPreference  @default(ASK)
+  onboardingCompletedAt  DateTime?
+  onboardingProgress     Json?
   autoPost            AutoPost[]
   Comments            Comments[]
   credits             Credits[]

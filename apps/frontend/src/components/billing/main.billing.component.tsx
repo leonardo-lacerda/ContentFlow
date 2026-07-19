@@ -23,7 +23,6 @@ import { useFireEvents } from '@gitroom/helpers/utils/use.fire.events';
 import { useUtmUrl } from '@gitroom/helpers/utils/utm.saver';
 import { useTrack } from '@gitroom/react/helpers/use.track';
 import { TrackEnum } from '@gitroom/nestjs-libraries/user/track.enum';
-import { PurchaseCrypto } from '@gitroom/frontend/components/billing/purchase.crypto';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
 import { FinishTrial } from '@gitroom/frontend/components/billing/finish.trial';
 import { newDayjs } from '@gitroom/frontend/components/layout/set.timezone';
@@ -83,32 +82,34 @@ export const Features: FC<{
   const features = useMemo(() => {
     const currentPricing = pricing[pack];
     const channelsOr = currentPricing.channel;
-    const list = [];
-    list.push(`${channelsOr} ${channelsOr === 1 ? 'channel' : 'channels'}`);
+    const list: string[] = [];
+    list.push(
+      `${channelsOr} ${channelsOr === 1 ? 'canal social' : 'canais sociais'}`
+    );
+    list.push(
+      `${currentPricing.brand_profiles} marca (Brand DNA)`
+    );
+    list.push(
+      `${currentPricing.carousel_generations_per_month} carrosséis / mês`
+    );
+    list.push(
+      `${currentPricing.content_ideas_per_month} ideias / mês`
+    );
     list.push(
       `${
         currentPricing.posts_per_month > 10000
-          ? 'Unlimited'
+          ? 'Ilimitados'
           : currentPricing.posts_per_month
-      } posts per month`
+      } posts agendados / mês`
     );
-    if (currentPricing.team_members) {
-      list.push(`Unlimited team members`);
-    }
-    if (currentPricing?.ai) {
-      list.push(`AI auto-complete`);
-      list.push(`AI copilots`);
-      list.push(`AI Autocomplete`);
-    }
-    list.push(`Advanced Picture Editor`);
     if (currentPricing?.image_generator) {
       list.push(
-        `${currentPricing?.image_generation_count} AI Images per month`
+        `${currentPricing?.image_generation_count} imagens IA / mês`
       );
     }
-    if (currentPricing?.generate_videos) {
-      list.push(`${currentPricing?.generate_videos} AI Videos per month`);
-    }
+    list.push(
+      `${currentPricing.dna_extractions_per_month} análises de DNA / mês`
+    );
     return list;
   }, [pack]);
   return (
@@ -211,8 +212,11 @@ const Info: FC<{
 };
 
 const billingDisplayName = (name: string) => {
+  if (name === 'FREE') {
+    return 'Início';
+  }
   if (name === 'STANDARD') {
-    return 'Starter';
+    return 'Profissional';
   }
   if (name === 'TEAM') {
     return 'Scale';
@@ -466,9 +470,9 @@ const MainBillingContent: FC<{
       <div className="flex gap-[16px] [@media(max-width:1024px)]:flex-col [@media(max-width:1024px)]:text-center">
         {Object.entries(pricing)
           .filter(([name]) =>
-            ['FREE', 'STANDARD', 'PRO', 'TEAM'].includes(name)
+            // ContentFlow v1: só Início + Profissional na vitrine
+            ['FREE', 'STANDARD'].includes(name)
           )
-          .filter((f) => !isGeneral || f[0] !== 'FREE')
           .map(([name, values]) => (
             <div
               key={name}
@@ -477,13 +481,13 @@ const MainBillingContent: FC<{
               <div className="text-[18px]">{billingDisplayName(name)}</div>
               <div className="text-[38px] flex gap-[2px] items-center">
                 <div>
-                  $
+                  R$
                   {monthlyOrYearly === 'on'
                     ? values.year_price
                     : values.month_price}
                 </div>
                 <div className={`text-[14px] text-customColor18`}>
-                  {monthlyOrYearly === 'on' ? '/year' : '/month'}
+                  {monthlyOrYearly === 'on' ? '/ano' : '/mês'}
                 </div>
               </div>
               <div className="text-[14px] flex gap-[10px]">
@@ -552,7 +556,6 @@ const MainBillingContent: FC<{
             </div>
           ))}
       </div>
-      {!subscription?.id && <PurchaseCrypto />}
       {!!subscription?.id && (
         <div className="flex justify-center mt-[20px] gap-[10px]">
           <Button onClick={updatePayment}>

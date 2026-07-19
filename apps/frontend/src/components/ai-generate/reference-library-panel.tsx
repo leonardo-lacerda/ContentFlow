@@ -15,7 +15,7 @@ import {
   Upload,
   X,
   ChevronDown,
-  Grid3X3,
+  Grid3x3,
 } from 'lucide-react';
 import type { ReferenceImage } from './ai-generate-images.types';
 import { REFERENCE_PAGE_SIZE } from './ai-generate-images.constants';
@@ -147,7 +147,7 @@ export function ReferenceLibraryPanel({
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="mb-[16px] flex items-start gap-[12px]">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-stone-500/20 bg-stone-500/10 text-stone-800 dark:text-stone-100">
-          <Grid3X3 className="h-[18px] w-[18px]" />
+          <Grid3x3 className="h-[18px] w-[18px]" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-[20px] font-[800] text-black dark:text-white">
@@ -325,15 +325,15 @@ export function ReferenceLibraryPanel({
 
       {/* ── Tag filter pills ─────────────────────────────────────────── */}
       {allTags.length > 0 && (
-        <div className=\"mb-[12px] flex flex-wrap gap-[6px]\">
-          <span className=\"text-[11px] font-[700] text-black/40 dark:text-white/40 self-center mr-[4px]\">Tags:</span>
+        <div className="mb-[12px] flex flex-wrap gap-[6px]">
+          <span className="text-[11px] font-[700] text-black/40 dark:text-white/40 self-center mr-[4px]">Tags:</span>
           {allTags.slice(0, 12).map((tag) => {
             const active = selectedTag === tag;
             const count = referenceImages.filter((r) => r.tags?.includes(tag)).length;
             return (
               <button
                 key={tag}
-                type=\"button\"
+                type="button"
                 onClick={() => setSelectedTag(active ? '' : tag)}
                 className={`flex items-center gap-[4px] rounded-full border px-[10px] py-[4px] text-[10px] font-[700] transition ${
                   active
@@ -342,7 +342,7 @@ export function ReferenceLibraryPanel({
                 }`}
               >
                 {tag}
-                <span className=\"text-[9px] opacity-60\">{count}</span>
+                <span className="text-[9px] opacity-60">{count}</span>
               </button>
             );
           })}

@@ -68,7 +68,7 @@ export class StripeService {
     try {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: 100,
-        currency: 'usd',
+        currency: process.env.STRIPE_CURRENCY || 'brl',
         payment_method: latestMethod.id,
         customer: event.data.object.customer as string,
         automatic_payment_methods: {
@@ -183,11 +183,12 @@ export class StripeService {
     const products = await stripe.prices.list({
       active: true,
       expand: ['data.tiers', 'data.product'],
+      // ContentFlow v1: só Profissional (STANDARD) vendido
       lookup_keys: [
         'standard_monthly',
         'standard_yearly',
-        'pro_monthly',
-        'pro_yearly',
+        'profissional_monthly',
+        'profissional_yearly',
       ],
     });
 
@@ -241,7 +242,7 @@ export class StripeService {
       (await stripe.prices.create({
         active: true,
         product: findProduct!.id,
-        currency: 'usd',
+        currency: process.env.STRIPE_CURRENCY || 'brl',
         nickname: body.billing + ' ' + body.period,
         unit_amount:
           (body.period === 'MONTHLY'
@@ -693,7 +694,7 @@ export class StripeService {
       (await stripe.prices.create({
         active: true,
         product: findProduct!.id,
-        currency: 'usd',
+        currency: process.env.STRIPE_CURRENCY || 'brl',
         nickname: body.billing + ' ' + body.period,
         unit_amount:
           (body.period === 'MONTHLY'
@@ -759,7 +760,7 @@ export class StripeService {
       (await stripe.prices.create({
         active: true,
         product: findProduct!.id,
-        currency: 'usd',
+        currency: process.env.STRIPE_CURRENCY || 'brl',
         nickname: body.billing + ' ' + body.period,
         unit_amount:
           (body.period === 'MONTHLY'

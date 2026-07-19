@@ -10,52 +10,61 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  AlertTriangle,
   Ban,
   Cpu,
   Trash2,
 } from 'lucide-react';
+import {
+  PageShell,
+  PageHeader,
+  PageBody,
+  EmptyState,
+  SectionCard,
+} from '@gitroom/frontend/components/new-layout/page-system';
 
-const statusConfig: Record<GenerationJobStatus, { label: string; color: string; icon: any }> = {
+const statusConfig: Record<
+  GenerationJobStatus,
+  { label: string; className: string; icon: any }
+> = {
   QUEUED: {
     label: 'Na fila',
-    color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    className: 'bg-newSettings text-textItemBlur border border-newTableBorder',
     icon: Clock,
   },
   RUNNING: {
     label: 'Executando',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+    className: 'bg-btnPrimary/20 text-newTextColor',
     icon: Loader,
   },
   WAITING_PROVIDER: {
     label: 'Aguardando provider',
-    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
+    className: 'bg-amber-500/15 text-amber-400',
     icon: Clock,
   },
   COMPLETED: {
-    label: 'Concluido',
-    color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+    label: 'Concluído',
+    className: 'bg-emerald-500/15 text-emerald-400',
     icon: CheckCircle,
   },
   FAILED: {
     label: 'Falhou',
-    color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+    className: 'bg-red-500/15 text-red-400',
     icon: XCircle,
   },
   CANCELLED: {
     label: 'Cancelado',
-    color: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+    className: 'bg-newSettings text-textItemBlur border border-newTableBorder',
     icon: Ban,
   },
 };
 
 const typeLabels: Record<string, string> = {
-  BRAND_DNA_EXTRACTION: 'Extracao de Brand DNA',
-  IDEA_GENERATION: 'Geracao de Ideias',
-  CAROUSEL_PLAN: 'Plano de Carrossel',
-  IMAGE_GENERATION: 'Geracao de Imagens',
-  CAPTION_GENERATION: 'Geracao de Caption',
-  BULK_GENERATION: 'Geracao em Lote',
+  BRAND_DNA_EXTRACTION: 'Extração de Brand DNA',
+  IDEA_GENERATION: 'Geração de ideias',
+  CAROUSEL_PLAN: 'Plano de carrossel',
+  IMAGE_GENERATION: 'Geração de imagens',
+  CAPTION_GENERATION: 'Geração de caption',
+  BULK_GENERATION: 'Geração em lote',
 };
 
 export function JobsListPage() {
@@ -76,98 +85,125 @@ export function JobsListPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[400px]">
-        <Loader className="w-8 h-8 animate-spin text-gray-400" />
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <div className="flex flex-1 items-center justify-center min-h-[320px]">
+            <Loader className="w-8 h-8 animate-spin text-textItemBlur" />
+          </div>
+        </PageBody>
+      </PageShell>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <AlertTriangle className="w-12 h-12 text-red-400" />
-        <p className="text-gray-500">Erro ao carregar jobs</p>
-      </div>
-    );
-  }
-
-  if (list.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <Cpu className="w-16 h-16 text-gray-300" />
-        <h2 className="text-xl font-semibold text-gray-500">Nenhum job registrado</h2>
-        <p className="text-gray-400 text-center max-w-md">
-          Jobs de geracao aparecerem aqui quando voce criar carrosseis, gerar ideias ou extrair Brand DNA.
-        </p>
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <EmptyState
+            title="Erro ao carregar jobs"
+            description="Não foi possível carregar os jobs de geração."
+            actionLabel="Atualizar"
+            onAction={() => mutateJobs()}
+          />
+        </PageBody>
+      </PageShell>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Jobs de Geracao</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {list.length} job{list.length !== 1 ? 's' : ''} registrado{list.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <Button onClick={() => mutateJobs()} secondary>
-          Atualizar
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        description={
+          list.length
+            ? `${list.length} job${list.length !== 1 ? 's' : ''} registrado${list.length !== 1 ? 's' : ''}`
+            : 'Acompanhe extrações, gerações e processamentos em segundo plano.'
+        }
+        actions={
+          <Button secondary onClick={() => mutateJobs()}>
+            Atualizar
+          </Button>
+        }
+      />
+      <PageBody className={!list.length ? '!p-0' : undefined}>
+        {!list.length ? (
+          <EmptyState
+            icon={<Cpu className="w-5 h-5" />}
+            title="Nenhum job registrado"
+            description="Jobs de geração aparecem aqui quando você cria carrosséis, gera ideias ou extrai Brand DNA."
+          />
+        ) : (
+          <div className="flex flex-col gap-[10px]">
+            {list.map((job) => {
+              const config = statusConfig[job.status] || statusConfig.QUEUED;
+              const Icon = config.icon;
+              const isActive = [
+                'QUEUED',
+                'RUNNING',
+                'WAITING_PROVIDER',
+              ].includes(job.status);
 
-      <div className="space-y-3">
-        {list.map((job) => {
-          const config = statusConfig[job.status] || statusConfig.QUEUED;
-          const Icon = config.icon;
-          const isActive = ['QUEUED', 'RUNNING', 'WAITING_PROVIDER'].includes(job.status);
-
-          return (
-            <div
-              key={job.id}
-              className="rounded-[12px] border border-black/10 dark:border-white/10 bg-white dark:bg-[#171717] p-4 transition-all hover:shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 shrink-0">
-                    <Icon className={`w-5 h-5 ${isActive ? 'animate-spin' : ''}`} />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm text-black dark:text-white">
-                        {typeLabels[job.type] || job.type}
-                      </span>
-                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${config.color}`}>
-                        {config.label}
-                      </span>
+              return (
+                <SectionCard key={job.id} className="!p-[14px]">
+                  <div className="flex items-center gap-[12px]">
+                    <div className="flex items-center justify-center w-[40px] h-[40px] rounded-[10px] bg-newSettings border border-newTableBorder shrink-0">
+                      <Icon
+                        className={`w-4 h-4 text-textItemBlur ${
+                          isActive && job.status === 'RUNNING'
+                            ? 'animate-spin'
+                            : ''
+                        }`}
+                      />
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                      <span>{new Date(job.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                      {job.model && <span>{job.model}</span>}
-                      {job.provider && <span>{job.provider}</span>}
-                      {job.costEstimate != null && <span>${job.costEstimate.toFixed(4)}</span>}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-[8px] flex-wrap">
+                        <span className="text-[14px] font-[600] text-newTextColor">
+                          {typeLabels[job.type] || job.type}
+                        </span>
+                        <span
+                          className={`inline-flex items-center text-[11px] font-[600] px-[8px] py-[2px] rounded-full ${config.className}`}
+                        >
+                          {config.label}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-[10px] mt-[4px] text-[12px] text-textItemBlur flex-wrap">
+                        <span>
+                          {new Date(job.createdAt).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                        {job.model ? <span>{job.model}</span> : null}
+                        {job.provider ? <span>{job.provider}</span> : null}
+                        {job.costEstimate != null ? (
+                          <span>${job.costEstimate.toFixed(4)}</span>
+                        ) : null}
+                      </div>
+                      {job.error ? (
+                        <p className="text-[12px] text-red-400 mt-[4px] truncate">
+                          {job.error}
+                        </p>
+                      ) : null}
                     </div>
-                    {job.error && (
-                      <p className="text-xs text-red-500 mt-1 truncate">{job.error}</p>
-                    )}
+                    {isActive ? (
+                      <Button
+                        secondary
+                        className="!h-[32px] !text-[12px] shrink-0"
+                        onClick={() => handleCancel(job)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Cancelar
+                      </Button>
+                    ) : null}
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2 ml-4 shrink-0">
-                  {isActive && (
-                    <Button onClick={() => handleCancel(job)} secondary className="!px-3 !py-1.5">
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Cancelar
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+                </SectionCard>
+              );
+            })}
+          </div>
+        )}
+      </PageBody>
+    </PageShell>
   );
 }

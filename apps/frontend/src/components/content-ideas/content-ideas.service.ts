@@ -6,7 +6,11 @@ const IDEAS_BASE = '/content-ideas';
 const PROJECTS_BASE = '/carousel-projects';
 
 async function api(path: string, options?: RequestInit) {
-  const { backendUrl } = loadVars();
+  const vars = loadVars();
+  const backendUrl = vars?.backendUrl || '';
+  if (!backendUrl) {
+    throw new Error('Backend URL not configured');
+  }
   const res = await fetch(backendUrl + path, {
     credentials: 'include',
     ...options,
@@ -20,7 +24,15 @@ async function api(path: string, options?: RequestInit) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(err.message || err.error || 'API error');
   }
-  return res.json();
+  const text = await res.text();
+  if (!text || !text.trim()) {
+    return null;
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 // --- Content Ideas ---

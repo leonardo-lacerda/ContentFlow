@@ -22,7 +22,7 @@ export const LifetimeDeal = () => {
   const fireEvents = useFireEvents();
   const claim = useCallback(async () => {
     const { success } = await (
-      await fetch('/billing/lifetime', {
+      await fetch('/billing', {
         body: JSON.stringify({
           code,
         }),

@@ -25,7 +25,6 @@ import { NewPost } from '@gitroom/frontend/components/launches/new.post';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
 import { useIntegrationList } from '@gitroom/frontend/components/launches/helpers/use.integration.list';
 import useCookie from 'react-use-cookie';
-import { Onboarding } from '@gitroom/frontend/components/onboarding/onboarding';
 
 export const SVGLine = () => {
   return (
@@ -495,8 +494,8 @@ export const LaunchesComponent = () => {
   // @ts-ignore
   return (
     <DNDProvider>
-      <Onboarding />
       <CalendarWeekProvider integrations={sortedIntegrations}>
+        <div className="flex flex-1 min-h-0 min-w-0 gap-[1px]">
         <div
           className={clsx(
             'flex relative flex-col',
@@ -592,11 +591,12 @@ export const LaunchesComponent = () => {
             </div>
           </div>
         </div>
-        <div className="bg-newBgColorInner flex-1 flex-col flex p-[20px] gap-[12px]">
+        <div className="bg-newBgColorInner flex-1 flex-col flex p-[20px] gap-[12px] min-w-0">
           <Filters />
-          <div className="flex-1 flex">
+          <div className="flex-1 flex min-h-0">
             <Calendar />
           </div>
+        </div>
         </div>
       </CalendarWeekProvider>
     </DNDProvider>

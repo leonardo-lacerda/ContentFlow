@@ -1,6 +1,17 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Res,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
+import { Response } from 'express';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { CheckPolicies } from '@gitroom/backend/services/auth/permissions/permissions.ability';
 import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
@@ -21,8 +32,14 @@ export class BrandsController {
   }
 
   @Get('/selected')
-  async getSelectedBrand(@GetOrgFromRequest() org: Organization) {
-    return this.brandProfileService.getSelectedBrand(org.id);
+  async getSelectedBrand(
+    @GetOrgFromRequest() org: Organization,
+    @Res() res: Response
+  ) {
+    // Nest drops the body when the handler returns null. Force JSON null so the
+    // frontend can parse it instead of hitting an empty 200 response.
+    const selected = await this.brandProfileService.getSelectedBrand(org.id);
+    return res.status(200).json(selected ?? null);
   }
 
   @Get('/:id')

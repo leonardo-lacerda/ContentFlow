@@ -17,14 +17,12 @@ import { UserDetailDto } from '@gitroom/nestjs-libraries/dtos/users/user.details
 import { useToaster } from '@gitroom/react/toaster/toaster';
 import { useSWRConfig } from 'swr';
 import clsx from 'clsx';
-import { TeamsComponent } from '@gitroom/frontend/components/settings/teams.component';
 import { useUser } from '@gitroom/frontend/components/layout/user.context';
 import { LogoutComponent } from '@gitroom/frontend/components/layout/logout.component';
 import { useSearchParams } from 'next/navigation';
 import { useVariables } from '@gitroom/react/helpers/variable.context';
 import { PublicComponent } from '@gitroom/frontend/components/public-api/public.component';
 import Link from 'next/link';
-import { Webhooks } from '@gitroom/frontend/components/webhooks/webhooks';
 import { Sets } from '@gitroom/frontend/components/sets/sets';
 import { SignaturesComponent } from '@gitroom/frontend/components/settings/signatures.component';
 import { Autopost } from '@gitroom/frontend/components/autopost/autopost';
@@ -84,32 +82,19 @@ export const SettingsPopup: FC<{
   const [tab, setTab] = useState('global_settings');
 
   const t = useT();
+  // ContentFlow v1: settings mínimos (sem teams/webhooks/autopost/dev)
   const list = useMemo(() => {
-    const arr = [];
-    arr.push({ tab: 'global_settings', label: t('global_settings', 'Global Settings') });
-    // Populate tabs based on user permissions
-    if (user?.tier?.team_members && isGeneral) {
-      arr.push({ tab: 'teams', label: t('teams', 'Teams') });
+    const arr = [
+      {
+        tab: 'global_settings',
+        label: t('global_settings', 'Perfil'),
+      },
+    ];
+    if (user?.tier?.current !== 'FREE') {
+      arr.push({ tab: 'signatures', label: t('signatures', 'Assinaturas') });
     }
-    if (user?.tier?.webhooks) {
-      arr.push({ tab: 'webhooks', label: t('webhooks_1', 'Webhooks') });
-    }
-    if (user?.tier?.autoPost) {
-      arr.push({ tab: 'autopost', label: t('auto_post', 'Auto Post') });
-    }
-    if (user?.tier.current !== 'FREE') {
-      arr.push({ tab: 'sets', label: t('sets', 'Sets') });
-    }
-    if (user?.tier.current !== 'FREE') {
-      arr.push({ tab: 'signatures', label: t('signatures', 'Signatures') });
-    }
-    if (user?.tier?.public_api && isGeneral && showLogout) {
-      arr.push({ tab: 'api', label: t('developers', 'Developers') });
-    }
-    arr.push({ tab: 'approved_apps', label: t('approved_apps', 'Approved Apps') });
-
     return arr;
-  }, [user, isGeneral, showLogout, t]);
+  }, [user, t]);
 
   useEffect(() => {
     loadProfile();
@@ -183,13 +168,13 @@ export const SettingsPopup: FC<{
                 </div>
               )}
 
-              {tab === 'sets' && user?.tier.current !== 'FREE' && (
+              {tab === 'sets' && user?.tier?.current !== 'FREE' && (
                 <div>
                   <Sets />
                 </div>
               )}
 
-              {tab === 'signatures' && user?.tier.current !== 'FREE' && (
+              {tab === 'signatures' && user?.tier?.current !== 'FREE' && (
                 <div>
                   <SignaturesComponent />
                 </div>
@@ -220,7 +205,7 @@ export const SettingsComponent = () => {
   const settings = useModals();
   const user = useUser();
   const openModal = useCallback(() => {
-    if (user?.tier.current !== 'FREE') {
+    if (user?.tier?.current !== 'FREE') {
       return;
     }
     settings.openModal({

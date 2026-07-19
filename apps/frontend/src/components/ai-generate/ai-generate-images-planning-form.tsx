@@ -103,7 +103,7 @@ type AiGenerateImagesPlanningFormProps = {
   backendTemplates: Array<{ id: string; editorialChecks: Array<{ id: string; description: string; severity: string; message: string }> }>;
 };
 
-const BRIEF_STEPS = ['Empresa & Ideia', 'Formato', 'Marca & Ajustes'];
+const BRIEF_STEPS = ['Marca & Ideia', 'Formato', 'Marca & Ajustes'];
 
 // Cores da marca: seletor visual (escolha olhando, sem saber código de cor).
 const defaultBrandColors = ['#111827', '#FFFFFF', '#2563EB', '#F59E0B'];
@@ -250,7 +250,8 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
 
   const [step, setStep] = useState(0);
   const [editingBrandKit, setEditingBrandKit] = useState(false);
-  const selectedBackendTemplate = backendTemplates.find((t) => t.id === selectedTemplate) || null;
+  const selectedBackendTemplate =
+    backendTemplates?.find((t) => t.id === selectedTemplate) || null;
 
   const goNext = () => setStep((current) => Math.min(current + 1, BRIEF_STEPS.length - 1));
   const goBack = () => setStep((current) => Math.max(current - 1, 0));
@@ -339,7 +340,16 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
       {step === 0 && (
         <div className="grid grid-cols-1 gap-[16px]">
           <label className="flex flex-col gap-[8px]">
-            <span className="text-[14px] font-[600]">Para qual empresa vamos criar?</span>
+            <span className="text-[14px] font-[600]">Qual marca vamos usar?</span>
+            {companyProfiles.length <= 1 ? (
+              <div className={`${inputClass} !h-[50px] !text-[15px] flex items-center`}>
+                {loadingCompanyProfile
+                  ? 'Carregando marca…'
+                  : companyProfile?.companyName ||
+                    companyProfiles[0]?.companyName ||
+                    'Nenhuma marca — complete o onboarding'}
+              </div>
+            ) : (
             <select
               value={selectedCompanyId}
               onChange={(event) => {
@@ -354,19 +364,20 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
               className={`${inputClass} !h-[50px] !text-[15px]`}
               disabled={loadingCompanyProfile}
             >
-              <option value="">Selecione uma empresa</option>
+              <option value="">Selecione a marca</option>
               {companyProfiles.map((company) => (
                 <option key={company.id} value={company.id}>
-                  {company.companyName || 'Empresa sem nome'}
-                  {company.summary?.trim() ? ' - resumo ok' : ' - falta resumo'}
+                  {company.companyName || 'Marca sem nome'}
+                  {company.summary?.trim() ? ' — DNA ok' : ' — falta DNA'}
                 </option>
               ))}
             </select>
+            )}
             {!hasRequiredCompanySummary && (
               <span className="text-[12px] text-yellow-300">
-                O resumo da empresa é obrigatório para gerar ideias e carrosséis.{' '}
-                <a href="/onboarding/company" className="font-[700] text-primary hover:underline">
-                  Completar onboarding
+                O Brand DNA (resumo da marca) é obrigatório para gerar.{' '}
+                <a href="/brand" className="font-[700] text-primary hover:underline">
+                  Abrir Minha marca
                 </a>
               </span>
             )}
@@ -424,11 +435,11 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
                   ? 'Gerando ideias...'
                   : companyIdeas.length > 0
                   ? 'Gerar mais ideias (sem repetir)'
-                  : 'Gerar ideias com contexto da empresa'}
+                  : 'Gerar ideias com o Brand DNA'}
               </button>
               {hasRequiredCompanySummary ? (
                 <span className="text-[12px] text-green-400">
-                  Usando contexto de {companyProfile?.companyName || 'empresa selecionada'}
+                  Usando DNA de {companyProfile?.companyName || 'marca selecionada'}
                 </span>
               ) : (
                 <span className="text-[12px] text-yellow-300">
@@ -602,7 +613,7 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
                 )}
                 <div>
                   <div className="text-[14px] font-[900] text-black dark:text-white">
-                    {brandName.trim() ? `Usando a marca de ${brandName}` : 'Brand Kit da empresa'}
+                    {brandName.trim() ? `Usando a marca de ${brandName}` : 'Brand Kit da marca'}
                   </div>
                   <p className="text-[12px] text-black/55 dark:text-white/55">
                     Cores, fontes, CTA, logo e termos vêm do onboarding. Ajuste só se precisar.
@@ -801,7 +812,7 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
                     Salvar como padrão da marca
                   </Button>
                   <span className="text-[12px] text-black/50 dark:text-white/50">
-                    Guarda cores, fontes, CTA e termos nesta empresa para vir prontos da próxima vez.
+                    Guarda cores, fontes, CTA e termos no Brand DNA para vir prontos da próxima vez.
                   </span>
                 </div>
               </div>

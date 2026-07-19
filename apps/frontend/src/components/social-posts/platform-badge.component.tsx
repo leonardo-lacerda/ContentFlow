@@ -3,21 +3,19 @@
 import React from 'react';
 import type { SocialPlatform } from './social-posts.types';
 
-const PLATFORM_CONFIG: Record<SocialPlatform, { bg: string; text: string; icon: string }> = {
-  instagram: { bg: 'bg-gradient-to-r from-purple-500 to-pink-500', text: 'text-white', icon: '📷' },
-  linkedin:  { bg: 'bg-blue-700', text: 'text-white', icon: '💼' },
-  tiktok:    { bg: 'bg-black', text: 'text-white', icon: '🎵' },
-  twitter:   { bg: 'bg-sky-500', text: 'text-white', icon: '🐦' },
-  threads:   { bg: 'bg-gray-900', text: 'text-white', icon: '🧵' },
-  facebook:  { bg: 'bg-blue-600', text: 'text-white', icon: '👤' },
+const PLATFORM_LABEL: Record<SocialPlatform, string> = {
+  instagram: 'Instagram',
+  linkedin: 'LinkedIn',
+  tiktok: 'TikTok',
+  twitter: 'X / Twitter',
+  threads: 'Threads',
+  facebook: 'Facebook',
 };
 
 export function PlatformBadge({ platform }: { platform: SocialPlatform }) {
-  const config = PLATFORM_CONFIG[platform] || { bg: 'bg-gray-500', text: 'text-white', icon: '📱' };
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-      <span>{config.icon}</span>
-      <span className="capitalize">{platform}</span>
+    <span className="inline-flex items-center px-[8px] py-[3px] rounded-[6px] text-[11px] font-[600] bg-newSettings border border-newTableBorder text-newTextColor capitalize">
+      {PLATFORM_LABEL[platform] || platform}
     </span>
   );
 }

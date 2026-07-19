@@ -571,6 +571,77 @@ export class OrganizationService {
   getShortlinkPreference(orgId: string) { return this._organizationRepository.getShortlinkPreference(orgId); }
   updateShortlinkPreference(orgId: string, shortlink: ShortLinkPreference) { return this._organizationRepository.updateShortlinkPreference(orgId, shortlink); }
 
+  async getOnboardingStatus(orgId: string) {
+    const row = await this._organizationRepository.getOnboardingStatus(orgId);
+    return {
+      completedAt: row?.onboardingCompletedAt ?? null,
+      progress: (row?.onboardingProgress as Record<string, unknown> | null) ?? null,
+    };
+  }
+
+  async updateOnboardingStatus(
+    orgId: string,
+    body: {
+      progress?: {
+        currentStep?: string;
+        brandId?: string;
+        skippedFeatureIds?: string[];
+        openedFeatureIds?: string[];
+        version?: string;
+      };
+      complete?: boolean;
+      reset?: boolean;
+    }
+  ) {
+    if (body.reset) {
+      const cleared = await this._organizationRepository.updateOnboardingStatus(orgId, {
+        onboardingCompletedAt: null,
+        onboardingProgress: {
+          currentStep: 'welcome',
+          brandId: '',
+          skippedFeatureIds: [],
+          openedFeatureIds: [],
+          version: '1',
+        },
+      });
+      return {
+        completedAt: cleared.onboardingCompletedAt ?? null,
+        progress: (cleared.onboardingProgress as Record<string, unknown> | null) ?? null,
+      };
+    }
+
+    const current = await this._organizationRepository.getOnboardingStatus(orgId);
+    const currentProgress =
+      (current?.onboardingProgress as Record<string, unknown> | null) ?? {};
+    const nextProgress = body.progress
+      ? {
+          ...currentProgress,
+          ...body.progress,
+          skippedFeatureIds:
+            body.progress.skippedFeatureIds ??
+            (currentProgress.skippedFeatureIds as string[] | undefined) ??
+            [],
+          openedFeatureIds:
+            body.progress.openedFeatureIds ??
+            (currentProgress.openedFeatureIds as string[] | undefined) ??
+            [],
+          version: body.progress.version || (currentProgress.version as string) || '1',
+        }
+      : currentProgress;
+
+    const updated = await this._organizationRepository.updateOnboardingStatus(orgId, {
+      onboardingProgress: nextProgress,
+      ...(body.complete
+        ? { onboardingCompletedAt: new Date() }
+        : {}),
+    });
+
+    return {
+      completedAt: updated.onboardingCompletedAt ?? null,
+      progress: (updated.onboardingProgress as Record<string, unknown> | null) ?? null,
+    };
+  }
+
   async getCompanyProfiles(orgId: string) {
     const org = await this._organizationRepository.getCompanyProfile(orgId);
     return this.parseCompanyProfiles(org);

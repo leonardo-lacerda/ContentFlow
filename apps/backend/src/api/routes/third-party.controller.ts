@@ -1,4 +1,4 @@
-import {
+import { UseGuards,
   Body,
   Controller,
   Get,
@@ -8,6 +8,7 @@ import {
   Post,
   Delete,
 } from '@nestjs/common';
+import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { ThirdPartyManager } from '@gitroom/nestjs-libraries/3rdparties/thirdparty.manager';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -18,6 +19,7 @@ import { MediaService } from '@gitroom/nestjs-libraries/database/prisma/media/me
 import { ImportMediaDto } from '@gitroom/nestjs-libraries/dtos/third-party/import-media.dto';
 
 @ApiTags('Third Party')
+@UseGuards(V1SurfaceGuard)
 @Controller('/third-party')
 export class ThirdPartyController {
   private readonly logger = new Logger(ThirdPartyController.name);

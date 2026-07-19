@@ -1,4 +1,4 @@
-import {
+import { UseGuards,
   Body,
   Controller,
   Delete,
@@ -8,6 +8,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
+import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { Organization } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
@@ -18,6 +19,7 @@ import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/p
 import { OnlyURL } from '@gitroom/nestjs-libraries/dtos/webhooks/webhooks.dto';
 
 @ApiTags('Autopost')
+@UseGuards(V1SurfaceGuard)
 @Controller('/autopost')
 export class AutopostController {
   constructor(private _autopostsService: AutopostService) {}

@@ -193,7 +193,7 @@ export const FirstBillingComponent = () => {
             <DeveloperIconComponent />
             {/*<NotificationComponent />*/}
             <div className="hover:text-newTextColor">
-              {user?.tier.current === 'FREE' && (
+              {user?.tier?.current === 'FREE' && (
                 <LogoutComponent isIcon={true} />
               )}
             </div>

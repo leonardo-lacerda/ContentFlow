@@ -28,7 +28,7 @@ const assetTypeIcons: Record<string, any> = {
 
 function AssetIcon({ type }: { type: string }) {
   const Icon = assetTypeIcons[type?.toLowerCase()] || FileType;
-  return <Icon className="w-8 h-8 text-gray-400" />;
+  return <Icon className="w-8 h-8 text-textItemBlur" />;
 }
 
 export function BrandAssetList({ brandId }: { brandId: string }) {
@@ -84,7 +84,7 @@ export function BrandAssetList({ brandId }: { brandId: string }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12 text-black/50 dark:text-white/50">
+      <div className="flex items-center justify-center py-12 text-textItemBlur">
         <Loader className="w-5 h-5 animate-spin mr-2" />
         Carregando assets...
       </div>
@@ -101,7 +101,7 @@ export function BrandAssetList({ brandId }: { brandId: string }) {
 
   if (list.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-black/50 dark:text-white/50">
+      <div className="flex flex-col items-center justify-center py-16 text-textItemBlur">
         <Image className="w-12 h-12 mb-3 opacity-40" />
         <p className="text-sm font-medium">Nenhum asset extraído ainda.</p>
         <p className="text-xs mt-1">
@@ -123,11 +123,11 @@ export function BrandAssetList({ brandId }: { brandId: string }) {
               'flex flex-col rounded-[10px] border overflow-hidden transition-all',
               asset.approved
                 ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20'
-                : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#171717]'
+                : 'border-newTableBorder bg-newSettings'
             )}
           >
             {/* Thumbnail area */}
-            <div className="h-40 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+            <div className="h-40 bg-newBgColorInner flex items-center justify-center overflow-hidden">
               {asset.sourceUrl ? (
                 <img
                   src={asset.sourceUrl}
@@ -149,7 +149,7 @@ export function BrandAssetList({ brandId }: { brandId: string }) {
             {/* Info area */}
             <div className="p-3 flex-1 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] font-medium text-black dark:text-white capitalize truncate">
+                <span className="text-[13px] font-medium text-newTextColor capitalize truncate">
                   {asset.type}
                 </span>
                 {asset.approved ? (
@@ -165,7 +165,7 @@ export function BrandAssetList({ brandId }: { brandId: string }) {
                 )}
               </div>
 
-              <div className="text-[11px] text-black/50 dark:text-white/50">
+              <div className="text-[11px] text-textItemBlur">
                 {new Date(asset.createdAt).toLocaleDateString('pt-BR', {
                   day: '2-digit',
                   month: 'short',

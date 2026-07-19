@@ -27,9 +27,26 @@ export class GenerationCostService {
       this.generationCostRepository.aggregateTokenTotals(orgId),
     ]);
 
-    const totalUsd = sumResult._sum.costUsd ?? 0;
-    const totalBrl = sumResult._sum.costBrl ?? 0;
-    const totalTokens = tokenResult?.totalTokens ?? 0;
+    // Prisma Decimal / pg BigInt are not JSON-serializable as-is.
+    const toNum = (value: unknown): number => {
+      if (value == null) return 0;
+      if (typeof value === 'bigint') return Number(value);
+      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        'toNumber' in value &&
+        typeof (value as { toNumber: () => number }).toNumber === 'function'
+      ) {
+        return (value as { toNumber: () => number }).toNumber();
+      }
+      const parsed = Number(value as any);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const totalUsd = toNum(sumResult._sum.costUsd);
+    const totalBrl = toNum(sumResult._sum.costBrl);
+    const totalTokens = toNum(tokenResult?.totalTokens);
 
     return {
       entries: entries.map((entry) => ({
@@ -38,10 +55,10 @@ export class GenerationCostService {
         label: entry.label,
         createdAt: entry.createdAt.toISOString(),
         cost: {
-          usd: entry.costUsd,
-          brl: entry.costBrl,
-          usdToBrl: entry.usdToBrl,
-          tokens: entry.tokens,
+          usd: toNum(entry.costUsd),
+          brl: toNum(entry.costBrl),
+          usdToBrl: toNum(entry.usdToBrl),
+          tokens: entry.tokens ?? {},
         },
       })),
       totals: {

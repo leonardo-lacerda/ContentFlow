@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, useCallback, useEffect, useRef, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useBrands, useSelectedBrand, mutateBrands } from './brand-dna.hooks';
 import { selectBrand } from './brand-dna.service';
@@ -17,16 +17,13 @@ export const BrandSelector: FC = () => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const list: BrandProfile[] = Array.isArray(brands)
-    ? brands
-    : brands?.data || [];
-
-  // Hide if no brands exist or only one brand (nothing to select)
-  if (isLoading || list.length === 0) {
-    return null;
-  }
+  const list: BrandProfile[] = useMemo(
+    () => (Array.isArray(brands) ? brands : brands?.data || []),
+    [brands]
+  );
 
   const currentName = selected?.name || 'Selecionar marca';
+  const shouldHide = isLoading || list.length === 0;
 
   const handleSelect = useCallback(
     async (brand: BrandProfile) => {
@@ -45,22 +42,29 @@ export const BrandSelector: FC = () => {
     [toaster]
   );
 
-  // Close on outside click
+  // Close on outside click — hooks must stay above any early return
   useEffect(() => {
+    if (!open || shouldHide) {
+      return;
+    }
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
-    if (open) {
-      document.addEventListener('mousedown', handler);
-    }
+    document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+  }, [open, shouldHide]);
+
+  // Hide if no brands exist (nothing to select yet)
+  if (shouldHide) {
+    return null;
+  }
 
   return (
     <div className="relative" ref={ref}>
       <button
+        type="button"
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 text-[12px] text-textItemBlur hover:text-newTextColor transition-colors px-3 py-2 rounded-[8px] hover:bg-boxFocused max-w-[180px]"
       >
@@ -75,48 +79,48 @@ export const BrandSelector: FC = () => {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-[240px] bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 rounded-[10px] shadow-lg z-50 overflow-hidden">
-          <div className="p-2 border-b border-black/5 dark:border-white/5">
-            <span className="text-[11px] font-medium text-black/40 dark:text-white/40 px-2 uppercase tracking-wider">
+        <div className="absolute top-full left-0 mt-1 w-[240px] bg-newSettings border border-newTableBorder rounded-[10px] shadow-lg z-50 overflow-hidden">
+          <div className="p-2 border-b border-newTableBorder">
+            <span className="text-[11px] font-medium text-textItemBlur px-2 uppercase tracking-wider">
               Marcas
             </span>
           </div>
-
-          <div className="max-h-[300px] overflow-y-auto py-1">
+          <div className="max-h-[280px] overflow-y-auto p-1">
             {list.map((brand) => (
               <button
+                type="button"
                 key={brand.id}
                 onClick={() => handleSelect(brand)}
                 className={clsx(
-                  'w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors',
-                  brand.selected && 'bg-green-50 dark:bg-green-900/20'
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-[6px] text-left transition-colors',
+                  brand.selected
+                    ? 'bg-boxFocused text-newTextColor'
+                    : 'text-textItemBlur hover:bg-boxFocused hover:text-newTextColor'
                 )}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-medium text-black dark:text-white truncate">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13px] font-medium truncate">
                       {brand.name}
                     </span>
                     {brand.selected && (
                       <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
                     )}
                   </div>
-                  {brand.website && (
-                    <p className="text-[11px] text-black/40 dark:text-white/40 truncate mt-0.5">
-                      {brand.website}
-                    </p>
+                  {brand.status && (
+                    <div className="mt-0.5">
+                      <BrandStatusBadge status={brand.status} />
+                    </div>
                   )}
                 </div>
-                <BrandStatusBadge status={brand.status} />
               </button>
             ))}
           </div>
-
-          <div className="border-t border-black/5 dark:border-white/5 p-1">
+          <div className="p-1 border-t border-newTableBorder">
             <Link
-              href="/brands"
+              href="/brand"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 text-[12px] font-medium text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-[6px] transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-[12px] font-medium text-textItemBlur hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-[6px] transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Gerenciar marcas

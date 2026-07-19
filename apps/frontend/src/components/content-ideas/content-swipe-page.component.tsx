@@ -2,35 +2,46 @@
 
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
 import { ContentSwipe } from './content-swipe.component';
-import { Lightbulb, Building2 } from 'lucide-react';
+import { Building2, Loader } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@gitroom/react/form/button';
+import {
+  PageShell,
+  PageBody,
+  EmptyState,
+} from '@gitroom/frontend/components/new-layout/page-system';
 
 export function ContentSwipePage() {
   const { data: selectedBrand, isLoading } = useSelectedBrand();
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[400px]">
-        <div className="w-8 h-8 border-4 border-gray-300 border-t-black dark:border-white/20 dark:border-t-white rounded-full animate-spin" />
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <div className="flex flex-1 items-center justify-center min-h-[320px]">
+            <Loader className="w-8 h-8 animate-spin text-textItemBlur" />
+          </div>
+        </PageBody>
+      </PageShell>
     );
   }
 
   if (!selectedBrand) {
     return (
-      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <Building2 className="w-16 h-16 text-gray-300" />
-        <h2 className="text-xl font-semibold text-gray-500">
-          Nenhuma marca selecionada
-        </h2>
-        <p className="text-gray-400 text-center max-w-md">
-          Selecione ou crie uma marca para começar a revisar ideias de carrossel.
-        </p>
-        <Link href="/brands">
-          <Button>Gerenciar Marcas</Button>
-        </Link>
-      </div>
+      <PageShell>
+        <PageBody className="!p-0">
+          <EmptyState
+            icon={<Building2 className="w-5 h-5" />}
+            title="Nenhuma marca selecionada"
+            description="Selecione ou crie uma marca para começar a revisar ideias de carrossel."
+            secondary={
+              <Link href="/brand">
+                <Button>Gerenciar marcas</Button>
+              </Link>
+            }
+          />
+        </PageBody>
+      </PageShell>
     );
   }
 

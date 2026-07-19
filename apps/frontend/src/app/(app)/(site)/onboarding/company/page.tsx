@@ -1,14 +1,8 @@
-import { Metadata } from 'next';
-import { isGeneralServerSide } from '@gitroom/helpers/utils/is.general.server.side';
-import { CompanyOnboardingComponent } from '@gitroom/frontend/components/onboarding/company-onboarding.component';
-
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: `${isGeneralServerSide() ? 'ContentFlow' : 'Gitroom'} Onboarding`,
-  description: '',
-};
+import { redirect } from 'next/navigation';
 
-export default async function CompanyOnboardingPage() {
-  return <CompanyOnboardingComponent />;
+/** Legacy Company Profile onboarding → unified */
+export default async function Index() {
+  redirect('/onboarding');
 }

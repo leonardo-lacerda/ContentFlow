@@ -1,14 +1,8 @@
-import { Metadata } from 'next';
-import { isGeneralServerSide } from '@gitroom/helpers/utils/is.general.server.side';
-import { BrandDetailPage } from '@gitroom/frontend/components/brand-dna/brand-detail-page.component';
-
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: `${isGeneralServerSide() ? 'ContentFlow' : 'Gitroom'} Brand Detail`,
-  description: 'Edit your brand profile and Brand DNA',
-};
+import { redirect } from 'next/navigation';
 
-export default async function BrandDetailRoute() {
-  return <BrandDetailPage />;
+/** ContentFlow v1: detalhe de marca unificado em /brand */
+export default async function Index() {
+  redirect('/brand');
 }
