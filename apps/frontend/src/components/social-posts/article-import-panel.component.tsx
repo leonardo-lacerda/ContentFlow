@@ -13,7 +13,7 @@ import {
 
 /**
  * ContentFlow v1: URL de artigo → carrossel com Brand DNA.
- * POST /article-import { url, brandProfileId, slideCount?, language? }
+ * POST /article-import/generate { url, brandProfileId, slideCount?, language? }
  */
 export function ArticleImportPanel({ brandId }: { brandId?: string }) {
   const fetch = useFetch();
@@ -36,7 +36,7 @@ export function ArticleImportPanel({ brandId }: { brandId?: string }) {
 
     setLoading(true);
     try {
-      const res = await fetch('/article-import', {
+      const res = await fetch('/article-import/generate', {
         method: 'POST',
         body: JSON.stringify({
           url: trimmed,
@@ -59,12 +59,22 @@ export function ArticleImportPanel({ brandId }: { brandId?: string }) {
         data?.data?.id ||
         data?.data?.projectId;
 
+      const params = new URLSearchParams();
+      params.set('from', 'article');
+      if (projectId) params.set('projectId', projectId);
+
+      const title =
+        data.title ||
+        data.plan?.title ||
+        data?.data?.title ||
+        data?.data?.plan?.title;
+      const sourceText =
+        data.sourceText || data.preview || data?.data?.sourceText || '';
+      if (title) params.set('topic', String(title));
+      if (sourceText) params.set('hook', String(sourceText).slice(0, 500));
+
       toaster.show('Artigo convertido em carrossel', 'success');
-      if (projectId) {
-        router.push(`/generate?projectId=${projectId}`);
-      } else {
-        router.push('/generate');
-      }
+      router.push(`/generate?${params.toString()}`);
     } catch (err: any) {
       toaster.show(err?.message || 'Erro ao importar artigo', 'warning');
     } finally {

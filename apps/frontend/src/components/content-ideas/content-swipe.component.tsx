@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useIdeasByBrand, mutateIdeasByBrand } from './content-ideas.hooks';
 import { ContentIdea } from './content-ideas.types';
@@ -9,9 +9,11 @@ import {
   rejectIdea,
   saveIdea,
   createFromIdea,
+  createIdea,
 } from './content-ideas.service';
 import { Button } from '@gitroom/react/form/button';
 import { useToaster } from '@gitroom/react/toaster/toaster';
+import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import {
   ThumbsUp,
   ThumbsDown,
@@ -25,6 +27,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
+  RefreshCw,
 } from 'lucide-react';
 import {
   PageShell,
@@ -60,17 +63,48 @@ function MetaBlock({
 
 export function ContentSwipe({ brandId }: { brandId: string }) {
   const router = useRouter();
+  const fetch = useFetch();
   const { data: ideas, isLoading, error } = useIdeasByBrand(brandId);
   const toaster = useToaster();
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [generating, setGenerating] = useState(false);
 
-  const list: ContentIdea[] = Array.isArray(ideas) ? ideas : ideas?.data || [];
-  const newIdeas = list.filter((i) => i.status === 'NEW');
-  const currentIdea = newIdeas[currentIndex];
+  const list: ContentIdea[] = useMemo(
+    () => (Array.isArray(ideas) ? ideas : ideas?.data || []),
+    [ideas]
+  );
+
+  const newIdeas = useMemo(
+    () => list.filter((i) => i.status === 'NEW'),
+    [list]
+  );
+
+  // Evita índice fora da lista (bug do "Descartar" em sequência)
+  useEffect(() => {
+    if (newIdeas.length === 0) {
+      if (currentIndex !== 0) setCurrentIndex(0);
+      return;
+    }
+    if (currentIndex > newIdeas.length - 1) {
+      setCurrentIndex(newIdeas.length - 1);
+    }
+  }, [newIdeas.length, currentIndex]);
+
+  const safeIndex =
+    newIdeas.length === 0
+      ? 0
+      : Math.min(Math.max(currentIndex, 0), newIdeas.length - 1);
+  const currentIdea = newIdeas[safeIndex];
+
+  const approvedCount = list.filter((i) => i.status === 'APPROVED').length;
+  const rejectedCount = list.filter((i) => i.status === 'REJECTED').length;
+  const savedCount = list.filter((i) => i.status === 'SAVED').length;
+  const busy = Boolean(processingId) || generating;
 
   const handleAction = useCallback(
     async (idea: ContentIdea, action: 'approve' | 'reject' | 'save') => {
+      if (processingId) return;
       setProcessingId(idea.id);
       try {
         if (action === 'approve') {
@@ -83,49 +117,45 @@ export function ContentSwipe({ brandId }: { brandId: string }) {
           await saveIdea(idea.id);
           toaster.show('Ideia salva para depois', 'success');
         }
-        mutateIdeasByBrand(brandId);
-        if (currentIndex < newIdeas.length - 1) {
-          setCurrentIndex(currentIndex + 1);
-        } else {
-          setCurrentIndex(0);
-        }
+        // Mantém o índice: o próximo card “entra” na mesma posição.
+        // O useEffect clampa se o índice ficar inválido.
+        await mutateIdeasByBrand(brandId);
       } catch (err: any) {
         toaster.show(err.message || 'Erro ao processar ideia', 'warning');
       } finally {
         setProcessingId(null);
       }
     },
-    [brandId, currentIndex, newIdeas.length, toaster]
+    [brandId, processingId, toaster]
   );
 
   const goNext = () => {
-    if (currentIndex < newIdeas.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+    if (safeIndex < newIdeas.length - 1) {
+      setCurrentIndex(safeIndex + 1);
     }
   };
 
   const goPrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+    if (safeIndex > 0) {
+      setCurrentIndex(safeIndex - 1);
     }
   };
 
   const handleCreateCarousel = useCallback(
     async (idea: ContentIdea) => {
+      if (processingId) return;
       setProcessingId(idea.id);
       try {
         let projectId = '';
         try {
           const project = await createFromIdea(idea.id);
           projectId =
-            (project as any)?.id ||
-            (project as any)?.data?.id ||
-            '';
+            (project as any)?.id || (project as any)?.data?.id || '';
         } catch {
-          // Continua mesmo se o project draft falhar — a ideia vai na URL.
+          /* ideia ainda vai na URL */
         }
 
-        mutateIdeasByBrand(brandId);
+        await mutateIdeasByBrand(brandId);
 
         const params = new URLSearchParams();
         params.set('from', 'swipe');
@@ -150,8 +180,83 @@ export function ContentSwipe({ brandId }: { brandId: string }) {
         setProcessingId(null);
       }
     },
-    [brandId, toaster, router]
+    [brandId, toaster, router, processingId]
   );
+
+  const handleGenerateMore = useCallback(async () => {
+    if (!brandId || generating) return;
+    setGenerating(true);
+    try {
+      const existingTitles = list
+        .map((i) => i.title)
+        .filter(Boolean)
+        .slice(0, 40);
+
+      const res = await fetch('/ai-generate/carousel-ideas', {
+        method: 'POST',
+        body: JSON.stringify({
+          brandProfileId: brandId,
+          language: 'pt-BR',
+          existingTitles,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          data?.message || data?.error || 'Erro ao gerar ideias'
+        );
+      }
+
+      const generated: Array<{
+        title?: string;
+        hook?: string;
+        goal?: string;
+        angle?: string;
+        templateSuggestion?: string;
+        platformSuggestion?: string;
+        score?: number;
+      }> = data.ideas || data.data?.ideas || [];
+
+      if (!generated.length) {
+        throw new Error('Nenhuma ideia foi gerada. Tente de novo.');
+      }
+
+      let created = 0;
+      for (const idea of generated) {
+        try {
+          await createIdea({
+            brandProfileId: brandId,
+            title: idea.title || 'Ideia',
+            hook: idea.hook || idea.title || 'Hook',
+            goal: idea.goal || 'Engajamento',
+            angle: idea.angle || idea.hook || idea.title || 'Ângulo',
+            templateSuggestion: idea.templateSuggestion,
+            platformSuggestion: idea.platformSuggestion,
+            score: idea.score,
+          });
+          created += 1;
+        } catch {
+          /* ignora falha individual */
+        }
+      }
+
+      await mutateIdeasByBrand(brandId);
+      setCurrentIndex(0);
+
+      if (created === 0) {
+        toaster.show(
+          'Ideias geradas, mas não foi possível salvar. Tente de novo.',
+          'warning'
+        );
+      } else {
+        toaster.show(`${created} novas ideias prontas para revisar`, 'success');
+      }
+    } catch (err: any) {
+      toaster.show(err?.message || 'Erro ao gerar ideias', 'warning');
+    } finally {
+      setGenerating(false);
+    }
+  }, [brandId, generating, list, fetch, toaster]);
 
   if (isLoading) {
     return (
@@ -170,182 +275,213 @@ export function ContentSwipe({ brandId }: { brandId: string }) {
       <PageShell>
         <PageBody className="!p-0">
           <EmptyState
+            icon={<Lightbulb className="w-6 h-6" />}
             title="Erro ao carregar ideias"
-            description="Não foi possível carregar as ideias desta marca."
+            description="Tente recarregar a página."
           />
         </PageBody>
       </PageShell>
     );
   }
 
-  if (newIdeas.length === 0) {
-    return (
-      <PageShell>
-        <PageHeader description="Revise ideias de carrossel geradas a partir da Brand DNA." />
-        <PageBody className="!p-0">
-          <EmptyState
-            icon={<Lightbulb className="w-5 h-5" />}
-            title="Nenhuma ideia nova"
-            description="Gere ideias de carrossel usando a Brand DNA da marca selecionada."
-          />
-        </PageBody>
-      </PageShell>
-    );
-  }
-
-  const approvedCount = list.filter((i) => i.status === 'APPROVED').length;
-  const savedCount = list.filter((i) => i.status === 'SAVED').length;
-  const rejectedCount = list.filter((i) => i.status === 'REJECTED').length;
+  const statsRow = (
+    <div className="grid grid-cols-3 gap-[10px] w-full max-w-[420px]">
+      {[
+        { label: 'Aprovadas', value: approvedCount },
+        { label: 'Salvas', value: savedCount },
+        { label: 'Descartadas', value: rejectedCount },
+      ].map((stat) => (
+        <SectionCard key={stat.label} className="!p-[14px] text-center">
+          <div className="text-[20px] font-[700] text-newTextColor leading-none">
+            {stat.value}
+          </div>
+          <div className="text-[11px] text-textItemBlur mt-[6px]">
+            {stat.label}
+          </div>
+        </SectionCard>
+      ))}
+    </div>
+  );
 
   return (
     <PageShell>
       <PageHeader
-        description={`${newIdeas.length} ideias para revisar`}
+        description={
+          newIdeas.length > 0
+            ? `${newIdeas.length} ideia${newIdeas.length === 1 ? '' : 's'} para revisar`
+            : 'Revise ideias de carrossel geradas a partir da Brand DNA.'
+        }
         actions={
-          <span className="text-[12px] text-textItemBlur font-[600]">
-            {currentIndex + 1} / {newIdeas.length}
-          </span>
+          <Button
+            onClick={handleGenerateMore}
+            loading={generating}
+            disabled={busy}
+            secondary={newIdeas.length > 0}
+          >
+            {generating ? (
+              <>
+                <Loader className="w-4 h-4 mr-2 animate-spin" />
+                Gerando…
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                {newIdeas.length > 0 ? 'Gerar mais' : 'Gerar ideias'}
+              </>
+            )}
+          </Button>
         }
       />
-      <PageBody>
-        <div className="max-w-[640px] w-full mx-auto flex flex-col gap-[16px]">
-          {currentIdea ? (
-            <SectionCard className="!p-0 overflow-hidden">
-              <div className="p-[20px] flex flex-col gap-[12px]">
-                <div className="flex items-start justify-between gap-[12px]">
-                  <h2 className="text-[18px] font-[600] text-newTextColor leading-snug">
-                    {currentIdea.title}
-                  </h2>
-                  {currentIdea.score != null ? (
-                    <span className="text-[14px] font-[700] text-emerald-400 shrink-0">
-                      {currentIdea.score}/10
-                    </span>
-                  ) : null}
-                </div>
+      <PageBody className="!p-0">
+        {newIdeas.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-6 min-h-[420px] px-4">
+            <EmptyState
+              icon={<Lightbulb className="w-6 h-6" />}
+              title={
+                list.length > 0
+                  ? 'Fila zerada'
+                  : 'Nenhuma ideia nova'
+              }
+              description={
+                list.length > 0
+                  ? 'Você revisou todas as ideias. Gere um novo lote com o DNA da marca.'
+                  : 'Gere ideias de carrossel usando a Brand DNA da marca selecionada.'
+              }
+            />
+            <Button
+              onClick={handleGenerateMore}
+              loading={generating}
+              disabled={busy}
+            >
+              {generating ? (
+                <>
+                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                  Gerando ideias…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Gerar 10 ideias
+                </>
+              )}
+            </Button>
+            {list.length > 0 ? statsRow : null}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-[20px] min-h-[calc(100vh-220px)] px-[16px] py-[24px]">
+            <div className="text-[12px] text-textItemBlur tabular-nums">
+              {safeIndex + 1} / {newIdeas.length}
+            </div>
 
-                {currentIdea.hook ? (
+            {currentIdea ? (
+              <SectionCard className="w-full max-w-[420px] !p-[24px] space-y-[18px]">
+                <h2 className="text-[20px] font-[700] text-newTextColor leading-snug text-center">
+                  {currentIdea.title}
+                </h2>
+
+                <div className="space-y-[10px]">
                   <MetaBlock
                     icon={<Sparkles className="w-4 h-4" />}
                     label="Hook"
                   >
                     {currentIdea.hook}
                   </MetaBlock>
-                ) : null}
-
-                {currentIdea.goal ? (
                   <MetaBlock
                     icon={<Target className="w-4 h-4" />}
                     label="Objetivo"
                   >
                     {currentIdea.goal}
                   </MetaBlock>
-                ) : null}
-
-                {currentIdea.angle ? (
                   <MetaBlock
                     icon={<Lightbulb className="w-4 h-4" />}
                     label="Ângulo"
                   >
                     {currentIdea.angle}
                   </MetaBlock>
-                ) : null}
-
-                <div className="flex items-center gap-[8px] flex-wrap">
                   {currentIdea.templateSuggestion ? (
-                    <span className="inline-flex items-center gap-[4px] text-[11px] bg-newSettings border border-newTableBorder text-textItemBlur px-[8px] py-[4px] rounded-full">
-                      <Layout className="w-3 h-3" />
+                    <MetaBlock
+                      icon={<Layout className="w-4 h-4" />}
+                      label="Template"
+                    >
                       {currentIdea.templateSuggestion}
-                    </span>
+                    </MetaBlock>
                   ) : null}
                   {currentIdea.platformSuggestion ? (
-                    <span className="inline-flex items-center gap-[4px] text-[11px] bg-newSettings border border-newTableBorder text-textItemBlur px-[8px] py-[4px] rounded-full">
-                      <Globe className="w-3 h-3" />
+                    <MetaBlock
+                      icon={<Globe className="w-4 h-4" />}
+                      label="Plataforma"
+                    >
                       {currentIdea.platformSuggestion}
-                    </span>
+                    </MetaBlock>
                   ) : null}
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between gap-[8px] px-[16px] py-[14px] border-t border-newTableBorder flex-wrap">
-                <Button
-                  onClick={goPrev}
-                  disabled={currentIndex === 0}
-                  secondary
-                  className="!px-3 !h-[36px]"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-
-                <div className="flex items-center gap-[8px] flex-wrap justify-center">
+                <div className="flex items-center justify-center gap-[8px] pt-[4px]">
                   <Button
-                    onClick={() => handleAction(currentIdea, 'reject')}
-                    disabled={!!processingId}
+                    onClick={goPrev}
+                    disabled={safeIndex === 0 || busy}
                     secondary
-                    className="!h-[36px] !text-[12px]"
+                    className="!px-3 !h-[36px]"
                   >
-                    {processingId === currentIdea.id ? (
-                      <Loader className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <ThumbsDown className="w-4 h-4" />
-                    )}
-                    Descartar
+                    <ChevronLeft className="w-4 h-4" />
                   </Button>
+
+                  <div className="flex items-center gap-[6px] flex-wrap justify-center">
+                    <Button
+                      onClick={() => handleAction(currentIdea, 'reject')}
+                      disabled={busy}
+                      secondary
+                      className="!h-[36px] !px-3"
+                    >
+                      {processingId === currentIdea.id ? (
+                        <Loader className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <ThumbsDown className="w-4 h-4" />
+                      )}
+                      Descartar
+                    </Button>
+                    <Button
+                      onClick={() => handleAction(currentIdea, 'save')}
+                      disabled={busy}
+                      secondary
+                      className="!h-[36px] !px-3"
+                    >
+                      <Bookmark className="w-4 h-4" />
+                      Salvar
+                    </Button>
+                    <Button
+                      onClick={() => handleAction(currentIdea, 'approve')}
+                      disabled={busy}
+                      className="!h-[36px] !px-3"
+                    >
+                      <ThumbsUp className="w-4 h-4" />
+                      Aprovar
+                    </Button>
+                    <Button
+                      onClick={() => handleCreateCarousel(currentIdea)}
+                      disabled={busy}
+                      className="!h-[36px] !px-3 !bg-btnPrimary"
+                    >
+                      <Play className="w-4 h-4" />
+                      Criar carrossel
+                    </Button>
+                  </div>
+
                   <Button
-                    onClick={() => handleAction(currentIdea, 'save')}
-                    disabled={!!processingId}
+                    onClick={goNext}
+                    disabled={safeIndex === newIdeas.length - 1 || busy}
                     secondary
-                    className="!h-[36px] !text-[12px]"
+                    className="!px-3 !h-[36px]"
                   >
-                    <Bookmark className="w-4 h-4" />
-                    Salvar
+                    <ChevronRight className="w-4 h-4" />
                   </Button>
-                  <Button
-                    onClick={() => handleAction(currentIdea, 'approve')}
-                    disabled={!!processingId}
-                    className="!h-[36px] !text-[12px]"
-                  >
-                    <ThumbsUp className="w-4 h-4" />
-                    Aprovar
-                  </Button>
-                  <Button
-                    onClick={() => handleCreateCarousel(currentIdea)}
-                    disabled={!!processingId}
-                    className="!h-[36px] !text-[12px]"
-                  >
-                    <Play className="w-4 h-4" />
-                    Criar carrossel
-                  </Button>
-                </div>
-
-                <Button
-                  onClick={goNext}
-                  disabled={currentIndex === newIdeas.length - 1}
-                  secondary
-                  className="!px-3 !h-[36px]"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </SectionCard>
-          ) : null}
-
-          <div className="grid grid-cols-3 gap-[10px]">
-            {[
-              { label: 'Aprovadas', value: approvedCount },
-              { label: 'Salvas', value: savedCount },
-              { label: 'Descartadas', value: rejectedCount },
-            ].map((stat) => (
-              <SectionCard key={stat.label} className="!p-[14px] text-center">
-                <div className="text-[20px] font-[700] text-newTextColor leading-none">
-                  {stat.value}
-                </div>
-                <div className="text-[11px] text-textItemBlur mt-[6px]">
-                  {stat.label}
                 </div>
               </SectionCard>
-            ))}
+            ) : null}
+
+            {statsRow}
           </div>
-        </div>
+        )}
       </PageBody>
     </PageShell>
   );
