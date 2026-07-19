@@ -1,13 +1,8 @@
 export const dynamic = 'force-dynamic';
 
-import { Metadata } from 'next';
-import { BrandSinglePage } from '@gitroom/frontend/components/brand-dna/brand-single-page.component';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'ContentFlow — Minha marca',
-  description: 'Brand DNA — uma marca por conta',
-};
-
+/** Atalho: /brand → lista de marcas */
 export default async function Index() {
-  return <BrandSinglePage />;
+  redirect('/brands');
 }
