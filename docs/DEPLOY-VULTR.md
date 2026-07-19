@@ -678,5 +678,42 @@ Estas variáveis são **lidas em runtime** (não precisam estar no build):
 
 ---
 
+
+### 🔴 OpenAI: "Invalid schema" / "uri is not a valid format"
+
+**Causa:** Campos Zod com .url(), .email(), .uuid(), .datetime() geram JSON Schema com ormat: "uri" etc. O OpenAI structured outputs **não suporta** o keyword ormat.
+
+**Diagnóstico:**
+`
+400 Invalid schema for response_format 'emailCampaign': ... 'uri' is not a valid format.
+`
+
+**Solução:** Remover todos os .url() dos schemas Zod que são usados com zodResponseFormat:
+`ash
+# Encontrar
+grep -rn '\.url()' libraries/nestjs-libraries/src/ai-generate/schemas/
+# Substituir z.string().url() por z.string()
+`
+
+> **Regra:** Nenhum campo Zod em schemas de AI generate pode usar validadores de formato (.url(), .email(), .uuid(), .ip(), .datetime()). Use apenas z.string() e valide no código se necessário.
+
+### 🔴 Frontend: "useEffect is not defined"
+
+**Causa:** Componente usa useEffect mas o import de React não inclui o hook.
+
+**Diagnóstico:** Procurar no código-fonte o uso de useEffect sem import { useEffect } from 'react'.
+
+**Solução:** Adicionar useEffect ao import:
+`	sx
+// Antes
+import React, { Suspense, useMemo, useState } from 'react';
+// Depois
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
+`
+
+> **Nota:** Muitos componentes têm imports multi-linha do React. Verificar se o hook está na destructuring, não apenas se a string useEffect aparece no arquivo.
+
+---
+
 *Atualizado em: 2026-07-19*
 *Criado a partir de deploys reais com troubleshooting documentado.*
