@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Button } from '@gitroom/react/form/button';
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
 import {
@@ -33,6 +33,12 @@ import {
   useAmpliarPrefill,
 } from '@gitroom/frontend/components/ampliar/use-ampliar-prefill';
 import { AmpliarSourceBanner } from '@gitroom/frontend/components/ampliar/ampliar-source-banner.component';
+import { AmpliarAiPaths } from '@gitroom/frontend/components/ampliar/ampliar-ai-paths.component';
+import {
+  buildAdsAiPaths,
+  type AmpliarAiPath,
+} from '@gitroom/frontend/components/ampliar/ampliar-ai-presets';
+import { useToaster } from '@gitroom/react/toaster/toaster';
 
 const PLATFORM_LABELS: Record<string, string> = {
   META_FACEBOOK: 'Facebook',
@@ -389,7 +395,7 @@ function AdCreativesPageInner() {
   const brandId = selectedBrand?.id as string | undefined;
   const { openCreateDrawer } = useCreateDrawer();
   const prefill = useAmpliarPrefill();
-  const openedPrefill = useRef(false);
+  const toaster = useToaster();
 
   const [loadingList, setLoadingList] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -397,6 +403,7 @@ function AdCreativesPageInner() {
   const [savedAds, setSavedAds] = useState<any[]>([]);
   const [templates, setTemplates] = useState<AdTemplateSummary[]>([]);
   const [saving, setSaving] = useState(false);
+  const [aiLoadingId, setAiLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     getAdTemplates()
@@ -451,13 +458,37 @@ function AdCreativesPageInner() {
     });
   };
 
-  useEffect(() => {
-    if (!prefill.hasSource || openedPrefill.current || !templates.length) return;
-    if (!brandId && !prefill.brandId) return;
-    openedPrefill.current = true;
-    openGenerate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefill.hasSource, brandId, templates.length]);
+  const runAiPath = async (path: AmpliarAiPath) => {
+    const bid = brandId || prefill.brandId;
+    if (!bid) {
+      toaster.show('Selecione uma marca antes de gerar', 'warning');
+      return;
+    }
+    setAiLoadingId(path.id);
+    setError(null);
+    try {
+      const p = path.payload;
+      const data = await generateAds({
+        brandProfileId: bid,
+        contentObjective: String(p.contentObjective || prefill.topic || 'Campanha'),
+        platforms: (p.platforms as string[]) || ['META_INSTAGRAM'],
+        objective: String(p.objective || 'TRAFFIC'),
+        adType: (p.adType as any) || 'AUTO',
+        variants: Number(p.variants) || 3,
+        destinationUrl: (p.destinationUrl as string) || undefined,
+        additionalContext: (p.additionalContext as string) || undefined,
+        contentIdeaId: (p.contentIdeaId as string) || prefill.ideaId,
+        carouselProjectId: (p.carouselProjectId as string) || prefill.projectId,
+      } as any);
+      setBatch(data);
+      toaster.show('Kit de anúncios gerado com IA', 'success');
+    } catch (e: any) {
+      setError(e.message || 'Falha ao gerar com IA');
+      toaster.show(e.message || 'Falha ao gerar com IA', 'warning');
+    } finally {
+      setAiLoadingId(null);
+    }
+  };
 
   const handleSaveBatch = async () => {
     if (!batch || !brandId) return;
@@ -493,18 +524,30 @@ function AdCreativesPageInner() {
         }
       />
       <PageBody className={!hasContent && !loadingList ? '!p-0' : undefined}>
-        <AmpliarSourceBanner prefill={prefill} />
+        <div className="px-[20px] pt-[12px] max-w-[960px] w-full mx-auto">
+          <AmpliarSourceBanner prefill={prefill} />
+          <AmpliarAiPaths
+            title="Caminhos de anúncio com IA"
+            description="A IA escolhe plataforma, objetivo e tom com base na ideia e no DNA. Um clique gera 3 variações."
+            paths={buildAdsAiPaths(prefill, selectedBrand as any)}
+            loadingId={aiLoadingId}
+            disabled={!brandId && !prefill.brandId}
+            onSelect={runAiPath}
+            onAdvanced={() => openGenerate()}
+            advancedLabel="Formulário avançado"
+          />
+        </div>
         {error ? (
-          <div className="text-[13px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-[10px] p-[12px]">
+          <div className="text-[13px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-[10px] p-[12px] mx-5">
             {error}
           </div>
         ) : null}
 
-        {loadingList && !hasContent ? (
+        {loadingList && !hasContent && !aiLoadingId ? (
           <div className="text-[13px] text-textItemBlur py-[40px] text-center">
             Carregando...
           </div>
-        ) : !hasContent ? (
+        ) : !hasContent && !aiLoadingId ? (
           <EmptyState
             icon={
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -516,9 +559,9 @@ function AdCreativesPageInner() {
                 />
               </svg>
             }
-            title="Nenhum ad creative ainda"
-            description="Gere variações de anúncio a partir do objetivo da campanha e da marca selecionada."
-            actionLabel="Gerar ads"
+            title="Escolha um caminho acima"
+            description="Ou use o formulário avançado se quiser controlar cada campo."
+            actionLabel="Formulário avançado"
             onAction={() => openGenerate()}
           />
         ) : (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { Button } from '@gitroom/react/form/button';
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
@@ -21,6 +21,12 @@ import {
   useAmpliarPrefill,
 } from '@gitroom/frontend/components/ampliar/use-ampliar-prefill';
 import { AmpliarSourceBanner } from '@gitroom/frontend/components/ampliar/ampliar-source-banner.component';
+import { AmpliarAiPaths } from '@gitroom/frontend/components/ampliar/ampliar-ai-paths.component';
+import {
+  buildVideoAiPaths,
+  type AmpliarAiPath,
+} from '@gitroom/frontend/components/ampliar/ampliar-ai-presets';
+import { useToaster } from '@gitroom/react/toaster/toaster';
 import { Clapperboard, Copy, Play, X } from 'lucide-react';
 
 interface VideoScene {
@@ -288,14 +294,16 @@ function GenerateVideoScriptForm({
 }
 
 function VideoScriptsPageInner() {
+  const fetch = useFetch();
   const { data: selectedBrand } = useSelectedBrand();
   const brandId = selectedBrand?.id as string | undefined;
   const { openCreateDrawer } = useCreateDrawer();
   const prefill = useAmpliarPrefill();
-  const opened = useRef(false);
+  const toaster = useToaster();
   const [scripts, setScripts] = useState<VideoScript[]>([]);
   const [teleprompter, setTeleprompter] = useState<VideoScript | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [aiLoadingId, setAiLoadingId] = useState<string | null>(null);
 
   const openGenerate = () => {
     openCreateDrawer({
@@ -319,13 +327,65 @@ function VideoScriptsPageInner() {
     });
   };
 
-  useEffect(() => {
-    if (!prefill.hasSource || opened.current) return;
-    if (!brandId && !prefill.brandId) return;
-    opened.current = true;
-    openGenerate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefill.hasSource, brandId]);
+  const runAiPath = async (path: AmpliarAiPath) => {
+    const bid = brandId || prefill.brandId;
+    if (!bid) {
+      toaster.show('Selecione uma marca antes de gerar', 'warning');
+      return;
+    }
+    const p = path.payload;
+    const ideaId = String(p.contentIdeaId || prefill.ideaId || '');
+    const projectId = String(p.carouselProjectId || prefill.projectId || '');
+    const context =
+      String(p.additionalContext || buildContextFromPrefill(prefill) || '');
+    if (!ideaId && !projectId && !context) {
+      toaster.show(
+        'Amplie a partir do Swipe ou de um carrossel — ou use o formulário avançado',
+        'warning'
+      );
+      return;
+    }
+    setAiLoadingId(path.id);
+    try {
+      const format = String(p.format || 'REELS');
+      const maxDuration = Number(p.maxDuration) || 30;
+      const res = await fetch('/video-scripts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandProfileId: bid,
+          carouselProjectId: projectId || undefined,
+          contentIdeaId: ideaId || undefined,
+          format,
+          maxDuration,
+          name: String(p.name || prefill.topic || 'Roteiro Ampliar').slice(0, 80),
+          additionalContext: context || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || data.msg || 'Falha ao gerar roteiro');
+      }
+      const script = (data.script || data) as VideoScript;
+      const normalized: VideoScript = {
+        ...script,
+        scenes: script.scenes || data.scenes || [],
+        title: script.title || data.name || 'Roteiro',
+        totalDuration:
+          script.totalDuration || data.totalDurationSec || maxDuration,
+        _id: data.id || `${Date.now()}`,
+        _createdAt: new Date().toISOString(),
+        _format: format,
+      };
+      setScripts((prev) => [normalized, ...prev]);
+      setExpandedId(normalized._id || null);
+      toaster.show('Roteiro gerado com IA', 'success');
+    } catch (e: any) {
+      toaster.show(e.message || 'Falha ao gerar com IA', 'warning');
+    } finally {
+      setAiLoadingId(null);
+    }
+  };
 
   const copyCaption = async (script: VideoScript) => {
     const text = [script.caption, (script.hashtags || []).join(' ')]
@@ -338,20 +398,34 @@ function VideoScriptsPageInner() {
     <PageShell>
       <PageHeader
         description="Roteiros de Reels/TikTok a partir de ideia ou carrossel — com teleprompter."
-        actions={<Button onClick={openGenerate}>Gerar roteiro</Button>}
+        actions={<Button onClick={openGenerate}>Formulário avançado</Button>}
       />
       <PageBody className={scripts.length === 0 ? '!p-0' : undefined}>
-        <div className="px-[20px] pt-[12px]">
+        <div className="px-[20px] pt-[12px] max-w-[960px] w-full mx-auto">
           <AmpliarSourceBanner prefill={prefill} />
+          <AmpliarAiPaths
+            title="Caminhos de roteiro com IA"
+            description="Escolha duração e formato. A IA monta cenas, fala e caption com o DNA e o hook da ideia."
+            paths={buildVideoAiPaths(prefill)}
+            loadingId={aiLoadingId}
+            disabled={!brandId && !prefill.brandId}
+            onSelect={runAiPath}
+            onAdvanced={openGenerate}
+            advancedLabel="Formulário avançado"
+          />
         </div>
-        {scripts.length === 0 ? (
+        {scripts.length === 0 && !aiLoadingId ? (
           <EmptyState
             icon={<Clapperboard className="w-6 h-6" />}
-            title="Nenhum roteiro ainda"
-            description="Aprove uma ideia no Swipe ou abra um carrossel e amplie em roteiro de Reels."
-            actionLabel="Gerar roteiro"
+            title="Escolha um formato acima"
+            description="Reels 30s é o caminho recomendado. Venha do Swipe para a IA usar a ideia."
+            actionLabel="Formulário avançado"
             onAction={openGenerate}
           />
+        ) : scripts.length === 0 && aiLoadingId ? (
+          <div className="text-[13px] text-textItemBlur py-[40px] text-center">
+            Gerando roteiro com IA…
+          </div>
         ) : (
           <div className="flex flex-col gap-4 p-5">
             {scripts.map((script) => {

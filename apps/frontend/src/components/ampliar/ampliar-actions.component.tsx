@@ -66,10 +66,11 @@ export function AmpliarActions({
       className={`rounded-[12px] border border-newTableBorder bg-newBgColorInner p-3 ${className || ''}`}
     >
       <div className="text-[12px] font-semibold text-newTextColor mb-2">
-        Ampliar esta ideia
+        Ampliar com IA
       </div>
       <p className="text-[11px] text-textItemBlur mb-3">
-        Gere anúncio, e-mail ou roteiro de Reels com o mesmo DNA — sem reescrever o brief.
+        A IA sugere o melhor formato e gera anúncio, e-mail ou roteiro com o DNA —
+        sem você montar brief.
       </p>
       <div className="flex flex-wrap gap-2">
         {visible.map(({ target, label, icon: Icon }) => (

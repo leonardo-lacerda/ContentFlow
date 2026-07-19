@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState, useEffect, useCallback, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useCallback } from 'react';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { Button } from '@gitroom/react/form/button';
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
@@ -22,6 +22,12 @@ import {
   useAmpliarPrefill,
 } from '@gitroom/frontend/components/ampliar/use-ampliar-prefill';
 import { AmpliarSourceBanner } from '@gitroom/frontend/components/ampliar/ampliar-source-banner.component';
+import { AmpliarAiPaths } from '@gitroom/frontend/components/ampliar/ampliar-ai-paths.component';
+import {
+  buildEmailAiPaths,
+  type AmpliarAiPath,
+} from '@gitroom/frontend/components/ampliar/ampliar-ai-presets';
+import { useToaster } from '@gitroom/react/toaster/toaster';
 
 type CampaignType = 'NEWSLETTER' | 'WELCOME_SEQUENCE' | 'PROMOTIONAL';
 type CampaignStatus = 'DRAFT' | 'GENERATING' | 'READY' | 'EXPORTED' | 'FAILED';
@@ -310,12 +316,13 @@ function EmailCampaignsPageInner() {
   const brandId = selectedBrand?.id as string | undefined;
   const { openCreateDrawer } = useCreateDrawer();
   const prefill = useAmpliarPrefill();
-  const opened = useRef(false);
+  const toaster = useToaster();
 
   const [activeTab, setActiveTab] = useState<'all' | CampaignType>('all');
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [aiLoadingId, setAiLoadingId] = useState<string | null>(null);
 
   const loadCampaigns = useCallback(async () => {
     setLoading(true);
@@ -399,13 +406,54 @@ function EmailCampaignsPageInner() {
     });
   };
 
-  useEffect(() => {
-    if (!prefill.hasSource || opened.current) return;
-    if (!brandId && !prefill.brandId) return;
-    opened.current = true;
-    openGenerate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefill.hasSource, brandId]);
+  const runAiPath = async (path: AmpliarAiPath) => {
+    const bid = brandId || prefill.brandId;
+    if (!bid) {
+      toaster.show('Selecione uma marca antes de gerar', 'warning');
+      return;
+    }
+    setAiLoadingId(path.id);
+    try {
+      const p = path.payload;
+      const mode = String(p.mode || 'welcome_sequence');
+      const endpoint =
+        mode === 'welcome_sequence'
+          ? '/email-campaigns/generate-welcome-sequence'
+          : '/email-campaigns/generate';
+      const body =
+        mode === 'welcome_sequence'
+          ? {
+              brandProfileId: bid,
+              sequenceLength: Number(p.sequenceLength) || 4,
+              additionalContext: p.additionalContext,
+              contentIdeaId: p.contentIdeaId || prefill.ideaId,
+              carouselProjectId: p.carouselProjectId || prefill.projectId,
+            }
+          : {
+              brandProfileId: bid,
+              campaignType: p.campaignType || mode,
+              name: String(p.name || prefill.topic || 'Campanha'),
+              additionalContext: p.additionalContext,
+              contentIdeaId: p.contentIdeaId || prefill.ideaId,
+              carouselProjectId: p.carouselProjectId || prefill.projectId,
+            };
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || data.msg || 'Falha ao gerar e-mail');
+      }
+      toaster.show('Campanha gerada com IA', 'success');
+      await loadCampaigns();
+    } catch (e: any) {
+      toaster.show(e.message || 'Falha ao gerar com IA', 'warning');
+    } finally {
+      setAiLoadingId(null);
+    }
+  };
 
   const openPreview = async (campaign: EmailCampaign) => {
     let html: string | null = campaign.bodyHtml || null;
@@ -456,8 +504,18 @@ function EmailCampaignsPageInner() {
         actions={<Button onClick={openGenerate}>Gerar campanha</Button>}
       />
       <PageBody className={!loading && campaigns.length === 0 ? '!p-0' : undefined}>
-        <div className={campaigns.length === 0 ? 'px-5 pt-3' : 'mb-3'}>
+        <div className="px-5 pt-3 max-w-[960px] w-full mx-auto">
           <AmpliarSourceBanner prefill={prefill} />
+          <AmpliarAiPaths
+            title="Caminhos de e-mail com IA"
+            description="Boas-vindas, promo da ideia ou newsletter — a IA usa o DNA e o hook sem você montar brief."
+            paths={buildEmailAiPaths(prefill)}
+            loadingId={aiLoadingId}
+            disabled={!brandId && !prefill.brandId}
+            onSelect={runAiPath}
+            onAdvanced={openGenerate}
+            advancedLabel="Formulário avançado"
+          />
         </div>
         {loading ? (
           <div className="text-[13px] text-textItemBlur py-[40px] text-center">
@@ -482,9 +540,9 @@ function EmailCampaignsPageInner() {
                 />
               </svg>
             }
-            title="Nenhuma campanha ainda"
-            description="Gere a primeira campanha de e-mail com a marca selecionada."
-            actionLabel="Gerar campanha"
+            title="Escolha um caminho de e-mail acima"
+            description="Welcome, promo da ideia ou newsletter — ou abra o formulário avançado."
+            actionLabel="Formulário avançado"
             onAction={openGenerate}
           />
         ) : (
