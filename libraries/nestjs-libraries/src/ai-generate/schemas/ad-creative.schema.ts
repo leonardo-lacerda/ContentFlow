@@ -71,7 +71,7 @@ const AdCarouselSlideSchema = z.object({
   index: z.number().int().nonnegative().describe('Slide position (0-based)'),
   headline: z.string().min(1).max(125).describe('Slide headline'),
   body: z.string().min(1).describe('Slide body text'),
-  imageUrl: z.string().url().nullable().optional().describe('Image URL for this slide'),
+  imageUrl: z.string().nullable().optional().describe('Image URL for this slide'),
   cta: z.string().nullable().optional().describe('Slide-specific CTA override'),
   altText: z.string().nullable().optional().describe('Accessibility alt text'),
 });

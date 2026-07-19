@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React, { Suspense, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { Button } from '@gitroom/react/form/button';
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';

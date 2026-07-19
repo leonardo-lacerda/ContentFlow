@@ -87,7 +87,7 @@ const EmailSocialLinksBlockSchema = z.object({
   type: z.literal('social_links'),
   networks: z.array(z.object({
     name: z.string().describe('Network name (e.g., instagram, twitter, linkedin)'),
-    url: z.string().url(),
+    url: z.string(),
     icon: z.string().nullable().optional().describe('Icon URL or icon name'),
   })).describe('Social media links to display'),
   alignment: z.enum(['left', 'center', 'right']).default('center'),
