@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export const VERSION = '1.0.0';
 
@@ -8,9 +8,9 @@ const SlideSchema = z.object({
   index: z.number().int().min(0).describe('Zero-based slide index'),
   headline: z.string().describe('The slide headline/title'),
   body: z.string().describe('The slide body text'),
-  cta: z.string().optional().describe('Call-to-action text for this slide'),
-  imagePrompt: z.string().optional().describe('AI image generation prompt for this slide'),
-  altText: z.string().optional().describe('Accessible alt text for the slide image'),
+  cta: z.string().nullable().optional().describe('Call-to-action text for this slide'),
+  imagePrompt: z.string().nullable().optional().describe('AI image generation prompt for this slide'),
+  altText: z.string().nullable().optional().describe('Accessible alt text for the slide image'),
 });
 
 // ---- Main schema ----
@@ -21,7 +21,7 @@ export const CarouselPlanSchema = z.object({
   language: z.string().describe('Language code (e.g. pt-BR, en-US)'),
   caption: z.string().describe('The main post caption'),
   hashtags: z.array(z.string()).default([]).describe('Suggested hashtags'),
-  imageStyleGuide: z.string().optional().describe('Visual style guide for image generation'),
+  imageStyleGuide: z.string().nullable().optional().describe('Visual style guide for image generation'),
   slides: z.array(SlideSchema).min(1).describe('The carousel slides in order'),
 });
 

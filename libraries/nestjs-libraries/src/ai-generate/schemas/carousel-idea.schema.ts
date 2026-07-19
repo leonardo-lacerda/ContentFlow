@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export const VERSION = '1.0.0';
 
@@ -9,9 +9,9 @@ const IdeaSchema = z.object({
   hook: z.string().describe('The opening hook that grabs attention'),
   goal: z.string().describe('What this carousel aims to achieve'),
   angle: z.string().describe('The unique angle or perspective'),
-  templateSuggestion: z.string().optional().describe('Suggested template ID or name'),
-  platformSuggestion: z.string().optional().describe('Suggested platform (e.g. Instagram, LinkedIn)'),
-  score: z.number().min(0).max(10).optional().describe('Estimated effectiveness score (0-10) — can be calculated heuristically'),
+  templateSuggestion: z.string().nullable().optional().describe('Suggested template ID or name'),
+  platformSuggestion: z.string().nullable().optional().describe('Suggested platform (e.g. Instagram, LinkedIn)'),
+  score: z.number().min(0).max(10).nullable().optional().describe('Estimated effectiveness score (0-10) — can be calculated heuristically'),
 });
 
 // ---- Main schema ----

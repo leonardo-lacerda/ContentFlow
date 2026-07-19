@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export const VERSION = '1.0.0';
 
@@ -33,7 +33,7 @@ export const SocialPostSchema = z.object({
     .describe('The main post content/body text'),
   caption: z
     .string()
-    .optional()
+    .nullable().optional()
     .describe('Optional caption (used when the platform separates caption from content)'),
   hashtags: z
     .array(z.string())
@@ -41,7 +41,7 @@ export const SocialPostSchema = z.object({
     .describe('Hashtags for the post (without the # symbol)'),
   cta: z
     .string()
-    .optional()
+    .nullable().optional()
     .describe('Call-to-action text for the post'),
   tone: z
     .string()
@@ -53,7 +53,7 @@ export const SocialPostSchema = z.object({
     .describe('Approximate character count of the post'),
   notes: z
     .string()
-    .optional()
+    .nullable().optional()
     .describe('Internal notes about the post (e.g. best time to post, strategy)'),
 });
 

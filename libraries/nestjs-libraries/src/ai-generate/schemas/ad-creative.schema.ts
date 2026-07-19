@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export const VERSION = '1.0.0';
 
@@ -56,7 +56,7 @@ const PolicyWarningSchema = z.object({
   ruleId: z.string().describe('Policy rule identifier'),
   severity: z.enum(['info', 'warning', 'critical']).describe('Severity level'),
   message: z.string().describe('Human-readable warning message'),
-  suggestion: z.string().optional().describe('Suggested fix or alternative'),
+  suggestion: z.string().nullable().optional().describe('Suggested fix or alternative'),
   category: z.string().describe('Policy category'),
 });
 
@@ -64,22 +64,22 @@ const ClaimFlagSchema = z.object({
   claim: z.string().describe('The flagged claim text'),
   severity: z.enum(['info', 'warning', 'critical']),
   category: z.string().describe('Claim category'),
-  platform: z.string().optional().describe('Platform where restricted'),
+  platform: z.string().nullable().optional().describe('Platform where restricted'),
 });
 
 const AdCarouselSlideSchema = z.object({
   index: z.number().int().nonnegative().describe('Slide position (0-based)'),
   headline: z.string().min(1).max(125).describe('Slide headline'),
   body: z.string().min(1).describe('Slide body text'),
-  imageUrl: z.string().url().optional().describe('Image URL for this slide'),
-  cta: z.string().optional().describe('Slide-specific CTA override'),
-  altText: z.string().optional().describe('Accessibility alt text'),
+  imageUrl: z.string().url().nullable().optional().describe('Image URL for this slide'),
+  cta: z.string().nullable().optional().describe('Slide-specific CTA override'),
+  altText: z.string().nullable().optional().describe('Accessibility alt text'),
 });
 
 const AdImagePromptSchema = z.object({
   role: z.string().describe('Image role (e.g. hero, slide-1)'),
   prompt: z.string().describe('Image generation prompt'),
-  aspectRatio: z.string().optional().describe('Recommended aspect ratio'),
+  aspectRatio: z.string().nullable().optional().describe('Recommended aspect ratio'),
 });
 
 // ---- Main Ad Creative schema ----
@@ -90,30 +90,30 @@ const AdCreativeSchema = z.object({
   objective: z
     .enum(['AWARENESS', 'CONSIDERATION', 'CONVERSION', 'LEAD_GENERATION', 'TRAFFIC', 'ENGAGEMENT'])
     .describe('Campaign objective'),
-  adTemplateId: z.string().optional().describe('ID of the ad template used'),
+  adTemplateId: z.string().nullable().optional().describe('ID of the ad template used'),
 
   // Ad copy
   headline: z.string().min(1).max(125).describe('Ad headline'),
   primaryText: z.string().min(1).describe('Primary ad text'),
-  description: z.string().optional().describe('Link description'),
+  description: z.string().nullable().optional().describe('Link description'),
   ctaButton: z.string().describe('CTA button type'),
-  destinationUrl: z.string().optional().describe('Destination URL'),
+  destinationUrl: z.string().nullable().optional().describe('Destination URL'),
 
   // Carousel (optional)
-  slides: z.array(AdCarouselSlideSchema).min(2).max(10).optional().describe('Carousel slides'),
-  slideCount: z.number().int().optional().describe('Number of slides'),
+  slides: z.array(AdCarouselSlideSchema).min(2).max(10).nullable().optional().describe('Carousel slides'),
+  slideCount: z.number().int().nullable().optional().describe('Number of slides'),
 
   // Image prompts
-  imagePrompts: z.array(AdImagePromptSchema).optional().describe('Prompts for generating images'),
+  imagePrompts: z.array(AdImagePromptSchema).nullable().optional().describe('Prompts for generating images'),
 
   // Compliance
   policyWarnings: z.array(PolicyWarningSchema).default([]).describe('Ad policy warnings'),
   claimsFlags: z.array(ClaimFlagSchema).default([]).describe('Flagged claims'),
 
   // Metadata
-  tone: z.string().optional().describe('Tone used'),
-  rationale: z.string().optional().describe('Why this approach'),
-  notes: z.string().optional().describe('Internal notes'),
+  tone: z.string().nullable().optional().describe('Tone used'),
+  rationale: z.string().nullable().optional().describe('Why this approach'),
+  notes: z.string().nullable().optional().describe('Internal notes'),
 });
 
 export type AdCreative = z.infer<typeof AdCreativeSchema>;

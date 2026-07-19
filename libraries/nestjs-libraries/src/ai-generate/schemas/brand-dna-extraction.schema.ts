@@ -1,9 +1,9 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export const VERSION = '1.0.0';
 
 // OpenAI Structured Outputs requires every field to be required.
-// Use .nullable() instead of .optional() / .default() for optional semantics.
+// Use .nullable() instead of .nullable().optional() / .default() for optional semantics.
 
 const SummarySchema = z.object({
   tagline: z.string().describe('A short, catchy tagline for the brand'),

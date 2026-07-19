@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export const VERSION = '2.0.0';
 
@@ -25,14 +25,14 @@ const VideoSceneSchema = z.object({
   index: z.number().int().min(0).describe('Zero-based scene index'),
   durationSec: z.number().min(1).max(60).describe('Scene duration in seconds'),
   headline: z.string().describe('Main text/headline for this scene'),
-  body: z.string().optional().describe('Body text or subtitle'),
-  voiceoverText: z.string().optional().describe('Narration/voiceover text for this scene'),
-  imagePrompt: z.string().optional().describe('AI image generation prompt (if no carousel image)'),
-  imageUrl: z.string().optional().describe('Existing carousel image URL to use'),
+  body: z.string().nullable().optional().describe('Body text or subtitle'),
+  voiceoverText: z.string().nullable().optional().describe('Narration/voiceover text for this scene'),
+  imagePrompt: z.string().nullable().optional().describe('AI image generation prompt (if no carousel image)'),
+  imageUrl: z.string().nullable().optional().describe('Existing carousel image URL to use'),
   transition: TransitionSchema.default('crossfade').describe('Transition to next scene'),
   textOverlays: z.array(TextOverlaySchema).default([]).describe('Text overlays for this scene'),
-  motionNotes: z.string().optional().describe('Visual motion direction (e.g. "slow zoom into center")'),
-  musicCue: z.string().optional().describe('Music/sound cue for this scene'),
+  motionNotes: z.string().nullable().optional().describe('Visual motion direction (e.g. "slow zoom into center")'),
+  musicCue: z.string().nullable().optional().describe('Music/sound cue for this scene'),
 });
 
 export const VideoScriptSchema = z.object({
@@ -43,12 +43,12 @@ export const VideoScriptSchema = z.object({
   language: z.string().describe('Language code (e.g. pt-BR, en-US)'),
   totalDurationSec: z.number().min(5).max(180).describe('Total video duration in seconds'),
   scenes: z.array(VideoSceneSchema).min(1).max(30).describe('Scenes in order'),
-  scriptNotes: z.string().optional().describe('Overall direction/notes for the video'),
-  musicStyle: z.string().optional().describe('Suggested music style/mood'),
-  cta: z.string().optional().describe('Call-to-action for the video'),
-  hashtags: z.array(z.string()).optional().describe('Platform hashtags'),
-  caption: z.string().optional().describe('Video caption/description'),
-  narration: z.string().optional().describe('Full narration text for voiceover'),
+  scriptNotes: z.string().nullable().optional().describe('Overall direction/notes for the video'),
+  musicStyle: z.string().nullable().optional().describe('Suggested music style/mood'),
+  cta: z.string().nullable().optional().describe('Call-to-action for the video'),
+  hashtags: z.array(z.string()).nullable().optional().describe('Platform hashtags'),
+  caption: z.string().nullable().optional().describe('Video caption/description'),
+  narration: z.string().nullable().optional().describe('Full narration text for voiceover'),
 });
 
 export type VideoScene = z.infer<typeof VideoSceneSchema>;
