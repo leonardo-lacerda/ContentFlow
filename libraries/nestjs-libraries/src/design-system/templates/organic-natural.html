@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: organic-natural. Earthy + one big soft blob + soft serif + grain. Calm, human. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:9vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:center}
+  .blob{position:absolute;z-index:0;width:62vw;height:62vw;top:-16vw;right:-16vw;border-radius:42% 58% 63% 37%/45% 38% 62% 55%;background:radial-gradient(circle at 35% 35%,var(--accent),var(--accent2));opacity:.45;filter:blur(1px)}
+  .blob2{position:absolute;z-index:0;width:30vw;height:30vw;bottom:-8vw;left:-8vw;border-radius:58% 42% 45% 55%/52% 56% 44% 48%;background:var(--accent);opacity:.2}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.07;mix-blend-mode:multiply;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:relative;z-index:2;font-size:1.9vw;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:3vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',serif;font-weight:600;font-size:7.6vw;line-height:1.1;letter-spacing:-.01em;max-width:15ch}
+  .headline em{font-style:italic;color:var(--accent)}
+  .sub{position:relative;z-index:2;margin-top:3.4vw;font-size:2.6vw;line-height:1.55;color:var(--muted);max-width:30ch}
+  .footer{position:absolute;z-index:2;left:9vw;bottom:6vw;font-size:2vw;font-weight:600;opacity:.85}
+</style></head>
+<body><div class="canvas">
+  <span class="blob"></span><span class="blob2"></span>
+  <div class="eyebrow">{{EYEBROW}}</div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <p class="sub">{{SUBHEAD}}</p>
+  <span class="footer">{{HANDLE}} · {{CTA}}</span>
+  <div class="grain"></div>
+</div></body></html>

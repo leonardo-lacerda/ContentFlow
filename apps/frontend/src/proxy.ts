@@ -43,8 +43,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(`/auth/login-required`, nextUrl.href));
   }
 
+  // Landing pública: rewrite de `/` → `/inicio` quando não autenticado
+  // (evita conflito de route groups: Estúdio em `(app)/(site)/page` e landing em `(landing)/inicio`).
+  if (nextUrl.pathname === '/' && !authCookie) {
+    return NextResponse.rewrite(new URL('/inicio', nextUrl.href));
+  }
+
   if (
-    (nextUrl.pathname === '/' && !authCookie) ||
+    nextUrl.pathname === '/inicio' ||
     nextUrl.pathname.startsWith('/uploads/') ||
     nextUrl.pathname.startsWith('/p/') ||
     nextUrl.pathname.startsWith('/provider/') ||
@@ -158,14 +164,7 @@ export async function proxy(request: NextRequest) {
       }
       return redirect;
     }
-    if (nextUrl.pathname === '/') {
-      return NextResponse.redirect(
-        new URL(
-          !!process.env.IS_GENERAL ? '/launches' : `/analytics`,
-          nextUrl.href
-        )
-      );
-    }
+    // ContentFlow v1: `/` is the Estúdio home — do not redirect away.
 
     return topResponse;
   } catch (err) {

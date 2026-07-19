@@ -246,6 +246,10 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
     selectedNiche,
     setSelectedNiche,
     backendTemplates,
+    templateRecommendations = [],
+    loadingRecommendations = false,
+    templatesLoaded = false,
+    requestRecommendations,
   } = props;
 
   const [step, setStep] = useState(0);

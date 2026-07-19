@@ -254,6 +254,44 @@ export const aiGenerateImagesApi = {
       `/ai-generate/carousel-image-jobs/${id}`
     ),
 
+  loadDesignJob: async (fetcher: AiGenerateFetcher, id: string) =>
+    getJson<CarouselImageJob>(
+      fetcher,
+      `/ai-generate/carousel-design-jobs/${id}`
+    ),
+
+  createDesignJob: async (
+    fetcher: AiGenerateFetcher,
+    payload: Record<string, unknown>
+  ) =>
+    postJson<CarouselImageJob>(
+      fetcher,
+      '/ai-generate/carousel-design-jobs',
+      payload
+    ),
+
+  loadDesignCatalogSummary: async (fetcher: AiGenerateFetcher) =>
+    getJson<import('./ai-generate-images.types').DesignSystemCatalogSummary>(
+      fetcher,
+      '/ai-generate/design-system/summary'
+    ),
+
+  ideateDesign: async (
+    fetcher: AiGenerateFetcher,
+    payload: {
+      query?: string;
+      count?: number;
+      seed?: number;
+      sizeId?: string;
+      handle?: string;
+    }
+  ) =>
+    postJson<{ options: import('./ai-generate-images.types').DesignRecipe[] }>(
+      fetcher,
+      '/ai-generate/design-system/ideate',
+      payload
+    ),
+
   loadCostHistory: async (fetcher: AiGenerateFetcher) =>
     getJson<CostHistoryResponse>(fetcher, '/ai-generate/cost-history'),
 

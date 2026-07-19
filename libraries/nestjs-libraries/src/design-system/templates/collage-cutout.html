@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: collage-cutout. Torn-paper + tape + halftone + ransom-note mixed sizes/rotations. Controlled chaos. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:var(--bg);padding:8vw;overflow:hidden;isolation:isolate}
+  .scrap{position:absolute;filter:drop-shadow(0 1vw 1vw rgba(0,0,0,.18))}
+  .s1{top:14vw;left:7vw;width:50vw;height:18vw;background:var(--accent);transform:rotate(-3deg);clip-path:polygon(0 8%,100% 0,98% 92%,2% 100%)}
+  .s2{top:34vw;right:6vw;width:44vw;height:16vw;background:var(--surface);transform:rotate(2.5deg);clip-path:polygon(2% 0,100% 6%,97% 100%,0 94%)}
+  .s3{top:54vw;left:10vw;width:46vw;height:15vw;background:var(--accent2);transform:rotate(-2deg);clip-path:polygon(0 4%,100% 0,100% 96%,3% 100%)}
+  .halftone{position:absolute;z-index:0;top:62vw;right:8vw;width:26vw;height:26vw;border-radius:50%;background:radial-gradient(var(--accent) 30%,transparent 32%) 0 0/12px 12px;opacity:.6}
+  .tape{position:absolute;width:14vw;height:4vw;background:color-mix(in srgb,var(--accent2) 40%,transparent);transform:rotate(-8deg);box-shadow:0 2px 6px rgba(0,0,0,.12)}
+  .grain{position:absolute;inset:0;z-index:4;opacity:.1;mix-blend-mode:multiply;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:absolute;z-index:3;top:8vw;left:8vw;background:var(--text);color:var(--bg);font-weight:800;font-size:1.8vw;letter-spacing:.1em;text-transform:uppercase;padding:1vw 2.4vw;transform:rotate(-2deg)}
+  .w{position:absolute;z-index:3;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;line-height:.9;color:var(--bg)}
+  .w1{top:16vw;left:11vw;font-size:9vw;transform:rotate(-3deg)}
+  .w2{top:36vw;right:10vw;font-size:7vw;color:var(--text);transform:rotate(2.5deg)}
+  .w3{top:56vw;left:14vw;font-size:8vw;color:var(--bg);transform:rotate(-2deg);font-style:italic}
+  .sub{position:absolute;z-index:3;bottom:14vw;left:8vw;right:8vw;font-size:2.4vw;line-height:1.4;font-weight:600;max-width:30ch}
+  .footer{position:absolute;z-index:3;left:8vw;right:8vw;bottom:6vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:700}
+</style></head>
+<body><div class="canvas">
+  <span class="scrap s1"></span><span class="scrap s2"></span><span class="scrap s3"></span>
+  <span class="halftone"></span><span class="tape" style="top:12vw;left:30vw"></span>
+  <span class="eyebrow">{{EYEBROW}}</span>
+  <span class="w w1">{{HEADLINE}}</span>
+  <p class="sub">{{SUBHEAD}}</p>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

@@ -259,7 +259,7 @@ export function RegisterAfter({
                   &nbsp;
                   <Link
                     href="/auth/login"
-                    className="cursor-pointer text-white underline hover:text-[#FCB7FF]"
+                    className="cursor-pointer text-white underline hover:text-[#f3e6d8]"
                   >
                     {t('sign_in', 'Sign In')}
                   </Link>

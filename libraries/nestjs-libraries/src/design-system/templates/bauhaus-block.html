@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: bauhaus-block. Primary geometric shapes + thick borders + geometric grid. Bold. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:var(--bg);overflow:hidden;isolation:isolate;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr auto;gap:0;border:1vw solid var(--text)}
+  .cell{border:.5vw solid var(--text);padding:4vw;display:flex;flex-direction:column;justify-content:center}
+  .head{grid-column:1 / -1;border-width:0 0 .5vw 0;padding:5vw 5vw 4vw}
+  .eyebrow{font-size:1.9vw;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:1.6vw}
+  .headline{font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:8vw;line-height:.98;letter-spacing:-.02em;max-width:14ch}
+  .headline em{font-style:normal;color:var(--accent)}
+  .shape{align-items:center;justify-content:center}
+  .circle{width:60%;aspect-ratio:1;border-radius:50%;background:var(--accent)}
+  .tri{width:0;height:0;border-left:14vw solid transparent;border-right:14vw solid transparent;border-bottom:24vw solid var(--accent2)}
+  .sub{grid-column:1 / -1;border-width:.5vw 0 0 0;font-size:2.5vw;line-height:1.4;font-weight:500}
+  .footer{grid-column:1 / -1;border-width:.5vw 0 0 0;display:flex;justify-content:space-between;font-size:2vw;font-weight:700;padding:3vw 5vw}
+</style></head>
+<body><div class="canvas">
+  <div class="cell head"><div class="eyebrow">{{EYEBROW}}</div><h1 class="headline">{{HEADLINE}}</h1></div>
+  <div class="cell shape"><div class="circle"></div></div>
+  <div class="cell shape" style="background:var(--accent)"><div class="tri"></div></div>
+  <div class="cell sub">{{SUBHEAD}}</div>
+  <div class="cell footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+</div></body></html>

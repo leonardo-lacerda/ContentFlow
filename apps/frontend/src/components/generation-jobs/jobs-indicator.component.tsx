@@ -39,7 +39,7 @@ export function JobsIndicator() {
           <Cpu className="w-5 h-5" />
         )}
         {active.length > 0 && (
-          <span className="absolute -top-1 -end-1 min-w-[16px] h-[16px] px-[3px] rounded-full bg-btnPrimary text-btnText text-[10px] font-[700] flex items-center justify-center">
+          <span className="absolute -top-1 -end-1 min-w-[16px] h-[16px] px-[3px] rounded-full bg-btnPrimary text-white text-[10px] font-[700] flex items-center justify-center">
             {active.length}
           </span>
         )}
@@ -55,11 +55,11 @@ export function JobsIndicator() {
             className={clsx(
               'absolute end-0 top-[calc(100%+10px)] z-[310]',
               'w-[320px] max-h-[360px] overflow-y-auto',
-              'rounded-[12px] border border-newTableBorder bg-newBgColorInner shadow-lg p-3'
+              'rounded-[14px] border border-newTableBorder bg-newBgColorInner shadow-cf p-3'
             )}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-[700] text-newTextColor">
+              <div className="text-sm font-[600] font-serif text-newTextColor">
                 Gerações
               </div>
               <button

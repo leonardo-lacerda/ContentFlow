@@ -1,0 +1,354 @@
+{
+  "_note": "Distinctive display + clean body pairings, all on Google Fonts. 'link' is the ready <link href>. 'display'/'body' are the CSS font-family names. Never default to Inter/Arial/Roboto as display.",
+  "fonts": [
+    {
+      "id": "grotesk-mono",
+      "name": "Space Grotesk + IBM Plex Mono",
+      "tags": ["tech", "modern", "bold", "saas", "gaming"],
+      "display": "Space Grotesk",
+      "body": "IBM Plex Mono",
+      "link": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    },
+    {
+      "id": "anton-inter",
+      "name": "Anton + Inter Tight",
+      "tags": ["bold", "loud", "sports", "announcement", "thumbnail"],
+      "display": "Anton",
+      "body": "Inter Tight",
+      "link": "https://fonts.googleapis.com/css2?family=Anton&family=Inter+Tight:wght@400;500;600&display=swap"
+    },
+    {
+      "id": "fraunces-grotesk",
+      "name": "Fraunces + Space Grotesk",
+      "tags": ["editorial", "luxury", "elegant", "fashion", "premium"],
+      "display": "Fraunces",
+      "body": "Space Grotesk",
+      "link": "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500&display=swap"
+    },
+    {
+      "id": "unbounded-dm",
+      "name": "Unbounded + DM Sans",
+      "tags": ["playful", "bold", "creator", "vibrant", "youth"],
+      "display": "Unbounded",
+      "body": "DM Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=DM+Sans:wght@400;500&display=swap"
+    },
+    {
+      "id": "archivo-figtree",
+      "name": "Archivo Black + Figtree",
+      "tags": ["bold", "modern", "marketing", "saas", "corporate"],
+      "display": "Archivo Black",
+      "body": "Figtree",
+      "link": "https://fonts.googleapis.com/css2?family=Archivo+Black&family=Figtree:wght@400;500;600&display=swap"
+    },
+    {
+      "id": "syne-jakarta",
+      "name": "Syne + Plus Jakarta Sans",
+      "tags": ["creative", "design", "agency", "modern", "art"],
+      "display": "Syne",
+      "body": "Plus Jakarta Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+    },
+    {
+      "id": "instrument-jakarta",
+      "name": "Instrument Serif + Plus Jakarta Sans",
+      "tags": ["editorial", "elegant", "minimal", "luxury", "calm"],
+      "display": "Instrument Serif",
+      "body": "Plus Jakarta Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+    },
+    {
+      "id": "clash-sora",
+      "name": "Bricolage Grotesque + Sora",
+      "tags": ["modern", "tech", "bold", "saas", "startup"],
+      "display": "Bricolage Grotesque",
+      "body": "Sora",
+      "link": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Sora:wght@400;500&display=swap"
+    },
+    {
+      "id": "bebas-jakarta",
+      "name": "Bebas Neue + Plus Jakarta Sans",
+      "tags": ["bold", "sports", "fitness", "loud", "thumbnail", "poster"],
+      "display": "Bebas Neue",
+      "body": "Plus Jakarta Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+    },
+    {
+      "id": "playfair-jakarta",
+      "name": "Playfair Display + Plus Jakarta Sans",
+      "tags": ["luxury", "elegant", "wedding", "beauty", "classic", "editorial"],
+      "display": "Playfair Display",
+      "body": "Plus Jakarta Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500&display=swap"
+    },
+    {
+      "id": "familjen-dm",
+      "name": "Familjen Grotesk + DM Sans",
+      "tags": ["clean", "modern", "wellness", "friendly", "app"],
+      "display": "Familjen Grotesk",
+      "body": "DM Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap"
+    },
+    {
+      "id": "sora-mono",
+      "name": "Sora + Space Mono",
+      "tags": ["tech", "developer", "minimal", "mono", "startup"],
+      "display": "Sora",
+      "body": "Space Mono",
+      "link": "https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Space+Mono:wght@400;700&display=swap"
+    },
+    {
+      "id": "dm-serif-sans",
+      "name": "DM Serif Display + DM Sans",
+      "tags": ["editorial", "elegant", "luxury", "vintage", "classic"],
+      "display": "DM Serif Display",
+      "body": "DM Sans",
+      "link": "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;700&display=swap"
+    },
+    {
+      "id": "bigshoulders-public",
+      "name": "Big Shoulders Display + Public Sans",
+      "tags": ["poster", "industrial", "bold", "condensed", "loud"],
+      "display": "Big Shoulders Display",
+      "body": "Public Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800;900&family=Public+Sans:wght@400;500;600&display=swap"
+    },
+    {
+      "id": "libre-caslon-sans",
+      "name": "Libre Caslon Display + Inter Tight",
+      "tags": ["luxury", "editorial", "classic", "deco", "elegant"],
+      "display": "Libre Caslon Display",
+      "body": "Inter Tight",
+      "link": "https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Inter+Tight:wght@400;500;600&display=swap"
+    },
+    {
+      "id": "spectral-jakarta",
+      "name": "Spectral + Plus Jakarta Sans",
+      "tags": ["editorial", "literary", "calm", "wellness", "premium"],
+      "display": "Spectral",
+      "body": "Plus Jakarta Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500&display=swap"
+    },
+    {
+      "id": "oswald-work",
+      "name": "Oswald + Work Sans",
+      "tags": ["condensed", "news", "sport", "bold", "poster"],
+      "display": "Oswald",
+      "body": "Work Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Work+Sans:wght@400;500&display=swap"
+    },
+    {
+      "id": "jetbrains-tight",
+      "name": "JetBrains Mono + Inter Tight",
+      "tags": ["dev", "tech", "code", "mono", "terminal"],
+      "display": "JetBrains Mono",
+      "body": "Inter Tight",
+      "link": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Inter+Tight:wght@400;500&display=swap"
+    },
+    {
+      "id": "bricolage-grotesque",
+      "name": "Bricolage Grotesque + Inter Tight",
+      "tags": ["modern", "editorial", "bold", "design", "kinetic"],
+      "display": "Bricolage Grotesque",
+      "body": "Inter Tight",
+      "link": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter+Tight:wght@400;500&display=swap"
+    },
+    {
+      "id": "boldonse-onest",
+      "name": "Boldonse + Onest",
+      "tags": ["bold", "experimental", "modern", "display", "brutalist"],
+      "display": "Boldonse",
+      "body": "Onest",
+      "link": "https://fonts.googleapis.com/css2?family=Boldonse&family=Onest:wght@400;500;600;700&display=swap"
+    },
+    {
+      "id": "gloock-hanken",
+      "name": "Gloock + Hanken Grotesk",
+      "tags": ["editorial", "luxury", "serif", "elegant", "magazine"],
+      "display": "Gloock",
+      "body": "Hanken Grotesk",
+      "link": "https://fonts.googleapis.com/css2?family=Gloock&family=Hanken+Grotesk:wght@400;500;600;700&display=swap"
+    },
+    {
+      "id": "bodoni-jakarta",
+      "name": "Bodoni Moda + Plus Jakarta Sans",
+      "tags": ["fashion", "luxury", "high-contrast", "editorial", "glam"],
+      "display": "Bodoni Moda",
+      "body": "Plus Jakarta Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700;6..96,900&family=Plus+Jakarta+Sans:wght@400;500&display=swap"
+    },
+    {
+      "id": "alfa-work",
+      "name": "Alfa Slab One + Work Sans",
+      "tags": ["poster", "slab", "bold", "loud", "retro"],
+      "display": "Alfa Slab One",
+      "body": "Work Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Work+Sans:wght@400;500;600&display=swap"
+    },
+    {
+      "id": "bungee-jakarta",
+      "name": "Bungee + Plus Jakarta Sans",
+      "tags": ["urban", "street", "poster", "playful", "loud"],
+      "display": "Bungee",
+      "body": "Plus Jakarta Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Bungee&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+    },
+    {
+      "id": "monoton-mono",
+      "name": "Monoton + Space Mono",
+      "tags": ["retro", "neon", "y2k", "display", "funky"],
+      "display": "Monoton",
+      "body": "Space Mono",
+      "link": "https://fonts.googleapis.com/css2?family=Monoton&family=Space+Mono:wght@400;700&display=swap"
+    },
+    {
+      "id": "caprasimo-figtree",
+      "name": "Caprasimo + Figtree",
+      "tags": ["retro", "chunky", "friendly", "playful", "groovy"],
+      "display": "Caprasimo",
+      "body": "Figtree",
+      "link": "https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600&display=swap"
+    },
+    {
+      "id": "marcellus-jakarta",
+      "name": "Marcellus + Plus Jakarta Sans",
+      "tags": ["deco", "elegant", "classic", "luxury", "minimal"],
+      "display": "Marcellus",
+      "body": "Plus Jakarta Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+    },
+    {
+      "id": "cormorant-jakarta",
+      "name": "Cormorant Garamond + Plus Jakarta Sans",
+      "tags": ["elegant", "wedding", "literary", "luxury", "beauty"],
+      "display": "Cormorant Garamond",
+      "body": "Plus Jakarta Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500&display=swap"
+    },
+    {
+      "id": "newsreader-inter",
+      "name": "Newsreader + Inter Tight",
+      "tags": ["editorial", "news", "literary", "serif", "magazine"],
+      "display": "Newsreader",
+      "body": "Inter Tight",
+      "link": "https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Inter+Tight:wght@400;500&display=swap"
+    },
+    {
+      "id": "geist-mono",
+      "name": "Geist + Geist Mono",
+      "tags": ["tech", "modern", "clean", "developer", "startup"],
+      "display": "Geist",
+      "body": "Geist Mono",
+      "link": "https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700;800&family=Geist+Mono:wght@400;500&display=swap"
+    },
+    {
+      "id": "funnel-onest",
+      "name": "Funnel Display + Onest",
+      "tags": ["modern", "startup", "display", "saas", "clean"],
+      "display": "Funnel Display",
+      "body": "Onest",
+      "link": "https://fonts.googleapis.com/css2?family=Funnel+Display:wght@400;600;800&family=Onest:wght@400;500&display=swap"
+    },
+    {
+      "id": "fredoka-dm",
+      "name": "Fredoka + DM Sans",
+      "tags": ["playful", "rounded", "app", "kids", "friendly"],
+      "display": "Fredoka",
+      "body": "DM Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap"
+    },
+    {
+      "id": "baloo-jakarta",
+      "name": "Baloo 2 + Plus Jakarta Sans",
+      "tags": ["chunky", "rounded", "playful", "app", "bold"],
+      "display": "Baloo 2",
+      "body": "Plus Jakarta Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500&display=swap"
+    },
+    {
+      "id": "shantell-dm",
+      "name": "Shantell Sans + DM Sans",
+      "tags": ["handwritten", "casual", "marker", "doodle", "friendly"],
+      "display": "Shantell Sans",
+      "body": "DM Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap"
+    },
+    {
+      "id": "tektur-jetbrains",
+      "name": "Tektur + JetBrains Mono",
+      "tags": ["tech", "sci-fi", "condensed", "futuristic", "gaming"],
+      "display": "Tektur",
+      "body": "JetBrains Mono",
+      "link": "https://fonts.googleapis.com/css2?family=Tektur:wght@500;700;900&family=JetBrains+Mono:wght@400;500&display=swap"
+    },
+    {
+      "id": "krona-inter",
+      "name": "Krona One + Inter Tight",
+      "tags": ["bold", "retro", "label", "industrial", "poster"],
+      "display": "Krona One",
+      "body": "Inter Tight",
+      "link": "https://fonts.googleapis.com/css2?family=Krona+One&family=Inter+Tight:wght@400;500&display=swap"
+    },
+    {
+      "id": "caveat-jakarta",
+      "name": "Caveat + Plus Jakarta Sans",
+      "tags": ["handwritten", "notebook", "accent", "casual", "sketch"],
+      "display": "Caveat",
+      "body": "Plus Jakarta Sans",
+      "link": "https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500&display=swap"
+    },
+    { "id": "climate-inter", "name": "Climate Crisis + Inter Tight", "tags": ["experimental", "bold", "editorial", "statement"], "display": "Climate Crisis", "body": "Inter Tight", "link": "https://fonts.googleapis.com/css2?family=Climate+Crisis&family=Inter+Tight:wght@400;500;600&display=swap" },
+    { "id": "rubikmono-rubik", "name": "Rubik Mono One + Rubik", "tags": ["blocky", "retro", "bold", "poster"], "display": "Rubik Mono One", "body": "Rubik", "link": "https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Rubik:wght@400;500;700&display=swap" },
+    { "id": "darker-dm", "name": "Darker Grotesque + DM Sans", "tags": ["airy", "modern", "editorial", "minimal"], "display": "Darker Grotesque", "body": "DM Sans", "link": "https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@600;700;800;900&family=DM+Sans:wght@400;500&display=swap" },
+    { "id": "gasoek-jakarta", "name": "Gasoek One + Plus Jakarta Sans", "tags": ["heavy", "poster", "loud", "bold"], "display": "Gasoek One", "body": "Plus Jakarta Sans", "link": "https://fonts.googleapis.com/css2?family=Gasoek+One&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" },
+    { "id": "abril-jakarta", "name": "Abril Fatface + Plus Jakarta Sans", "tags": ["fashion", "editorial", "display", "elegant"], "display": "Abril Fatface", "body": "Plus Jakarta Sans", "link": "https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" },
+    { "id": "yeseva-jakarta", "name": "Yeseva One + Plus Jakarta Sans", "tags": ["elegant", "wedding", "serif", "luxury"], "display": "Yeseva One", "body": "Plus Jakarta Sans", "link": "https://fonts.googleapis.com/css2?family=Yeseva+One&family=Plus+Jakarta+Sans:wght@400;500&display=swap" },
+    { "id": "league-public", "name": "League Gothic + Public Sans", "tags": ["condensed", "poster", "sport", "bold"], "display": "League Gothic", "body": "Public Sans", "link": "https://fonts.googleapis.com/css2?family=League+Gothic&family=Public+Sans:wght@400;500;600&display=swap" },
+    { "id": "chakra-inter", "name": "Chakra Petch + Inter Tight", "tags": ["tech", "gaming", "futuristic", "square"], "display": "Chakra Petch", "body": "Inter Tight", "link": "https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter+Tight:wght@400;500&display=swap" },
+    { "id": "orbitron-inter", "name": "Orbitron + Inter Tight", "tags": ["sci-fi", "tech", "futuristic", "gaming"], "display": "Orbitron", "body": "Inter Tight", "link": "https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Inter+Tight:wght@400;500&display=swap" },
+    { "id": "righteous-dm", "name": "Righteous + DM Sans", "tags": ["retro", "geometric", "friendly", "groovy"], "display": "Righteous", "body": "DM Sans", "link": "https://fonts.googleapis.com/css2?family=Righteous&family=DM+Sans:wght@400;500&display=swap" },
+    { "id": "pacifico-jakarta", "name": "Pacifico + Plus Jakarta Sans", "tags": ["script", "casual", "playful", "friendly"], "display": "Pacifico", "body": "Plus Jakarta Sans", "link": "https://fonts.googleapis.com/css2?family=Pacifico&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" },
+    { "id": "redhat-redhat", "name": "Red Hat Display + Red Hat Text", "tags": ["corporate", "clean", "modern", "saas"], "display": "Red Hat Display", "body": "Red Hat Text", "link": "https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;800;900&family=Red+Hat+Text:wght@400;500&display=swap" },
+    { "id": "pixelify-mono", "name": "Pixelify Sans + Space Mono", "tags": ["pixel", "gaming", "retro", "8bit"], "display": "Pixelify Sans", "body": "Space Mono", "link": "https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" },
+    { "id": "vt323-mono", "name": "VT323 + Space Mono", "tags": ["terminal", "retro", "pixel", "dev"], "display": "VT323", "body": "Space Mono", "link": "https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&display=swap" },
+    { "id": "specialelite-work", "name": "Special Elite + Work Sans", "tags": ["typewriter", "vintage", "editorial", "indie"], "display": "Special Elite", "body": "Work Sans", "link": "https://fonts.googleapis.com/css2?family=Special+Elite&family=Work+Sans:wght@400;500&display=swap" },
+    { "id": "lora-hanken", "name": "Lora + Hanken Grotesk", "tags": ["editorial", "literary", "serif", "calm"], "display": "Lora", "body": "Hanken Grotesk", "link": "https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500&display=swap" },
+    { "id": "epilogue", "name": "Epilogue (display + text)", "tags": ["modern", "clean", "saas", "minimal"], "display": "Epilogue", "body": "Epilogue", "link": "https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;700;800;900&display=swap" },
+    { "id": "hostgrotesk-onest", "name": "Host Grotesk + Onest", "tags": ["modern", "startup", "clean", "display"], "display": "Host Grotesk", "body": "Onest", "link": "https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@500;600;700;800&family=Onest:wght@400;500&display=swap" },
+    { "id": "schibsted-onest", "name": "Schibsted Grotesk + Onest", "tags": ["modern", "editorial", "clean", "news"], "display": "Schibsted Grotesk", "body": "Onest", "link": "https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800;900&family=Onest:wght@400;500&display=swap" },
+    { "id": "albertsans", "name": "Albert Sans (display + text)", "tags": ["clean", "modern", "geometric", "minimal"], "display": "Albert Sans", "body": "Albert Sans", "link": "https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;700;800;900&display=swap" },
+    { "id": "khand-work", "name": "Khand + Work Sans", "tags": ["condensed", "bold", "poster", "sport"], "display": "Khand", "body": "Work Sans", "link": "https://fonts.googleapis.com/css2?family=Khand:wght@500;600;700&family=Work+Sans:wght@400;500&display=swap" },
+    { "id": "archivo-expanded", "name": "Archivo (heavy + text)", "tags": ["bold", "modern", "industrial", "marketing"], "display": "Archivo", "body": "Archivo", "link": "https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800;900&display=swap" },
+    { "id": "gloria-dm", "name": "Gloria Hallelujah + DM Sans", "tags": ["handwritten", "playful", "doodle", "casual"], "display": "Gloria Hallelujah", "body": "DM Sans", "link": "https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&family=DM+Sans:wght@400;500&display=swap" },
+    { "id": "reddit-mono", "name": "Reddit Sans + Reddit Mono", "tags": ["tech", "modern", "dev", "clean"], "display": "Reddit Sans", "body": "Reddit Mono", "link": "https://fonts.googleapis.com/css2?family=Reddit+Sans:wght@600;700;800&family=Reddit+Mono:wght@400;500&display=swap" },
+    { "id": "zilla-plex", "name": "Zilla Slab + IBM Plex Sans", "tags": ["slab", "editorial", "news", "bold"], "display": "Zilla Slab", "body": "IBM Plex Sans", "link": "https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&display=swap" },
+    { "id": "dela-inter", "name": "Dela Gothic One + Inter Tight", "tags": ["heavy", "gothic", "bold", "poster", "loud"], "display": "Dela Gothic One", "body": "Inter Tight", "link": "https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Inter+Tight:wght@400;500;600&display=swap" },
+    { "id": "shrikhand-dm", "name": "Shrikhand + DM Sans", "tags": ["juicy", "display", "fashion", "bold", "fun"], "display": "Shrikhand", "body": "DM Sans", "link": "https://fonts.googleapis.com/css2?family=Shrikhand&family=DM+Sans:wght@400;500&display=swap" },
+    { "id": "lobster-work", "name": "Lobster Two + Work Sans", "tags": ["script", "retro", "casual", "vintage"], "display": "Lobster Two", "body": "Work Sans", "link": "https://fonts.googleapis.com/css2?family=Lobster+Two:wght@400;700&family=Work+Sans:wght@400;500&display=swap" },
+    { "id": "piazzolla-inter", "name": "Piazzolla + Inter Tight", "tags": ["literary", "editorial", "serif", "calm"], "display": "Piazzolla", "body": "Inter Tight", "link": "https://fonts.googleapis.com/css2?family=Piazzolla:wght@600;700;800&family=Inter+Tight:wght@400;500&display=swap" },
+    { "id": "rozha-jost", "name": "Rozha One + Jost", "tags": ["fashion", "elegant", "serif", "editorial"], "display": "Rozha One", "body": "Jost", "link": "https://fonts.googleapis.com/css2?family=Rozha+One&family=Jost:wght@400;500;600&display=swap" },
+    { "id": "jost", "name": "Jost (geometric)", "tags": ["geometric", "clean", "modern", "minimal"], "display": "Jost", "body": "Jost", "link": "https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap" },
+    { "id": "outfit", "name": "Outfit (geometric)", "tags": ["clean", "geometric", "modern", "saas"], "display": "Outfit", "body": "Outfit", "link": "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800;900&display=swap" },
+    { "id": "hepta-work", "name": "Hepta Slab + Work Sans", "tags": ["slab", "editorial", "tech", "bold"], "display": "Hepta Slab", "body": "Work Sans", "link": "https://fonts.googleapis.com/css2?family=Hepta+Slab:wght@600;700;800&family=Work+Sans:wght@400;500&display=swap" },
+    { "id": "fjalla-nunito", "name": "Fjalla One + Nunito Sans", "tags": ["condensed", "news", "poster", "bold"], "display": "Fjalla One", "body": "Nunito Sans", "link": "https://fonts.googleapis.com/css2?family=Fjalla+One&family=Nunito+Sans:wght@400;600&display=swap" },
+    { "id": "teko-work", "name": "Teko + Work Sans", "tags": ["condensed", "tall", "sport", "bold"], "display": "Teko", "body": "Work Sans", "link": "https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Work+Sans:wght@400;500&display=swap" },
+    { "id": "paytone-dm", "name": "Paytone One + DM Sans", "tags": ["rounded", "bold", "friendly", "app"], "display": "Paytone One", "body": "DM Sans", "link": "https://fonts.googleapis.com/css2?family=Paytone+One&family=DM+Sans:wght@400;500&display=swap" },
+    { "id": "luckiest-nunito", "name": "Luckiest Guy + Nunito", "tags": ["comic", "playful", "fun", "kids"], "display": "Luckiest Guy", "body": "Nunito", "link": "https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@400;600&display=swap" },
+    { "id": "titan-nunito", "name": "Titan One + Nunito", "tags": ["chunky", "cartoon", "playful", "bold"], "display": "Titan One", "body": "Nunito", "link": "https://fonts.googleapis.com/css2?family=Titan+One&family=Nunito:wght@400;600&display=swap" },
+    { "id": "shadows-dm", "name": "Shadows Into Light + DM Sans", "tags": ["handwritten", "casual", "doodle", "friendly"], "display": "Shadows Into Light", "body": "DM Sans", "link": "https://fonts.googleapis.com/css2?family=Shadows+Into+Light&family=DM+Sans:wght@400;500&display=swap" },
+    { "id": "amatic-dm", "name": "Amatic SC + DM Sans", "tags": ["handwritten", "tall", "sketch", "casual"], "display": "Amatic SC", "body": "DM Sans", "link": "https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=DM+Sans:wght@400;500&display=swap" },
+    { "id": "cinzel-lora", "name": "Cinzel + Lora", "tags": ["roman", "luxury", "elegant", "classic", "caps"], "display": "Cinzel", "body": "Lora", "link": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Lora:wght@400;500&display=swap" },
+    { "id": "unica-inter", "name": "Unica One + Inter Tight", "tags": ["condensed", "display", "editorial", "bold"], "display": "Unica One", "body": "Inter Tight", "link": "https://fonts.googleapis.com/css2?family=Unica+One&family=Inter+Tight:wght@400;500&display=swap" },
+    { "id": "michroma-inter", "name": "Michroma + Inter Tight", "tags": ["techno", "sci-fi", "square", "futuristic"], "display": "Michroma", "body": "Inter Tight", "link": "https://fonts.googleapis.com/css2?family=Michroma&family=Inter+Tight:wght@400;500&display=swap" },
+    { "id": "bungeeshade-jakarta", "name": "Bungee Shade + Plus Jakarta Sans", "tags": ["3d", "urban", "poster", "retro", "playful"], "display": "Bungee Shade", "body": "Plus Jakarta Sans", "link": "https://fonts.googleapis.com/css2?family=Bungee+Shade&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" },
+    { "id": "silkscreen-mono", "name": "Silkscreen + Space Mono", "tags": ["pixel", "retro", "8bit", "gaming"], "display": "Silkscreen", "body": "Space Mono", "link": "https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Mono:wght@400;700&display=swap" },
+    { "id": "martian-inter", "name": "Martian Mono + Inter Tight", "tags": ["mono", "tech", "dev", "futuristic"], "display": "Martian Mono", "body": "Inter Tight", "link": "https://fonts.googleapis.com/css2?family=Martian+Mono:wght@500;700;800&family=Inter+Tight:wght@400;500&display=swap" },
+    { "id": "besley-hanken", "name": "Besley + Hanken Grotesk", "tags": ["slab", "editorial", "contemporary", "serif"], "display": "Besley", "body": "Hanken Grotesk", "link": "https://fonts.googleapis.com/css2?family=Besley:wght@500;600;700&family=Hanken+Grotesk:wght@400;500&display=swap" },
+    { "id": "crimson-inter", "name": "Crimson Pro + Inter Tight", "tags": ["book", "literary", "serif", "editorial", "calm"], "display": "Crimson Pro", "body": "Inter Tight", "link": "https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@500;600;700&family=Inter+Tight:wght@400;500&display=swap" },
+    { "id": "anybody-inter", "name": "Anybody + Inter Tight", "tags": ["expanded", "bold", "modern", "techy"], "display": "Anybody", "body": "Inter Tight", "link": "https://fonts.googleapis.com/css2?family=Anybody:wght@600;700;800&family=Inter+Tight:wght@400;500&display=swap" },
+    { "id": "syncopate-inter", "name": "Syncopate + Inter Tight", "tags": ["wide", "spaced", "fashion", "minimal", "caps"], "display": "Syncopate", "body": "Inter Tight", "link": "https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Inter+Tight:wght@400;500&display=swap" },
+    { "id": "majormono-mono", "name": "Major Mono Display + Space Mono", "tags": ["mono", "display", "techy", "quirky"], "display": "Major Mono Display", "body": "Space Mono", "link": "https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Space+Mono:wght@400;700&display=swap" },
+    { "id": "kanit-work", "name": "Kanit + Work Sans", "tags": ["condensed", "bold", "modern", "sport"], "display": "Kanit", "body": "Work Sans", "link": "https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Work+Sans:wght@400;500&display=swap" },
+    { "id": "saira-cond", "name": "Saira Condensed + Saira", "tags": ["condensed", "modern", "tech", "sport"], "display": "Saira Condensed", "body": "Saira", "link": "https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Saira:wght@400;500&display=swap" }
+  ]
+}

@@ -61,9 +61,9 @@ export function BrandIdentityStep({ ctx }: { ctx: UnifiedOnboardingContext }) {
   };
 
   return (
-    <div className="rounded-[14px] border border-newTableBorder bg-newSettings p-6 space-y-6">
+    <div className="rounded-[16px] border border-newTableBorder bg-newBgColorInner shadow-cfSm p-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-[800] text-newTextColor">
+        <h2 className="text-2xl font-[600] font-serif tracking-[-0.02em] text-newTextColor">
           {t('onboarding_brand_title', 'Sua marca')}
         </h2>
         <p className="text-sm text-textItemBlur mt-1">

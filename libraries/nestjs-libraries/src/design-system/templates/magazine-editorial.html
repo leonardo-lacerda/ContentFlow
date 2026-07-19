@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: magazine-editorial. Drop cap + columns + pull quote + hairlines. Best with a serif display. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:8vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.05;mix-blend-mode:multiply;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .kicker{position:relative;z-index:2;display:flex;justify-content:space-between;border-bottom:2px solid var(--text);padding-bottom:1.6vw;font-size:1.9vw;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+  .kicker .a{color:var(--accent)}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',serif;font-weight:700;font-size:8vw;line-height:1.02;letter-spacing:-.01em;margin:4vw 0 3vw;max-width:16ch}
+  .headline em{font-style:italic;color:var(--accent)}
+  .body{position:relative;z-index:2;flex:1;column-count:2;column-gap:5vw;font-size:2.3vw;line-height:1.5;color:var(--text)}
+  .body p{margin-bottom:1.6vw}
+  .body p:first-child::first-letter{float:left;font-family:'{{DISPLAY}}',serif;font-size:9vw;line-height:.74;padding:.05em .14em 0 0;color:var(--accent);font-weight:700}
+  .pull{break-inside:avoid;font-family:'{{DISPLAY}}',serif;font-style:italic;font-size:3vw;line-height:1.2;color:var(--accent);border-left:.4vw solid var(--accent);padding-left:2vw;margin:2vw 0}
+  .footer{position:relative;z-index:2;border-top:2px solid var(--text);padding-top:1.6vw;margin-top:3vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:700}
+</style></head>
+<body><div class="canvas">
+  <div class="kicker"><span class="a">{{EYEBROW}}</span><span>{{INDEX}}</span></div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <div class="body">
+    <p>{{SUBHEAD}}</p>
+    <p class="pull">A pull quote that captures the one big idea.</p>
+    <p>Continue the thought here — keep it readable, two short columns, generous leading. Replace with your copy.</p>
+  </div>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

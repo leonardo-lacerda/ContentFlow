@@ -1,0 +1,59 @@
+{
+  "_note": "Slide-1 / first-line hooks by type. {topic} = the post subject. Keep the final hook <= ~8 words, concrete, no hashtags, no brand name on the hook.",
+  "hooks": {
+    "question": [
+      "Still doing {topic} the hard way?",
+      "What if {topic} took 5 minutes?",
+      "Why does nobody talk about {topic}?",
+      "Is your {topic} actually working?"
+    ],
+    "bold_claim": [
+      "Your {topic} is costing you customers.",
+      "{topic} is easier than they told you.",
+      "Most {topic} advice is wrong.",
+      "You're one tweak away from better {topic}."
+    ],
+    "listicle": [
+      "5 {topic} mistakes that scream amateur.",
+      "7 {topic} hacks I wish I knew sooner.",
+      "3 rules for {topic} that actually work.",
+      "The only {topic} checklist you need."
+    ],
+    "callout": [
+      "For people who hate {topic}.",
+      "Founders: read this before your next {topic}.",
+      "If {topic} stresses you out, start here.",
+      "Beginners, this {topic} guide is for you."
+    ],
+    "curiosity": [
+      "Nobody tells you this about {topic}.",
+      "The {topic} trick they keep quiet.",
+      "I changed one thing about {topic}.",
+      "This {topic} mistake is everywhere."
+    ],
+    "contrarian": [
+      "Stop posting daily. Do {topic} instead.",
+      "Forget everything about {topic}.",
+      "Unpopular opinion: {topic} is overrated.",
+      "Delete your {topic}. Here's why."
+    ],
+    "transformation": [
+      "From zero to {topic} in 30 days.",
+      "How I fixed my {topic} overnight.",
+      "Before vs after: my {topic}.",
+      "200 to 20k, just by changing {topic}."
+    ],
+    "mistake": [
+      "The #1 reason your {topic} flops.",
+      "Stop making this {topic} mistake.",
+      "This is why your {topic} isn't growing.",
+      "Avoid the {topic} trap everyone falls for."
+    ],
+    "cta": [
+      "Save this for your next {topic}.",
+      "Follow for more {topic} tips.",
+      "Try it free — link in bio.",
+      "Swipe for the full {topic} breakdown."
+    ]
+  }
+}

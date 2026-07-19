@@ -1,0 +1,61 @@
+{
+  "_note": "Exact export sizes for social platforms. Used by Design System render jobs.",
+  "sizes": [
+    {
+      "id": "ig-portrait",
+      "label": "Instagram 4:5",
+      "platform": "instagram",
+      "width": 1080,
+      "height": 1350,
+      "tags": ["instagram", "carousel", "feed"]
+    },
+    {
+      "id": "ig-square",
+      "label": "Instagram 1:1",
+      "platform": "instagram",
+      "width": 1080,
+      "height": 1080,
+      "tags": ["instagram", "carousel", "feed"]
+    },
+    {
+      "id": "ig-story",
+      "label": "Instagram / TikTok 9:16",
+      "platform": "instagram",
+      "width": 1080,
+      "height": 1920,
+      "tags": ["instagram", "story", "tiktok", "reels"]
+    },
+    {
+      "id": "linkedin-portrait",
+      "label": "LinkedIn carousel",
+      "platform": "linkedin",
+      "width": 1080,
+      "height": 1350,
+      "tags": ["linkedin", "carousel"]
+    },
+    {
+      "id": "linkedin-landscape",
+      "label": "LinkedIn landscape",
+      "platform": "linkedin",
+      "width": 1200,
+      "height": 627,
+      "tags": ["linkedin", "link"]
+    },
+    {
+      "id": "x-landscape",
+      "label": "X / Twitter",
+      "platform": "x",
+      "width": 1600,
+      "height": 900,
+      "tags": ["x", "twitter"]
+    },
+    {
+      "id": "fb-square",
+      "label": "Facebook square",
+      "platform": "facebook",
+      "width": 1080,
+      "height": 1080,
+      "tags": ["facebook"]
+    }
+  ]
+}

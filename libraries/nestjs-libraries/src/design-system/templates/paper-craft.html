@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: paper-craft. Layered cut-paper shapes with soft drop-shadows framing the message. Best with a warm palette. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:var(--bg);padding:8vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:center}
+  .cut{position:absolute;filter:drop-shadow(0 1.6vw 1.2vw rgba(0,0,0,.16))}
+  .c1{top:-16vw;right:-12vw;width:60vw;height:60vw;border-radius:50%;background:var(--accent)}
+  .c2{bottom:-18vw;left:-14vw;width:52vw;height:52vw;border-radius:46% 54% 60% 40%/52% 44% 56% 48%;background:var(--accent2)}
+  .c3{top:30vw;left:-8vw;width:16vw;height:16vw;border-radius:50%;background:var(--surface)}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.07;mix-blend-mode:multiply;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .card{position:relative;z-index:2;background:var(--surface);border-radius:24px;padding:6vw;filter:drop-shadow(0 2vw 2vw rgba(0,0,0,.14))}
+  .eyebrow{font-size:1.9vw;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:2.4vw}
+  .headline{font-family:'{{DISPLAY}}',sans-serif;font-weight:700;font-size:7.4vw;line-height:1.04;letter-spacing:-.01em;max-width:15ch}
+  .headline em{font-style:italic;color:var(--accent)}
+  .sub{margin-top:3vw;font-size:2.6vw;line-height:1.45;color:var(--muted);max-width:28ch}
+  .footer{position:absolute;z-index:2;left:8vw;right:8vw;bottom:6vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:700}
+</style></head>
+<body><div class="canvas">
+  <span class="cut c1"></span><span class="cut c2"></span><span class="cut c3"></span>
+  <div class="card">
+    <div class="eyebrow">{{EYEBROW}}</div>
+    <h1 class="headline">{{HEADLINE}}</h1>
+    <p class="sub">{{SUBHEAD}}</p>
+  </div>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

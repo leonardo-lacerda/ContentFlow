@@ -45,7 +45,7 @@ export default function AuthError({
         onClick={reset}
         style={{
           padding: '12px 32px',
-          backgroundColor: '#612BD3',
+          backgroundColor: '#b4530a',
           color: '#ffffff',
           border: 'none',
           borderRadius: 8,
@@ -55,7 +55,7 @@ export default function AuthError({
           transition: 'background-color 0.2s',
         }}
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#5024B8')}
-        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#612BD3')}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#b4530a')}
       >
         Tentar novamente
       </button>

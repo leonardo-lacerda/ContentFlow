@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- LISTICLE (cards). Vertical stack of accent-bar cards. Edit the 4 cards. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:7.5vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.06;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:relative;z-index:2;font-size:1.9vw;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:1.2vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:6vw;line-height:1.02;letter-spacing:-.02em;max-width:16ch;margin-bottom:4vw}
+  .headline em{font-style:italic;color:var(--accent)}
+  .cards{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;justify-content:center;gap:2.4vw}
+  .card{display:flex;gap:2.4vw;align-items:center;background:color-mix(in srgb,var(--surface) 60%,transparent);border-left:.9vw solid var(--accent);border-radius:0 16px 16px 0;padding:2.6vw 3vw;box-shadow:0 1vw 3vw rgba(0,0,0,.12)}
+  .n{font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:5vw;color:var(--accent);line-height:.9;flex:0 0 auto}
+  .cx .t{font-family:'{{DISPLAY}}',sans-serif;font-weight:700;font-size:2.8vw}
+  .cx .d{font-size:2.1vw;color:var(--muted);margin-top:.4vw}
+  .footer{position:relative;z-index:2;margin-top:3vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:600;opacity:.85}
+</style></head>
+<body><div class="canvas">
+  <div class="eyebrow">{{EYEBROW}}</div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <div class="cards">
+    <div class="card"><span class="n">1</span><div class="cx"><div class="t">First point</div><div class="d">One short supporting line.</div></div></div>
+    <div class="card"><span class="n">2</span><div class="cx"><div class="t">Second point</div><div class="d">One short supporting line.</div></div></div>
+    <div class="card"><span class="n">3</span><div class="cx"><div class="t">Third point</div><div class="d">One short supporting line.</div></div></div>
+    <div class="card"><span class="n">4</span><div class="cx"><div class="t">Fourth point</div><div class="d">One short supporting line.</div></div></div>
+  </div>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

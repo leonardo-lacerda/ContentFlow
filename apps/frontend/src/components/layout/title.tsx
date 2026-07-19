@@ -21,7 +21,7 @@ export const Title = () => {
 
   return (
     <div className="flex">
-      <h1 className="text-[24px] font-[600] flex gap-[20px] items-center">
+      <h1 className="text-[24px] font-[600] font-serif tracking-[-0.02em] flex gap-[20px] items-center text-newTextColor">
         <div>{current?.name || 'ContentFlow'}</div>
       </h1>
     </div>

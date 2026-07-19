@@ -1,0 +1,91 @@
+# Docker Compose para Vultr - usa imagem pré-buildada (transferida de máquina local)
+# Uso: docker compose -f docker-compose.vultr-prebuilt.yaml up -d
+
+services:
+  contentflow:
+    image: contentflow:latest
+    container_name: contentflow
+    restart: always
+    environment:
+      MAIN_URL: '${MAIN_URL:-http://localhost:4007}'
+      FRONTEND_URL: '${FRONTEND_URL:-http://localhost:4007}'
+      NEXT_PUBLIC_BACKEND_URL: '${NEXT_PUBLIC_BACKEND_URL:-http://localhost:4007/api}'
+      JWT_SECRET: '${JWT_SECRET:-change-this-to-a-random-string}'
+      DATABASE_URL: 'postgresql://contentflow-user:contentflow-password@contentflow-postgres:5432/contentflow-db-local'
+      REDIS_URL: 'redis://contentflow-redis:6379'
+      BACKEND_INTERNAL_URL: 'http://localhost:3000'
+      TEMPORAL_ADDRESS: "temporal:7233"
+      DISABLE_TEMPORAL: 'true'
+      IS_GENERAL: 'true'
+      DISABLE_REGISTRATION: 'false'
+      STORAGE_PROVIDER: 'local'
+      UPLOAD_DIRECTORY: '/uploads'
+      NEXT_PUBLIC_UPLOAD_DIRECTORY: '/uploads'
+      OPENAI_API_KEY: ''
+      AI_GENERATE_BASE_URL: 'http://localhost:3000'
+      AI_GENERATE_API_KEY: 'contentflow-ai-key-local'
+      AI_GENERATE_OPENAI_API_KEY: ''
+      AI_GENERATE_OPENAI_BASE_URL: 'https://api.openai.com'
+      AI_GENERATE_OPENAI_IMAGE_MODEL: 'gpt-image-2'
+      API_LIMIT: 30
+      FEE_AMOUNT: 0.05
+      STRIPE_PUBLISHABLE_KEY: ''
+      STRIPE_SECRET_KEY: ''
+      STRIPE_SIGNING_KEY: ''
+      STRIPE_SIGNING_KEY_CONNECT: ''
+      NX_ADD_PLUGINS: false
+    volumes:
+      - contentflow-uploads:/uploads/
+    ports:
+      - "4007:5000"
+    networks:
+      - contentflow-network
+    depends_on:
+      contentflow-postgres:
+        condition: service_healthy
+      contentflow-redis:
+        condition: service_healthy
+
+  contentflow-postgres:
+    image: postgres:17-alpine
+    container_name: contentflow-postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: 'contentflow-password'
+      POSTGRES_USER: contentflow-user
+      POSTGRES_DB: contentflow-db-local
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    networks:
+      - contentflow-network
+    healthcheck:
+      test: pg_isready -U contentflow-user -d contentflow-db-local
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  contentflow-redis:
+    image: redis:7.2
+    container_name: contentflow-redis
+    restart: always
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    volumes:
+      - contentflow-redis-data:/data
+    networks:
+      - contentflow-network
+
+volumes:
+  postgres-volume:
+    external: false
+  contentflow-redis-data:
+    external: false
+  contentflow-uploads:
+    external: false
+
+networks:
+  contentflow-network:
+    external: false

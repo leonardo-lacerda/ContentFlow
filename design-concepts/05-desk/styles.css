@@ -1,0 +1,36 @@
+/* Desk — mail/client workspace */
+:root {
+  --bg: #f3f2ef;
+  --panel: #ffffff;
+  --text: #1a1a1a;
+  --muted: #5c5c5c;
+  --faint: #8c8c8c;
+  --border: #e6e4df;
+  --border-strong: #dad7d0;
+  --hover: #f0eeea;
+  --accent: #1a73e8;
+  --accent-fg: #fff;
+  --side-bg: #f3f2ef;
+  --side-w: 200px;
+  --side-hover: #e8e6e1;
+  --nav-on-bg: #d3e3fd;
+  --nav-on-text: #041e49;
+  --main-bg: #ffffff;
+  --fs: 13px;
+  --h1: 18px;
+  --radius: 8px;
+  --btn-radius: 16px;
+  --panel-radius: 10px;
+  --view-pad: 20px 24px 40px;
+  --link: #1a73e8;
+  --focus-border: #1a73e8;
+  --focus-ring: 0 0 0 2px rgba(26,115,232,.15);
+  --font: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.side { border-right: 1px solid var(--border); }
+.nav-item { border-radius: 0 16px 16px 0; margin-right: 8px; padding: 8px 12px; }
+.btn-p { border-radius: 16px; }
+.ws-av { background: #d2e3fc; color: #174ea6; border-radius: 99px; width: 28px; height: 28px; font-size: 12px; }
+.table tbody tr:hover td { background: #e8f0fe; }
+.pill-ok { background: #e6f4ea; color: #188038; }
+.pill-warn { background: #fef7e0; color: #b06000; }

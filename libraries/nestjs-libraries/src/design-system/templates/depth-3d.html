@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: 3d-depth. Extruded layered type with a deep stacked shadow. BIGWORD/HEADLINE pops off the canvas. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:8vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:center}
+  .glow{position:absolute;z-index:0;width:80vw;height:80vw;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,var(--accent),transparent 60%);opacity:.18;filter:blur(8px)}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.06;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:relative;z-index:2;font-size:2vw;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:3vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:11vw;line-height:.95;letter-spacing:-.03em;max-width:11ch;color:var(--text);
+    text-shadow:.18vw .18vw 0 var(--accent),.36vw .36vw 0 var(--accent),.54vw .54vw 0 var(--accent),.72vw .72vw 0 var(--accent),.9vw .9vw 0 var(--accent),1.1vw 1.1vw 0 color-mix(in srgb,var(--accent) 70%,#000),1.8vw 2.2vw 4vw rgba(0,0,0,.45)}
+  .headline em{font-style:normal;color:var(--accent2)}
+  .sub{position:relative;z-index:2;margin-top:5vw;font-size:2.6vw;line-height:1.45;color:var(--muted);max-width:28ch}
+  .footer{position:absolute;z-index:2;left:8vw;right:8vw;bottom:6vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:600;opacity:.9}
+</style></head>
+<body><div class="canvas">
+  <div class="glow"></div>
+  <div class="eyebrow">{{EYEBROW}}</div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <p class="sub">{{SUBHEAD}}</p>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

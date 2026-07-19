@@ -1,0 +1,46 @@
+/* Ledger — Stripe Dashboard-like */
+:root {
+  --bg: #f6f9fc;
+  --panel: #ffffff;
+  --text: #0a2540;
+  --muted: #425466;
+  --faint: #8898aa;
+  --border: #e3e8ee;
+  --border-strong: #d8dee4;
+  --hover: #f6f9fc;
+  --accent: #635bff;
+  --accent-fg: #ffffff;
+  --side-bg: #0a2540;
+  --side-text: #ffffff;
+  --side-muted: #c5ced9;
+  --side-hover: rgba(255,255,255,.06);
+  --side-border: rgba(255,255,255,.08);
+  --nav-on-bg: rgba(255,255,255,.1);
+  --nav-on-text: #fff;
+  --side-w: 240px;
+  --main-bg: #f6f9fc;
+  --main-margin: 0;
+  --fs: 14px;
+  --h1: 22px;
+  --radius: 6px;
+  --panel-radius: 8px;
+  --panel-shadow: 0 1px 2px rgba(0,0,0,.03);
+  --btn-radius: 6px;
+  --view-pad: 24px 28px 48px;
+  --topbar-bg: #fff;
+  --link: #635bff;
+  --focus-border: #635bff;
+  --focus-ring: 0 0 0 3px rgba(99,91,255,.15);
+  --table-head: #fafbfc;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Ubuntu, sans-serif;
+}
+.side .concept-tag { color: #7a8ba0; }
+.side .ws:hover { background: rgba(255,255,255,.06); }
+.side-foot { border-top-color: rgba(255,255,255,.08); }
+.ws-av { background: linear-gradient(135deg, #635bff, #00d4ff); }
+.pill-ok { background: #e6f7f5; color: #0d9488; }
+.pill-warn { background: #fef7e6; color: #c27803; }
+.btn-p { box-shadow: 0 1px 1px rgba(0,0,0,.08); }
+.tab.on { color: #635bff; background: transparent; border-bottom: 2px solid #635bff; border-radius: 0; }
+.tabs { gap: 16px; border-bottom: 1px solid var(--border); padding-bottom: 0; margin-bottom: 16px; }
+.tab { border-radius: 0; margin-bottom: -1px; padding: 0 0 10px; height: auto; }

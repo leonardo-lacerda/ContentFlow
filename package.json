@@ -258,7 +258,8 @@
     "yargs": "^17.7.2",
     "yup": "^1.4.0",
     "zod": "^3.25.76",
-    "zustand": "^5.0.5"
+    "zustand": "^5.0.5",
+    "playwright": "^1.52.0"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.32",

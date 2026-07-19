@@ -9,16 +9,16 @@ export function WelcomeStep({ ctx }: { ctx: UnifiedOnboardingContext }) {
   const t = useT();
 
   return (
-    <div className="rounded-[14px] border border-newTableBorder bg-newSettings p-8 space-y-6">
+    <div className="rounded-[16px] border border-newTableBorder bg-newBgColorInner shadow-cfSm p-8 space-y-6">
       <div className="flex items-center gap-3">
-        <div className="h-12 w-12 rounded-[12px] bg-boxFocused flex items-center justify-center">
-          <Sparkles className="w-6 h-6 text-textItemFocused" />
+        <div className="h-12 w-12 rounded-[12px] bg-cf-cream border border-newTableBorder flex items-center justify-center">
+          <Sparkles className="w-6 h-6 text-btnPrimary" />
         </div>
         <div>
-          <h2 className="text-2xl font-[800] text-newTextColor">
+          <h2 className="text-2xl font-[600] font-serif tracking-[-0.02em] text-newTextColor">
             {t('onboarding_welcome_title', 'Bem-vindo ao ContentFlow')}
           </h2>
-          <p className="text-sm text-textItemBlur mt-1">
+          <p className="text-sm text-textItemBlur mt-1 leading-relaxed">
             {t(
               'onboarding_welcome_subtitle',
               'Cole a URL da sua marca. A IA aprende o DNA e em minutos você tem conteúdo pronto pra postar.'

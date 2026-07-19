@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- FAQ / Q&A. Stacked question+answer cards with Q/A badges. Edit the pairs. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:7.5vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.06;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:relative;z-index:2;font-size:1.9vw;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:1vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:6vw;line-height:1.02;letter-spacing:-.02em;margin-bottom:4.5vw}
+  .headline em{font-style:italic;color:var(--accent)}
+  .qas{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;justify-content:center;gap:3vw}
+  .qa{background:color-mix(in srgb,var(--surface) 55%,transparent);border:1px solid color-mix(in srgb,var(--text) 10%,transparent);border-radius:18px;padding:3vw;backdrop-filter:blur(6px)}
+  .q{display:flex;gap:1.6vw;align-items:flex-start}
+  .q .b{flex:0 0 auto;width:3.8vw;height:3.8vw;border-radius:50%;background:var(--accent);color:var(--bg);font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:2.2vw;display:flex;align-items:center;justify-content:center}
+  .q .qt{font-family:'{{DISPLAY}}',sans-serif;font-weight:700;font-size:2.8vw;line-height:1.15}
+  .a{display:flex;gap:1.6vw;align-items:flex-start;margin-top:1.8vw;padding-left:.4vw}
+  .a .b{flex:0 0 auto;width:3.8vw;height:3.8vw;border-radius:50%;background:color-mix(in srgb,var(--text) 14%,transparent);color:var(--text);font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:2.2vw;display:flex;align-items:center;justify-content:center}
+  .a .at{font-size:2.2vw;line-height:1.4;color:var(--muted)}
+  .footer{position:relative;z-index:2;margin-top:3vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:600;opacity:.85}
+</style></head>
+<body><div class="canvas">
+  <div class="eyebrow">{{EYEBROW}}</div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <div class="qas">
+    <div class="qa"><div class="q"><span class="b">Q</span><span class="qt">A common question goes here?</span></div><div class="a"><span class="b">A</span><span class="at">A clear, short answer in one or two lines.</span></div></div>
+    <div class="qa"><div class="q"><span class="b">Q</span><span class="qt">Another common question?</span></div><div class="a"><span class="b">A</span><span class="at">A clear, short answer in one or two lines.</span></div></div>
+    <div class="qa"><div class="q"><span class="b">Q</span><span class="qt">And one more question?</span></div><div class="a"><span class="b">A</span><span class="at">A clear, short answer in one or two lines.</span></div></div>
+  </div>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

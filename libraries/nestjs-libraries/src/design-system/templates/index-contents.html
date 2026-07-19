@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- INDEX / CONTENTS. Numbered table-of-contents with dotted leaders + spiral-binding edge. Edit the entries. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:7.5vw 7.5vw 7.5vw 12vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.07;mix-blend-mode:multiply;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .spiral{position:absolute;z-index:2;left:3.5vw;top:8vw;bottom:8vw;width:3vw;display:flex;flex-direction:column;justify-content:space-between}
+  .spiral i{width:3vw;height:1.4vw;border:.4vw solid color-mix(in srgb,var(--text) 35%,transparent);border-radius:100px}
+  .eyebrow{position:relative;z-index:2;font-size:1.9vw;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:1vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:6.4vw;line-height:1.02;letter-spacing:-.02em;margin-bottom:4vw}
+  .headline em{font-style:italic;color:var(--accent)}
+  .toc{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;justify-content:center;gap:1.8vw}
+  .e{display:flex;align-items:baseline;gap:1.6vw;font-size:2.6vw}
+  .e .n{font-family:'{{DISPLAY}}',sans-serif;font-weight:800;color:var(--accent);width:4vw}
+  .e .t{font-weight:600}
+  .e .lead{flex:1;border-bottom:.25vw dotted color-mix(in srgb,var(--text) 35%,transparent);margin:0 1vw 0 1vw;transform:translateY(-.5vw)}
+  .footer{position:relative;z-index:2;margin-top:3vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:600;opacity:.85}
+</style></head>
+<body><div class="canvas">
+  <div class="spiral"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="eyebrow">{{EYEBROW}}</div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <div class="toc">
+    <div class="e"><span class="n">01</span><span class="t">First topic</span><span class="lead"></span></div>
+    <div class="e"><span class="n">02</span><span class="t">Second topic</span><span class="lead"></span></div>
+    <div class="e"><span class="n">03</span><span class="t">Third topic</span><span class="lead"></span></div>
+    <div class="e"><span class="n">04</span><span class="t">Fourth topic</span><span class="lead"></span></div>
+    <div class="e"><span class="n">05</span><span class="t">Fifth topic</span><span class="lead"></span></div>
+    <div class="e"><span class="n">06</span><span class="t">Sixth topic</span><span class="lead"></span></div>
+  </div>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

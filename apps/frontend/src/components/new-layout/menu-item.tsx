@@ -26,7 +26,9 @@ export const MenuItem: FC<{
     'text-[12px] font-[600] whitespace-nowrap overflow-hidden',
     'transition-[background-color,color,padding,justify-content] duration-150',
     'hover:text-textItemFocused hover:bg-boxFocused',
-    isActive ? 'text-textItemFocused bg-boxFocused' : 'text-textItemBlur'
+    isActive
+      ? 'text-textItemFocused bg-boxFocused'
+      : 'text-textItemBlur'
   );
 
   const content = (

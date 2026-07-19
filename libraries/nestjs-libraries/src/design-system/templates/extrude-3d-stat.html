@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- 3D: a giant EXTRUDED stat number (BIGWORD/INDEX). Deep stacked extrusion + ambient cast. One light source top-left. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};overflow:hidden;isolation:isolate;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;padding:8vw;text-align:center}
+  .glow{position:absolute;z-index:0;width:70vw;height:70vw;border-radius:50%;top:38%;left:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,var(--accent),transparent 62%);opacity:.2;filter:blur(6px)}
+  .eyebrow{position:relative;z-index:2;font-size:2.1vw;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:var(--accent);margin-bottom:2vw}
+  .bignum{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:900;font-size:42vw;line-height:.84;letter-spacing:-.04em;color:var(--text);
+    text-shadow:
+      .2vw .2vw 0 var(--accent),.5vw .5vw 0 var(--accent),.8vw .8vw 0 var(--accent),
+      1.1vw 1.1vw 0 var(--accent),1.4vw 1.4vw 0 var(--accent),1.7vw 1.7vw 0 var(--accent),
+      2.0vw 2.0vw 0 color-mix(in srgb,var(--accent) 68%,#000),
+      2.3vw 2.3vw 0 color-mix(in srgb,var(--accent) 58%,#000),
+      3vw 3.6vw 5vw rgba(0,0,0,.5)}
+  .bignum span{color:var(--accent2);-webkit-text-fill-color:var(--accent2)}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:7vw;line-height:1.0;letter-spacing:-.02em;margin-top:3vw;max-width:15ch}
+  .headline em{font-style:normal;color:var(--accent)}
+  .sub{position:relative;z-index:2;margin-top:2.6vw;font-size:2.5vw;line-height:1.45;color:var(--muted);max-width:30ch}
+  .footer{position:absolute;z-index:2;left:8vw;right:8vw;bottom:6vw;display:flex;justify-content:space-between;align-items:center;font-size:2vw;font-weight:600;opacity:.92}
+  .footer .cta{background:var(--accent);color:var(--bg);padding:1.4vw 2.6vw;border-radius:10vw;font-weight:800;box-shadow:0 1vw 2vw rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.4)}
+  .grain{position:absolute;inset:0;z-index:3;opacity:.06;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+</style></head>
+<body><div class="canvas">
+  <div class="glow"></div>
+  <div class="eyebrow">{{EYEBROW}}</div>
+  <div class="bignum">{{BIGWORD}}{{INDEX}}</div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <p class="sub">{{SUBHEAD}}</p>
+  <div class="footer"><span>{{HANDLE}}</span><span class="cta">{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

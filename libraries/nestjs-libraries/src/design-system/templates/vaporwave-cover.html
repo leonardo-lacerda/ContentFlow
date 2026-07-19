@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: vaporwave. Magenta->cyan gradient + perspective grid floor + sun glow. Centered statement. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:#fff}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:linear-gradient(180deg,var(--accent2),color-mix(in srgb,var(--accent) 60%,var(--accent2)) 55%,var(--accent));padding:8vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .sun{position:absolute;z-index:0;width:46vw;height:46vw;border-radius:50%;top:14vw;left:50%;transform:translateX(-50%);background:radial-gradient(circle,#fff,color-mix(in srgb,var(--accent) 40%,#fff) 55%,transparent 72%);opacity:.85;filter:blur(1px)}
+  .floor{position:absolute;z-index:0;left:-20%;right:-20%;bottom:0;height:42%;background-image:linear-gradient(rgba(255,255,255,.5) 2px,transparent 2px),linear-gradient(90deg,rgba(255,255,255,.5) 2px,transparent 2px);background-size:9vw 6vw;transform:perspective(40vw) rotateX(68deg);transform-origin:bottom}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.06;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-size:2vw;font-weight:700;letter-spacing:.4em;text-transform:uppercase;margin-bottom:3vw;text-shadow:0 0 2vw rgba(0,0,0,.3)}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:9vw;line-height:1.0;letter-spacing:.02em;text-shadow:0 .4vw 0 color-mix(in srgb,var(--accent) 80%,#000),0 0 4vw rgba(0,0,0,.25);max-width:13ch}
+  .sub{position:relative;z-index:2;margin-top:3vw;font-size:2.6vw;line-height:1.4;text-shadow:0 0 2vw rgba(0,0,0,.3);max-width:26ch}
+  .footer{position:absolute;z-index:2;bottom:6vw;font-size:2vw;font-weight:600}
+</style></head>
+<body><div class="canvas">
+  <div class="sun"></div><div class="floor"></div>
+  <div class="eyebrow">{{EYEBROW}}</div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <p class="sub">{{SUBHEAD}}</p>
+  <span class="footer">{{HANDLE}} · {{CTA}}</span>
+  <div class="grain"></div>
+</div></body></html>

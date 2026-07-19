@@ -2,7 +2,6 @@
 
 import React, { memo, ReactNode, useCallback, useMemo } from 'react';
 import { Logo } from '@gitroom/frontend/components/new-layout/logo';
-import { Plus_Jakarta_Sans } from 'next/font/google';
 const ModeComponent = dynamic(
   () => import('@gitroom/frontend/components/layout/mode.component'),
   {
@@ -43,11 +42,6 @@ import { OnboardingGate } from '@gitroom/frontend/components/layout/onboarding-g
 import { PreConditionComponent } from '@gitroom/frontend/components/layout/pre-condition.component';
 import { AttachToFeedbackIcon } from '@gitroom/frontend/components/new-layout/sentry.feedback.component';
 
-const jakartaSans = Plus_Jakarta_Sans({
-  weight: ['600', '500', '700'],
-  style: ['normal', 'italic'],
-  subsets: ['latin'],
-});
 
 export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
   const fetch = useFetch();
@@ -89,10 +83,7 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
             <NewSubscription />
             <ContinueProvider />
             <div
-              className={clsx(
-                'flex flex-col min-h-screen min-w-screen text-newTextColor p-[12px]',
-                jakartaSans.className
-              )}
+              className="flex flex-col min-h-screen min-w-screen text-newTextColor p-[12px] font-sans"
             >
               <div>{user?.admin ? <Impersonate /> : <div />}</div>
               {/* ContentFlow v1: FREE tem acesso ao loop (limites no backend). Sem paywall full-screen. */}
@@ -108,9 +99,10 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
                       className={clsx(
                         'group/sidebar fixed z-[200] start-[12px] top-[12px]',
                         'h-[calc(100dvh-24px)] w-[72px] hover:w-[228px]',
-                        'flex flex-col bg-newBgColorInner rounded-[12px]',
+                        'flex flex-col bg-newBgColorInner rounded-[14px]',
+                        'border border-newBorder',
                         'overflow-hidden transition-[width,box-shadow] duration-200 ease-out',
-                        'hover:shadow-[0_8px_32px_rgba(0,0,0,0.35)]',
+                        'hover:shadow-cf',
                         user?.admin && 'pt-[48px]'
                       )}
                     >
@@ -119,9 +111,9 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
                         <TopMenu />
                       </div>
                     </div>
-                    <div className="flex-1 bg-newBgLineColor rounded-[12px] overflow-hidden flex flex-col gap-[1px] blurMe">
-                      <div className="flex bg-newBgColorInner h-[80px] px-[20px] items-center">
-                        <div className="text-[24px] font-[600] flex flex-1">
+                    <div className="flex-1 bg-newBgLineColor rounded-[14px] overflow-hidden flex flex-col gap-[1px] blurMe border border-newBorder">
+                      <div className="flex bg-newBgColorInner h-[72px] px-[20px] items-center border-b border-newTableBorder">
+                        <div className="text-[24px] font-[600] flex flex-1 min-w-0">
                           <Title />
                         </div>
                         <div className="flex gap-[20px] text-textItemBlur">

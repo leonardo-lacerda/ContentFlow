@@ -11,6 +11,13 @@ import { recordTemplateUsage } from '@gitroom/nestjs-libraries/ai-generate/templ
 import { TEMPLATE_SCHEMA_VERSION } from '@gitroom/nestjs-libraries/ai-generate/templates/template-definitions';
 import { TemplateRecommenderService } from '@gitroom/nestjs-libraries/ai-generate/templates/template-recommender.service';
 import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
+import {
+  CreateCarouselDesignJobDto,
+  DesignSystemIdeateDto,
+} from '@gitroom/nestjs-libraries/dtos/ai-generate/create-carousel-design-job.dto';
+import { DesignSystemCatalogService } from '@gitroom/nestjs-libraries/design-system/catalog/catalog.service';
+import { DesignSystemJobService } from '@gitroom/nestjs-libraries/design-system/jobs/design-system-job.service';
+import { IdeateService } from '@gitroom/nestjs-libraries/design-system/ideate/ideate.service';
 
 @ApiTags('AI Generate')
 @Controller('/ai-generate')
@@ -18,7 +25,10 @@ export class AiGenerateController {
   constructor(
     private readonly _aiGenerateService: AiGenerateService,
     private readonly _templateRecommender: TemplateRecommenderService,
-    private readonly _brandProfileService: BrandProfileService
+    private readonly _brandProfileService: BrandProfileService,
+    private readonly _designCatalog: DesignSystemCatalogService,
+    private readonly _designJobs: DesignSystemJobService,
+    private readonly _designIdeate: IdeateService
   ) {}
 
   // -----------------------------------------------------------------------
@@ -228,5 +238,50 @@ export class AiGenerateController {
     @Param('id') id: string
   ) {
     return this._aiGenerateService.getCarouselImageJob(org.id, id);
+  }
+
+  // ─── Design System (HTML templates → Playwright PNG) ───
+
+  @Get('/design-system/catalog')
+  getDesignSystemCatalog() {
+    return this._designCatalog.getCatalog();
+  }
+
+  @Get('/design-system/summary')
+  getDesignSystemSummary() {
+    return this._designCatalog.getSummary();
+  }
+
+  @Post('/design-system/ideate')
+  ideateDesignSystem(
+    @GetOrgFromRequest() _org: Organization,
+    @Body() body: DesignSystemIdeateDto
+  ) {
+    return {
+      options: this._designIdeate.ideate({
+        query: body.query,
+        count: body.count,
+        seed: body.seed,
+        directionId: body.directionId,
+        sizeId: body.sizeId,
+        handle: body.handle,
+      }),
+    };
+  }
+
+  @Post('/carousel-design-jobs')
+  startCarouselDesignJob(
+    @GetOrgFromRequest() org: Organization,
+    @Body() body: CreateCarouselDesignJobDto
+  ) {
+    return this._designJobs.startJob(org.id, body);
+  }
+
+  @Get('/carousel-design-jobs/:id')
+  getCarouselDesignJob(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this._designJobs.getJob(org.id, id);
   }
 }

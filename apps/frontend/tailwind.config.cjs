@@ -4,7 +4,38 @@ module.exports = {
   content: ['./src/**/*.{ts,tsx,html}', '../../libraries/**/*.{ts,tsx,html}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          'var(--font-cf-sans)',
+          'Inter',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'Roboto',
+          'sans-serif',
+        ],
+        serif: [
+          'var(--font-cf-serif)',
+          'Fraunces',
+          'Georgia',
+          'Times New Roman',
+          'serif',
+        ],
+      },
       colors: {
+        cf: {
+          white: 'var(--cf-white)',
+          offwhite: 'var(--cf-offwhite)',
+          cream: 'var(--cf-cream)',
+          sand: 'var(--cf-sand)',
+          ink: 'var(--cf-ink)',
+          muted: 'var(--cf-muted)',
+          amber: 'var(--cf-amber)',
+          amberDark: 'var(--cf-amber-dark)',
+          amberSoft: 'var(--cf-amber-soft)',
+          ok: 'var(--cf-ok)',
+          okBg: 'var(--cf-ok-bg)',
+        },
         primary: 'var(--color-primary)',
         secondary: 'var(--color-secondary)',
         textColor: 'var(--new-btn-text)',
@@ -143,6 +174,17 @@ module.exports = {
         greenToast: '0px 0px 50px rgba(60, 124, 90, 0.3)',
         menu: 'var(--menu-shadow)',
         previewShadow: 'var(--preview-box-shadow)',
+        cf: 'var(--cf-shadow)',
+        cfSm: 'var(--cf-shadow-sm)',
+        cfAccent: 'var(--cf-shadow-accent)',
+        cfFocus: 'var(--cf-shadow-focus)',
+      },
+      borderRadius: {
+        cfSm: 'var(--cf-radius-sm)',
+        cf: 'var(--cf-radius)',
+        cfMd: 'var(--cf-radius-md)',
+        cfLg: 'var(--cf-radius-lg)',
+        cfXl: 'var(--cf-radius-xl)',
       },
       dropShadow: {
         glow: [

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: art-deco. Jewel/dark + gold linework frame + sunburst + symmetric elegant caps. Best with dark+gold palette + serif. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:7vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .sun{position:absolute;z-index:0;top:-30vw;left:50%;transform:translateX(-50%);width:90vw;height:90vw;border-radius:50%;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--accent) 30%,transparent) 0deg 4deg,transparent 4deg 12deg);opacity:.25;-webkit-mask:radial-gradient(circle,#000 30%,transparent 62%);mask:radial-gradient(circle,#000 30%,transparent 62%)}
+  .frame{position:absolute;inset:5vw;border:.3vw solid var(--accent);outline:.15vw solid var(--accent);outline-offset:.9vw;z-index:1;pointer-events:none}
+  .frame::before,.frame::after{content:"";position:absolute;left:50%;transform:translateX(-50%);width:3vw;height:3vw;background:var(--accent);rotate:45deg}
+  .frame::before{top:-1.5vw}.frame::after{bottom:-1.5vw}
+  .eyebrow{position:relative;z-index:2;font-family:'{{DISPLAY}}',serif;font-size:2vw;font-weight:600;letter-spacing:.45em;text-transform:uppercase;color:var(--accent);margin-bottom:3vw}
+  .rule{position:relative;z-index:2;width:14vw;height:1px;background:var(--accent);margin-bottom:4vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',serif;font-weight:700;font-size:7.6vw;line-height:1.08;letter-spacing:.02em;text-transform:uppercase;max-width:14ch}
+  .headline em{font-style:italic;color:var(--accent);text-transform:none}
+  .sub{position:relative;z-index:2;margin-top:3.4vw;font-size:2.3vw;line-height:1.5;letter-spacing:.06em;color:var(--muted);max-width:30ch}
+  .footer{position:absolute;z-index:2;bottom:7.5vw;font-size:1.9vw;font-weight:600;letter-spacing:.2em;color:var(--accent)}
+</style></head>
+<body><div class="canvas">
+  <div class="sun"></div><div class="frame"></div>
+  <div class="eyebrow">{{EYEBROW}}</div>
+  <div class="rule"></div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <p class="sub">{{SUBHEAD}}</p>
+  <span class="footer">{{HANDLE}} · {{CTA}}</span>
+</div></body></html>

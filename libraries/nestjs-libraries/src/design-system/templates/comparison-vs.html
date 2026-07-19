@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- COMPARISON / VS. Chrome (headline/eyebrow/handle/palette/font) is token-filled.
+     Edit the panel labels + the 3 rows per side + the payoff bar text to your content. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:7vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column}
+  .glow{position:absolute;z-index:0;width:60vw;height:60vw;border-radius:50%;top:-22vw;left:50%;transform:translateX(-50%);background:radial-gradient(circle,var(--accent),transparent 62%);opacity:.18;filter:blur(8px)}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.06;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:relative;z-index:2;align-self:center;background:var(--accent);color:var(--bg);font-weight:700;font-size:1.7vw;letter-spacing:.2em;text-transform:uppercase;padding:1vw 2.6vw;border-radius:100px;margin-bottom:2.6vw}
+  .headline{position:relative;z-index:2;text-align:center;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:6.2vw;line-height:1.04;letter-spacing:-.02em;margin-bottom:5vw}
+  .headline em{font-style:italic;color:var(--accent)}
+  .cols{position:relative;z-index:2;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:3vw;align-items:stretch}
+  .panel{background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid color-mix(in srgb,var(--text) 14%,transparent);border-radius:24px;padding:4vw 3.4vw;display:flex;flex-direction:column;gap:2.4vw;backdrop-filter:blur(8px)}
+  .ribbon{align-self:flex-start;font-family:'{{DISPLAY}}',sans-serif;font-weight:700;font-size:2.4vw;color:var(--accent);letter-spacing:.02em}
+  .ribbon.b{color:var(--accent2)}
+  .row{display:flex;gap:1.6vw;align-items:flex-start}
+  .row .dot{flex:0 0 auto;width:1.8vw;height:1.8vw;border-radius:50%;background:var(--accent);margin-top:.7vw}
+  .panel.b .row .dot{background:var(--accent2)}
+  .row .t{font-size:2.2vw;line-height:1.35}
+  .row .t b{font-weight:700}
+  .vs{position:absolute;z-index:3;top:48%;left:50%;transform:translate(-50%,-50%);width:8vw;height:8vw;border-radius:50%;background:var(--text);color:var(--bg);font-family:'{{DISPLAY}}',sans-serif;font-style:italic;font-weight:800;font-size:3vw;display:flex;align-items:center;justify-content:center;box-shadow:0 1.5vw 4vw rgba(0,0,0,.3)}
+  .payoff{position:relative;z-index:2;margin-top:4vw;background:var(--accent);color:var(--bg);border-radius:100px;padding:2.4vw 4vw;text-align:center;font-family:'{{DISPLAY}}',sans-serif;font-weight:700;font-size:2.6vw}
+  .footer{position:relative;z-index:2;margin-top:3vw;display:flex;justify-content:space-between;font-size:1.9vw;font-weight:600;opacity:.85}
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="glow"></div>
+    <span class="eyebrow">{{EYEBROW}}</span>
+    <h1 class="headline">{{HEADLINE}}</h1>
+    <div class="cols">
+      <div class="panel a">
+        <span class="ribbon">Option A</span>
+        <div class="row"><span class="dot"></span><span class="t"><b>First point</b> — short supporting line.</span></div>
+        <div class="row"><span class="dot"></span><span class="t"><b>Second point</b> — short supporting line.</span></div>
+        <div class="row"><span class="dot"></span><span class="t"><b>Third point</b> — short supporting line.</span></div>
+      </div>
+      <div class="panel b">
+        <span class="ribbon b">Option B</span>
+        <div class="row"><span class="dot"></span><span class="t"><b>First point</b> — short supporting line.</span></div>
+        <div class="row"><span class="dot"></span><span class="t"><b>Second point</b> — short supporting line.</span></div>
+        <div class="row"><span class="dot"></span><span class="t"><b>Third point</b> — short supporting line.</span></div>
+      </div>
+      <div class="vs">vs</div>
+    </div>
+    <div class="payoff">Same family. Different audience.</div>
+    <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+    <div class="grain"></div>
+  </div>
+</body>
+</html>

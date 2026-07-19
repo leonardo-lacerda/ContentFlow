@@ -64,7 +64,7 @@ export type GenerateImageResponse = {
 
 export type CarouselImageJob = {
   id: string;
-  status: 'queued' | 'running' | 'completed' | 'failed';
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'partial';
   total: number;
   completed: number;
   failed: number;
@@ -73,6 +73,44 @@ export type CarouselImageJob = {
     status: 'queued' | 'running' | 'completed' | 'failed';
     result?: GenerateImageResponse;
     error?: string;
+  }>;
+};
+
+/** Visual render path for carousel slides */
+export type CarouselRenderMode = 'ai_image' | 'design_system';
+
+export type DesignRecipe = {
+  directionId: string;
+  directionName?: string;
+  paletteId: string;
+  fontId: string;
+  motifs?: string[];
+  sizeId: string;
+  width: number;
+  height: number;
+  handle?: string;
+  vibe?: string;
+  designRead?: string;
+  seed?: number;
+};
+
+export type DesignSystemCatalogSummary = {
+  enabled: boolean;
+  attribution?: string;
+  counts: {
+    palettes: number;
+    fonts: number;
+    directions: number;
+    templates: number;
+    sizes: number;
+  };
+  defaultSizeId?: string;
+  sizes?: Array<{
+    id: string;
+    label: string;
+    width: number;
+    height: number;
+    platform: string;
   }>;
 };
 

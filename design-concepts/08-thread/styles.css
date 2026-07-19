@@ -1,0 +1,32 @@
+/* Thread — review + internal comments (Linear comments / PR review light) */
+:root {
+  --bg: #f7f7f5;
+  --panel: #ffffff;
+  --text: #242424;
+  --muted: #5c5c5c;
+  --faint: #8f8f8f;
+  --border: #e4e4e0;
+  --border-strong: #d0d0ca;
+  --hover: #efefe9;
+  --accent: #5e6ad2;
+  --accent-fg: #fff;
+  --side-bg: #f0f0eb;
+  --side-w: 230px;
+  --nav-on-bg: #e4e4ff;
+  --nav-on-text: #3c4396;
+  --main-bg: #f7f7f5;
+  --h1: 18px;
+  --radius: 8px;
+  --panel-radius: 10px;
+  --btn-radius: 7px;
+  --view-pad: 20px 24px 48px;
+  --split: 1.1fr 0.9fr;
+  --link: #5e6ad2;
+  --focus-border: #5e6ad2;
+  --focus-ring: 0 0 0 3px rgba(94,106,210,.15);
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.btn-p { background: #5e6ad2; }
+.thread .msg b { color: var(--text); }
+.composer textarea { background: #fff; }
+/* Make list open thread for first item convenience via detail still works */

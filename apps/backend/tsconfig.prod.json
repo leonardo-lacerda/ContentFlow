@@ -1,0 +1,38 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "declaration": false,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "target": "ES2021",
+    "sourceMap": false,
+    "outDir": "./dist",
+    "rootDir": "../..",
+    "skipLibCheck": true,
+    "noEmitOnError": false,
+    "strict": false,
+    "noImplicitAny": false,
+    "incremental": false,
+    "resolveJsonModule": true,
+    "baseUrl": "../..",
+    "paths": {
+      "@gitroom/backend/*": ["apps/backend/src/*"],
+      "@gitroom/helpers/*": ["libraries/helpers/src/*"],
+      "@gitroom/nestjs-libraries/*": ["libraries/nestjs-libraries/src/*"],
+      "@gitroom/react/*": ["libraries/react-shared-libraries/src/*"],
+      "@gitroom/plugins/*": ["libraries/plugins/src/*"],
+      "@gitroom/orchestrator/*": ["apps/orchestrator/src/*"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "../../libraries/nestjs-libraries/src/**/*",
+    "../../libraries/helpers/src/**/*"
+  ],
+  "exclude": ["node_modules", "dist", "**/*spec.ts", "**/*.spec.ts", "../../libraries/nestjs-libraries/src/**/*.spec.ts"]
+}

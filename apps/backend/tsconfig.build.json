@@ -19,6 +19,20 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "outDir": "./dist"
-  }
+    "outDir": "./dist",
+    "baseUrl": "../..",
+    "paths": {
+      "@gitroom/backend/*": ["apps/backend/src/*"],
+      "@gitroom/helpers/*": ["libraries/helpers/src/*"],
+      "@gitroom/nestjs-libraries/*": ["libraries/nestjs-libraries/src/*"],
+      "@gitroom/react/*": ["libraries/react-shared-libraries/src/*"],
+      "@gitroom/plugins/*": ["libraries/plugins/src/*"],
+      "@gitroom/orchestrator/*": ["apps/orchestrator/src/*"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "../../libraries/nestjs-libraries/src/**/*",
+    "../../libraries/helpers/src/**/*"
+  ]
 }

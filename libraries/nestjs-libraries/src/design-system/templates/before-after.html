@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- BEFORE -> AFTER. 50/50 split: muted 'before' vs vivid 'after', center VS, transform bar. Edit the two columns. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:var(--bg);overflow:hidden;isolation:isolate;display:flex;flex-direction:column}
+  .head{text-align:center;padding:6vw 7vw 3vw}
+  .eyebrow{font-size:1.9vw;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+  .headline{font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:5.6vw;line-height:1.04;letter-spacing:-.02em;margin-top:1.4vw}
+  .split{flex:1;display:grid;grid-template-columns:1fr 1fr;position:relative}
+  .col{padding:6vw 5vw;display:flex;flex-direction:column;gap:2.4vw}
+  .before{background:color-mix(in srgb,var(--text) 7%,var(--bg))}
+  .after{background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 22%,var(--bg)),var(--bg))}
+  .tag{font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:2.6vw;letter-spacing:.08em;text-transform:uppercase}
+  .before .tag{color:var(--muted)} .after .tag{color:var(--accent)}
+  .item{font-size:2.3vw;line-height:1.4}
+  .before .item{color:var(--muted)} .after .item{font-weight:600}
+  .vs{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:9vw;height:9vw;border-radius:50%;background:var(--accent);color:var(--bg);font-family:'{{DISPLAY}}',sans-serif;font-style:italic;font-weight:800;font-size:3vw;display:flex;align-items:center;justify-content:center;box-shadow:0 1.5vw 4vw rgba(0,0,0,.3)}
+  .bar{display:flex;align-items:center;justify-content:center;gap:2vw;padding:3.4vw;background:var(--accent);color:var(--bg);font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:3vw}
+  .bar .h{font-size:2vw;font-weight:600;opacity:.95;font-family:'{{BODY}}'}
+</style></head>
+<body><div class="canvas">
+  <div class="head"><span class="eyebrow">{{EYEBROW}}</span><h1 class="headline">{{HEADLINE}}</h1></div>
+  <div class="split">
+    <div class="col before"><span class="tag">Before</span><span class="item">The old way, point one.</span><span class="item">The old way, point two.</span><span class="item">The old way, point three.</span></div>
+    <div class="col after"><span class="tag">After</span><span class="item">The new way, point one.</span><span class="item">The new way, point two.</span><span class="item">The new way, point three.</span></div>
+    <div class="vs">vs</div>
+  </div>
+  <div class="bar"><span class="h">{{HANDLE}}</span>· Before → After ·<span class="h">{{CTA}}</span></div>
+</div></body></html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:var(--bg);
+    display:flex;flex-direction:column;justify-content:center;padding:8vw;overflow:hidden;isolation:isolate}
+  .grid{position:absolute;inset:0;z-index:0;opacity:.5;
+    background-image:linear-gradient(color-mix(in srgb,var(--text) 16%,transparent) 1px,transparent 1px),
+      linear-gradient(90deg,color-mix(in srgb,var(--text) 16%,transparent) 1px,transparent 1px);
+    background-size:5.5vw 5.5vw}
+  .glow{position:absolute;z-index:0;width:60vw;height:60vw;border-radius:50%;top:-22vw;right:-20vw;
+    background:radial-gradient(circle,var(--accent2),transparent 64%);opacity:.16;filter:blur(6px)}
+  .eyebrow{position:relative;z-index:2;align-self:flex-start;font-family:'{{DISPLAY}}',monospace;
+    font-weight:700;font-size:1.9vw;letter-spacing:.22em;text-transform:uppercase;color:var(--bg);
+    background:var(--accent);padding:1.1vw 2.4vw;border-radius:100px;margin-bottom:4vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;
+    font-size:7.4vw;line-height:1.04;letter-spacing:-.02em;max-width:15ch}
+  .headline mark{background:linear-gradient(180deg,transparent 10%,color-mix(in srgb,var(--accent) 50%,transparent) 10% 86%,transparent 86%);
+    color:inherit;padding:0 .1em;display:inline-block;transform:rotate(-1deg)}
+  .headline em{font-style:normal;color:var(--accent)}
+  .rule{position:relative;z-index:2;width:10vw;height:.55vw;background:var(--accent);border-radius:4px;margin:3.6vw 0}
+  .subhead{position:relative;z-index:2;font-size:2.8vw;line-height:1.5;color:var(--muted);max-width:34ch}
+  .pins{position:relative;z-index:2;display:flex;align-items:center;gap:0;margin-top:6vw}
+  .pins .dot{width:2.4vw;height:2.4vw;border-radius:50%;background:var(--accent);flex:0 0 auto}
+  .pins .line{height:.45vw;flex:1;background:color-mix(in srgb,var(--accent) 55%,transparent);max-width:18vw}
+  .pins .ring{width:2.4vw;height:2.4vw;border-radius:50%;border:.55vw solid var(--accent2);flex:0 0 auto}
+  .footer{position:absolute;z-index:2;left:8vw;right:8vw;bottom:6vw;display:flex;align-items:center;justify-content:space-between;font-size:2vw;font-weight:600}
+  .footer .meta{font-family:'{{DISPLAY}}',monospace;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="grid"></div><div class="glow"></div>
+    <span class="eyebrow">{{EYEBROW}}</span>
+    <h1 class="headline">{{HEADLINE}}</h1>
+    <div class="rule"></div>
+    <p class="subhead">{{SUBHEAD}}</p>
+    <div class="pins"><span class="dot"></span><span class="line"></span><span class="ring"></span><span class="line"></span><span class="dot"></span></div>
+    <div class="footer"><span>{{HANDLE}}</span><span class="meta">{{CTA}}</span></div>
+  </div>
+</body>
+</html>

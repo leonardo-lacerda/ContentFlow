@@ -14,11 +14,75 @@
 body {
   background: var(--new-bgColor) !important;
   color: var(--new-btn-text);
+  font-family: var(--font-cf-sans, var(--cf-font-sans, Inter, system-ui, sans-serif));
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--cf-amber-soft, #f3e6d8);
+  color: var(--cf-ink, #1c1917);
+}
+
+:focus-visible {
+  outline: 2px solid var(--cf-amber, #b4530a) !important;
+  outline-offset: 2px;
 }
 
 body * {
   outline: none !important;
 }
+
+body *:focus-visible {
+  outline: 2px solid var(--cf-amber, #b4530a) !important;
+  outline-offset: 2px;
+}
+
+.font-serif,
+.cf-serif {
+  font-family: var(--font-cf-serif, var(--cf-font-serif, Fraunces, Georgia, serif));
+}
+
+/* Editorial surface helpers */
+.cf-card {
+  background: var(--new-bgColorInner);
+  border: 1px solid var(--new-table-border);
+  border-radius: 14px;
+  box-shadow: var(--cf-shadow-sm, 0 1px 2px rgba(28, 25, 23, 0.05), 0 6px 18px rgba(28, 25, 23, 0.05));
+}
+
+.cf-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--new-table-border);
+  background: var(--new-bgColorInner);
+  color: var(--new-textItemBlur);
+}
+
+.cf-chip--on {
+  background: var(--new-boxFocused);
+  color: var(--new-textItemFocused);
+  border-color: transparent;
+}
+
+.cf-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--new-btn-primary);
+}
+
+/* Soften heavy legacy dark panels that still hardcode near-black */
+body.light .bg-\[\#0e0e0e\],
+body.light .bg-\[\#0E0E0E\] {
+  background-color: var(--new-bgColorInner) !important;
+}
+
 
 .box {
   position: relative;
@@ -321,17 +385,27 @@ body * {
 .mantine-Paper-root {
   outline: none !important;
 }
-//
-//:root {
-//  --copilot-kit-primary-color: #612ad5 !important;
-//  --copilot-kit-background-color: #0b0f1c !important;
-//  --copilot-kit-separator-color: #1f2941 !important;
-//  --copilot-kit-contrast-color: #ffffff !important;
-//  --copilot-kit-secondary-contrast-color: #ffffff !important;
-//  --copilot-kit-secondary-color: #000 !important;
-//  --copilot-kit-response-button-background-color: #000 !important;
-//  --copilot-kit-response-button-color: #fff !important;
-//}
+:root {
+  --copilot-kit-primary-color: #b4530a !important;
+  --copilot-kit-background-color: #ffffff !important;
+  --copilot-kit-separator-color: #e7e5e4 !important;
+  --copilot-kit-contrast-color: #ffffff !important;
+  --copilot-kit-secondary-contrast-color: #1c1917 !important;
+  --copilot-kit-secondary-color: #fafafa !important;
+  --copilot-kit-response-button-background-color: #f3e6d8 !important;
+  --copilot-kit-response-button-color: #8a3f08 !important;
+}
+
+body.dark {
+  --copilot-kit-primary-color: #b4530a !important;
+  --copilot-kit-background-color: #1c1917 !important;
+  --copilot-kit-separator-color: #292524 !important;
+  --copilot-kit-contrast-color: #ffffff !important;
+  --copilot-kit-secondary-contrast-color: #fafaf9 !important;
+  --copilot-kit-secondary-color: #292524 !important;
+  --copilot-kit-response-button-background-color: #44403c !important;
+  --copilot-kit-response-button-color: #fafaf9 !important;
+}
 
 //.copilotKitWindow {
 //  @apply bg-customColor3 #{!important};

@@ -1,0 +1,35 @@
+/* Shelf — catalog / DAM light (library-first) */
+:root {
+  --bg: #faf9f7;
+  --panel: #ffffff;
+  --text: #221f1b;
+  --muted: #6b6560;
+  --faint: #9c958c;
+  --border: #e8e4dc;
+  --border-strong: #d6d0c6;
+  --hover: #f3f0ea;
+  --accent: #1f1f1f;
+  --accent-fg: #faf9f7;
+  --side-bg: #f3f0ea;
+  --side-w: 220px;
+  --nav-on-bg: #e7e2d8;
+  --nav-on-text: #221f1b;
+  --main-bg: #faf9f7;
+  --h1: 24px;
+  --radius: 10px;
+  --panel-radius: 12px;
+  --btn-radius: 999px;
+  --view-pad: 28px 28px 56px;
+  --font: "Iowan Old Style", Palatino, Georgia, "Segoe UI", serif;
+  --mono: ui-monospace, Menlo, Consolas, monospace;
+}
+/* UI chrome stays readable with sans for controls via buttons inherit — override body for titles only */
+body { font-family: "Segoe UI", system-ui, sans-serif; }
+.page-head h1, .detail-title, .card-tile div[style*="font-weight:600"] {
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  letter-spacing: -.02em;
+}
+.tile-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.card-tile { min-height: 140px; }
+.btn { border-radius: 999px; }
+.media-grid { gap: 12px; }

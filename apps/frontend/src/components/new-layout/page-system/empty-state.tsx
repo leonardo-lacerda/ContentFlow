@@ -31,12 +31,12 @@ export const EmptyState: FC<{
       )}
     >
       {icon ? (
-        <div className="w-[48px] h-[48px] rounded-[12px] bg-newSettings border border-newTableBorder flex items-center justify-center text-textItemBlur">
+        <div className="w-[52px] h-[52px] rounded-[14px] bg-cf-cream border border-newTableBorder flex items-center justify-center text-btnPrimary">
           {icon}
         </div>
       ) : null}
-      <div className="flex flex-col gap-[8px] max-w-[380px]">
-        <h2 className="text-[18px] font-[600] text-newTextColor leading-snug">
+      <div className="flex flex-col gap-[8px] max-w-[400px]">
+        <h2 className="text-[22px] font-[600] font-serif text-newTextColor leading-snug tracking-[-0.02em]">
           {title}
         </h2>
         {description ? (

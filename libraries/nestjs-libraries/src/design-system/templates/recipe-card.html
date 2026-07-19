@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- RECIPE / FORMULA CARD. Two zones: ingredients/inputs + numbered method. Edit both lists. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:7vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.07;mix-blend-mode:multiply;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:relative;z-index:2;font-size:1.9vw;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:1vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:6.4vw;line-height:1.02;letter-spacing:-.02em;margin-bottom:4.5vw}
+  .headline em{font-style:italic;color:var(--accent)}
+  .cols{position:relative;z-index:2;flex:1;display:grid;grid-template-columns:0.85fr 1.15fr;gap:4vw}
+  .zone .zt{font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:2.4vw;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2vw;padding-bottom:1vw;border-bottom:.3vw solid color-mix(in srgb,var(--accent) 40%,transparent)}
+  .ing{display:flex;flex-direction:column;gap:1.6vw}
+  .ing li{list-style:none;display:flex;gap:1.2vw;align-items:flex-start;font-size:2.2vw}
+  .ing li::before{content:"";width:1.4vw;height:1.4vw;border-radius:50%;border:.35vw solid var(--accent);margin-top:.7vw;flex:0 0 auto}
+  .method{display:flex;flex-direction:column;gap:2vw}
+  .st{display:flex;gap:1.6vw;align-items:flex-start}
+  .st .n{flex:0 0 auto;width:3.6vw;height:3.6vw;border-radius:10px;background:var(--accent);color:var(--bg);font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:2vw;display:flex;align-items:center;justify-content:center}
+  .st .sx{font-size:2.2vw;line-height:1.35}
+  .footer{position:relative;z-index:2;margin-top:3vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:600;opacity:.85}
+</style></head>
+<body><div class="canvas">
+  <div class="eyebrow">{{EYEBROW}}</div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <div class="cols">
+    <div class="zone"><div class="zt">Ingredients</div><ul class="ing"><li>First input</li><li>Second input</li><li>Third input</li><li>Fourth input</li></ul></div>
+    <div class="zone"><div class="zt">Method</div><div class="method">
+      <div class="st"><span class="n">1</span><span class="sx">First step, explained in one line.</span></div>
+      <div class="st"><span class="n">2</span><span class="sx">Second step, explained in one line.</span></div>
+      <div class="st"><span class="n">3</span><span class="sx">Third step, explained in one line.</span></div>
+    </div></div>
+  </div>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

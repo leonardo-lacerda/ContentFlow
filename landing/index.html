@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ContentFlow — Gere carrosséis, posts e legendas com a cara da sua marca</title>
+  <title>ContentFlow — Da marca ao post publicado, no tom certo</title>
   <meta
     name="description"
-    content="ContentFlow é o estúdio de conteúdo com IA: gere carrosséis, posts e legendas on-brand para todas as redes em minutos. Configure sua marca uma vez e produza conteúdo consistente."
+    content="ContentFlow extrai o Brand DNA do seu site, gera carrosséis e posts alinhados, agenda em dezenas de canais e aprende com o que performa."
   />
-  <meta property="og:title" content="ContentFlow — Estúdio de conteúdo com IA" />
+  <meta property="og:title" content="ContentFlow — Criação com IA + agendamento multi-rede" />
   <meta
     property="og:description"
-    content="Gere carrosséis, posts e legendas com a identidade da sua marca, em minutos."
+    content="Brand DNA persistente. Carrosséis on-brand. Calendário multi-canal. Analytics e agent."
   />
   <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#fafafa" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -33,16 +34,16 @@
       </a>
 
       <nav class="nav__links" aria-label="Navegação principal">
+        <a href="#como-funciona">Como funciona</a>
         <a href="#recursos">Recursos</a>
-        <a href="#formatos">Formatos</a>
-        <a href="#exemplos">Exemplos</a>
+        <a href="#canais">Canais</a>
         <a href="#precos">Preços</a>
         <a href="#faq">FAQ</a>
       </nav>
 
       <div class="nav__actions">
-        <a href="#" class="btn btn--ghost">Entrar</a>
-        <a href="#precos" class="btn btn--primary">Criar conteúdo grátis</a>
+        <a href="#comecar" class="btn btn--ghost">Entrar</a>
+        <a href="#comecar" class="btn btn--primary">Começar grátis</a>
       </div>
 
       <button class="nav__toggle" id="navToggle" aria-label="Abrir menu" aria-expanded="false">
@@ -51,13 +52,13 @@
     </div>
 
     <div class="nav__mobile" id="navMobile" hidden>
+      <a href="#como-funciona">Como funciona</a>
       <a href="#recursos">Recursos</a>
-      <a href="#formatos">Formatos</a>
-      <a href="#exemplos">Exemplos</a>
+      <a href="#canais">Canais</a>
       <a href="#precos">Preços</a>
       <a href="#faq">FAQ</a>
-      <a href="#" class="btn btn--ghost">Entrar</a>
-      <a href="#precos" class="btn btn--primary">Criar conteúdo grátis</a>
+      <a href="#comecar" class="btn btn--ghost">Entrar</a>
+      <a href="#comecar" class="btn btn--primary">Começar grátis</a>
     </div>
   </header>
 
@@ -65,59 +66,162 @@
     <!-- ===================== HERO ===================== -->
     <section class="hero">
       <div class="container hero__grid">
-        <div class="hero__copy reveal">
-          <span class="eyebrow">Estúdio de conteúdo com IA</span>
+        <div class="hero__copy reveal reveal--up">
+          <span class="eyebrow">IA + Brand DNA + multi-rede</span>
           <h1 class="hero__title">
-            Gere carrosséis, posts e legendas com a <em>cara da sua marca</em>.
+            Cole a URL. Publique conteúdo com a <em>cara da sua marca</em>.
           </h1>
           <p class="hero__sub">
-            Configure sua marca uma vez e a inteligência cria conteúdo on-brand
-            para todas as redes — pronto em minutos, sem começar do zero.
+            ContentFlow extrai o Brand DNA do site, gera carrosséis e posts alinhados,
+            agenda em dezenas de canais e aprende com o que performa — em um só fluxo.
           </p>
-          <div class="hero__cta">
-            <a href="#precos" class="btn btn--primary btn--lg">Criar meu primeiro carrossel</a>
-            <a href="#recursos" class="btn btn--text btn--lg">Ver como funciona →</a>
+
+          <form class="url-bar" id="urlBar" autocomplete="off">
+            <label class="sr-only" for="brandUrl">URL da marca</label>
+            <span class="url-bar__prefix" aria-hidden="true">https://</span>
+            <input
+              id="brandUrl"
+              name="url"
+              type="text"
+              inputmode="url"
+              placeholder="suaempresa.com.br"
+              spellcheck="false"
+            />
+            <button type="submit" class="btn btn--primary">Extrair DNA</button>
+          </form>
+          <p class="hero__trust">Sem cartão · Primeiros carrosséis grátis · Multi-marca</p>
+
+          <div class="hero__stats" aria-label="Indicadores">
+            <div class="stat">
+              <strong data-count="30" data-suffix="+">0+</strong>
+              <span>canais de publicação</span>
+            </div>
+            <div class="stat">
+              <strong data-count="3" data-suffix="×">0×</strong>
+              <span>mais rápido para criar</span>
+            </div>
+            <div class="stat">
+              <strong data-count="100" data-suffix="%">0%</strong>
+              <span>no DNA da marca</span>
+            </div>
+            <div class="stat">
+              <strong data-count="4" data-suffix="">0</strong>
+              <span>motores em um produto</span>
+            </div>
           </div>
-          <p class="hero__trust">Sem cartão de crédito · Primeiros carrosséis grátis</p>
         </div>
 
-        <!-- Showcase: carrossel gerado (mockups em CSS, não são screenshots) -->
-        <div class="hero__visual reveal">
-          <div class="showcase" id="showcase">
-            <div class="piece piece--cream piece--main" id="heroMain">
-              <div class="piece__top"><span class="piece__mark"></span><span>SUA MARCA</span></div>
-              <h3 class="piece__title" id="heroTitle">5 erros que travam o seu crescimento</h3>
-              <div class="piece__foot"><span class="piece__cta">Arraste →</span><span class="piece__dots"><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+        <div class="hero__visual reveal reveal--scale">
+          <div class="panel" id="heroPanel">
+            <div class="panel__bar">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span class="panel__title">Onboarding · Brand DNA</span>
+              <span class="panel__live"><i></i> ao vivo</span>
             </div>
-            <div class="showcase__thumbs" id="heroThumbs">
-              <div class="piece piece--ink piece--thumb is-active"><span>5 erros que travam o seu crescimento</span></div>
-              <div class="piece piece--white piece--thumb"><span>O método em 4 passos</span></div>
-              <div class="piece piece--sand piece--thumb"><span>Antes &amp; depois</span></div>
-              <div class="piece piece--cream piece--thumb"><span>Salve este post</span></div>
+            <div class="panel__body">
+              <!-- Stepper -->
+              <div class="stepper" id="heroStepper" aria-hidden="true">
+                <span class="stepper__item is-done">URL</span>
+                <span class="stepper__line"></span>
+                <span class="stepper__item is-active">DNA</span>
+                <span class="stepper__line"></span>
+                <span class="stepper__item">Ideias</span>
+                <span class="stepper__line"></span>
+                <span class="stepper__item">Publicar</span>
+              </div>
+
+              <!-- DNA card -->
+              <div class="dna">
+                <div class="dna__top">
+                  <div class="dna__brand">
+                    <div class="dna__logo" id="dnaLogo">SB</div>
+                    <div>
+                      <strong id="dnaName">Studio Bloom</strong>
+                      <span id="dnaMeta">DNA extraído · snapshot v3</span>
+                    </div>
+                  </div>
+                  <span class="badge badge--ok">Ativo</span>
+                </div>
+                <div class="dna__grid">
+                  <div class="dna__cell">
+                    <span class="dna__k">Voz</span>
+                    <strong>Direta e calorosa</strong>
+                  </div>
+                  <div class="dna__cell">
+                    <span class="dna__k">Público</span>
+                    <strong>Founders B2B</strong>
+                  </div>
+                  <div class="dna__cell">
+                    <span class="dna__k">Oferta</span>
+                    <strong>SaaS de conteúdo</strong>
+                  </div>
+                  <div class="dna__cell">
+                    <span class="dna__k">Visual</span>
+                    <span class="swatches swatches--sm">
+                      <i style="background:#1c1917"></i>
+                      <i style="background:#b4530a"></i>
+                      <i style="background:#f7f2ea"></i>
+                      <i style="background:#9a8c7a"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Carousel preview -->
+              <div class="showcase" id="showcase">
+                <div class="piece piece--cream piece--main" id="heroMain">
+                  <div class="piece__top"><span class="piece__mark"></span><span>SUA MARCA</span></div>
+                  <h3 class="piece__title" id="heroTitle">5 erros que travam o crescimento</h3>
+                  <div class="piece__foot">
+                    <span class="piece__cta">Arraste →</span>
+                    <span class="piece__dots"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+                  </div>
+                </div>
+                <div class="showcase__thumbs" id="heroThumbs">
+                  <button type="button" class="piece piece--ink piece--thumb is-active"><span>5 erros que travam o crescimento</span></button>
+                  <button type="button" class="piece piece--white piece--thumb"><span>O método em 4 passos</span></button>
+                  <button type="button" class="piece piece--sand piece--thumb"><span>Antes &amp; depois</span></button>
+                  <button type="button" class="piece piece--cream piece--thumb"><span>Salve este post</span></button>
+                </div>
+              </div>
             </div>
           </div>
+
           <div class="floaty floaty--a">
             <span class="floaty__label">Gerado com IA</span>
             <strong>Carrossel · 6 slides</strong>
           </div>
           <div class="floaty floaty--b">
-            <span class="floaty__label">Na sua identidade</span>
-            <strong>Cores · fontes · tom</strong>
+            <span class="floaty__label">Identidade aplicada</span>
+            <strong>Cores · voz · CTAs</strong>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ===================== FAIXA DE FORMATOS ===================== -->
-    <section class="channels" id="formatos">
+    <!-- ===================== FAIXA ===================== -->
+    <section class="ticker" aria-label="Formatos e redes">
       <div class="container">
-        <p class="channels__label">Um estúdio, todos os formatos — sob medida para cada rede</p>
-        <div class="channels__row">
-          <span>Carrosséis</span><span>Posts únicos</span><span>Legendas</span>
-          <span>Stories</span><span>Threads</span><span>Capas</span>
-          <span>Variações por rede</span>
+        <p class="ticker__label">Um sistema de produção — não só um gerador</p>
+        <div class="marquee" aria-hidden="true">
+          <div class="marquee__track">
+            <span>Brand DNA</span><span>Carrosséis</span><span>Posts</span><span>Legendas</span>
+            <span>Plano editorial</span><span>Calendário</span><span>Analytics</span><span>Agent</span><span>API / MCP</span>
+            <span>Brand DNA</span><span>Carrosséis</span><span>Posts</span><span>Legendas</span>
+            <span>Plano editorial</span><span>Calendário</span><span>Analytics</span><span>Agent</span><span>API / MCP</span>
+          </div>
         </div>
-        <p class="channels__note">Conteúdo otimizado para cada rede</p>
+        <div class="ticker__row sr-only">
+          <span>Brand DNA</span>
+          <span>Carrosséis</span>
+          <span>Posts</span>
+          <span>Legendas</span>
+          <span>Plano editorial</span>
+          <span>Calendário</span>
+          <span>Analytics</span>
+          <span>Agent</span>
+          <span>API / MCP</span>
+        </div>
         <div class="logos" aria-label="Redes sociais suportadas">
           <span class="logos__item" title="Instagram">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
@@ -143,131 +247,217 @@
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.2c-1.2 0-1.6.75-1.6 1.5V12h2.7l-.43 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg>
             <span>Facebook</span>
           </span>
+          <span class="logos__item" title="Threads">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.3 11.3c-.1-2.1-1.3-3.5-3.5-3.6-1.5 0-2.8.7-3.3 1.8l1.5.7c.3-.6 1-.9 1.8-.9 1.1 0 1.8.6 1.9 1.7-1.1-.1-2.3 0-3.3.4-1.5.5-2.5 1.6-2.4 3.2.1 1.5 1.2 2.6 2.8 2.6 1.2 0 2.1-.5 2.7-1.4v.7h1.6v-5.2zm-3.3 3.8c-.8 0-1.4-.5-1.4-1.2 0-.9.7-1.4 2.1-1.6.5-.1 1.1-.1 1.6 0-.1 1.7-1 2.8-2.3 2.8zM12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/></svg>
+            <span>Threads</span>
+          </span>
+          <span class="logos__item logos__item--more">+20</span>
         </div>
       </div>
     </section>
 
     <!-- ===================== PROBLEMA → SOLUÇÃO ===================== -->
     <section class="problem">
-      <div class="container problem__grid">
-        <div class="problem__col reveal">
-          <span class="eyebrow eyebrow--muted">Sem ContentFlow</span>
-          <ul class="cons">
-            <li>Horas no Canva e na copy, toda semana</li>
-            <li>Conteúdo que foge da identidade da marca</li>
-            <li>Bloqueio criativo e falta de ideias</li>
-            <li>Cada rede pedindo um formato diferente</li>
-          </ul>
+      <div class="container">
+        <div class="section-head section-head--left reveal">
+          <span class="eyebrow">O problema</span>
+          <h2>Ferramentas soltas. Identidade frágil. Ritmo quebrado.</h2>
         </div>
-        <div class="problem__col problem__col--good reveal">
-          <span class="eyebrow">Com ContentFlow</span>
-          <ul class="ticks">
-            <li>Carrosséis prontos em minutos, não em horas</li>
-            <li>Identidade da marca aplicada automaticamente</li>
-            <li>Ideias e copy geradas a partir do seu tema</li>
-            <li>Uma ideia, adaptada para cada formato e rede</li>
-          </ul>
+        <div class="problem__grid">
+          <div class="problem__col reveal">
+            <span class="eyebrow eyebrow--muted">Sem ContentFlow</span>
+            <ul class="cons">
+              <li>Horas no Canva + ChatGPT + planilha, toda semana</li>
+              <li>Conteúdo que foge da identidade da marca</li>
+              <li>Bloqueio criativo e falta de ideias recorrentes</li>
+              <li>Cada rede pedindo formato e tom diferentes</li>
+              <li>Zero aprendizado do que performou de volta na marca</li>
+            </ul>
+          </div>
+          <div class="problem__col problem__col--good reveal">
+            <span class="eyebrow">Com ContentFlow</span>
+            <ul class="ticks">
+              <li>Loop único: DNA → ideias → carrossel → calendário</li>
+              <li>Brand DNA persistente em cada geração</li>
+              <li>Ideias, Content Swipe e plano editorial no ritmo certo</li>
+              <li>Publicação multi-canal com schema por rede</li>
+              <li>Analytics + brand learning fechando o ciclo</li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ===================== CAPACIDADES ===================== -->
-    <section class="pillars" id="recursos">
+    <!-- ===================== LOOP ===================== -->
+    <section class="loop" id="como-funciona">
       <div class="container">
         <div class="section-head reveal">
-          <span class="eyebrow">O que você cria</span>
-          <h2>Conteúdo completo, do conceito à arte.</h2>
-          <p>Um estúdio para produzir tudo que sua marca publica — sem sair do lugar.</p>
+          <span class="eyebrow">Loop de valor</span>
+          <h2>Um sistema, não um gerador solto.</h2>
+          <p>Do site da marca ao aprendizado pós-publicação — o ContentFlow fecha o ciclo de produção editorial.</p>
         </div>
-
-        <div class="pillars__grid">
-          <article class="card reveal">
-            <span class="card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="4" width="13" height="16" rx="2" /><rect x="18" y="6" width="3" height="12" rx="1.5" />
-              </svg>
-            </span>
-            <h3>Carrosséis</h3>
-            <p>Slides com copy dentro da imagem, sequência editorial e identidade aplicada.</p>
-          </article>
-
-          <article class="card reveal">
-            <span class="card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 15l5-5 4 4 3-3 6 6" /><circle cx="8.5" cy="8.5" r="1.5" />
-              </svg>
-            </span>
-            <h3>Posts únicos</h3>
-            <p>Imagens de impacto para o feed, prontas para qualquer campanha.</p>
-          </article>
-
-          <article class="card reveal">
-            <span class="card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M4 6h16M4 11h16M4 16h10" />
-              </svg>
-            </span>
-            <h3>Legendas</h3>
-            <p>Texto que combina com o carrossel e com o tom da sua marca, em segundos.</p>
-          </article>
-
-          <article class="card reveal">
-            <span class="card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="5" width="8" height="14" rx="1.5" /><rect x="14" y="5" width="7" height="9" rx="1.5" />
-              </svg>
-            </span>
-            <h3>Variações por rede</h3>
-            <p>A mesma ideia adaptada ao formato ideal de cada plataforma.</p>
-          </article>
-        </div>
+        <ol class="loop__track" data-stagger>
+          <li class="reveal reveal--up" style="--d:0"><span>01</span><strong>URL / marca</strong><em>Cadastro e análise</em></li>
+          <li class="reveal reveal--up" style="--d:1"><span>02</span><strong>Brand DNA</strong><em>Identidade persistente</em></li>
+          <li class="reveal reveal--up" style="--d:2"><span>03</span><strong>Ideias</strong><em>Ângulos e pilares</em></li>
+          <li class="reveal reveal--up" style="--d:3"><span>04</span><strong>Conteúdo</strong><em>Carrossel, post, legenda</em></li>
+          <li class="reveal reveal--up" style="--d:4"><span>05</span><strong>Calendário</strong><em>Agendar multi-canal</em></li>
+          <li class="reveal reveal--up" style="--d:5"><span>06</span><strong>Publicar</strong><em>Agora ou no futuro</em></li>
+          <li class="reveal reveal--up" style="--d:6"><span>07</span><strong>Aprender</strong><em>Analytics + DNA</em></li>
+        </ol>
       </div>
     </section>
 
-    <!-- ===================== COMO FUNCIONA ===================== -->
+    <!-- ===================== STEPS ===================== -->
     <section class="steps">
       <div class="container">
         <div class="section-head reveal">
-          <span class="eyebrow">Como funciona</span>
-          <h2>Da marca à arte pronta, em três passos.</h2>
+          <span class="eyebrow">Em 3 passos</span>
+          <h2>Do site ao carrossel publicado.</h2>
+          <p>Onboarding guiado ativa o loop completo: marca, canais e primeiro conteúdo.</p>
         </div>
         <div class="steps__grid">
-          <div class="step reveal">
-            <span class="step__n">1</span>
-            <h3>Configure sua marca</h3>
-            <p>Cores, fontes e tom de voz. Você faz isso uma vez e vale para tudo.</p>
-          </div>
-          <div class="step reveal">
-            <span class="step__n">2</span>
-            <h3>Descreva o tema e o formato</h3>
-            <p>Briefing por seleção: escolha o assunto, o objetivo e o formato.</p>
-          </div>
-          <div class="step reveal">
-            <span class="step__n">3</span>
-            <h3>A IA gera o carrossel pronto</h3>
-            <p>Copy e visual na sua identidade, prontos para editar, baixar e postar.</p>
-          </div>
+          <article class="step reveal">
+            <span class="step__n">01</span>
+            <h3>Cole a URL da marca</h3>
+            <p>A IA analisa o site e monta o Brand DNA: voz, público, oferta, visual e restrições — versionado e editável.</p>
+          </article>
+          <article class="step reveal">
+            <span class="step__n">02</span>
+            <h3>Gere ideias e carrosséis</h3>
+            <p>Com o DNA ativo, ideias aprovadas viram slides com copy na imagem, posts e legendas no tom certo. Refine no estúdio.</p>
+          </article>
+          <article class="step reveal">
+            <span class="step__n">03</span>
+            <h3>Agende, publique e meça</h3>
+            <p>Multi-rede no calendário, performance de carrossel e sugestões de brand learning de volta no DNA.</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- ===================== DEEP DIVES (zig-zag) ===================== -->
-    <section class="feature">
-      <!-- Estúdio de carrosséis -->
+    <!-- ===================== 4 MOTORES ===================== -->
+    <section class="engines" id="motores">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Quatro motores</span>
+          <h2>Mais que scheduler. Mais que gerador.</h2>
+          <p>Identidade, criação, distribuição e inteligência — operando juntos.</p>
+        </div>
+        <div class="engines__grid">
+          <article class="engine reveal">
+            <span class="engine__n">01</span>
+            <h3>Identidade</h3>
+            <p>Brand DNA multi-marca como núcleo — não um prompt solto a cada geração.</p>
+            <ul>
+              <li>Extração automática por URL</li>
+              <li>DNA versionado e editável</li>
+              <li>Assets e brand learning</li>
+            </ul>
+          </article>
+          <article class="engine reveal">
+            <span class="engine__n">02</span>
+            <h3>Criação</h3>
+            <p>Carrosséis, posts, legendas, ads, e-mail, roteiros e templates no mesmo produto.</p>
+            <ul>
+              <li>Estúdio de carrosséis / AI Images</li>
+              <li>Content Swipe e ideias</li>
+              <li>Import de artigo → conteúdo</li>
+            </ul>
+          </article>
+          <article class="engine reveal">
+            <span class="engine__n">03</span>
+            <h3>Distribuição</h3>
+            <p>Calendário multi-canal, automações e publicação com controle por rede.</p>
+            <ul>
+              <li>~30 providers conectados</li>
+              <li>Plugs, Auto Post, webhooks</li>
+              <li>API, MCP e CLI agent</li>
+            </ul>
+          </article>
+          <article class="engine reveal">
+            <span class="engine__n">04</span>
+            <h3>Inteligência</h3>
+            <p>Métricas nativas, performance de carrossel e agent conversacional operacional.</p>
+            <ul>
+              <li>Analytics por canal e post</li>
+              <li>Carousel Performance</li>
+              <li>Agent com memória da org</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DEEP DIVES ===================== -->
+    <section class="feature" id="recursos">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Por dentro do produto</span>
+          <h2>Recursos que fecham o ciclo.</h2>
+          <p>Do DNA ao feed — com operação em equipe e automação quando você quiser.</p>
+        </div>
+      </div>
+
+      <!-- Brand DNA -->
       <div class="container feature__grid">
         <div class="feature__copy reveal">
-          <span class="eyebrow">Estúdio de Carrosséis</span>
-          <h2>Carrosséis editoriais, sem esforço de design.</h2>
-          <p>Descreva o tema e o estúdio monta a sequência: gancho, desenvolvimento e fechamento — com a copy dentro da imagem e a cara da sua marca.</p>
+          <span class="eyebrow">Marca</span>
+          <h2>Brand DNA persistente, multi-marca.</h2>
+          <p>Um perfil vivo da marca. Resumo, voz, público, oferta, visual e restrições — extraídos da URL, versionados e reutilizados em cada geração.</p>
           <ul class="ticks">
-            <li>Briefing guiado, quase tudo por seleção</li>
-            <li>Copy de cada slide gerada com IA</li>
-            <li>Edite qualquer texto antes de exportar</li>
+            <li>Extração automática a partir da URL</li>
+            <li>Snapshots versionados + edição manual</li>
+            <li>Assets da marca e brand learning (aprovar / aplicar)</li>
+            <li>Várias marcas por organização, com marca ativa</li>
           </ul>
         </div>
         <div class="feature__visual reveal">
           <div class="frame">
-            <div class="frame__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="frame__title">Estúdio</span></div>
+            <div class="frame__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="frame__title">Brands · DNA</span></div>
+            <div class="brandkit">
+              <div class="brandkit__row">
+                <span class="brandkit__k">Cores</span>
+                <span class="swatches"><i></i><i></i><i></i><i></i></span>
+              </div>
+              <div class="brandkit__row">
+                <span class="brandkit__k">Fontes</span>
+                <span class="brandkit__fonts"><em>Fraunces</em> · Inter</span>
+              </div>
+              <div class="brandkit__row">
+                <span class="brandkit__k">Tom</span>
+                <span class="chip chip--on">Editorial e direto</span>
+              </div>
+              <div class="brandkit__row">
+                <span class="brandkit__k">Restrições</span>
+                <span class="chip">Sem jargão</span>
+                <span class="chip">Sem hype vazio</span>
+              </div>
+              <div class="brandkit__apply">
+                <div class="piece piece--cream piece--mini"><span>Aplicado</span></div>
+                <div class="piece piece--ink piece--mini"><span>Na sua marca</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estúdio -->
+      <div class="container feature__grid feature__grid--reverse">
+        <div class="feature__copy reveal">
+          <span class="eyebrow">Estúdio</span>
+          <h2>Carrosséis editoriais, sem esforço de design.</h2>
+          <p>Descreva o tema e o estúdio monta a sequência: gancho, desenvolvimento e fechamento — com copy na imagem e a cara da marca.</p>
+          <ul class="ticks">
+            <li>Briefing guiado e templates recomendados</li>
+            <li>Copy de cada slide gerada com IA</li>
+            <li>Refine, review e export em alta qualidade</li>
+            <li>Projetos salvos a partir de ideias aprovadas</li>
+          </ul>
+        </div>
+        <div class="feature__visual reveal">
+          <div class="frame">
+            <div class="frame__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="frame__title">Estúdio · AI Images</span></div>
             <div class="studio">
               <div class="studio__brief">
                 <span class="chip chip--on">Tema: produtividade</span>
@@ -284,66 +474,109 @@
         </div>
       </div>
 
-      <!-- Posts e legendas -->
-      <div class="container feature__grid feature__grid--reverse">
+      <!-- Content Swipe -->
+      <div class="container feature__grid">
         <div class="feature__copy reveal">
-          <span class="eyebrow">Posts e legendas</span>
-          <h2>Não é só carrossel — é todo o seu feed.</h2>
-          <p>Gere posts de imagem única e a legenda combinando, no mesmo tom. Tudo coerente, do visual ao texto.</p>
+          <span class="eyebrow">Ideias</span>
+          <h2>Content Swipe: ideias no ritmo da produção.</h2>
+          <p>Ideias alinhadas ao DNA. Aprove o que serve, descarte o resto e converta em carrossel com um toque.</p>
           <ul class="ticks">
-            <li>Imagem e legenda no mesmo tom</li>
-            <li>Sugestões de hook e CTA</li>
-            <li>Pronto para copiar e publicar</li>
+            <li>Geração de ideias por marca e pilares</li>
+            <li>Aprovar / rejeitar em segundos</li>
+            <li>Converter ideia → projeto / carrossel</li>
+            <li>Inspiração por referências (Content Swipe)</li>
           </ul>
         </div>
         <div class="feature__visual reveal">
           <div class="frame">
-            <div class="frame__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="frame__title">Post + legenda</span></div>
-            <div class="postmock">
-              <div class="piece piece--sand piece--post"><div class="piece__top"><span class="piece__mark"></span><span>SUA MARCA</span></div><h3 class="piece__title">O guia rápido de copy</h3></div>
-              <div class="postmock__caption">
-                <span class="bar bar--lg"></span>
-                <span class="bar bar--md"></span>
-                <span class="bar bar--lg"></span>
-                <span class="bar bar--sm"></span>
-                <span class="caption__tags">#marketing #copywriting</span>
+            <div class="frame__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="frame__title">Content Swipe</span></div>
+            <div class="swipe" id="ideaSwipe">
+              <div class="swipe__card swipe__card--back" aria-hidden="true"></div>
+              <div class="swipe__card swipe__card--mid" aria-hidden="true"></div>
+              <div class="swipe__card swipe__card--front" id="ideaCard">
+                <span class="swipe__tag" id="ideaTag">Pilar · Educação</span>
+                <h4 id="ideaTitle">3 sinais de que sua marca está invisível no feed</h4>
+                <p id="ideaDesc">Ângulo de lista + prova social. Ideal para carrossel de 6 slides.</p>
+                <div class="swipe__actions">
+                  <button type="button" class="swipe__btn swipe__btn--no" aria-label="Rejeitar">✕</button>
+                  <button type="button" class="swipe__btn swipe__btn--yes" aria-label="Aprovar">✓</button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Brand kit -->
-      <div class="container feature__grid">
+      <!-- Calendário -->
+      <div class="container feature__grid feature__grid--reverse">
         <div class="feature__copy reveal">
-          <span class="eyebrow">Empresas cadastradas</span>
-          <h2>Cadastre sua marca uma vez. Use em tudo.</h2>
-          <p>Cadastre a empresa com cores, fontes e tom de voz. A inteligência aplica esse contexto em cada carrossel — e você pode cadastrar quantas marcas quiser.</p>
+          <span class="eyebrow">Distribuição</span>
+          <h2>Calendário multi-canal, de verdade.</h2>
+          <p>Agende, publique agora, rascunhos, tags, signatures e shortlinks — com edição e schema específicos por rede.</p>
           <ul class="ticks">
-            <li>Cores e tipografia da marca em todo carrossel</li>
-            <li>Tom de voz aprendido a partir da sua marca</li>
-            <li>Cadastre várias empresas e alterne entre elas</li>
+            <li>Publicação multi-rede no mesmo fluxo</li>
+            <li>Plano editorial com pilares e slots</li>
+            <li>Plugs, Auto Post e webhooks</li>
+            <li>Agrupamento de canais por cliente (agências)</li>
           </ul>
         </div>
         <div class="feature__visual reveal">
           <div class="frame">
-            <div class="frame__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="frame__title">Empresa</span></div>
-            <div class="brandkit">
-              <div class="brandkit__row">
-                <span class="brandkit__k">Cores</span>
-                <span class="swatches"><i></i><i></i><i></i><i></i></span>
+            <div class="frame__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="frame__title">Calendário</span></div>
+            <div class="cal">
+              <div class="cal__head">
+                <strong>Março 2026</strong>
+                <div class="cal__filters">
+                  <span class="chip chip--on">Todas</span>
+                  <span class="chip">IG</span>
+                  <span class="chip">LI</span>
+                  <span class="chip">X</span>
+                </div>
               </div>
-              <div class="brandkit__row">
-                <span class="brandkit__k">Fontes</span>
-                <span class="brandkit__fonts"><em>Fraunces</em> · Inter</span>
+              <div class="cal__grid" id="calGrid" aria-hidden="true"></div>
+              <div class="cal__legend">
+                <span><i class="dot-ig"></i> Agendado</span>
+                <span><i class="dot-li"></i> Publicado</span>
+                <span><i class="dot-dr"></i> Rascunho</span>
               </div>
-              <div class="brandkit__row">
-                <span class="brandkit__k">Tom</span>
-                <span class="chip chip--on">Editorial e direto</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent -->
+      <div class="container feature__grid">
+        <div class="feature__copy reveal">
+          <span class="eyebrow">Automação</span>
+          <h2>Agent, API e MCP — opere por conversa.</h2>
+          <p>Liste integrações, entenda o schema de cada canal, agende posts, gere imagem ou vídeo e acione configurações — com memória por organização.</p>
+          <ul class="ticks">
+            <li>Chat com agente por canais selecionados</li>
+            <li>Public API + OAuth apps aprovados</li>
+            <li>MCP Server e CLI <code>contentflow-agent</code></li>
+            <li>N8N, Make.com e third-party (HeyGen…)</li>
+          </ul>
+        </div>
+        <div class="feature__visual reveal">
+          <div class="frame">
+            <div class="frame__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="frame__title">Agent</span></div>
+            <div class="agent">
+              <div class="agent__msg agent__msg--user">
+                Agenda um carrossel da Studio Bloom no LinkedIn amanhã às 10h.
               </div>
-              <div class="brandkit__apply">
-                <div class="piece piece--cream piece--mini"><span>Aplicado</span></div>
-                <div class="piece piece--ink piece--mini"><span>Na sua marca</span></div>
+              <div class="agent__msg agent__msg--bot">
+                Pronto. Usei o DNA v3 · 6 slides · LinkedIn Page · 20/03 10:00.
+                <div class="agent__card">
+                  <strong>5 erros que travam o crescimento</strong>
+                  <span>LinkedIn · Agendado</span>
+                </div>
+              </div>
+              <div class="agent__msg agent__msg--typing" aria-hidden="true">
+                <i></i><i></i><i></i>
+              </div>
+              <div class="agent__input">
+                <span class="agent__placeholder">Pergunte ou peça uma ação<span class="caret"></span></span>
+                <button type="button" tabindex="-1">Enviar</button>
               </div>
             </div>
           </div>
@@ -351,120 +584,279 @@
       </div>
     </section>
 
-    <!-- ===================== GALERIA DE EXEMPLOS ===================== -->
+    <!-- ===================== INTENTS ===================== -->
+    <section class="intents">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Por intenção</span>
+          <h2>O que você quer fazer agora?</h2>
+        </div>
+        <div class="intents__grid reveal">
+          <a class="intent" href="#recursos"><strong>Manter identidade</strong><span>Brands + Brand DNA</span></a>
+          <a class="intent" href="#recursos"><strong>Criar carrossel rápido</strong><span>AI Images / Estúdio</span></a>
+          <a class="intent" href="#recursos"><strong>Postar em várias redes</strong><span>Calendário / Launches</span></a>
+          <a class="intent" href="#recursos"><strong>Planejar o mês</strong><span>Plano Editorial</span></a>
+          <a class="intent" href="#recursos"><strong>Automatizar</strong><span>Plugs, Auto Post, API, Agent</span></a>
+          <a class="intent" href="#recursos"><strong>Medir o que funciona</strong><span>Analytics + Carousel Performance</span></a>
+          <a class="intent" href="#recursos"><strong>Atender vários clientes</strong><span>Multi-marca + canais por cliente</span></a>
+          <a class="intent" href="#canais"><strong>Integrar meu stack</strong><span>API, N8N, Make, MCP/CLI</span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== GALERIA ===================== -->
     <section class="gallery" id="exemplos">
       <div class="container">
         <div class="section-head reveal">
           <span class="eyebrow">Exemplos</span>
-          <h2>Carrosséis que parecem feitos por um estúdio.</h2>
-          <p>Estilos variados, sempre dentro da identidade da marca.</p>
+          <h2>Peças no tom da marca — não genéricas.</h2>
+          <p>Variações de estilo com a mesma disciplina visual do estúdio.</p>
         </div>
         <div class="gallery__grid">
-          <div class="piece piece--photo piece--card reveal">
-            <img src="https://picsum.photos/seed/contentflow-a/640/800" alt="Exemplo de carrossel" loading="lazy" />
-            <div class="piece__overlay">
-              <div class="piece__top"><span class="piece__mark"></span><span>MARCA A</span></div>
-              <h3 class="piece__title">3 ideias para esta semana</h3>
-              <span class="piece__cta">Salve →</span>
-            </div>
-          </div>
-          <div class="piece piece--ink piece--card reveal"><div class="piece__top"><span class="piece__mark"></span><span>MARCA B</span></div><h3 class="piece__title">Como dobrar seu alcance</h3><span class="piece__cta">Veja como →</span></div>
-          <div class="piece piece--photo piece--card reveal">
-            <img src="https://picsum.photos/seed/contentflow-c/640/800" alt="Exemplo de post" loading="lazy" />
-            <div class="piece__overlay">
-              <div class="piece__top"><span class="piece__mark"></span><span>MARCA C</span></div>
-              <h3 class="piece__title">Mitos & verdades</h3>
-              <span class="piece__cta">Descubra →</span>
-            </div>
-          </div>
-          <div class="piece piece--sand piece--card reveal"><div class="piece__top"><span class="piece__mark"></span><span>MARCA D</span></div><h3 class="piece__title">O método em 4 passos</h3><span class="piece__cta">Comece →</span></div>
-          <div class="piece piece--photo piece--card reveal">
-            <img src="https://picsum.photos/seed/contentflow-e/640/800" alt="Exemplo de carrossel" loading="lazy" />
-            <div class="piece__overlay">
-              <div class="piece__top"><span class="piece__mark"></span><span>MARCA E</span></div>
-              <h3 class="piece__title">Antes & depois</h3>
-              <span class="piece__cta">Compare →</span>
-            </div>
-          </div>
-          <div class="piece piece--cream piece--card reveal"><div class="piece__top"><span class="piece__mark"></span><span>MARCA F</span></div><h3 class="piece__title">Guia rápido para iniciantes</h3><span class="piece__cta">Aprenda →</span></div>
+          <article class="piece piece--cream piece--card reveal">
+            <div class="piece__top"><span class="piece__mark"></span><span>MARCA A</span></div>
+            <h3 class="piece__title">3 ideias para esta semana</h3>
+            <div class="piece__foot"><span class="piece__cta">Salve →</span></div>
+          </article>
+          <article class="piece piece--ink piece--card reveal">
+            <div class="piece__top"><span class="piece__mark"></span><span>MARCA B</span></div>
+            <h3 class="piece__title">O checklist que ninguém usa</h3>
+            <div class="piece__foot"><span class="piece__cta">Arraste →</span></div>
+          </article>
+          <article class="piece piece--sand piece--card reveal">
+            <div class="piece__top"><span class="piece__mark"></span><span>MARCA C</span></div>
+            <h3 class="piece__title">Antes de postar, leia isto</h3>
+            <div class="piece__foot"><span class="piece__cta">Ver mais →</span></div>
+          </article>
+          <article class="piece piece--white piece--card reveal">
+            <div class="piece__top"><span class="piece__mark"></span><span>MARCA D</span></div>
+            <h3 class="piece__title">Copy curta, resultado longo</h3>
+            <div class="piece__foot"><span class="piece__cta">Salve →</span></div>
+          </article>
+          <article class="piece piece--cream piece--card reveal">
+            <div class="piece__top"><span class="piece__mark"></span><span>MARCA E</span></div>
+            <h3 class="piece__title">O método em 4 passos</h3>
+            <div class="piece__foot"><span class="piece__cta">Comece →</span></div>
+          </article>
+          <article class="piece piece--ink piece--card reveal">
+            <div class="piece__top"><span class="piece__mark"></span><span>MARCA F</span></div>
+            <h3 class="piece__title">Pare de reinventar o feed</h3>
+            <div class="piece__foot"><span class="piece__cta">Arraste →</span></div>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- ===================== PROVA SOCIAL ===================== -->
+    <!-- ===================== CANAIS ===================== -->
+    <section class="channels-full" id="canais">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Canais e integrações</span>
+          <h2>Publique onde sua audiência está.</h2>
+          <p>Redes, comunidades, blogs, fediverse e automações externas — no mesmo calendário.</p>
+        </div>
+        <div class="channels-full__box reveal">
+          <div class="channel-group">
+            <h3>Redes principais</h3>
+            <div class="channel-list" data-channels="Instagram,Facebook,LinkedIn,X / Twitter,Threads,TikTok,YouTube,Pinterest,Google Business"></div>
+          </div>
+          <div class="channel-group">
+            <h3>Comunidades e chat</h3>
+            <div class="channel-list" data-channels="Reddit,Discord,Slack,Telegram,Twitch,Kick,Skool,MeWe,VK,Whop"></div>
+          </div>
+          <div class="channel-group">
+            <h3>Blogs, e-mail e longo formato</h3>
+            <div class="channel-list" data-channels="Medium,Dev.to,Hashnode,WordPress,Listmonk"></div>
+          </div>
+          <div class="channel-group">
+            <h3>Fediverse e adjacentes</h3>
+            <div class="channel-list" data-channels="Mastodon,Bluesky,Nostr,Farcaster,Moltbook,Dribbble"></div>
+          </div>
+          <div class="channel-group">
+            <h3>Ecossistema externo</h3>
+            <div class="channel-list" data-channels="Public API,Node SDK,N8N,Make.com,MCP / CLI"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== COMPARATIVO ===================== -->
+    <section class="compare">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Comparativo</span>
+          <h2>Por que não só Canva, ChatGPT ou um scheduler?</h2>
+          <p>O diferencial é Brand DNA + geração + publicação + aprendizado no mesmo lugar.</p>
+        </div>
+        <div class="compare__wrap reveal">
+          <table>
+            <thead>
+              <tr>
+                <th>Capacidade</th>
+                <th class="is-cf">ContentFlow</th>
+                <th>Canva</th>
+                <th>ChatGPT</th>
+                <th>Scheduler</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Brand DNA persistente</td>
+                <td class="is-cf"><span class="yes">Sim</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="no">—</span></td>
+              </tr>
+              <tr>
+                <td>Geração com IA</td>
+                <td class="is-cf"><span class="yes">Sim</span></td>
+                <td><span class="part">Parcial</span></td>
+                <td><span class="yes">Sim</span></td>
+                <td><span class="no">—</span></td>
+              </tr>
+              <tr>
+                <td>Content Swipe / ideias</td>
+                <td class="is-cf"><span class="yes">Sim</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="no">—</span></td>
+              </tr>
+              <tr>
+                <td>Calendário integrado</td>
+                <td class="is-cf"><span class="yes">Sim</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="yes">Sim</span></td>
+              </tr>
+              <tr>
+                <td>Publicação multi-rede</td>
+                <td class="is-cf"><span class="yes">Sim</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="yes">Sim</span></td>
+              </tr>
+              <tr>
+                <td>Multi-marca / agência</td>
+                <td class="is-cf"><span class="yes">Sim</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="part">Parcial</span></td>
+              </tr>
+              <tr>
+                <td>Agent + API / MCP</td>
+                <td class="is-cf"><span class="yes">Sim</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="part">Parcial</span></td>
+                <td><span class="part">Parcial</span></td>
+              </tr>
+              <tr>
+                <td>Loop criar → medir → aprender</td>
+                <td class="is-cf"><span class="yes">Sim</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="no">—</span></td>
+                <td><span class="no">—</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PROOF ===================== -->
     <section class="proof">
       <div class="container">
         <div class="proof__metrics reveal">
-          <div><strong data-count="10" data-suffix="h+">0</strong><span>economizadas por semana</span></div>
-          <div><strong data-count="3" data-suffix="x">0</strong><span>mais rápido para criar</span></div>
-          <div><strong data-count="100" data-suffix="%">0</strong><span>na identidade da marca</span></div>
-          <div><strong data-count="12" data-suffix="+">0</strong><span>formatos de conteúdo</span></div>
+          <div>
+            <strong data-count="10" data-suffix="h+">0h+</strong>
+            <span>economizadas por semana</span>
+          </div>
+          <div>
+            <strong data-count="3" data-suffix="×">0×</strong>
+            <span>mais rápido para criar</span>
+          </div>
+          <div>
+            <strong data-count="100" data-suffix="%">0%</strong>
+            <span>na identidade da marca</span>
+          </div>
+          <div>
+            <strong data-count="12" data-suffix="+">0+</strong>
+            <span>formatos de conteúdo</span>
+          </div>
         </div>
 
         <div class="proof__quotes">
-          <blockquote class="quote reveal">
+          <figure class="quote reveal">
             <p>“Em vez de uma tarde no Canva, faço um carrossel em minutos — e na nossa identidade.”</p>
-            <footer><img class="avatar" src="https://i.pravatar.cc/80?img=47" alt="" loading="lazy" /><span><strong>Marina A.</strong> · Social Media</span></footer>
-          </blockquote>
-          <blockquote class="quote reveal">
+            <footer>
+              <div class="avatar" aria-hidden="true">MA</div>
+              <div><strong>Marina A.</strong><br />Social Media</div>
+            </footer>
+          </figure>
+          <figure class="quote reveal">
             <p>“A consistência da marca foi o que mais mudou. Tudo sai com a mesma cara.”</p>
-            <footer><img class="avatar" src="https://i.pravatar.cc/80?img=12" alt="" loading="lazy" /><span><strong>Rafael T.</strong> · Criador de conteúdo</span></footer>
-          </blockquote>
-          <blockquote class="quote reveal">
+            <footer>
+              <div class="avatar" aria-hidden="true">RT</div>
+              <div><strong>Rafael T.</strong><br />Criador de conteúdo</div>
+            </footer>
+          </figure>
+          <figure class="quote reveal">
             <p>“Atendo mais clientes na agência porque a produção de conteúdo deixou de ser gargalo.”</p>
-            <footer><img class="avatar" src="https://i.pravatar.cc/80?img=32" alt="" loading="lazy" /><span><strong>Camila S.</strong> · Agência</span></footer>
-          </blockquote>
+            <footer>
+              <div class="avatar" aria-hidden="true">CS</div>
+              <div><strong>Camila S.</strong><br />Agência</div>
+            </footer>
+          </figure>
         </div>
       </div>
     </section>
 
-    <!-- ===================== PREÇOS ===================== -->
+    <!-- ===================== PRICING ===================== -->
     <section class="pricing" id="precos">
       <div class="container">
         <div class="section-head reveal">
           <span class="eyebrow">Preços</span>
-          <h2>Comece grátis. Produza sem limites.</h2>
-          <p>Planos simples que crescem com a sua produção de conteúdo.</p>
+          <h2>Comece grátis. Escale quando fizer sentido.</h2>
+          <p>Do teste URL → DNA → carrossel até operação multi-marca com time.</p>
         </div>
-
         <div class="pricing__grid">
           <article class="plan reveal">
             <h3 class="plan__name">Início</h3>
             <p class="plan__price"><strong>R$ 0</strong><span>/mês</span></p>
-            <p class="plan__desc">Para experimentar o estúdio e criar seus primeiros carrosséis.</p>
+            <p class="plan__desc">Para experimentar o fluxo completo: URL → DNA → carrossel.</p>
             <ul class="ticks">
               <li>1 empresa cadastrada</li>
-              <li>10 carrosséis por mês (até 10 imagens cada)</li>
+              <li>Carrosséis limitados no free</li>
               <li>Edição de copy e visual</li>
+              <li>Onboarding guiado completo</li>
             </ul>
-            <a href="#" class="btn btn--ghost btn--block">Criar grátis</a>
+            <a href="#comecar" class="btn btn--ghost btn--block">Criar grátis</a>
           </article>
 
           <article class="plan plan--featured reveal">
             <span class="plan__tag">Mais popular</span>
             <h3 class="plan__name">Profissional</h3>
             <p class="plan__price"><strong>R$ 79</strong><span>/mês</span></p>
-            <p class="plan__desc">Para quem publica todos os dias e quer escala.</p>
+            <p class="plan__desc">Para quem usa Brand DNA e calendário editorial todos os dias.</p>
             <ul class="ticks">
-              <li>Carrosséis ilimitados (até 10 imagens)</li>
-              <li>5 empresas cadastradas</li>
-              <li>Todos os formatos e variações por rede</li>
+              <li>Mais empresas e formatos</li>
+              <li>Variações por rede</li>
               <li>Export em alta qualidade</li>
+              <li>IA e publicação no dia a dia</li>
             </ul>
-            <a href="#" class="btn btn--primary btn--block">Assinar Profissional</a>
+            <a href="#comecar" class="btn btn--primary btn--block">Assinar Profissional</a>
           </article>
 
           <article class="plan reveal">
             <h3 class="plan__name">Estúdio</h3>
             <p class="plan__price"><strong>R$ 199</strong><span>/mês</span></p>
-            <p class="plan__desc">Para agências e equipes com várias marcas.</p>
+            <p class="plan__desc">Para agências que gerenciam múltiplas marcas com DNA próprio.</p>
             <ul class="ticks">
               <li>Tudo do Profissional</li>
-              <li>Empresas cadastradas ilimitadas</li>
-              <li>Membros da equipe</li>
-              <li>Biblioteca de mídia compartilhada</li>
+              <li>Multi-marca em escala</li>
+              <li>Membros de time</li>
+              <li>Mídia compartilhada</li>
             </ul>
-            <a href="#" class="btn btn--ghost btn--block">Falar com vendas</a>
+            <a href="#comecar" class="btn btn--ghost btn--block">Falar com vendas</a>
           </article>
         </div>
       </div>
@@ -473,81 +865,103 @@
     <!-- ===================== FAQ ===================== -->
     <section class="faq" id="faq">
       <div class="container faq__inner">
-        <div class="section-head section-head--left reveal">
-          <span class="eyebrow">Dúvidas</span>
-          <h2>Perguntas frequentes.</h2>
+        <div class="reveal">
+          <span class="eyebrow">FAQ</span>
+          <h2>Perguntas frequentes</h2>
+          <p class="faq__lead">Respostas diretas sobre geração, identidade e operação.</p>
         </div>
-
-        <div class="faq__list">
-          <details class="faq__item">
+        <div class="faq__list reveal">
+          <details class="faq__item" open>
             <summary>Que tipos de conteúdo posso gerar?</summary>
-            <p>Carrosséis, posts de imagem única, legendas e variações da mesma ideia para diferentes formatos e redes.</p>
+            <p>Carrosséis, posts de imagem única, legendas e variações da mesma ideia para diferentes formatos e redes. Também há formatos em soft-launch como ad creatives, campanhas de e-mail e roteiros de vídeo curto.</p>
+          </details>
+          <details class="faq__item">
+            <summary>O que é Brand DNA?</summary>
+            <p>É o perfil persistente da sua marca: resumo, voz, público, oferta, visual e restrições. O ContentFlow extrai automaticamente do seu site, versiona snapshots e usa esse contexto em todo conteúdo gerado.</p>
           </details>
           <details class="faq__item">
             <summary>Como vocês mantêm a identidade da minha marca?</summary>
-            <p>Você cadastra sua empresa com cores, fontes e tom de voz. A IA usa esse contexto em todos os carrosséis, mantendo tudo consistente — e você pode cadastrar várias empresas.</p>
+            <p>O DNA fica salvo na organização e é reutilizado em ideias, carrosséis, posts e legendas. Você pode editar manualmente, gerenciar assets e aplicar sugestões de brand learning.</p>
           </details>
           <details class="faq__item">
             <summary>Posso editar o resultado?</summary>
-            <p>Sim. Toda copy e cada elemento podem ser ajustados antes de exportar — a IA dá o ponto de partida, você tem o controle final.</p>
+            <p>Sim. Toda copy e cada elemento podem ser ajustados antes de exportar ou publicar — a IA dá o ponto de partida, você tem o controle final.</p>
           </details>
           <details class="faq__item">
-            <summary>As imagens geradas são minhas?</summary>
-            <p>Sim. Os carrosséis que você cria são seus para usar como quiser nas suas redes e campanhas.</p>
+            <summary>Funciona para agências?</summary>
+            <p>Sim. Multi-marca, times com papéis, biblioteca compartilhada e agrupamento de canais por cliente foram pensados para operação de agência.</p>
+          </details>
+          <details class="faq__item">
+            <summary>Quais canais são suportados?</summary>
+            <p>Redes principais (Instagram, LinkedIn, X, TikTok, YouTube e outras), comunidades (Discord, Slack, Telegram…), blogs (WordPress, Medium…) e camadas como Bluesky e Mastodon — além de API, N8N, Make e MCP/CLI.</p>
           </details>
           <details class="faq__item">
             <summary>Preciso saber design?</summary>
-            <p>Não. O briefing é por seleção e o estúdio cuida da composição. Você foca na mensagem, não nas ferramentas.</p>
+            <p>Não. O briefing é guiado e o estúdio cuida da composição. Você foca na mensagem e na aprovação, não nas ferramentas.</p>
+          </details>
+          <details class="faq__item">
+            <summary>As imagens geradas são minhas?</summary>
+            <p>Sim. Os carrosséis e criativos que você cria são seus para usar nas redes e campanhas conforme o seu plano.</p>
           </details>
         </div>
       </div>
     </section>
 
     <!-- ===================== CTA FINAL ===================== -->
-    <section class="cta-final">
-      <div class="container cta-final__box reveal">
-        <h2>Sua próxima semana de conteúdo, pronta hoje.</h2>
-        <p>Crie carrosséis, posts e legendas com a cara da sua marca — comece de graça.</p>
-        <a href="#precos" class="btn btn--primary btn--lg">Criar conteúdo grátis</a>
+    <section class="cta-final" id="comecar">
+      <div class="container">
+        <div class="cta-final__box reveal">
+          <span class="eyebrow">Pronto para o próximo post</span>
+          <h2>Cole a URL. Extraia o DNA.<br />Publique no tom da marca.</h2>
+          <p>Ative o loop completo em minutos: marca → canais → primeiro carrossel → calendário.</p>
+          <form class="url-bar url-bar--center" id="ctaBar" autocomplete="off">
+            <label class="sr-only" for="ctaUrl">URL da marca</label>
+            <span class="url-bar__prefix" aria-hidden="true">https://</span>
+            <input id="ctaUrl" name="url" type="text" inputmode="url" placeholder="suaempresa.com.br" spellcheck="false" />
+            <button type="submit" class="btn btn--primary">Começar grátis</button>
+          </form>
+          <p class="hero__trust" style="margin-top:14px">Sem cartão de crédito · Cancele quando quiser</p>
+        </div>
       </div>
     </section>
   </main>
 
-  <!-- ===================== FOOTER ===================== -->
   <footer class="footer">
-    <div class="container footer__grid">
-      <div class="footer__brand">
-        <a href="#top" class="brand">
-          <span class="brand__mark" aria-hidden="true"></span>
-          <span class="brand__name">ContentFlow</span>
-        </a>
-        <p>O estúdio de conteúdo com IA para criar carrosséis, posts e legendas on-brand.</p>
+    <div class="container">
+      <div class="footer__grid">
+        <div class="footer__brand">
+          <a href="#top" class="brand">
+            <span class="brand__mark" aria-hidden="true"></span>
+            <span class="brand__name">ContentFlow</span>
+          </a>
+          <p>Your ultimate AI social media scheduling tool — com Brand DNA no centro. Identidade, criação, distribuição e inteligência.</p>
+        </div>
+        <div class="footer__col">
+          <h4>Produto</h4>
+          <a href="#recursos">Recursos</a>
+          <a href="#canais">Canais</a>
+          <a href="#precos">Preços</a>
+          <a href="#como-funciona">Como funciona</a>
+        </div>
+        <div class="footer__col">
+          <h4>Capacidades</h4>
+          <a href="#motores">Brand DNA</a>
+          <a href="#recursos">Carrosséis</a>
+          <a href="#recursos">Calendário</a>
+          <a href="#recursos">Agent / API</a>
+        </div>
+        <div class="footer__col">
+          <h4>Conta</h4>
+          <a href="#comecar">Criar conta</a>
+          <a href="#faq">FAQ</a>
+          <a href="#precos">Planos</a>
+        </div>
       </div>
-      <div class="footer__col">
-        <h4>Produto</h4>
-        <a href="#recursos">Recursos</a>
-        <a href="#formatos">Formatos</a>
-        <a href="#exemplos">Exemplos</a>
-        <a href="#precos">Preços</a>
-      </div>
-      <div class="footer__col">
-        <h4>Empresa</h4>
-        <a href="#">Sobre</a>
-        <a href="#">Contato</a>
-        <a href="#">Blog</a>
-      </div>
-      <div class="footer__col">
-        <h4>Legal</h4>
-        <a href="#">Termos</a>
-        <a href="#">Privacidade</a>
-      </div>
-    </div>
-    <div class="container footer__base">
-      <span>© <span id="year"></span> ContentFlow. Todos os direitos reservados.</span>
-      <div class="footer__social">
-        <a href="#" aria-label="Instagram">Instagram</a>
-        <a href="#" aria-label="LinkedIn">LinkedIn</a>
-        <a href="#" aria-label="X">X</a>
+      <div class="footer__base">
+        <span>© <span id="year"></span> ContentFlow. Todos os direitos reservados.</span>
+        <div class="footer__social">
+          <span>Identidade · Criação · Distribuição · Inteligência</span>
+        </div>
       </div>
     </div>
   </footer>

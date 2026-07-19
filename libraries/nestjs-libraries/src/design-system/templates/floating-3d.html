@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- 3D: a glowing floating orb hero (a 3D focal mass) with a real ground shadow; headline below. One light source top-left. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};overflow:hidden;isolation:isolate;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8vw 8vw 7vw}
+  .mesh{position:absolute;z-index:0;inset:-10%;background:
+    radial-gradient(40vw 40vw at 22% 18%,color-mix(in srgb,var(--accent) 40%,transparent),transparent 60%),
+    radial-gradient(46vw 46vw at 82% 88%,color-mix(in srgb,var(--accent2) 34%,transparent),transparent 62%);filter:blur(1vw)}
+  .eyebrow{position:relative;z-index:3;font-size:2vw;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:var(--accent);margin-bottom:2vw}
+  .orbwrap{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;margin:1vw 0 5vw}
+  .orb{width:36vw;height:36vw;border-radius:50%;animation:bob 4.5s ease-in-out infinite alternate;
+    background:radial-gradient(circle at 35% 28%,#fff 0%,var(--accent) 24%,color-mix(in srgb,var(--accent) 52%,#000) 74%,#0a0a0a 100%);
+    box-shadow:0 0 9vw color-mix(in srgb,var(--accent) 70%,transparent),inset -2.4vw -2.4vw 6vw rgba(0,0,0,.55),inset 1.6vw 1.4vw 3vw rgba(255,255,255,.18)}
+  .ringlet{position:absolute;top:50%;left:50%;width:48vw;height:48vw;transform:translate(-50%,-50%) rotateX(74deg);
+    border:.5vw solid color-mix(in srgb,var(--accent2) 60%,transparent);border-radius:50%;opacity:.5;z-index:-1}
+  .gshadow{width:30vw;height:3.4vw;margin-top:3.2vw;border-radius:50%;
+    background:radial-gradient(ellipse,rgba(0,0,0,.5),transparent 70%);filter:blur(1.1vw);
+    animation:shrink 4.5s ease-in-out infinite alternate}
+  @keyframes bob{to{transform:translateY(-3vw)}}
+  @keyframes shrink{to{transform:scale(.82);opacity:.7}}
+  .headline{position:relative;z-index:3;text-align:center;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:9vw;line-height:.98;letter-spacing:-.03em;max-width:13ch;
+    text-shadow:.12vw .12vw 0 color-mix(in srgb,var(--accent) 80%,#000),.9vw 1.2vw 3vw rgba(0,0,0,.4)}
+  .headline em{font-style:normal;color:var(--accent2)}
+  .sub{position:relative;z-index:3;text-align:center;margin-top:3.2vw;font-size:2.5vw;line-height:1.45;color:var(--muted);max-width:30ch}
+  .footer{position:absolute;z-index:3;left:8vw;right:8vw;bottom:6vw;display:flex;justify-content:space-between;align-items:center;font-size:2vw;font-weight:600;opacity:.92}
+  .footer .cta{background:var(--accent);color:var(--bg);padding:1.4vw 2.6vw;border-radius:10vw;font-weight:800;
+    box-shadow:0 1vw 2vw rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.4)}
+  .grain{position:absolute;inset:0;z-index:4;opacity:.06;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+</style></head>
+<body><div class="canvas">
+  <div class="mesh"></div>
+  <div class="eyebrow">{{EYEBROW}}</div>
+  <div class="orbwrap">
+    <div class="orb"><div class="ringlet"></div></div>
+    <div class="gshadow"></div>
+  </div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <p class="sub">{{SUBHEAD}}</p>
+  <div class="footer"><span>{{HANDLE}}</span><span class="cta">{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

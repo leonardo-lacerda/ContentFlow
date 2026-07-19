@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- MISTAKE / WARNING. HEADLINE = the mistake. A warning callout + the fix. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}};--warn:#ffb020}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:8vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:center}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.06;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .warnbar{position:relative;z-index:2;align-self:flex-start;display:flex;align-items:center;gap:1.6vw;background:var(--warn);color:#1a1100;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:2.4vw;letter-spacing:.04em;text-transform:uppercase;padding:1.6vw 3vw;border-radius:12px;margin-bottom:4vw}
+  .warnbar svg{width:3vw;height:3vw;fill:#1a1100}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:7.4vw;line-height:1.0;letter-spacing:-.03em;max-width:14ch}
+  .headline em{font-style:italic;color:var(--warn)}
+  .why{position:relative;z-index:2;margin-top:3vw;font-size:2.6vw;line-height:1.45;color:var(--muted);max-width:30ch}
+  .fix{position:relative;z-index:2;margin-top:5vw;background:color-mix(in srgb,var(--accent) 14%,transparent);border-left:.7vw solid var(--accent);border-radius:0 16px 16px 0;padding:3vw 3.4vw}
+  .fix .l{font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:2vw;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:1vw}
+  .fix .t{font-size:2.6vw;line-height:1.35;font-weight:600}
+  .footer{position:absolute;z-index:2;left:8vw;right:8vw;bottom:6vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:600;opacity:.85}
+</style></head>
+<body><div class="canvas">
+  <div class="warnbar"><svg viewBox="0 0 24 24"><path d="M12 2 L22 20 H2 Z M12 9 v5 M12 16.5 v.5"/></svg>Common mistake</div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <p class="why">{{SUBHEAD}}</p>
+  <div class="fix"><div class="l">Do this instead</div><div class="t">The fix, in one clear line.</div></div>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

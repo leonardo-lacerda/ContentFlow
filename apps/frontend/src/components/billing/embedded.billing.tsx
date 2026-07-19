@@ -24,7 +24,7 @@ export const EmbeddedBilling: FC<{
 }> = ({ stripe, secret, showCoupon = false, autoApplyCoupon }) => {
   const [saveSecret, setSaveSecret] = useState(secret);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useCookie('mode', 'dark');
+  const [mode, setMode] = useCookie('mode', 'light');
 
   useEffect(() => {
     modeEmitter.on('mode', (value) => {
@@ -384,7 +384,7 @@ const AppliedCouponDisplay: FC<{
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#FC69FF"
+              stroke="#f59e0b"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -392,7 +392,7 @@ const AppliedCouponDisplay: FC<{
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
-            <span className="font-[600] text-[#FC69FF]">{appliedCode}</span>
+            <span className="font-[600] text-[#f59e0b]">{appliedCode}</span>
             <span className="text-[14px] text-textColor/70">
               {t('billing_discount_applied', 'applied')}
               {discountDisplay && ` (${discountDisplay})`}

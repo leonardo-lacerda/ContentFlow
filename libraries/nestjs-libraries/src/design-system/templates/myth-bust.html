@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- MYTH-BUST. Chrome token-filled; HEADLINE = topic. Edit the myth + truth lines. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}};--danger:#ff5470}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:8vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:center}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.06;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:relative;z-index:2;align-self:flex-start;font-size:1.9vw;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:1.6vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:6vw;line-height:1.02;letter-spacing:-.02em;max-width:16ch;margin-bottom:5vw}
+  .block{position:relative;z-index:2;border-radius:20px;padding:3.4vw;margin-bottom:3vw}
+  .myth{background:color-mix(in srgb,var(--danger) 12%,transparent);border:1px solid color-mix(in srgb,var(--danger) 40%,transparent)}
+  .truth{background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent)}
+  .lbl{display:inline-flex;align-items:center;gap:1vw;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:2.2vw;letter-spacing:.06em;text-transform:uppercase;margin-bottom:1.4vw}
+  .myth .lbl{color:var(--danger)}.truth .lbl{color:var(--accent)}
+  .myth .tx{font-size:3vw;line-height:1.25;text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--danger) 70%,transparent);opacity:.85}
+  .truth .tx{font-size:3vw;line-height:1.25;font-weight:600}
+  .footer{position:absolute;z-index:2;left:8vw;right:8vw;bottom:5.5vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:600;opacity:.85}
+</style></head>
+<body><div class="canvas">
+  <span class="eyebrow">{{EYEBROW}}</span>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <div class="block myth"><span class="lbl">✕ Myth</span><div class="tx">The common belief that everyone repeats.</div></div>
+  <div class="block truth"><span class="lbl">✓ Truth</span><div class="tx">What actually works — the correction.</div></div>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

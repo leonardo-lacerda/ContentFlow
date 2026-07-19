@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: riso-print. Paper + halftone + 2-ink overprint offset + heavy grain. Chunky off-register type. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:var(--bg);padding:8vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:center}
+  .halftone{position:absolute;inset:0;z-index:0;opacity:.45;mix-blend-mode:multiply;background:radial-gradient(var(--accent) 28%,transparent 30%) 0 0/14px 14px}
+  .grain{position:absolute;inset:0;z-index:3;opacity:.14;mix-blend-mode:multiply;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:relative;z-index:2;align-self:flex-start;background:var(--accent2);color:var(--bg);font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:2vw;letter-spacing:.08em;text-transform:uppercase;padding:1.2vw 2.6vw;margin-bottom:3vw;transform:rotate(-1.5deg)}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:9vw;line-height:.98;letter-spacing:-.02em;max-width:13ch;color:var(--text);text-shadow:.6vw .6vw 0 color-mix(in srgb,var(--accent) 85%,transparent),-.3vw -.3vw 0 color-mix(in srgb,var(--accent2) 70%,transparent)}
+  .headline em{font-style:normal;color:var(--accent)}
+  .sub{position:relative;z-index:2;margin-top:3.4vw;font-size:2.6vw;line-height:1.4;font-weight:600;max-width:28ch}
+  .footer{position:absolute;z-index:2;left:8vw;right:8vw;bottom:6vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:700}
+</style></head>
+<body><div class="canvas">
+  <div class="halftone"></div>
+  <span class="eyebrow">{{EYEBROW}}</span>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <p class="sub">{{SUBHEAD}}</p>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

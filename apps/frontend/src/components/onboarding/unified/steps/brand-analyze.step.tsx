@@ -97,8 +97,8 @@ export function BrandAnalyzeStep({ ctx }: { ctx: UnifiedOnboardingContext }) {
 
   if (!ctx.brandId) {
     return (
-      <div className="rounded-[14px] border border-newTableBorder bg-newSettings p-6 space-y-4">
-        <h2 className="text-2xl font-[800]">
+      <div className="rounded-[16px] border border-newTableBorder bg-newBgColorInner shadow-cfSm p-6 space-y-4">
+        <h2 className="text-2xl font-[600] font-serif tracking-[-0.02em]">
           {t('onboarding_analyze_title', 'Analisar site')}
         </h2>
         <p className="text-sm text-textItemBlur">
@@ -114,10 +114,10 @@ export function BrandAnalyzeStep({ ctx }: { ctx: UnifiedOnboardingContext }) {
 
   if (!ctx.brandForm.website.trim() && status === 'idle') {
     return (
-      <div className="rounded-[14px] border border-newTableBorder bg-newSettings p-6 space-y-4">
+      <div className="rounded-[16px] border border-newTableBorder bg-newBgColorInner shadow-cfSm p-6 space-y-4">
         <div className="flex items-center gap-3">
           <Search className="w-5 h-5" />
-          <h2 className="text-2xl font-[800]">
+          <h2 className="text-2xl font-[600] font-serif tracking-[-0.02em]">
             {t('onboarding_analyze_title', 'Analisar site')}
           </h2>
         </div>
@@ -138,9 +138,9 @@ export function BrandAnalyzeStep({ ctx }: { ctx: UnifiedOnboardingContext }) {
   }
 
   return (
-    <div className="rounded-[14px] border border-newTableBorder bg-newSettings p-6 space-y-6">
+    <div className="rounded-[16px] border border-newTableBorder bg-newBgColorInner shadow-cfSm p-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-[800] text-newTextColor">
+        <h2 className="text-2xl font-[600] font-serif tracking-[-0.02em] text-newTextColor">
           {t('onboarding_analyze_title', 'Analisar site')}
         </h2>
         <p className="text-sm text-textItemBlur mt-1">

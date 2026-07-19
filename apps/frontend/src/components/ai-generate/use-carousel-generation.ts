@@ -47,6 +47,11 @@ export interface UseCarouselGenerationParams {
   trimmedTextModel: string;
   imageProvider: 'ia_generate' | 'openai_official';
   trimmedImageModel: string;
+  /** Dual-mode: AI image models vs HTML design system (xniper-style) */
+  renderMode: 'ai_image' | 'design_system';
+  designRecipe: import('./ai-generate-images.types').DesignRecipe | null;
+  designSizeId: string;
+  designHandle: string;
   selectedTemplate: string;
   hasRequiredCompanySummary: boolean;
   companyProfile: CompanyProfile | null;
@@ -137,6 +142,10 @@ export function useCarouselGeneration(
     trimmedTextModel,
     imageProvider,
     trimmedImageModel,
+    renderMode,
+    designRecipe,
+    designSizeId,
+    designHandle,
     selectedTemplate,
     hasRequiredCompanySummary,
     companyProfile,
@@ -554,6 +563,56 @@ export function useCarouselGeneration(
     setSavedCarouselCount(0);
 
     try {
+      if (renderMode === 'design_system') {
+        const brandColorList = brandColors
+          .split(/[,\n]/)
+          .map((c) => c.trim())
+          .filter(Boolean);
+
+        const { ok, data, message } = await aiGenerateImagesApi.createDesignJob(
+          fetch,
+          {
+            slides: plan.slides.map((slide) => ({
+              slideIndex: slide.index,
+              headline: slide.headline,
+              body: slide.body,
+              cta: slide.cta,
+            })),
+            recipe: designRecipe
+              ? {
+                  directionId: designRecipe.directionId,
+                  paletteId: designRecipe.paletteId,
+                  fontId: designRecipe.fontId,
+                  sizeId: designRecipe.sizeId || designSizeId,
+                  motifs: designRecipe.motifs,
+                  handle: designHandle || designRecipe.handle,
+                }
+              : undefined,
+            autoIdeate: !designRecipe,
+            query: [trimmedTopic, plan.title, goal].filter(Boolean).join(' — '),
+            sizeId: designSizeId || 'ig-portrait',
+            handle: designHandle || undefined,
+            brand: {
+              handle: designHandle || undefined,
+              colors: brandColorList,
+              fontFamily: brandFonts || undefined,
+              accentStrategy: 'catalog-blend',
+            },
+          }
+        );
+
+        if (!ok || !data) {
+          setError(
+            message || 'Não foi possível iniciar o render do design system.'
+          );
+          setGeneratingImages(false);
+          return;
+        }
+
+        setImageJob(data);
+        return;
+      }
+
       const slides = plan.slides.map((slide) => {
         const requestBody: Record<string, unknown> = {
           provider: imageProvider,

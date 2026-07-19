@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- CHECKLIST / key takeaways. Chrome token-filled; edit the 5 check rows + summary. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:7.5vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.06;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:relative;z-index:2;align-self:flex-start;font-size:1.9vw;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:1.6vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:6vw;line-height:1.03;letter-spacing:-.02em;max-width:16ch;margin-bottom:4vw}
+  .headline em{font-style:italic;color:var(--accent)}
+  .rows{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;justify-content:center;gap:2.4vw}
+  .row{display:flex;gap:2vw;align-items:flex-start;background:color-mix(in srgb,var(--surface) 55%,transparent);border:1px solid color-mix(in srgb,var(--text) 10%,transparent);border-radius:14px;padding:2.2vw 2.6vw}
+  .ck{flex:0 0 auto;width:3.6vw;height:3.6vw;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center}
+  .ck svg{width:2vw;height:2vw;stroke:var(--bg);stroke-width:3;fill:none}
+  .rt{font-size:2.4vw;line-height:1.35}.rt b{font-weight:700}
+  .sum{position:relative;z-index:2;margin-top:3vw;background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:100px;padding:2vw 3vw;font-family:'{{DISPLAY}}',sans-serif;font-weight:700;font-size:2.3vw;color:var(--accent);display:flex;gap:1.4vw;align-items:center}
+  .footer{position:relative;z-index:2;margin-top:2.6vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:600;opacity:.85}
+</style></head>
+<body><div class="canvas">
+  <span class="eyebrow">{{EYEBROW}}</span>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <div class="rows">
+    <div class="row"><span class="ck"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></span><span class="rt"><b>First takeaway</b> — short supporting line.</span></div>
+    <div class="row"><span class="ck"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></span><span class="rt"><b>Second takeaway</b> — short supporting line.</span></div>
+    <div class="row"><span class="ck"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></span><span class="rt"><b>Third takeaway</b> — short supporting line.</span></div>
+    <div class="row"><span class="ck"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></span><span class="rt"><b>Fourth takeaway</b> — short supporting line.</span></div>
+  </div>
+  <div class="sum">{{SUBHEAD}}</div>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

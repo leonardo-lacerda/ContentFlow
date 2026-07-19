@@ -22,7 +22,7 @@ export default function NotFound() {
         style={{
           fontSize: 96,
           fontWeight: 700,
-          color: '#612BD3',
+          color: '#b4530a',
           marginBottom: 8,
           lineHeight: 1,
         }}
@@ -52,7 +52,7 @@ export default function NotFound() {
         href="/"
         style={{
           padding: '12px 32px',
-          backgroundColor: '#612BD3',
+          backgroundColor: '#b4530a',
           color: '#ffffff',
           borderRadius: 8,
           fontSize: 16,
@@ -61,7 +61,7 @@ export default function NotFound() {
           transition: 'background-color 0.2s',
         }}
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#5024B8')}
-        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#612BD3')}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#b4530a')}
       >
         Voltar ao início
       </Link>

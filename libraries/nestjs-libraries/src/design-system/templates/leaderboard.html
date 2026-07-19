@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- BENCHMARK LEADERBOARD. Podium of ranked bars; winner glows, losers desaturate. Edit names/scores. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:7.5vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column}
+  .grain{position:absolute;inset:0;z-index:1;opacity:.06;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .eyebrow{position:relative;z-index:2;align-self:center;font-size:1.9vw;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:1.4vw}
+  .headline{position:relative;z-index:2;text-align:center;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:6vw;line-height:1.02;letter-spacing:-.02em;margin-bottom:1vw}
+  .headline em{font-style:italic;color:var(--accent)}
+  .podium{position:relative;z-index:2;flex:1;display:flex;align-items:flex-end;justify-content:center;gap:3vw;padding-bottom:2vw}
+  .bar{width:20vw;border-radius:18px 18px 0 0;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;padding-top:2.4vw;position:relative;background:color-mix(in srgb,var(--text) 10%,transparent)}
+  .bar.win{background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 40%,transparent));box-shadow:0 0 8vw color-mix(in srgb,var(--accent) 45%,transparent)}
+  .rank{position:absolute;top:-7vw;width:5vw;height:5vw;border-radius:50%;background:var(--text);color:var(--bg);font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:2.6vw;display:flex;align-items:center;justify-content:center}
+  .bar.win .rank{background:var(--accent);color:var(--bg);box-shadow:0 0 4vw var(--accent)}
+  .score{font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:3.6vw;line-height:1}
+  .bar.win .score{color:var(--bg)} .bar:not(.win) .score{color:var(--text)}
+  .nm{font-size:1.9vw;font-weight:600;margin-top:.8vw}.bar.win .nm{color:var(--bg)}.bar:not(.win) .nm{color:var(--muted)}
+  .footer{position:relative;z-index:2;display:flex;justify-content:space-between;font-size:2vw;font-weight:600;opacity:.85}
+</style></head>
+<body><div class="canvas">
+  <span class="eyebrow">{{EYEBROW}}</span>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <div class="podium">
+    <div class="bar" style="height:42%"><span class="rank">3</span><span class="score">58.6</span><span class="nm">Option C</span></div>
+    <div class="bar win" style="height:72%"><span class="rank">1</span><span class="score">80.3</span><span class="nm">Winner</span></div>
+    <div class="bar" style="height:54%"><span class="rank">2</span><span class="score">69.2</span><span class="nm">Option B</span></div>
+  </div>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+  <div class="grain"></div>
+</div></body></html>

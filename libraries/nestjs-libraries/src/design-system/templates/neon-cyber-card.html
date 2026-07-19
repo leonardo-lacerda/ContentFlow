@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: neon-cyber. Black + neon glow + scanlines + HUD labels. Best with a dark palette + accent neon. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:var(--bg);padding:8vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:center}
+  .glow{position:absolute;z-index:0;width:80vw;height:80vw;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-55%);background:radial-gradient(circle,var(--accent),transparent 60%);opacity:.28;filter:blur(8px)}
+  .grid{position:absolute;inset:0;z-index:0;opacity:.10;background-image:linear-gradient(var(--accent) 1px,transparent 1px),linear-gradient(90deg,var(--accent) 1px,transparent 1px);background-size:7vw 7vw}
+  .scan{position:absolute;inset:0;z-index:3;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0 1px,transparent 1px 4px);mix-blend-mode:overlay}
+  .hud{position:absolute;z-index:2;font-family:'{{DISPLAY}}',monospace;font-size:1.7vw;letter-spacing:.2em;text-transform:uppercase;color:var(--accent)}
+  .hud.tl{top:6vw;left:8vw}.hud.tr{top:6vw;right:8vw}.hud.br{bottom:6vw;right:8vw}
+  .eyebrow{position:relative;z-index:2;font-family:'{{DISPLAY}}',monospace;font-size:1.9vw;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent2);margin-bottom:2vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:8vw;line-height:1.02;letter-spacing:-.02em;max-width:14ch;color:#fff;text-shadow:0 0 .5vw var(--accent),0 0 3vw color-mix(in srgb,var(--accent) 70%,transparent)}
+  .headline em{font-style:normal;color:var(--accent)}
+  .sub{position:relative;z-index:2;margin-top:3vw;font-size:2.5vw;line-height:1.45;color:var(--muted);max-width:28ch}
+  .footer{position:absolute;z-index:2;left:8vw;bottom:6vw;font-size:2vw;font-weight:600;color:var(--accent)}
+</style></head>
+<body><div class="canvas">
+  <div class="glow"></div><div class="grid"></div>
+  <span class="hud tl">// {{EYEBROW}}</span><span class="hud tr">SYS.OK</span>
+  <span class="eyebrow">{{EYEBROW}}</span>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <p class="sub">{{SUBHEAD}}</p>
+  <span class="footer">{{HANDLE}}</span>
+  <span class="hud br">{{CTA}}</span>
+  <div class="scan"></div>
+</div></body></html>

@@ -5,6 +5,7 @@ dist
 tmp
 /out-tsc
 .env
+credentials/
 # dependencies
 node_modules
 
@@ -62,3 +63,7 @@ i18n.cache
 # Local machine/runtime artifacts
 .docker-config-local/
 postiz-app/
+
+.claude/worktrees/
+studio/
+Cole/

@@ -41,6 +41,7 @@ import { AnnouncementsController } from '@gitroom/backend/api/routes/announcemen
 import { AdminController } from '@gitroom/backend/api/routes/admin.controller';
 import { AiGenerateController } from '@gitroom/backend/api/routes/ai-generate.controller';
 import { AiGenerateService } from '@gitroom/nestjs-libraries/ai-generate/ai-generate.service';
+import { DesignSystemModule } from '@gitroom/nestjs-libraries/design-system/design-system.module';
 import { TemplateRecommenderService } from '@gitroom/nestjs-libraries/ai-generate/templates/template-recommender.service';
 import { AuthProviderManager } from '@gitroom/backend/services/auth/providers/providers.manager';
 import { BrandsController } from '@gitroom/backend/api/routes/brands.controller';
@@ -139,7 +140,7 @@ const authenticatedController = [
   CarouselDraftsController,
 ];
 @Module({
-  imports: [UploadModule],
+  imports: [UploadModule, DesignSystemModule],
   controllers: [
     RootController,
     StripeController,

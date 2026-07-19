@@ -8,6 +8,7 @@ import { AnimatedDots, IndeterminateBar, Spinner } from './ai-generate-images.lo
 import type {
   CarouselImageJob,
   CarouselPlan,
+  CarouselRenderMode,
   CostEstimate,
   CostHistoryResponse,
   SlideImageResult,
@@ -19,6 +20,8 @@ type ImageGenerationPanelProps = {
   cancelCarouselGeneration: () => void;
   costHistory: CostHistoryResponse | null;
   costLimitBrl: number;
+  designHandle: string;
+  designSizeId: string;
   error: string;
   estimateGenerationCost: () => void;
   exportCarouselPackage: () => void;
@@ -40,6 +43,7 @@ type ImageGenerationPanelProps = {
   plan: CarouselPlan;
   preflightEstimate: CostEstimate | null;
   projectedCostBrl: number;
+  renderMode: CarouselRenderMode;
   saveCarouselToMedia: () => void;
   savedCarouselCount: number;
   savedCarouselProject: string;
@@ -47,11 +51,14 @@ type ImageGenerationPanelProps = {
   savingCarousel: boolean;
   setAllowOverBudget: (value: boolean) => void;
   setCostLimitBrl: (value: number) => void;
+  setDesignHandle: (value: string) => void;
+  setDesignSizeId: (value: string) => void;
   setExportHeight: (value: number) => void;
   setExportWidth: (value: number) => void;
   setImageModel: (value: string) => void;
   setImageProvider: (value: 'ia_generate' | 'openai_official') => void;
   setIncludePdfExport: (value: boolean) => void;
+  setRenderMode: (value: CarouselRenderMode) => void;
   slideImages: Record<string, SlideImageResult>;
   showAdvanced: boolean;
 };
@@ -83,6 +90,9 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
     plan,
     preflightEstimate,
     projectedCostBrl,
+    renderMode,
+    designSizeId,
+    designHandle,
     saveCarouselToMedia,
     savedCarouselCount,
     savedCarouselProject,
@@ -90,11 +100,14 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
     savingCarousel,
     setAllowOverBudget,
     setCostLimitBrl,
+    setDesignHandle,
+    setDesignSizeId,
     setExportHeight,
     setExportWidth,
     setImageModel,
     setImageProvider,
     setIncludePdfExport,
+    setRenderMode,
     slideImages,
     showAdvanced,
     includePdfExport,
@@ -134,7 +147,69 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
       </div>
 
       <div className="ml-11">
-	                {showAdvanced && (
+        <div className="mb-[20px] grid grid-cols-1 gap-[12px] md:grid-cols-2">
+          <div className="flex flex-col gap-[8px]">
+            <span className="text-[14px] font-[500]">Modo de render</span>
+            <div className="flex flex-wrap gap-[8px]">
+              <button
+                type="button"
+                onClick={() => setRenderMode('design_system')}
+                className={`rounded-[10px] border px-[12px] py-[8px] text-[13px] font-[600] transition ${
+                  renderMode === 'design_system'
+                    ? 'border-stone-800 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-black'
+                    : 'border-black/10 bg-white text-black/70 dark:border-white/15 dark:bg-transparent dark:text-white/70'
+                }`}
+              >
+                Sistema de design
+              </button>
+              <button
+                type="button"
+                onClick={() => setRenderMode('ai_image')}
+                className={`rounded-[10px] border px-[12px] py-[8px] text-[13px] font-[600] transition ${
+                  renderMode === 'ai_image'
+                    ? 'border-stone-800 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-black'
+                    : 'border-black/10 bg-white text-black/70 dark:border-white/15 dark:bg-transparent dark:text-white/70'
+                }`}
+              >
+                Imagem IA
+              </button>
+            </div>
+            <p className="text-[12px] text-black/55 dark:text-white/55">
+              {renderMode === 'design_system'
+                ? 'Templates HTML + tipografia real → PNG via Playwright (qualidade editorial, custo baixo).'
+                : 'Modelo de imagem com texto baked-in (fluxo clássico).'}
+            </p>
+          </div>
+          {renderMode === 'design_system' ? (
+            <div className="grid grid-cols-1 gap-[12px] sm:grid-cols-2">
+              <label className="flex flex-col gap-[8px]">
+                <span className="text-[14px] font-[500]">Formato</span>
+                <select
+                  value={designSizeId}
+                  onChange={(event) => setDesignSizeId(event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="ig-portrait">Instagram 4:5</option>
+                  <option value="ig-square">Instagram 1:1</option>
+                  <option value="ig-story">Stories 9:16</option>
+                  <option value="linkedin-portrait">LinkedIn 4:5</option>
+                  <option value="linkedin-landscape">LinkedIn landscape</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-[8px]">
+                <span className="text-[14px] font-[500]">Handle (@)</span>
+                <input
+                  value={designHandle}
+                  onChange={(event) => setDesignHandle(event.target.value)}
+                  placeholder="@suamarca"
+                  className={inputClass}
+                />
+              </label>
+            </div>
+          ) : null}
+        </div>
+
+	                {showAdvanced && renderMode === 'ai_image' && (
 	                  <div className="grid grid-cols-1 gap-[12px] md:grid-cols-2 mb-[20px] p-[16px] bg-newBgColorInner rounded-[12px] border border-newTableBorder">
             <label className="flex flex-col gap-[8px]">
               <span className="text-[14px] font-[500]">

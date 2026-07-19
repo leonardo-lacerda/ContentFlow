@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: swiss-international. Flat, strict grid, hairlines, ONE accent, big index. No decoration. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:var(--bg);padding:8vw;display:flex;flex-direction:column}
+  .rule{height:2px;background:var(--text);width:100%}
+  .top{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:2vw;font-size:2vw;font-weight:600;letter-spacing:.04em}
+  .top .ix{color:var(--accent);font-family:'{{DISPLAY}}',sans-serif;font-weight:800}
+  .mid{flex:1;display:flex;flex-direction:column;justify-content:center;padding:3vw 0}
+  .eyebrow{font-size:1.9vw;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:3vw}
+  .headline{font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:8.6vw;line-height:1.0;letter-spacing:-.03em;max-width:13ch}
+  .headline em{font-style:normal;color:var(--accent)}
+  .sub{margin-top:4vw;font-size:2.5vw;line-height:1.5;color:var(--muted);max-width:46ch;column-count:2;column-gap:4vw}
+  .bot{display:flex;justify-content:space-between;align-items:baseline;padding-top:2vw;font-size:2vw;font-weight:600}
+</style></head>
+<body><div class="canvas">
+  <div class="top"><span>{{EYEBROW}}</span><span class="ix">{{INDEX}}</span></div>
+  <div class="rule"></div>
+  <div class="mid">
+    <div class="eyebrow">{{EYEBROW}}</div>
+    <h1 class="headline">{{HEADLINE}}</h1>
+    <p class="sub">{{SUBHEAD}}</p>
+  </div>
+  <div class="rule"></div>
+  <div class="bot"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+</div></body></html>

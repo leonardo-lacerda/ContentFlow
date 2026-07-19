@@ -1,0 +1,70 @@
+/* ============================================================
+   ContentFlow Design System — primitive tokens
+   SSOT visual: landing/styles.css (editorial light, amber)
+   Consumed by colors.scss → Tailwind (--new-*, --color-*)
+   ============================================================ */
+
+:root {
+  /* Primitives */
+  --cf-white: #ffffff;
+  --cf-offwhite: #fafafa;
+  --cf-cream: #f7f2ea;
+  --cf-sand: #efe7da;
+  --cf-ink: #1c1917;
+  --cf-muted: #78716c;
+  --cf-stone-400: #a8a29e;
+  --cf-stone-300: #d6d3d1;
+  --cf-line: rgba(28, 25, 23, 0.1);
+  --cf-line-soft: rgba(28, 25, 23, 0.06);
+  --cf-line-solid: #e7e5e4;
+  --cf-line-strong: rgba(28, 25, 23, 0.18);
+
+  --cf-amber: #b4530a;
+  --cf-amber-dark: #8a3f08;
+  --cf-amber-soft: #f3e6d8;
+  --cf-ok: #3f7d4e;
+  --cf-ok-bg: #e8f2ea;
+  --cf-danger: #b91c1c;
+  --cf-danger-soft: #fef2f2;
+
+  /* Semantic (light default) */
+  --cf-bg: var(--cf-offwhite);
+  --cf-bg-elevated: var(--cf-white);
+  --cf-bg-warm: var(--cf-cream);
+  --cf-fg: var(--cf-ink);
+  --cf-fg-muted: var(--cf-muted);
+  --cf-fg-inverse: var(--cf-white);
+  --cf-border: var(--cf-line-solid);
+  --cf-accent: var(--cf-amber);
+  --cf-accent-hover: var(--cf-amber-dark);
+  --cf-accent-soft: var(--cf-amber-soft);
+  --cf-success: var(--cf-ok);
+  --cf-success-bg: var(--cf-ok-bg);
+
+  /* Type */
+  --cf-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+  --cf-font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --cf-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Radius */
+  --cf-radius-sm: 10px;
+  --cf-radius: 14px;
+  --cf-radius-md: 16px;
+  --cf-radius-lg: 18px;
+  --cf-radius-xl: 24px;
+  --cf-radius-pill: 999px;
+
+  /* Shadow */
+  --cf-shadow: 0 1px 2px rgba(28, 25, 23, 0.04),
+    0 12px 32px rgba(28, 25, 23, 0.06);
+  --cf-shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05),
+    0 6px 18px rgba(28, 25, 23, 0.05);
+  --cf-shadow-accent: 0 8px 18px rgba(180, 83, 10, 0.22);
+  --cf-shadow-focus: 0 0 0 4px rgba(180, 83, 10, 0.08);
+
+  /* Motion */
+  --cf-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --cf-duration-fast: 0.15s;
+  --cf-duration: 0.2s;
+}

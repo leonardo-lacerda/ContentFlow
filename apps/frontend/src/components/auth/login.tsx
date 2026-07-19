@@ -144,7 +144,7 @@ export function Login() {
                   {t('don_t_have_an_account', "Don't Have An Account?")}&nbsp;
                   <Link
                     href="/auth"
-                    className="cursor-pointer text-white underline hover:text-[#FCB7FF]"
+                    className="cursor-pointer text-white underline hover:text-[#f3e6d8]"
                   >
                     {t('sign_up', 'Sign Up')}
                   </Link>

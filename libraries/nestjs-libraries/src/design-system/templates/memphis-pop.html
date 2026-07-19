@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: memphis-pop. Pastel + confetti shapes + squiggles + sticker star. Playful. Best with a light/pastel palette. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:8vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:center}
+  .sh{position:absolute;z-index:0}
+  .c1{top:10vw;right:12vw;width:9vw;height:9vw;border-radius:50%;background:var(--accent)}
+  .c2{bottom:14vw;left:8vw;width:6vw;height:6vw;border-radius:50%;border:1vw solid var(--accent2)}
+  .tri{top:60vw;right:9vw;width:0;height:0;border-left:5vw solid transparent;border-right:5vw solid transparent;border-bottom:9vw solid var(--accent2);transform:rotate(18deg)}
+  .sq{top:18vw;left:9vw;width:7vw;height:7vw;background:var(--accent2);transform:rotate(14deg);border-radius:8px}
+  .squig{position:absolute;z-index:0;bottom:24vw;right:18vw;width:18vw;height:6vw}
+  .star{position:absolute;z-index:2;top:8vw;left:7vw;width:7vw;height:7vw;fill:var(--accent)}
+  .eyebrow{position:relative;z-index:2;align-self:flex-start;background:var(--text);color:var(--bg);font-weight:800;font-size:1.9vw;letter-spacing:.1em;text-transform:uppercase;padding:1.2vw 2.8vw;border-radius:100px;margin-bottom:3vw;transform:rotate(-2deg)}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:9vw;line-height:1.0;letter-spacing:-.02em;max-width:13ch}
+  .headline em{font-style:normal;color:var(--accent);-webkit-text-stroke:.3vw var(--text)}
+  .sub{position:relative;z-index:2;margin-top:3vw;font-size:2.7vw;line-height:1.4;font-weight:500;max-width:26ch}
+  .footer{position:absolute;z-index:2;left:8vw;right:8vw;bottom:6vw;display:flex;justify-content:space-between;font-size:2vw;font-weight:700}
+</style></head>
+<body><div class="canvas">
+  <span class="sh c1"></span><span class="sh c2"></span><span class="sh tri"></span><span class="sh sq"></span>
+  <svg class="squig" viewBox="0 0 100 30" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"><path d="M3 15 q 12 -14 24 0 t 24 0 t 24 0"/></svg>
+  <svg class="star" viewBox="0 0 24 24"><path d="M12 0 C13 8,16 11,24 12 C16 13,13 16,12 24 C11 16,8 13,0 12 C8 11,11 8,12 0Z"/></svg>
+  <span class="eyebrow">{{EYEBROW}}</span>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <p class="sub">{{SUBHEAD}}</p>
+  <div class="footer"><span>{{HANDLE}}</span><span>{{CTA}}</span></div>
+</div></body></html>

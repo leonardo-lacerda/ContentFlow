@@ -423,12 +423,12 @@ export const MediaBox: FC<{
       <div
         className={clsx(
           'w-full h-full rounded-[6px] border-[4px] relative',
-          isMediaSelected(media) ? 'border-[#612BD3]' : 'border-transparent'
+          isMediaSelected(media) ? 'border-[#b4530a]' : 'border-transparent'
         )}
         onClick={addRemoveSelected(media)}
       >
         {isMediaSelected(media) ? (
-          <div className="text-white flex z-[101] justify-center items-center text-[14px] font-[500] w-[24px] h-[24px] rounded-full bg-[#612BD3] absolute -bottom-[10px] -end-[10px]">
+          <div className="text-white flex z-[101] justify-center items-center text-[14px] font-[500] w-[24px] h-[24px] rounded-full bg-[#b4530a] absolute -bottom-[10px] -end-[10px]">
             {media.isCarousel
               ? media.children?.length || 0
               : selected.findIndex((z: any) => z.id === media.id) + 1}
@@ -446,7 +446,7 @@ export const MediaBox: FC<{
         </div>
         {media.isCarousel && (
           <div className="absolute left-[10px] top-[10px] z-[100] flex flex-col items-start gap-[5px]">
-            <div className="rounded-full bg-[#612BD3] px-[8px] py-[4px] text-[11px] font-[700] text-white shadow">
+            <div className="rounded-full bg-[#b4530a] px-[8px] py-[4px] text-[11px] font-[700] text-white shadow">
               Projeto IA
             </div>
             <div className="rounded-full border border-white/20 bg-black/55 px-[8px] py-[4px] text-[10px] font-[800] text-white shadow">
@@ -519,7 +519,7 @@ export const MediaBox: FC<{
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('search_media_by_name', 'Search by file name')}
-              className="w-full h-[44px] px-[14px] rounded-[8px] bg-newBgColorInner border border-newColColor text-[14px] outline-none focus:border-[#612BD3]"
+              className="w-full h-[44px] px-[14px] rounded-[8px] bg-newBgColorInner border border-newColColor text-[14px] outline-none focus:border-[#b4530a]"
             />
           </div>
           <input
@@ -648,7 +648,7 @@ export const MediaBox: FC<{
                           )}
                         </div>
                       </div>
-                      <div className="rounded-full bg-[#612BD3]/15 px-[10px] py-[5px] text-[11px] font-[800] text-[#BCA8FF]">
+                      <div className="rounded-full bg-[#b4530a]/15 px-[10px] py-[5px] text-[11px] font-[800] text-[#BCA8FF]">
                         Projeto IA
                       </div>
                     </div>
@@ -704,7 +704,7 @@ export const MediaBox: FC<{
               <button
                 onClick={standalone ? () => {} : addMedia}
                 disabled={selected.length === 0}
-                className="cursor-pointer text-white disabled:opacity-80 disabled:cursor-not-allowed h-[52px] px-[20px] items-center justify-center bg-[#612BD3] flex rounded-[10px]"
+                className="cursor-pointer text-white disabled:opacity-80 disabled:cursor-not-allowed h-[52px] px-[20px] items-center justify-center bg-[#b4530a] flex rounded-[10px]"
               >
                 {t('add_selected_media', 'Add selected media')}
               </button>

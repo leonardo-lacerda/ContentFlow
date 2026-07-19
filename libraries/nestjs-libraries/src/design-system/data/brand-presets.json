@@ -1,0 +1,29 @@
+{
+  "_note": "Brand presets supply default palette/font/handle/accent so a post is on-brand instantly. 'custom' is the template to copy for any new brand. Anything in content.json overrides these.",
+  "presets": {
+    "xniperbuilds": {
+      "name": "XniperBuilds",
+      "handle": "@xniperbuilds",
+      "palette": "midnight-neon",
+      "font": "grotesk-mono",
+      "logo_text": "XNIPER",
+      "voice": "punchy, energetic, indie-game"
+    },
+    "xnipertools": {
+      "name": "Xnipertools",
+      "handle": "@xnipertools",
+      "palette": "ocean-deep",
+      "font": "clash-sora",
+      "logo_text": "Xnipertools",
+      "voice": "helpful, clear, benefit-led"
+    },
+    "custom": {
+      "name": "Your Brand",
+      "handle": "@yourbrand",
+      "palette": "electric-violet",
+      "font": "archivo-figtree",
+      "logo_text": "BRAND",
+      "voice": "set your own"
+    }
+  }
+}

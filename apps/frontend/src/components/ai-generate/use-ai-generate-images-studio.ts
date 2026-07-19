@@ -114,6 +114,15 @@ export function useAiGenerateImagesStudio() {
     'ia_generate' | 'openai_official'
   >('openai_official');
   const [imageModel, setImageModel] = useState('gpt-image-2');
+  const [renderMode, setRenderMode] = useState<
+    import('./ai-generate-images.types').CarouselRenderMode
+  >('design_system');
+  const [designRecipe, setDesignRecipe] = useState<
+    import('./ai-generate-images.types').DesignRecipe | null
+  >(null);
+  const [designSizeId, setDesignSizeId] = useState('ig-portrait');
+  const [designHandle, setDesignHandle] = useState('');
+  const [designCatalogEnabled, setDesignCatalogEnabled] = useState(true);
   const [planning, setPlanning] = useState(false);
   const [generatingImages, setGeneratingImages] = useState(false);
   const [error, setError] = useState('');
@@ -306,21 +315,32 @@ export function useAiGenerateImagesStudio() {
   ]);
 
   const imageDisabled = useMemo(() => {
+    if (generatingImages || !plan?.slides?.length) {
+      return true;
+    }
+    if (renderMode === 'design_system') {
+      return plan.slides.some((slide) => !slide.headline.trim());
+    }
     return (
-      generatingImages ||
-      !plan?.slides?.length ||
       !trimmedImageModel ||
       plan.slides.some(
         (slide) => !slide.headline.trim() || !slide.imagePrompt.trim()
       )
     );
-  }, [generatingImages, plan?.slides, trimmedImageModel]);
+  }, [generatingImages, plan?.slides, trimmedImageModel, renderMode]);
   const imageDisabledReason = useMemo(() => {
     if (generatingImages) {
       return 'A geração de imagens já está em andamento.';
     }
     if (!plan?.slides?.length) {
       return 'Gere ou importe um plano de carrossel antes de criar imagens.';
+    }
+    if (renderMode === 'design_system') {
+      const incompleteSlide = plan.slides.find((slide) => !slide.headline.trim());
+      if (incompleteSlide) {
+        return `Complete o título do slide ${incompleteSlide.index}.`;
+      }
+      return '';
     }
     if (!trimmedImageModel) {
       return 'Informe o modelo de imagem nas opções avançadas.';
@@ -332,7 +352,7 @@ export function useAiGenerateImagesStudio() {
       return `Complete o título e o prompt visual do slide ${incompleteSlide.index}.`;
     }
     return '';
-  }, [generatingImages, plan?.slides, trimmedImageModel]);
+  }, [generatingImages, plan?.slides, trimmedImageModel, renderMode]);
 
   const textCost = plan?.cost_estimate || null;
   const imageCost = sumCosts(
@@ -819,6 +839,10 @@ export function useAiGenerateImagesStudio() {
     trimmedTextModel,
     imageProvider,
     trimmedImageModel,
+    renderMode,
+    designRecipe,
+    designSizeId,
+    designHandle,
     selectedTemplate,
     hasRequiredCompanySummary,
     companyProfile,
@@ -1114,7 +1138,7 @@ export function useAiGenerateImagesStudio() {
   }, []);
 
 
-  // Image job polling
+  // Image / design-system job polling
   useEffect(() => {
     if (!imageJob?.id || !['queued', 'running'].includes(imageJob.status)) {
       return;
@@ -1123,7 +1147,11 @@ export function useAiGenerateImagesStudio() {
     let cancelled = false;
     const timer = window.setInterval(async () => {
       try {
-        const { ok, data } = await aiGenerateImagesApi.loadImageJob(fetch, imageJob.id);
+        const loader =
+          renderMode === 'design_system'
+            ? aiGenerateImagesApi.loadDesignJob
+            : aiGenerateImagesApi.loadImageJob;
+        const { ok, data } = await loader(fetch, imageJob.id);
         if (!ok || !data || cancelled) {
           return;
         }
@@ -1151,7 +1179,7 @@ export function useAiGenerateImagesStudio() {
           return next;
         });
 
-        if (data.status === 'completed' || data.status === 'failed') {
+        if (data.status === 'completed' || data.status === 'failed' || data.status === 'partial') {
           setGeneratingImages(false);
           setAllowGenerateWithReviewIssues(false);
           void loadCostHistory();
@@ -1167,7 +1195,7 @@ export function useAiGenerateImagesStudio() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [fetch, imageJob?.id, imageJob?.status]);
+  }, [fetch, imageJob?.id, imageJob?.status, renderMode]);
 
 
   useEffect(() => {
@@ -1437,6 +1465,15 @@ export function useAiGenerateImagesStudio() {
     imageJobProgress,
     imageModel,
     imageProvider,
+    renderMode,
+    setRenderMode,
+    designRecipe,
+    setDesignRecipe,
+    designSizeId,
+    setDesignSizeId,
+    designHandle,
+    setDesignHandle,
+    designCatalogEnabled,
     importProjectInputRef,
     importProjectJson: projects.importProjectJson,
     includePdfExport,

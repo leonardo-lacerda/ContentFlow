@@ -13,7 +13,7 @@ export const SectionCard: FC<{
   return (
     <div
       className={clsx(
-        'bg-newSettings border border-newTableBorder rounded-[12px] p-[16px]',
+        'bg-newBgColorInner border border-newTableBorder rounded-[14px] p-[16px] shadow-cfSm',
         className
       )}
     >
@@ -21,12 +21,12 @@ export const SectionCard: FC<{
         <div className="flex items-start gap-[12px] mb-[12px]">
           <div className="flex-1 min-w-0">
             {title ? (
-              <h3 className="text-[14px] font-[600] text-newTextColor">
+              <h3 className="text-[14px] font-[600] text-newTextColor tracking-[-0.01em]">
                 {title}
               </h3>
             ) : null}
             {description ? (
-              <p className="text-[12px] text-textItemBlur mt-[2px]">
+              <p className="text-[12px] text-textItemBlur mt-[2px] leading-relaxed">
                 {description}
               </p>
             ) : null}

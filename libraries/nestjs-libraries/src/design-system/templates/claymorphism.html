@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: claymorphism. Soft pastel + puffy 'clay' cards (inset+outset shadow). Rounded, friendly. Best with a pastel palette. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:8vw;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:3.4vw}
+  .clay{background:var(--surface);border-radius:36px;box-shadow:1.2vw 1.2vw 3vw rgba(0,0,0,.12),-1vw -1vw 2.4vw rgba(255,255,255,.75),inset .4vw .4vw 1vw rgba(255,255,255,.6),inset -.6vw -.6vw 1.4vw rgba(0,0,0,.07)}
+  .badge{align-self:flex-start;display:flex;align-items:center;gap:1.4vw;padding:1.8vw 3vw;border-radius:100px}
+  .badge .dot{width:3vw;height:3vw;border-radius:50%;background:var(--accent);box-shadow:inset .3vw .3vw .6vw rgba(0,0,0,.18)}
+  .badge span{font-weight:800;font-size:2vw;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+  .main{padding:6vw}
+  .headline{font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:7.4vw;line-height:1.04;letter-spacing:-.02em;max-width:15ch}
+  .headline em{font-style:normal;color:var(--accent)}
+  .sub{margin-top:3vw;font-size:2.6vw;line-height:1.45;color:var(--muted);max-width:28ch}
+  .footer{display:flex;justify-content:space-between;align-items:center;padding:3vw 4vw;font-size:2vw;font-weight:700}
+  .pill{background:var(--accent);color:var(--bg);padding:1.6vw 3.4vw;border-radius:100px;box-shadow:.5vw .5vw 1.4vw rgba(0,0,0,.18),inset -.3vw -.3vw .8vw rgba(0,0,0,.12),inset .3vw .3vw .8vw rgba(255,255,255,.35)}
+</style></head>
+<body><div class="canvas">
+  <div class="clay badge"><span class="dot"></span><span>{{EYEBROW}}</span></div>
+  <div class="clay main"><h1 class="headline">{{HEADLINE}}</h1><p class="sub">{{SUBHEAD}}</p></div>
+  <div class="clay footer"><span>{{HANDLE}}</span><span class="pill">{{CTA}}</span></div>
+</div></body></html>

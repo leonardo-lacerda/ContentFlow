@@ -1,0 +1,1063 @@
+{
+  "_note": "Template registry. 'file' is relative to templates/. Tokens are mustache-style {{TOKEN}}, filled by new_post.py. All templates are responsive to the --size flag (the .canvas reads --w/--h). Hand-build for ideas outside these archetypes.",
+  "tokens": {
+    "content": [
+      "EYEBROW",
+      "HEADLINE",
+      "SUBHEAD",
+      "CTA",
+      "HANDLE",
+      "INDEX",
+      "BIGWORD"
+    ],
+    "style": [
+      "W",
+      "H",
+      "FONTS_LINK",
+      "DISPLAY",
+      "BODY",
+      "BG",
+      "SURFACE",
+      "TEXT",
+      "MUTED",
+      "ACCENT",
+      "ACCENT2",
+      "GRADIENT"
+    ],
+    "notes": "HEADLINE supports \\n for line breaks and inline <em>/<strong>/<mark> (mark = highlighter). Empty content tokens render blank. Templates are STARTING POINTS — pick an aesthetic direction (data/directions.json + scripts/ideate.py) and push the template toward it with motifs from reference/directions.md, or hand-build for directions no template covers."
+  },
+  "templates": [
+    {
+      "id": "quote-bold",
+      "file": "quote-bold.html",
+      "name": "Bold Statement / Quote",
+      "use": "quotes, hot takes, one-line value props, carousel covers, hooks",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080",
+        "1080x1920"
+      ],
+      "tags": [
+        "quote",
+        "statement",
+        "hook",
+        "cover",
+        "bold"
+      ]
+    },
+    {
+      "id": "announcement",
+      "file": "announcement.html",
+      "name": "Announcement / Launch / Promo",
+      "use": "new drops, launches, sales, events — has eyebrow pill + CTA button",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "announcement",
+        "launch",
+        "promo",
+        "sale",
+        "cta"
+      ]
+    },
+    {
+      "id": "tip-card",
+      "file": "tip-card.html",
+      "name": "Tip / Listicle Slide",
+      "use": "how-to steps, numbered tips, carousel body slides",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "tip",
+        "listicle",
+        "howto",
+        "carousel",
+        "steps"
+      ]
+    },
+    {
+      "id": "stat-card",
+      "file": "stat-card.html",
+      "name": "Stat / Big Number",
+      "use": "a single impressive metric as the hero",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "stat",
+        "number",
+        "data",
+        "metric",
+        "proof"
+      ]
+    },
+    {
+      "id": "editorial-vintage",
+      "file": "editorial-vintage.html",
+      "name": "Editorial Vintage",
+      "use": "warm cream-paper editorial: serif headline, orange accent, sketch underline + doodle (direction: editorial-vintage)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "editorial",
+        "warm",
+        "illustrated",
+        "storytelling",
+        "quote",
+        "vintage",
+        "premium"
+      ]
+    },
+    {
+      "id": "blueprint-diagram",
+      "file": "blueprint-diagram.html",
+      "name": "Blueprint / Diagram",
+      "use": "technical grid-paper: bold headline with highlighter, connector dots, mono label (direction: blueprint-diagram)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "technical",
+        "educational",
+        "diagram",
+        "dev",
+        "system-design",
+        "tip",
+        "howto"
+      ]
+    },
+    {
+      "id": "carousel-cover",
+      "file": "carousel-cover.html",
+      "name": "Carousel Cover / Hook",
+      "use": "slide 1 of a carousel: pure hook, huge type, counter pill + swipe cue",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "cover",
+        "hook",
+        "carousel",
+        "bold",
+        "announcement"
+      ]
+    },
+    {
+      "id": "cta-endcard",
+      "file": "cta-endcard.html",
+      "name": "CTA / End-card",
+      "use": "last slide of a carousel: one big CTA (follow/save), handle prominent",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "cta",
+        "carousel",
+        "follow",
+        "save",
+        "end"
+      ]
+    },
+    {
+      "id": "comparison-vs",
+      "file": "comparison-vs.html",
+      "name": "Comparison / VS",
+      "use": "A-vs-B: dual glass panels + center VS + payoff bar. Chrome token-filled; edit panel labels + 3 rows each + payoff (category: comparison-vs)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "comparison",
+        "vs",
+        "versus",
+        "pros-cons",
+        "content"
+      ]
+    },
+    {
+      "id": "feature-grid",
+      "file": "feature-grid.html",
+      "name": "Feature / Benefit Grid",
+      "use": "2x3 icon-card grid of features/benefits. Chrome token-filled; edit the 6 cells (category: feature-grid)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "feature-grid",
+        "benefits",
+        "listicle",
+        "grid",
+        "content"
+      ]
+    },
+    {
+      "id": "listicle-numbered",
+      "file": "listicle-numbered.html",
+      "name": "Listicle (numbered)",
+      "use": "5 numbered points on one slide. Chrome token-filled; edit the rows (category: listicle)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "listicle",
+        "tips",
+        "numbered",
+        "list",
+        "content"
+      ]
+    },
+    {
+      "id": "step-flow",
+      "file": "step-flow.html",
+      "name": "Step-by-step Flow",
+      "use": "4 connected numbered step cards. Chrome token-filled; edit the steps (category: step-by-step)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "step-by-step",
+        "howto",
+        "process",
+        "steps",
+        "content"
+      ]
+    },
+    {
+      "id": "checklist-rows",
+      "file": "checklist-rows.html",
+      "name": "Checklist / Takeaways",
+      "use": "Ticked rows + summary chip. Chrome token-filled; SUBHEAD = summary, edit rows (category: checklist)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "checklist",
+        "takeaways",
+        "recap",
+        "dos",
+        "content"
+      ]
+    },
+    {
+      "id": "testimonial-glass",
+      "file": "testimonial-glass.html",
+      "name": "Testimonial (glass)",
+      "use": "Stars + quote + avatar in a glass panel. HEADLINE = quote; edit name/role (category: testimonial)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "testimonial",
+        "review",
+        "proof",
+        "social-proof",
+        "content"
+      ]
+    },
+    {
+      "id": "profile-intro",
+      "file": "profile-intro.html",
+      "name": "Profile / Intro",
+      "use": "Avatar + name + niche tags + bio + follow. HEADLINE = name, SUBHEAD = bio (category: profile-intro)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "profile-intro",
+        "about",
+        "intro",
+        "creator",
+        "content"
+      ]
+    },
+    {
+      "id": "timeline-roadmap",
+      "file": "timeline-roadmap.html",
+      "name": "Timeline / Roadmap",
+      "use": "Vertical connector spine with 4 phase nodes. Chrome token-filled; edit nodes (category: timeline-roadmap)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "timeline",
+        "roadmap",
+        "phases",
+        "journey",
+        "content"
+      ]
+    },
+    {
+      "id": "myth-bust",
+      "file": "myth-bust.html",
+      "name": "Myth-bust",
+      "use": "Myth (strike-through) vs Truth blocks. HEADLINE = topic; edit the two lines (category: myth-bust)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "myth-bust",
+        "contrarian",
+        "myth",
+        "truth",
+        "content"
+      ]
+    },
+    {
+      "id": "leaderboard",
+      "file": "leaderboard.html",
+      "name": "Benchmark Leaderboard",
+      "use": "Podium of ranked bars; winner glows, losers desaturate. Edit names/scores (category: benchmark-leaderboard)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "benchmark-leaderboard",
+        "ranking",
+        "podium",
+        "stat",
+        "content"
+      ]
+    },
+    {
+      "id": "before-after",
+      "file": "before-after.html",
+      "name": "Before → After",
+      "use": "50/50 split, muted before vs vivid after, center VS, transform bar (category: before-after)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "before-after",
+        "transformation",
+        "comparison",
+        "content"
+      ]
+    },
+    {
+      "id": "product-showcase",
+      "file": "product-showcase.html",
+      "name": "Product Showcase",
+      "use": "Hero card staged on a spotlight + floating spec chips. Drop a real screenshot in .hero (category: product-showcase)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "product-showcase",
+        "mockup",
+        "hero",
+        "launch",
+        "content"
+      ]
+    },
+    {
+      "id": "lead-magnet",
+      "file": "lead-magnet.html",
+      "name": "Lead Magnet",
+      "use": "Headline + 'what's inside' checklist + taped PDF card + comment CTA. Best with a warm palette (category: lead-magnet)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "lead-magnet",
+        "freebie",
+        "pdf",
+        "comment",
+        "cta"
+      ]
+    },
+    {
+      "id": "promo-offer",
+      "file": "promo-offer.html",
+      "name": "Promo / Offer",
+      "use": "BIGWORD = the offer (40% OFF / $9). Neo-brutal block + hard shadow + starburst (category: promo-offer)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "promo-offer",
+        "sale",
+        "discount",
+        "offer",
+        "content"
+      ]
+    },
+    {
+      "id": "cheatsheet",
+      "file": "cheatsheet.html",
+      "name": "Cheat-sheet",
+      "use": "Dense 2-col keycap reference + giant ghost glyph. Best with a mono font + dark palette (category: cheatsheet)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "cheatsheet",
+        "shortcuts",
+        "reference",
+        "keycaps",
+        "content"
+      ]
+    },
+    {
+      "id": "index-contents",
+      "file": "index-contents.html",
+      "name": "Index / Contents",
+      "use": "Numbered table-of-contents with dotted leaders + spiral-binding edge (category: index-contents)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "index-contents",
+        "toc",
+        "contents",
+        "overview",
+        "content"
+      ]
+    },
+    {
+      "id": "recipe-card",
+      "file": "recipe-card.html",
+      "name": "Recipe / Formula",
+      "use": "Two zones: ingredients/inputs + numbered method (category: recipe-card)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "recipe-card",
+        "formula",
+        "ingredients",
+        "method",
+        "content"
+      ]
+    },
+    {
+      "id": "faq-qa",
+      "file": "faq-qa.html",
+      "name": "FAQ / Q&A",
+      "use": "Stacked question+answer cards with Q/A badges (category: faq-qa)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "faq-qa",
+        "questions",
+        "qa",
+        "objections",
+        "content"
+      ]
+    },
+    {
+      "id": "tool-roundup",
+      "file": "tool-roundup.html",
+      "name": "Tool / Resource Roundup",
+      "use": "Rows of logo + name + one-liner + arrow. Replace logo squares + names (category: tool-roundup)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "tool-roundup",
+        "resources",
+        "tools",
+        "list",
+        "content"
+      ]
+    },
+    {
+      "id": "quote-serif",
+      "file": "quote-serif.html",
+      "name": "Quote (editorial serif)",
+      "use": "Big serif pull-quote + giant quote mark. HEADLINE = quote, SUBHEAD = attribution. Best with a serif font (category: quote-statement)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "quote-statement",
+        "editorial",
+        "serif",
+        "quote",
+        "cover"
+      ]
+    },
+    {
+      "id": "stat-trio",
+      "file": "stat-trio.html",
+      "name": "Stat Trio",
+      "use": "Three numbers in a row. Edit the three values + labels (category: stat-number)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "stat-number",
+        "stats",
+        "data",
+        "metrics",
+        "content"
+      ]
+    },
+    {
+      "id": "diagram-flow",
+      "file": "diagram-flow.html",
+      "name": "Diagram Flow",
+      "use": "Horizontal connected icon cards (A->B->C->D). Edit labels (category: diagram-explainer)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "diagram-explainer",
+        "flow",
+        "process",
+        "icon-flow",
+        "content"
+      ]
+    },
+    {
+      "id": "listicle-cards",
+      "file": "listicle-cards.html",
+      "name": "Listicle (cards)",
+      "use": "Vertical stack of accent-bar cards. Edit the 4 cards (category: listicle)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "listicle",
+        "cards",
+        "tips",
+        "list",
+        "content"
+      ]
+    },
+    {
+      "id": "hook-split",
+      "file": "hook-split.html",
+      "name": "Hook Cover (split)",
+      "use": "Giant headline + accent panel holding BIGWORD/number. Cover (category: hook-cover)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "hook-cover",
+        "cover",
+        "split",
+        "bold",
+        "hook"
+      ]
+    },
+    {
+      "id": "definition-card",
+      "file": "definition-card.html",
+      "name": "Definition / Concept",
+      "use": "Dictionary entry: HEADLINE = term, SUBHEAD = meaning; edit pron + example. Best with a serif font (category: definition-concept)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "definition-concept",
+        "definition",
+        "term",
+        "glossary",
+        "content"
+      ]
+    },
+    {
+      "id": "stat-brutal",
+      "file": "stat-brutal.html",
+      "name": "Stat (neo-brutal)",
+      "use": "BIGWORD = the number in a hard-shadow block (category: stat-number)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "stat-number",
+        "brutalist",
+        "number",
+        "bold",
+        "content"
+      ]
+    },
+    {
+      "id": "announcement-ticket",
+      "file": "announcement-ticket.html",
+      "name": "Announcement (ticket)",
+      "use": "Event/launch as a perforated ticket. EYEBROW = label, BIGWORD = date (category: announcement-launch)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "announcement-launch",
+        "event",
+        "ticket",
+        "launch",
+        "content"
+      ]
+    },
+    {
+      "id": "mistake-warning",
+      "file": "mistake-warning.html",
+      "name": "Mistake / Warning",
+      "use": "Warning callout: HEADLINE = the mistake, SUBHEAD = why; edit the fix (category: myth-bust)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "myth-bust",
+        "mistake",
+        "warning",
+        "contrarian",
+        "content"
+      ]
+    },
+    {
+      "id": "value-prop-hero",
+      "file": "value-prop-hero.html",
+      "name": "Value Prop Hero",
+      "use": "Benefit headline + product/mockup zone. Replace .mock with a real screenshot (category: value-prop)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "value-prop",
+        "benefit",
+        "mockup",
+        "hero",
+        "cover"
+      ]
+    },
+    {
+      "id": "neon-cyber-card",
+      "file": "neon-cyber-card.html",
+      "name": "Neon Cyber",
+      "use": "Direction-baked: black + neon glow + scanlines + HUD. Best with a dark neon palette (direction: neon-cyber)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "neon-cyber",
+        "cyber",
+        "statement",
+        "dark",
+        "content"
+      ]
+    },
+    {
+      "id": "glass-aurora-card",
+      "file": "glass-aurora-card.html",
+      "name": "Glass Aurora",
+      "use": "Direction-baked: frosted glass panel over aurora mesh. Best with a vibrant gradient palette (direction: glass-aurora)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "glass-aurora",
+        "glass",
+        "feature",
+        "tip",
+        "content"
+      ]
+    },
+    {
+      "id": "memphis-pop",
+      "file": "memphis-pop.html",
+      "name": "Memphis Pop",
+      "use": "Direction-baked: pastel + confetti shapes + squiggle + sticker star. Playful (direction: memphis-pop)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "memphis-pop",
+        "playful",
+        "listicle",
+        "fun",
+        "content"
+      ]
+    },
+    {
+      "id": "vaporwave-cover",
+      "file": "vaporwave-cover.html",
+      "name": "Vaporwave Cover",
+      "use": "Direction-baked: magenta->cyan gradient + perspective grid + sun glow. Centered statement (direction: vaporwave)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "vaporwave",
+        "retro",
+        "cover",
+        "statement",
+        "cover"
+      ]
+    },
+    {
+      "id": "swiss-grid",
+      "file": "swiss-grid.html",
+      "name": "Swiss Grid",
+      "use": "Direction-baked: flat, strict hairline grid, one accent, big index. Minimal (direction: swiss-international)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "swiss-international",
+        "swiss",
+        "minimal",
+        "statement",
+        "content"
+      ]
+    },
+    {
+      "id": "bauhaus-block",
+      "file": "bauhaus-block.html",
+      "name": "Bauhaus Block",
+      "use": "Direction-baked: primary geometric shapes + thick borders + grid cells (direction: bauhaus-block)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "bauhaus-block",
+        "geometric",
+        "bold",
+        "statement",
+        "content"
+      ]
+    },
+    {
+      "id": "y2k-chrome",
+      "file": "y2k-chrome.html",
+      "name": "Y2K Chrome",
+      "use": "Direction-baked: chrome metallic type + sparkles + blob. Best with a cool/steel palette (direction: y2k-chrome)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "y2k-chrome",
+        "chrome",
+        "retro",
+        "hook",
+        "cover"
+      ]
+    },
+    {
+      "id": "magazine-editorial",
+      "file": "magazine-editorial.html",
+      "name": "Magazine Editorial",
+      "use": "Direction-baked: drop cap + two columns + pull quote + hairlines. Best with a serif display (direction: magazine-editorial)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "magazine-editorial",
+        "editorial",
+        "article",
+        "quote",
+        "content"
+      ]
+    },
+    {
+      "id": "mono-terminal",
+      "file": "mono-terminal.html",
+      "name": "Mono Terminal",
+      "use": "Direction-baked: editor/terminal window + // comments + caret. Best with a mono font (direction: mono-terminal)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "mono-terminal",
+        "terminal",
+        "dev",
+        "tip",
+        "content"
+      ]
+    },
+    {
+      "id": "dark-luxe-card",
+      "file": "dark-luxe-card.html",
+      "name": "Dark Luxe",
+      "use": "Direction-baked: near-black + gold accent + centered serif statement + thin rule. Best with a luxe-dark palette (direction: dark-luxe)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "dark-luxe",
+        "luxury",
+        "quote",
+        "announcement",
+        "cover"
+      ]
+    },
+    {
+      "id": "riso-print",
+      "file": "riso-print.html",
+      "name": "Riso Print",
+      "use": "Direction-baked: paper + halftone + 2-ink overprint offset + heavy grain. Best with a warm palette (direction: riso-print)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "riso-print",
+        "retro",
+        "print",
+        "statement",
+        "content"
+      ]
+    },
+    {
+      "id": "claymorphism",
+      "file": "claymorphism.html",
+      "name": "Claymorphism",
+      "use": "Direction-baked: soft pastel + puffy clay cards (inset+outset shadow). Best with a pastel palette + rounded font (direction: claymorphism)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "claymorphism",
+        "playful",
+        "app",
+        "soft",
+        "content"
+      ]
+    },
+    {
+      "id": "depth-3d",
+      "file": "depth-3d.html",
+      "name": "3D Depth",
+      "use": "Direction-baked: extruded layered type + deep stacked shadow (direction: 3d-depth)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "3d-depth",
+        "bold",
+        "poster",
+        "statement",
+        "cover"
+      ]
+    },
+    {
+      "id": "isometric",
+      "file": "isometric.html",
+      "name": "Isometric",
+      "use": "Direction-baked: faint iso grid + 2.5D cube motif. Technical-friendly (direction: isometric)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "isometric",
+        "tech",
+        "explainer",
+        "saas",
+        "content"
+      ]
+    },
+    {
+      "id": "paper-craft",
+      "file": "paper-craft.html",
+      "name": "Paper Craft",
+      "use": "Direction-baked: layered cut-paper shapes + soft shadows framing a card. Best with a warm palette (direction: paper-craft)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "paper-craft",
+        "craft",
+        "warm",
+        "statement",
+        "content"
+      ]
+    },
+    {
+      "id": "organic-natural",
+      "file": "organic-natural.html",
+      "name": "Organic Natural",
+      "use": "Direction-baked: big soft blob + earthy + soft serif. Calm, human. Best with a serif font (direction: organic-natural)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "organic-natural",
+        "wellness",
+        "calm",
+        "quote",
+        "content"
+      ]
+    },
+    {
+      "id": "art-deco",
+      "file": "art-deco.html",
+      "name": "Art Deco",
+      "use": "Direction-baked: gold linework frame + sunburst + symmetric serif caps. Best with dark+gold palette + serif (direction: art-deco)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "art-deco",
+        "luxury",
+        "elegant",
+        "quote",
+        "cover"
+      ]
+    },
+    {
+      "id": "collage-cutout",
+      "file": "collage-cutout.html",
+      "name": "Collage Cutout",
+      "use": "Direction-baked: torn-paper scraps + tape + halftone + ransom-note type. HEADLINE is the one big word; edit scraps (direction: collage-cutout)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "collage-cutout",
+        "collage",
+        "bold",
+        "statement",
+        "cover"
+      ]
+    },
+    {
+      "id": "sketch-notebook",
+      "file": "sketch-notebook.html",
+      "name": "Sketch Notebook",
+      "use": "Direction-baked: dot-grid paper + marker headline + hand-drawn circle/arrow. Best with a handwritten/marker font (direction: sketch-notebook)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "sketch-notebook",
+        "educational",
+        "doodle",
+        "tip",
+        "content"
+      ]
+    },
+    {
+      "id": "grain-gradient",
+      "file": "grain-gradient.html",
+      "name": "Grain Gradient",
+      "use": "Direction-baked: bold duotone gradient + heavy grain + edge-pinned type. Album/poster (direction: grain-gradient)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "grain-gradient",
+        "poster",
+        "music",
+        "bold",
+        "cover"
+      ]
+    },
+    {
+      "id": "floating-3d",
+      "file": "floating-3d.html",
+      "name": "Floating 3D Orb",
+      "use": "Direction-baked 3D: a glowing floating orb hero (3D focal mass) with a real ground shadow + extruded headline. Best on a dark vibrant palette. Cover/hero. (3D)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080",
+        "1080x1920"
+      ],
+      "tags": [
+        "3d",
+        "depth",
+        "orb",
+        "floating",
+        "hero",
+        "cover",
+        "launch",
+        "content"
+      ]
+    },
+    {
+      "id": "neumorphic-card",
+      "file": "neumorphic-card.html",
+      "name": "Neumorphic Card",
+      "use": "3D: soft neumorphic UI — raised eyebrow chip + inset body panel + soft dots. Text sits on the base, never on the raised chips. Clean/premium. (3D)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "3d",
+        "neumorphism",
+        "soft",
+        "ui",
+        "depth",
+        "minimal",
+        "content"
+      ]
+    },
+    {
+      "id": "extrude-3d-stat",
+      "file": "extrude-3d-stat.html",
+      "name": "Extruded 3D Stat",
+      "use": "3D: a giant EXTRUDED number (BIGWORD) with deep stacked extrusion + ambient cast. Big metric / proof / milestone. (3D)",
+      "best_formats": [
+        "1080x1350",
+        "1080x1080"
+      ],
+      "tags": [
+        "3d",
+        "stat",
+        "number",
+        "extrude",
+        "depth",
+        "proof",
+        "content"
+      ]
+    }
+  ]
+}

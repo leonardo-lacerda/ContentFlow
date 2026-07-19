@@ -14,10 +14,10 @@ export const FilterChip: FC<{
       type="button"
       onClick={onClick}
       className={clsx(
-        'h-[32px] px-[12px] rounded-[8px] text-[12px] font-[600] transition-colors whitespace-nowrap',
+        'h-[32px] px-[12px] rounded-full text-[12px] font-[600] transition-colors whitespace-nowrap border',
         active
-          ? 'bg-boxFocused text-textItemFocused'
-          : 'bg-newSettings text-textItemBlur hover:text-newTextColor border border-newTableBorder',
+          ? 'bg-boxFocused text-textItemFocused border-transparent'
+          : 'bg-newBgColorInner text-textItemBlur border-newTableBorder hover:text-newTextColor hover:border-[color:var(--cf-line-strong,#d6d3d1)]',
         className
       )}
     >

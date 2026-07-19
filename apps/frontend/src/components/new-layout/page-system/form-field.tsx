@@ -10,7 +10,7 @@ import {
 import clsx from 'clsx';
 
 const controlClass =
-  'w-full bg-newBgColorInner border border-newTableBorder rounded-[10px] px-[12px] py-[10px] text-[13px] text-newTextColor placeholder:text-textItemBlur outline-none focus:border-btnPrimary transition-colors disabled:opacity-50';
+  'w-full bg-newBgColorInner border border-newTableBorder rounded-[10px] px-[12px] py-[10px] text-[13px] text-newTextColor placeholder:text-textItemBlur outline-none focus:border-btnPrimary focus:shadow-cfFocus transition-[border-color,box-shadow] duration-150 disabled:opacity-50';
 
 export const FormField: FC<{
   label: string;
@@ -29,7 +29,7 @@ export const FormField: FC<{
       </span>
       {children}
       {hint ? (
-        <span className="text-[11px] text-textItemBlur">{hint}</span>
+        <span className="text-[11px] text-textItemBlur leading-snug">{hint}</span>
       ) : null}
     </label>
   );

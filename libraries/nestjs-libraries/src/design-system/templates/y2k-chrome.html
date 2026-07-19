@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width={{W}}, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{FONTS_LINK}}" rel="stylesheet">
+<!-- DIRECTION: y2k-chrome. Glossy chrome metallic type + sparkles + blob. Best with a cool/steel palette. -->
+<style>
+  :root{--bg:{{BG}};--surface:{{SURFACE}};--text:{{TEXT}};--muted:{{MUTED}};--accent:{{ACCENT}};--accent2:{{ACCENT2}}}
+  *{margin:0;padding:0;box-sizing:border-box}html,body{width:{{W}}px;height:{{H}}px;overflow:hidden}
+  body{font-family:'{{BODY}}',sans-serif;color:var(--text)}
+  .canvas{position:relative;width:{{W}}px;height:{{H}}px;background:{{GRADIENT}};padding:8vw;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .blob{position:absolute;z-index:0;width:60vw;height:60vw;top:48%;left:50%;transform:translate(-50%,-50%);border-radius:42% 58% 63% 37%/45% 38% 62% 55%;background:radial-gradient(circle at 35% 30%,var(--accent),var(--accent2));opacity:.4;filter:blur(2px)}
+  .eyebrow{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-size:2vw;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--accent);margin-bottom:3vw}
+  .headline{position:relative;z-index:2;font-family:'{{DISPLAY}}',sans-serif;font-weight:800;font-size:10vw;line-height:.98;letter-spacing:-.01em;max-width:12ch;
+    background:linear-gradient(180deg,#fff,#d6e4ff 38%,#7f9bd6 54%,#fff 72%,#a9bfe6);-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 .3vw .4vw rgba(0,0,0,.25))}
+  .sub{position:relative;z-index:2;margin-top:3vw;font-size:2.6vw;line-height:1.4;color:var(--text);opacity:.85;max-width:26ch}
+  .spark{position:absolute;z-index:2;fill:#fff;filter:drop-shadow(0 0 1vw var(--accent))}
+  .s1{top:20vw;left:16vw;width:6vw}.s2{top:30vw;right:14vw;width:4vw}.s3{bottom:30vw;left:22vw;width:3.4vw}
+  .footer{position:absolute;z-index:2;bottom:6vw;font-size:2vw;font-weight:700;color:var(--text)}
+</style></head>
+<body><div class="canvas">
+  <div class="blob"></div>
+  <svg class="spark s1" viewBox="0 0 24 24"><path d="M12 0 C13 8,16 11,24 12 C16 13,13 16,12 24 C11 16,8 13,0 12 C8 11,11 8,12 0Z"/></svg>
+  <svg class="spark s2" viewBox="0 0 24 24"><path d="M12 0 C13 8,16 11,24 12 C16 13,13 16,12 24 C11 16,8 13,0 12 C8 11,11 8,12 0Z"/></svg>
+  <svg class="spark s3" viewBox="0 0 24 24"><path d="M12 0 C13 8,16 11,24 12 C16 13,13 16,12 24 C11 16,8 13,0 12 C8 11,11 8,12 0Z"/></svg>
+  <div class="eyebrow">{{EYEBROW}}</div>
+  <h1 class="headline">{{HEADLINE}}</h1>
+  <p class="sub">{{SUBHEAD}}</p>
+  <span class="footer">{{HANDLE}} · {{CTA}}</span>
+</div></body></html>

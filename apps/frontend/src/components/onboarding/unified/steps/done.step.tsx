@@ -20,14 +20,14 @@ export function DoneStep({ ctx }: { ctx: UnifiedOnboardingContext }) {
   }, []);
 
   return (
-    <div className="rounded-[14px] border border-newTableBorder bg-newSettings p-8 space-y-6 text-center">
+    <div className="rounded-[16px] border border-newTableBorder bg-newBgColorInner shadow-cfSm p-8 space-y-6 text-center">
       <div className="flex justify-center">
         <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
           <CheckCircle2 className="w-9 h-9 text-green-600 dark:text-green-400" />
         </div>
       </div>
       <div>
-        <h2 className="text-2xl font-[800] text-newTextColor">
+        <h2 className="text-2xl font-[600] font-serif tracking-[-0.02em] text-newTextColor">
           {t('onboarding_done_title', 'Tudo pronto!')}
         </h2>
         <p className="text-sm text-textItemBlur mt-2 max-w-md mx-auto">

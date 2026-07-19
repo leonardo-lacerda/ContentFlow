@@ -13,14 +13,14 @@ export const PageHeader: FC<{
   return (
     <div
       className={clsx(
-        'flex flex-col shrink-0 border-b border-newTableBorder',
+        'flex flex-col shrink-0 border-b border-newTableBorder bg-newBgColorInner',
         className
       )}
     >
       <div className="flex items-center gap-[12px] px-[20px] min-h-[56px] py-[10px]">
         <div className="flex-1 min-w-0">
           {description ? (
-            <p className="text-[13px] text-textItemBlur truncate leading-snug">
+            <p className="text-[13px] text-textItemBlur truncate leading-snug max-w-[720px]">
               {description}
             </p>
           ) : null}
