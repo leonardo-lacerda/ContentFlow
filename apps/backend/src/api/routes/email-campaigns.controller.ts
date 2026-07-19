@@ -1,5 +1,4 @@
-import { UseGuards, Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
-import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization, EmailCampaignType } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -9,7 +8,6 @@ import { EmailCampaignGenerateService } from '@gitroom/nestjs-libraries/ai-gener
 import { EmailCampaignService } from '@gitroom/nestjs-libraries/database/prisma/email-campaigns/email-campaign.service';
 
 @ApiTags('Email Campaigns')
-@UseGuards(V1SurfaceGuard)
 @Controller('/email-campaigns')
 export class EmailCampaignsController {
   constructor(
@@ -61,7 +59,7 @@ export class EmailCampaignsController {
   // ── AI Generation ────────────────────────────────────────
 
   @Post('/generate')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async generateCampaign(
     @GetOrgFromRequest() org: Organization,
     @Body() body: {
@@ -78,7 +76,7 @@ export class EmailCampaignsController {
   }
 
   @Post('/generate-welcome-sequence')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async generateWelcomeSequence(
     @GetOrgFromRequest() org: Organization,
     @Body() body: {
@@ -113,7 +111,7 @@ export class EmailCampaignsController {
   // ── Edit ─────────────────────────────────────────────────
 
   @Put('/:id')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async updateCampaign(
     @Param('id') id: string,
     @GetOrgFromRequest() org: Organization,
@@ -137,7 +135,7 @@ export class EmailCampaignsController {
   }
 
   @Post('/:id/re-render')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async reRenderHtml(
     @Param('id') id: string,
     @GetOrgFromRequest() org: Organization,
@@ -172,7 +170,7 @@ export class EmailCampaignsController {
   // ── Delete ───────────────────────────────────────────────
 
   @Delete('/:id')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async deleteCampaign(
     @Param('id') id: string,
     @GetOrgFromRequest() org: Organization,

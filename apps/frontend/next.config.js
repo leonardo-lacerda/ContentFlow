@@ -85,6 +85,22 @@ const nextConfig = {
         destination: '/generate',
         permanent: false,
       },
+      // Ampliar — deep links legados
+      {
+        source: '/social-posts/ad-creatives',
+        destination: '/ads',
+        permanent: false,
+      },
+      {
+        source: '/social-posts/email-campaigns',
+        destination: '/email',
+        permanent: false,
+      },
+      {
+        source: '/social-posts/video-scripts',
+        destination: '/video',
+        permanent: false,
+      },
       { source: '/social-posts', destination: '/posts', permanent: false },
       {
         source: '/social-posts/:path*',

@@ -6,6 +6,7 @@ import { BrandProfileService } from '../brands/brand-profile.service';
 import { CarouselProjectService } from '../carousel-projects/carousel-project.service';
 import { VideoScriptGenerateService } from '@gitroom/nestjs-libraries/ai-generate/video-script-generate.service';
 import { VIDEO_FORMATS } from '@gitroom/nestjs-libraries/ai-generate/schemas/video-script.schema';
+import { PlanLimitsService } from '../subscriptions/plan-limits.service';
 
 @Injectable()
 export class ShortVideoService {
@@ -17,6 +18,7 @@ export class ShortVideoService {
     private brandProfileService: BrandProfileService,
     private carouselProjectService: CarouselProjectService,
     private videoScriptGenerateService: VideoScriptGenerateService,
+    private planLimitsService: PlanLimitsService,
   ) {}
 
   async getProjects(orgId: string) {
@@ -35,7 +37,7 @@ export class ShortVideoService {
 
   async createProject(orgId: string, data: {
     brandProfileId: string;
-    carouselProjectId: string;
+    carouselProjectId?: string;
     contentIdeaId?: string;
     name: string;
     format?: string;
@@ -45,9 +47,20 @@ export class ShortVideoService {
     // Validate brand ownership
     await this.brandProfileService.validateBrandOwnership(orgId, data.brandProfileId);
 
-    // Validate carousel exists
-    const carousel = await this.carouselProjectService.getProject(data.carouselProjectId, orgId);
-    if (!carousel) throw new NotFoundException('Carousel project not found');
+    if (!data.carouselProjectId && !data.contentIdeaId) {
+      throw new BadRequestException(
+        'Provide carouselProjectId or contentIdeaId'
+      );
+    }
+
+    // Validate carousel exists when provided
+    if (data.carouselProjectId) {
+      const carousel = await this.carouselProjectService.getProject(
+        data.carouselProjectId,
+        orgId
+      );
+      if (!carousel) throw new NotFoundException('Carousel project not found');
+    }
 
     // Resolve format defaults
     const formatConfig = VIDEO_FORMATS.find(f => f.id === (data.format || 'REELS')) || VIDEO_FORMATS[0];
@@ -55,8 +68,8 @@ export class ShortVideoService {
     return this.shortVideoRepository.create({
       organizationId: orgId,
       brandProfileId: data.brandProfileId,
-      carouselProjectId: data.carouselProjectId,
-      contentIdeaId: data.contentIdeaId,
+      carouselProjectId: data.carouselProjectId || null,
+      contentIdeaId: data.contentIdeaId || null,
       name: data.name,
       format: formatConfig.id as ShortVideoFormat,
       maxDurationSec: data.maxDurationSec || formatConfig.maxDuration,
@@ -73,13 +86,15 @@ export class ShortVideoService {
       style?: string;
     } = {}
   ) {
+    await this.planLimitsService.enforceLimit(orgId, 'video_script');
     const project = await this.shortVideoRepository.findById(projectId, orgId);
     if (!project) throw new NotFoundException('Short video project not found');
 
     // Delegate to the AI generation service
     const script = await this.videoScriptGenerateService.generateVideoScript(orgId, {
       brandProfileId: project.brandProfileId,
-      carouselProjectId: project.carouselProjectId,
+      carouselProjectId: project.carouselProjectId || undefined,
+      contentIdeaId: project.contentIdeaId || undefined,
       format: project.format,
       maxDuration: options.targetDurationSec || project.maxDurationSec,
       additionalContext: options.style ? `Style: ${options.style}` : undefined,

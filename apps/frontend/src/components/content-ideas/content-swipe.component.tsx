@@ -36,6 +36,7 @@ import {
   EmptyState,
   SectionCard,
 } from '@gitroom/frontend/components/new-layout/page-system';
+import { AmpliarActions } from '@gitroom/frontend/components/ampliar/ampliar-actions.component';
 
 function MetaBlock({
   icon,
@@ -476,6 +477,17 @@ export function ContentSwipe({ brandId }: { brandId: string }) {
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
+
+                <AmpliarActions
+                  compact
+                  from="swipe"
+                  brandId={brandId}
+                  ideaId={currentIdea.id}
+                  topic={currentIdea.title}
+                  hook={currentIdea.hook}
+                  angle={currentIdea.angle}
+                  goal={currentIdea.goal}
+                />
               </SectionCard>
             ) : null}
 

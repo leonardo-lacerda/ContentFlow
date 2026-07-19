@@ -95,6 +95,21 @@ export const Features: FC<{
     list.push(
       `${currentPricing.content_ideas_per_month} ideias / mês`
     );
+    if ((currentPricing as any).ad_kits_per_month != null) {
+      list.push(
+        `${(currentPricing as any).ad_kits_per_month} kits de anúncio / mês`
+      );
+    }
+    if ((currentPricing as any).email_campaigns_per_month != null) {
+      list.push(
+        `${(currentPricing as any).email_campaigns_per_month} campanhas de e-mail / mês`
+      );
+    }
+    if ((currentPricing as any).video_scripts_per_month != null) {
+      list.push(
+        `${(currentPricing as any).video_scripts_per_month} roteiros de vídeo / mês`
+      );
+    }
     list.push(
       `${
         currentPricing.posts_per_month > 10000

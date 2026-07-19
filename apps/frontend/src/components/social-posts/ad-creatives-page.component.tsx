@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { Button } from '@gitroom/react/form/button';
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
 import {
@@ -28,6 +28,11 @@ import {
   listAds,
   getAdTemplates,
 } from '../ads/ads.service';
+import {
+  buildContextFromPrefill,
+  useAmpliarPrefill,
+} from '@gitroom/frontend/components/ampliar/use-ampliar-prefill';
+import { AmpliarSourceBanner } from '@gitroom/frontend/components/ampliar/ampliar-source-banner.component';
 
 const PLATFORM_LABELS: Record<string, string> = {
   META_FACEBOOK: 'Facebook',
@@ -151,23 +156,33 @@ function GenerateAdsForm({
   templates,
   onGenerated,
   onClose,
+  initialObjective,
+  initialContext,
+  initialVariants = 3,
+  contentIdeaId,
+  carouselProjectId,
 }: {
   brandId?: string;
   templates: AdTemplateSummary[];
   onGenerated: (batch: AdCreativeBatch) => void;
   onClose: () => void;
+  initialObjective?: string;
+  initialContext?: string;
+  initialVariants?: number;
+  contentIdeaId?: string;
+  carouselProjectId?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [contentObjective, setContentObjective] = useState('');
+  const [contentObjective, setContentObjective] = useState(initialObjective || '');
   const [productOrService, setProductOrService] = useState('');
-  const [objective, setObjective] = useState('CONVERSION');
+  const [objective, setObjective] = useState('TRAFFIC');
   const [adType, setAdType] = useState<'AUTO' | 'STATIC' | 'CAROUSEL'>('AUTO');
   const [platforms, setPlatforms] = useState<string[]>(['META_INSTAGRAM']);
   const [adTemplateId, setAdTemplateId] = useState('');
   const [destinationUrl, setDestinationUrl] = useState('');
-  const [additionalContext, setAdditionalContext] = useState('');
-  const [variants, setVariants] = useState(1);
+  const [additionalContext, setAdditionalContext] = useState(initialContext || '');
+  const [variants, setVariants] = useState(initialVariants);
 
   const togglePlatform = (p: string) => {
     setPlatforms((prev) =>
@@ -191,7 +206,9 @@ function GenerateAdsForm({
         variants,
         destinationUrl: destinationUrl || undefined,
         additionalContext: additionalContext || undefined,
-      });
+        contentIdeaId: contentIdeaId || undefined,
+        carouselProjectId: carouselProjectId || undefined,
+      } as any);
       onGenerated(data);
       onClose();
     } catch (e: any) {
@@ -334,10 +351,45 @@ function GenerateAdsForm({
   );
 }
 
-export function AdCreativesPage() {
+function exportAdsCsv(ads: GeneratedAdCreative[]) {
+  const header = [
+    'platform',
+    'type',
+    'headline',
+    'primaryText',
+    'description',
+    'ctaButton',
+    'destinationUrl',
+  ];
+  const rows = ads.map((ad) =>
+    [
+      ad.platform,
+      ad.type,
+      ad.headline,
+      ad.primaryText,
+      ad.description || '',
+      ad.ctaButton,
+      ad.destinationUrl || '',
+    ]
+      .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+      .join(',')
+  );
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ad-kit-${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function AdCreativesPageInner() {
   const { data: selectedBrand } = useSelectedBrand();
   const brandId = selectedBrand?.id as string | undefined;
   const { openCreateDrawer } = useCreateDrawer();
+  const prefill = useAmpliarPrefill();
+  const openedPrefill = useRef(false);
 
   const [loadingList, setLoadingList] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -374,20 +426,38 @@ export function AdCreativesPage() {
     };
   }, [brandId]);
 
-  const openGenerate = () => {
+  const openGenerate = (opts?: {
+    objective?: string;
+    context?: string;
+    ideaId?: string;
+    projectId?: string;
+  }) => {
     openCreateDrawer({
-      title: 'Gerar ad creatives',
+      title: 'Gerar kit de anúncios',
       size: 600,
       children: (close) => (
         <GenerateAdsForm
-          brandId={brandId}
+          brandId={brandId || prefill.brandId}
           templates={templates}
           onClose={close}
           onGenerated={(data) => setBatch(data)}
+          initialObjective={opts?.objective || prefill.topic || prefill.hook}
+          initialContext={opts?.context || buildContextFromPrefill(prefill)}
+          initialVariants={3}
+          contentIdeaId={opts?.ideaId || prefill.ideaId}
+          carouselProjectId={opts?.projectId || prefill.projectId}
         />
       ),
     });
   };
+
+  useEffect(() => {
+    if (!prefill.hasSource || openedPrefill.current || !templates.length) return;
+    if (!brandId && !prefill.brandId) return;
+    openedPrefill.current = true;
+    openGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill.hasSource, brandId, templates.length]);
 
   const handleSaveBatch = async () => {
     if (!batch || !brandId) return;
@@ -410,10 +480,20 @@ export function AdCreativesPage() {
   return (
     <PageShell>
       <PageHeader
-        description="Crie ads com IA para Meta e LinkedIn, com checagem de compliance."
-        actions={<Button onClick={openGenerate}>Gerar ads</Button>}
+        description="Kit de anúncios com DNA da marca — preview, policy check e export CSV."
+        actions={
+          <div className="flex gap-2">
+            {generatedAds.length > 0 ? (
+              <Button secondary onClick={() => exportAdsCsv(generatedAds)}>
+                Baixar kit CSV
+              </Button>
+            ) : null}
+            <Button onClick={() => openGenerate()}>Gerar ads</Button>
+          </div>
+        }
       />
       <PageBody className={!hasContent && !loadingList ? '!p-0' : undefined}>
+        <AmpliarSourceBanner prefill={prefill} />
         {error ? (
           <div className="text-[13px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-[10px] p-[12px]">
             {error}
@@ -439,7 +519,7 @@ export function AdCreativesPage() {
             title="Nenhum ad creative ainda"
             description="Gere variações de anúncio a partir do objetivo da campanha e da marca selecionada."
             actionLabel="Gerar ads"
-            onAction={openGenerate}
+            onAction={() => openGenerate()}
           />
         ) : (
           <div className="flex flex-col gap-[20px]">
@@ -449,13 +529,22 @@ export function AdCreativesPage() {
                   <div className="text-[13px] font-[600] text-newTextColor">
                     Gerados agora ({generatedAds.length})
                   </div>
-                  <Button
-                    onClick={handleSaveBatch}
-                    loading={saving}
-                    className="!h-[32px] !text-[12px]"
-                  >
-                    Salvar todos
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      secondary
+                      onClick={() => exportAdsCsv(generatedAds)}
+                      className="!h-[32px] !text-[12px]"
+                    >
+                      Export CSV
+                    </Button>
+                    <Button
+                      onClick={handleSaveBatch}
+                      loading={saving}
+                      className="!h-[32px] !text-[12px]"
+                    >
+                      Salvar todos
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid gap-[12px]">
                   {generatedAds.map((ad: GeneratedAdCreative, i: number) => (
@@ -484,5 +573,17 @@ export function AdCreativesPage() {
         )}
       </PageBody>
     </PageShell>
+  );
+}
+
+export function AdCreativesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 text-sm text-textItemBlur">Carregando anúncios…</div>
+      }
+    >
+      <AdCreativesPageInner />
+    </Suspense>
   );
 }

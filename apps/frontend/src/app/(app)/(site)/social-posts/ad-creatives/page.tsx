@@ -1,3 +1,3 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
-export default function Index() { redirect('/posts'); }
+export default function Index() { redirect('/ads'); }

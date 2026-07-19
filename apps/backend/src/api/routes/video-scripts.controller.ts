@@ -1,5 +1,4 @@
-import { UseGuards, Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -11,7 +10,6 @@ import { GenerateVideoScriptDto } from '@gitroom/nestjs-libraries/dtos/short-vid
 import { RenderVideoDto } from '@gitroom/nestjs-libraries/dtos/short-video/render-video.dto';
 
 @ApiTags('Video Scripts')
-@UseGuards(V1SurfaceGuard)
 @Controller('/video-scripts')
 export class VideoScriptsController {
   constructor(private shortVideoService: ShortVideoService) {}
@@ -38,7 +36,7 @@ export class VideoScriptsController {
   }
 
   @Post('/')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async createProject(
     @GetOrgFromRequest() org: Organization,
     @Body() body: CreateShortVideoProjectDto
@@ -47,23 +45,26 @@ export class VideoScriptsController {
   }
 
   @Post('/generate')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async generate(
     @GetOrgFromRequest() org: Organization,
     @Body() body: {
       brandProfileId: string;
-      carouselProjectId: string;
-      format: string;
+      carouselProjectId?: string;
+      contentIdeaId?: string;
+      name?: string;
+      format?: string;
       maxDuration?: number;
       additionalContext?: string;
     }
   ) {
-    // Legacy endpoint — creates a project and generates script in one step
+    // Creates a project and generates script (carousel and/or idea)
     const project = await this.shortVideoService.createProject(org.id, {
       brandProfileId: body.brandProfileId,
       carouselProjectId: body.carouselProjectId,
-      name: `Video from carousel`,
-      format: body.format,
+      contentIdeaId: body.contentIdeaId,
+      name: body.name || body.additionalContext?.slice(0, 80) || 'Roteiro de vídeo',
+      format: body.format || 'REELS',
       maxDurationSec: body.maxDuration,
     });
 
@@ -74,7 +75,7 @@ export class VideoScriptsController {
   }
 
   @Post('/:id/generate-script')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async generateScript(
     @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
@@ -88,7 +89,7 @@ export class VideoScriptsController {
   }
 
   @Post('/:id/estimate-render')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async estimateRenderCost(
     @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
@@ -98,7 +99,7 @@ export class VideoScriptsController {
   }
 
   @Post('/:id/render')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async renderVideo(
     @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
@@ -114,7 +115,7 @@ export class VideoScriptsController {
   }
 
   @Patch('/:id/status')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async updateStatus(
     @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
@@ -124,7 +125,7 @@ export class VideoScriptsController {
   }
 
   @Delete('/:id')
-  @CheckPolicies([AuthorizationActions.Delete, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Delete, Sections.AI])
   async deleteProject(
     @GetOrgFromRequest() org: Organization,
     @Param('id') id: string

@@ -1262,7 +1262,7 @@ enum EditorialSlotStatus {
 
 model CarouselPerformance {
   id                String    @id @default(uuid())
-  carouselProjectId String
+  carouselProjectId String?
   postId            String?
   organizationId    String
   brandProfileId    String
@@ -1284,7 +1284,7 @@ model CarouselPerformance {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  carouselProject CarouselProject @relation(fields: [carouselProjectId], references: [id])
+  carouselProject CarouselProject? @relation(fields: [carouselProjectId], references: [id])
 
   @@index([carouselProjectId])
   @@index([organizationId])
@@ -1504,7 +1504,7 @@ model ShortVideoProject {
   id                String           @id @default(uuid())
   organizationId    String
   brandProfileId    String
-  carouselProjectId String
+  carouselProjectId String?
   contentIdeaId     String?
   name              String
   format            ShortVideoFormat @default(REELS)
@@ -1535,7 +1535,7 @@ model ShortVideoProject {
 
   organization    Organization    @relation(fields: [organizationId], references: [id])
   brandProfile    BrandProfile    @relation(fields: [brandProfileId], references: [id])
-  carouselProject CarouselProject @relation(fields: [carouselProjectId], references: [id])
+  carouselProject CarouselProject? @relation(fields: [carouselProjectId], references: [id])
   contentIdea     ContentIdea?    @relation(fields: [contentIdeaId], references: [id])
 
   @@index([organizationId])

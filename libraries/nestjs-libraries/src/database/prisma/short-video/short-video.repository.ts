@@ -43,14 +43,25 @@ export class ShortVideoRepository {
   create(data: {
     organizationId: string;
     brandProfileId: string;
-    carouselProjectId: string;
-    contentIdeaId?: string;
+    carouselProjectId?: string | null;
+    contentIdeaId?: string | null;
     name: string;
     format?: ShortVideoFormat;
     maxDurationSec?: number;
     aspectRatio?: string;
   }) {
-    return this.prisma.shortVideoProject.create({ data });
+    return this.prisma.shortVideoProject.create({
+      data: {
+        organizationId: data.organizationId,
+        brandProfileId: data.brandProfileId,
+        carouselProjectId: data.carouselProjectId || null,
+        contentIdeaId: data.contentIdeaId || null,
+        name: data.name,
+        format: data.format,
+        maxDurationSec: data.maxDurationSec,
+        aspectRatio: data.aspectRatio,
+      },
+    });
   }
 
   update(id: string, orgId: string, data: {

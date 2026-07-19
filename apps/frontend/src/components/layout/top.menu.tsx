@@ -100,6 +100,24 @@ const Icons = {
       <path d="M8 8h8M8 12h8M8 16h5" />
     </svg>
   ),
+  ads: (
+    <svg {...iconClass}>
+      <path d="M4 18V6l8 2v12l-8-2z" />
+      <path d="M12 8l8-2v12l-8 2V8z" />
+    </svg>
+  ),
+  email: (
+    <svg {...iconClass}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 7l9 6 9-6" />
+    </svg>
+  ),
+  video: (
+    <svg {...iconClass}>
+      <rect x="3" y="6" width="14" height="12" rx="2" />
+      <path d="M17 10l4-2v8l-4-2v-4z" />
+    </svg>
+  ),
   billing: (
     <svg {...iconClass}>
       <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -147,6 +165,21 @@ export const useMenuItem = () => {
       name: t('editorial', 'Editorial'),
       icon: Icons.editorial,
       path: '/editorial',
+    },
+    {
+      name: t('ads', 'Anúncios'),
+      icon: Icons.ads,
+      path: '/ads',
+    },
+    {
+      name: t('email_campaigns', 'E-mail'),
+      icon: Icons.email,
+      path: '/email',
+    },
+    {
+      name: t('video_scripts', 'Roteiro de vídeo'),
+      icon: Icons.video,
+      path: '/video',
     },
     {
       name: t('calendar', 'Calendário'),
@@ -212,7 +245,7 @@ const MENU_SECTIONS: { id: string; label: string; paths: string[] }[] = [
   {
     id: 'criar',
     label: 'Criar',
-    paths: ['/swipe', '/generate', '/posts', '/editorial'],
+    paths: ['/swipe', '/generate', '/posts', '/editorial', '/ads', '/email', '/video'],
   },
   {
     id: 'publicar',

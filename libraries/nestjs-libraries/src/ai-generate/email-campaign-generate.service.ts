@@ -9,6 +9,7 @@ import { ContentIdeaService } from '@gitroom/nestjs-libraries/database/prisma/co
 import { CarouselProjectService } from '@gitroom/nestjs-libraries/database/prisma/carousel-projects/carousel-project.service';
 import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.service';
 import { EmailCampaignService } from '@gitroom/nestjs-libraries/database/prisma/email-campaigns/email-campaign.service';
+import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import { renderEmailHtml, renderSimpleEmailHtml } from '@gitroom/nestjs-libraries/email-generator/email-html.renderer';
 import { getEmailTemplateById, getActiveEmailTemplates } from '@gitroom/nestjs-libraries/email-generator/email-template-definitions';
 
@@ -42,6 +43,7 @@ export class EmailCampaignGenerateService {
     private carouselProjectService: CarouselProjectService,
     private generationJobService: GenerationJobService,
     private emailCampaignService: EmailCampaignService,
+    private planLimitsService: PlanLimitsService,
   ) {}
 
   /**
@@ -57,6 +59,7 @@ export class EmailCampaignGenerateService {
     templateId?: string;
     additionalContext?: string;
   }): Promise<any> {
+    await this.planLimitsService.enforceLimit(orgId, 'email_campaign');
     const brand = await this.brandProfileService.getBrand(dto.brandProfileId);
     if (!brand || brand.organizationId !== orgId) throw new Error('Brand not found');
 
@@ -189,7 +192,10 @@ Generate the email with subject, preheader, content blocks, and CTA. Return JSON
     brandProfileId: string;
     sequenceLength?: number;
     additionalContext?: string;
+    contentIdeaId?: string;
+    carouselProjectId?: string;
   }): Promise<any[]> {
+    await this.planLimitsService.enforceLimit(orgId, 'email_campaign');
     const brand = await this.brandProfileService.getBrand(dto.brandProfileId);
     if (!brand || brand.organizationId !== orgId) throw new Error('Brand not found');
 

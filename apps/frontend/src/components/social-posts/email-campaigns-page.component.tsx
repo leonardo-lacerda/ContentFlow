@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { Button } from '@gitroom/react/form/button';
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
@@ -17,6 +17,11 @@ import {
   FormSelect,
   FilterChip,
 } from '@gitroom/frontend/components/new-layout/page-system';
+import {
+  buildContextFromPrefill,
+  useAmpliarPrefill,
+} from '@gitroom/frontend/components/ampliar/use-ampliar-prefill';
+import { AmpliarSourceBanner } from '@gitroom/frontend/components/ampliar/ampliar-source-banner.component';
 
 type CampaignType = 'NEWSLETTER' | 'WELCOME_SEQUENCE' | 'PROMOTIONAL';
 type CampaignStatus = 'DRAFT' | 'GENERATING' | 'READY' | 'EXPORTED' | 'FAILED';
@@ -84,20 +89,39 @@ function GenerateCampaignForm({
   templates,
   onDone,
   onClose,
+  initialType,
+  initialName,
+  initialContext,
+  contentIdeaId,
+  carouselProjectId,
 }: {
   brandId?: string;
   templates: EmailTemplate[];
   onDone: () => void;
   onClose: () => void;
+  initialType?: string;
+  initialName?: string;
+  initialContext?: string;
+  contentIdeaId?: string;
+  carouselProjectId?: string;
 }) {
   const fetch = useFetch();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [campaignType, setCampaignType] = useState('newsletter');
-  const [campaignName, setCampaignName] = useState('');
+  const normalizedType = (initialType || 'welcome_sequence').toLowerCase();
+  const [campaignType, setCampaignType] = useState(
+    normalizedType.includes('welcome')
+      ? 'welcome_sequence'
+      : normalizedType.includes('promo')
+        ? 'promotional'
+        : normalizedType === 'newsletter'
+          ? 'newsletter'
+          : 'welcome_sequence'
+  );
+  const [campaignName, setCampaignName] = useState(initialName || '');
   const [templateId, setTemplateId] = useState('');
-  const [additionalContext, setAdditionalContext] = useState('');
-  const [sequenceLength, setSequenceLength] = useState(3);
+  const [additionalContext, setAdditionalContext] = useState(initialContext || '');
+  const [sequenceLength, setSequenceLength] = useState(4);
 
   const handleGenerate = async () => {
     if (!brandId) return;
@@ -113,13 +137,21 @@ function GenerateCampaignForm({
 
       const body =
         campaignType === 'welcome_sequence'
-          ? { brandProfileId: brandId, sequenceLength, additionalContext }
+          ? {
+              brandProfileId: brandId,
+              sequenceLength,
+              additionalContext,
+              contentIdeaId,
+              carouselProjectId,
+            }
           : {
               brandProfileId: brandId,
               campaignType,
               name: campaignName.trim(),
               templateId: templateId || undefined,
               additionalContext,
+              contentIdeaId,
+              carouselProjectId,
             };
 
       const res = await fetch(endpoint, {
@@ -272,11 +304,13 @@ function PreviewPanel({
   );
 }
 
-export function EmailCampaignsPage() {
+function EmailCampaignsPageInner() {
   const fetch = useFetch();
   const { data: selectedBrand } = useSelectedBrand();
   const brandId = selectedBrand?.id as string | undefined;
   const { openCreateDrawer } = useCreateDrawer();
+  const prefill = useAmpliarPrefill();
+  const opened = useRef(false);
 
   const [activeTab, setActiveTab] = useState<'all' | CampaignType>('all');
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([]);
@@ -351,14 +385,27 @@ export function EmailCampaignsPage() {
       size: 560,
       children: (close) => (
         <GenerateCampaignForm
-          brandId={brandId}
+          brandId={brandId || prefill.brandId}
           templates={templates}
           onClose={close}
           onDone={loadCampaigns}
+          initialType={prefill.emailType || (prefill.hasSource ? 'promotional' : 'welcome_sequence')}
+          initialName={prefill.topic || ''}
+          initialContext={buildContextFromPrefill(prefill)}
+          contentIdeaId={prefill.ideaId}
+          carouselProjectId={prefill.projectId}
         />
       ),
     });
   };
+
+  useEffect(() => {
+    if (!prefill.hasSource || opened.current) return;
+    if (!brandId && !prefill.brandId) return;
+    opened.current = true;
+    openGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill.hasSource, brandId]);
 
   const openPreview = async (campaign: EmailCampaign) => {
     let html: string | null = campaign.bodyHtml || null;
@@ -409,6 +456,9 @@ export function EmailCampaignsPage() {
         actions={<Button onClick={openGenerate}>Gerar campanha</Button>}
       />
       <PageBody className={!loading && campaigns.length === 0 ? '!p-0' : undefined}>
+        <div className={campaigns.length === 0 ? 'px-5 pt-3' : 'mb-3'}>
+          <AmpliarSourceBanner prefill={prefill} />
+        </div>
         {loading ? (
           <div className="text-[13px] text-textItemBlur py-[40px] text-center">
             Carregando campanhas...
@@ -503,5 +553,17 @@ export function EmailCampaignsPage() {
         )}
       </PageBody>
     </PageShell>
+  );
+}
+
+export function EmailCampaignsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 text-sm text-textItemBlur">Carregando e-mails…</div>
+      }
+    >
+      <EmailCampaignsPageInner />
+    </Suspense>
   );
 }

@@ -6,20 +6,21 @@ import type { VideoScript } from './schemas/video-script.schema';
 import { validateAiResponse } from './ai-response-validator';
 import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
 import { CarouselProjectService } from '@gitroom/nestjs-libraries/database/prisma/carousel-projects/carousel-project.service';
+import { ContentIdeaService } from '@gitroom/nestjs-libraries/database/prisma/content-ideas/content-idea.service';
 import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.service';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'sk-proj-' });
 
-const SYSTEM_PROMPT = `You are an expert short-form video scriptwriter. You transform carousel content into engaging video scripts for Reels, TikTok, and Shorts.
+const SYSTEM_PROMPT = `You are an expert short-form video scriptwriter. You transform content ideas and carousels into engaging video scripts for Reels, TikTok, and Shorts.
 
 You must:
-1. Convert slide content into timed scenes
+1. Convert content into timed scenes
 2. Keep each scene short (3-8 seconds for Shorts, 5-15 for Reels/TikTok)
 3. Write punchy text overlays with specific positions and animations
 4. Add visual direction (pan, zoom, transition, motion notes)
 5. Include voiceover text for each scene
 6. Keep total duration within platform limits
-7. Make the script feel native to video, not like reading slides
+7. Make the script feel native to video
 
 Video script rules:
 - Hook in first 2 seconds
@@ -37,12 +38,14 @@ export class VideoScriptGenerateService {
   constructor(
     private brandProfileService: BrandProfileService,
     private carouselProjectService: CarouselProjectService,
+    private contentIdeaService: ContentIdeaService,
     private generationJobService: GenerationJobService,
   ) {}
 
   async generateVideoScript(orgId: string, dto: {
     brandProfileId: string;
-    carouselProjectId: string;
+    carouselProjectId?: string;
+    contentIdeaId?: string;
     format: string;
     maxDuration?: number;
     additionalContext?: string;
@@ -50,8 +53,34 @@ export class VideoScriptGenerateService {
     const brand = await this.brandProfileService.getBrand(dto.brandProfileId);
     if (!brand || brand.organizationId !== orgId) throw new Error('Brand not found');
 
-    const project = await this.carouselProjectService.getProject(dto.carouselProjectId, orgId);
-    if (!project) throw new Error('Carousel project not found');
+    if (!dto.carouselProjectId && !dto.contentIdeaId) {
+      throw new Error('carouselProjectId or contentIdeaId is required');
+    }
+
+    let sourceBlock = '';
+    if (dto.carouselProjectId) {
+      const project = await this.carouselProjectService.getProject(dto.carouselProjectId, orgId);
+      if (!project) throw new Error('Carousel project not found');
+      const slides = (project.slides as any[]) || [];
+      const slideDescriptions = slides.map((s: any, i: number) =>
+        `Slide ${i + 1}: Headline: "${s.headline || s.title || ''}" | Body: "${s.body || s.description || ''}" | CTA: "${s.cta || ''}" | Image: ${s.imagePrompt || s.imageUrl || 'N/A'}`
+      ).join('\n');
+      sourceBlock = `## Carousel
+Title: ${project.title}
+Caption: ${project.caption || ''}
+Slides:
+${slideDescriptions}`;
+    } else if (dto.contentIdeaId) {
+      const idea = await this.contentIdeaService.getIdea(dto.contentIdeaId, orgId);
+      if (!idea) throw new Error('Content idea not found');
+      sourceBlock = `## Content idea
+Title: ${idea.title}
+Hook: ${idea.hook}
+Goal: ${idea.goal || ''}
+Angle: ${idea.angle || ''}
+Platform: ${idea.platformSuggestion || 'instagram reels'}
+Template hint: ${idea.templateSuggestion || ''}`;
+    }
 
     const dna = await this.brandProfileService.getLatestDnaSnapshot(dto.brandProfileId);
     const formatConfig = VIDEO_FORMATS.find(f => f.id === dto.format) || VIDEO_FORMATS[0];
@@ -63,29 +92,21 @@ export class VideoScriptGenerateService {
       type: 'VIDEO_SCRIPT',
       model: 'gpt-4.1',
       provider: 'openai',
-      promptVersion: '2.0.0',
+      promptVersion: '2.1.0',
       schemaVersion: '2.0.0',
     });
 
     try {
       await this.generationJobService.startJob(job.id);
 
-      const slides = project.slides as any[];
-      const slideDescriptions = slides.map((s: any, i: number) =>
-        `Slide ${i + 1}: Headline: "${s.headline || s.title || ''}" | Body: "${s.body || s.description || ''}" | CTA: "${s.cta || ''}" | Image: ${s.imagePrompt || s.imageUrl || 'N/A'}`
-      ).join('\n');
-
-      const prompt = `Convert this carousel into a ${formatConfig.name} video script.
+      const prompt = `Create a ${formatConfig.name} video script from the source below.
 
 ## Brand
 Name: ${brand.name}
 Voice: ${JSON.stringify(dna?.voice || {})}
+Forbidden: ${JSON.stringify((dna as any)?.voice?.forbiddenWords || (dna as any)?.constraints?.avoid || [])}
 
-## Carousel
-Title: ${project.title}
-Caption: ${project.caption || ''}
-Slides:
-${slideDescriptions}
+${sourceBlock}
 
 ## Requirements
 Format: ${formatConfig.name} (${formatConfig.aspectRatio})
@@ -93,14 +114,15 @@ Max duration: ${maxDuration} seconds
 ${dto.additionalContext ? `Instructions: ${dto.additionalContext}` : ''}
 
 Create a scene-by-scene script with:
-- Each slide becomes a scene
+- Hook in the first 2 seconds
+- 4-8 scenes depending on duration
 - Timing for each scene (2-8 seconds)
-- Text overlays with position (top/center/bottom) and animation (fade-in/slide-up/typewriter/pop)
-- Transition types (cut/crossfade/slide-left/slide-right/zoom-in/zoom-out)
+- Text overlays with position (top/center/bottom) and animation
+- Transition types
 - Voiceover text for narration
-- Motion notes (Ken Burns effect, pan direction, zoom target)
-- Keep scenes varied and engaging
+- Motion notes
 - End with CTA scene
+- Caption + hashtags for posting
 
 Return JSON.`;
 

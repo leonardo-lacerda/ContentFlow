@@ -12,6 +12,7 @@ import { ContentIdeaService } from '@gitroom/nestjs-libraries/database/prisma/co
 import { CarouselProjectService } from '@gitroom/nestjs-libraries/database/prisma/carousel-projects/carousel-project.service';
 import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.service';
 import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
+import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import { adTemplateRegistry } from './ad-templates/ad-template-registry';
 import { runAdPolicyChecks } from './ad-templates/ad-policy-checker';
 import { GenerateAdCreativesDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/generate-ad-creatives.dto';
@@ -61,6 +62,7 @@ export class AdCreativeGenerateService {
     private readonly carouselProjectService: CarouselProjectService,
     private readonly generationJobService: GenerationJobService,
     private readonly prisma: PrismaService,
+    private readonly planLimitsService: PlanLimitsService,
   ) {}
 
   /**
@@ -70,6 +72,8 @@ export class AdCreativeGenerateService {
     orgId: string,
     dto: GenerateAdCreativesDto,
   ): Promise<AdCreativeBatch> {
+    await this.planLimitsService.enforceLimit(orgId, 'ad_kit');
+
     // 1. Validate brand ownership
     const brand = await this.brandProfileService.getBrand(dto.brandProfileId, orgId);
     if (!brand || brand.organizationId !== orgId) {

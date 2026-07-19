@@ -22,16 +22,20 @@ export interface PricingInnerInterface {
   content_ideas_per_month: number;
   editorial_plans: number;
   team_member_count: number;
+  /** Ampliar */
+  ad_kits_per_month: number;
+  email_campaigns_per_month: number;
+  video_scripts_per_month: number;
 }
 export interface PricingInterface {
   [key: string]: PricingInnerInterface;
 }
 
 /**
- * ContentFlow v1 pricing
- * - FREE (Início): trial do loop URL → DNA → carrossel
- * - STANDARD (Profissional R$79): plano hero do founder solo
- * - PRO / TEAM / ULTIMATE: grandfather only (não vendidos na landing)
+ * ContentFlow v1+ pricing
+ * - FREE (Início)
+ * - STANDARD (Profissional R$79)
+ * - PRO / TEAM / ULTIMATE: grandfather
  */
 export const pricing: PricingInterface = {
   FREE: {
@@ -50,13 +54,16 @@ export const pricing: PricingInterface = {
     public_api: false,
     webhooks: 0,
     autoPost: false,
-    generate_videos: 0,
+    generate_videos: 3,
     brand_profiles: 3,
     carousel_generations_per_month: 5,
     dna_extractions_per_month: 1,
     content_ideas_per_month: 10,
     editorial_plans: 2,
     team_member_count: 1,
+    ad_kits_per_month: 3,
+    email_campaigns_per_month: 2,
+    video_scripts_per_month: 3,
   },
   STANDARD: {
     current: 'STANDARD',
@@ -74,15 +81,17 @@ export const pricing: PricingInterface = {
     public_api: false,
     webhooks: 0,
     autoPost: false,
-    generate_videos: 5,
+    generate_videos: 40,
     brand_profiles: 10,
     carousel_generations_per_month: 40,
     dna_extractions_per_month: 10,
     content_ideas_per_month: 100,
     editorial_plans: 10,
     team_member_count: 1,
+    ad_kits_per_month: 30,
+    email_campaigns_per_month: 20,
+    video_scripts_per_month: 40,
   },
-  // Grandfather — not sold on landing v1
   TEAM: {
     current: 'TEAM',
     month_price: 197,
@@ -99,13 +108,16 @@ export const pricing: PricingInterface = {
     public_api: false,
     webhooks: 0,
     autoPost: false,
-    generate_videos: 20,
+    generate_videos: 80,
     brand_profiles: 20,
     carousel_generations_per_month: 80,
     dna_extractions_per_month: 20,
     content_ideas_per_month: 200,
     editorial_plans: 30,
     team_member_count: 5,
+    ad_kits_per_month: 60,
+    email_campaigns_per_month: 40,
+    video_scripts_per_month: 80,
   },
   PRO: {
     current: 'PRO',
@@ -123,13 +135,16 @@ export const pricing: PricingInterface = {
     public_api: false,
     webhooks: 0,
     autoPost: false,
-    generate_videos: 15,
+    generate_videos: 60,
     brand_profiles: 15,
     carousel_generations_per_month: 80,
     dna_extractions_per_month: 20,
     content_ideas_per_month: 200,
     editorial_plans: 20,
     team_member_count: 1,
+    ad_kits_per_month: 50,
+    email_campaigns_per_month: 30,
+    video_scripts_per_month: 60,
   },
   ULTIMATE: {
     current: 'ULTIMATE',
@@ -154,5 +169,8 @@ export const pricing: PricingInterface = {
     content_ideas_per_month: -1,
     editorial_plans: -1,
     team_member_count: -1,
+    ad_kits_per_month: -1,
+    email_campaigns_per_month: -1,
+    video_scripts_per_month: -1,
   },
 };

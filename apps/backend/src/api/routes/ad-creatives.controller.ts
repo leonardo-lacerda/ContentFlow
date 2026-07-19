@@ -1,5 +1,4 @@
-import { UseGuards, Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -14,7 +13,6 @@ import {
 import { adTemplateRegistry } from '@gitroom/nestjs-libraries/ai-generate/ad-templates/ad-template-registry';
 
 @ApiTags('Ad Creatives')
-@UseGuards(V1SurfaceGuard)
 @Controller('/ad-creatives')
 export class AdCreativesController {
   constructor(private readonly adCreativeService: AdCreativeGenerateService) {}
@@ -22,7 +20,7 @@ export class AdCreativesController {
   // ---- Ad Templates ----
 
   @Get('/templates')
-  @CheckPolicies([AuthorizationActions.Read, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Read, Sections.AI])
   getAdTemplates(
     @Query('category') category?: string,
     @Query('objective') objective?: string,
@@ -35,13 +33,13 @@ export class AdCreativesController {
   }
 
   @Get('/templates/summary')
-  @CheckPolicies([AuthorizationActions.Read, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Read, Sections.AI])
   getAdTemplatesSummary() {
     return adTemplateRegistry.getSummary();
   }
 
   @Get('/templates/:id')
-  @CheckPolicies([AuthorizationActions.Read, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Read, Sections.AI])
   getAdTemplateById(@Param('id') id: string) {
     const template = adTemplateRegistry.get(id);
     if (!template) return { error: 'Template not found', id };
@@ -51,7 +49,7 @@ export class AdCreativesController {
   // ---- Generate Ad Creatives ----
 
   @Post('/generate')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async generateAds(
     @GetOrgFromRequest() org: Organization,
     @Body() body: GenerateAdCreativesDto,
@@ -62,7 +60,7 @@ export class AdCreativesController {
   // ---- Save Generated Ads ----
 
   @Post('/save')
-  @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async saveAds(
     @GetOrgFromRequest() org: Organization,
     @Body()
@@ -89,7 +87,7 @@ export class AdCreativesController {
   // ---- CRUD ----
 
   @Get('/')
-  @CheckPolicies([AuthorizationActions.Read, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Read, Sections.AI])
   async listAds(
     @GetOrgFromRequest() org: Organization,
     @Query('platform') platform?: string,
@@ -106,7 +104,7 @@ export class AdCreativesController {
   }
 
   @Get('/:id')
-  @CheckPolicies([AuthorizationActions.Read, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Read, Sections.AI])
   async getAd(
     @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
@@ -115,7 +113,7 @@ export class AdCreativesController {
   }
 
   @Patch('/:id')
-  @CheckPolicies([AuthorizationActions.Update, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Update, Sections.AI])
   async updateAd(
     @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
@@ -125,7 +123,7 @@ export class AdCreativesController {
   }
 
   @Delete('/:id')
-  @CheckPolicies([AuthorizationActions.Delete, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Delete, Sections.AI])
   async deleteAd(
     @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
@@ -136,7 +134,7 @@ export class AdCreativesController {
   // ---- Export ----
 
   @Post('/export')
-  @CheckPolicies([AuthorizationActions.Read, Sections.ADMIN])
+  @CheckPolicies([AuthorizationActions.Read, Sections.AI])
   async exportAd(
     @GetOrgFromRequest() org: Organization,
     @Body() body: ExportAdCreativeDto,

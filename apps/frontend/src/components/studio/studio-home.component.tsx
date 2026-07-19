@@ -192,6 +192,15 @@ export function StudioHome() {
                 meta: t('studio_card_generate_meta', 'Estúdio de IA'),
               },
               {
+                icon: Layers,
+                label: t('studio_card_ampliar', 'Ampliar'),
+                href: '/ads',
+                meta: t(
+                  'studio_card_ampliar_meta',
+                  'Anúncio · E-mail · Roteiro'
+                ),
+              },
+              {
                 icon: CalendarDays,
                 label: t('studio_card_publish', 'Calendário'),
                 href: '/publish',

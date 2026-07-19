@@ -6,10 +6,10 @@ export class CreateShortVideoProjectDto {
   @MaxLength(128)
   brandProfileId!: string;
 
+  @IsOptional()
   @IsString()
-  @MinLength(1)
   @MaxLength(128)
-  carouselProjectId!: string;
+  carouselProjectId?: string;
 
   @IsOptional()
   @IsString()

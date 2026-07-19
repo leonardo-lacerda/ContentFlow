@@ -10,7 +10,10 @@ export type GenerationType =
   | 'editorial_plan'
   | 'brand_profile'
   | 'image_generation'
-  | 'video_generation';
+  | 'video_generation'
+  | 'ad_kit'
+  | 'email_campaign'
+  | 'video_script';
 
 interface LimitCheckResult {
   allowed: boolean;
@@ -162,10 +165,27 @@ export class PlanLimitsService {
         });
 
       case 'video_generation':
+      case 'video_script':
         return this._prisma.generationJob.count({
           where: {
             organizationId,
             type: { in: ['VIDEO_GENERATION', 'VIDEO_SCRIPT'] },
+            createdAt: { gte: startOfMonth },
+          },
+        });
+
+      case 'ad_kit':
+        return this._prisma.adCreative.count({
+          where: {
+            organizationId,
+            createdAt: { gte: startOfMonth },
+          },
+        });
+
+      case 'email_campaign':
+        return this._prisma.emailCampaign.count({
+          where: {
+            organizationId,
             createdAt: { gte: startOfMonth },
           },
         });
@@ -191,6 +211,12 @@ export class PlanLimitsService {
         return planLimits.image_generation_count;
       case 'video_generation':
         return planLimits.generate_videos;
+      case 'ad_kit':
+        return planLimits.ad_kits_per_month;
+      case 'email_campaign':
+        return planLimits.email_campaigns_per_month;
+      case 'video_script':
+        return planLimits.video_scripts_per_month ?? planLimits.generate_videos;
       default:
         return 0;
     }
@@ -205,6 +231,9 @@ export class PlanLimitsService {
       brand_profile: 'perfis de marca',
       image_generation: 'geração de imagem',
       video_generation: 'geração de vídeo',
+      ad_kit: 'kits de anúncio',
+      email_campaign: 'campanhas de e-mail',
+      video_script: 'roteiros de vídeo',
     };
     return labels[type] || type;
   }
