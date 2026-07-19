@@ -51,8 +51,6 @@ export function UnifiedOnboarding() {
     industry: '',
   });
   const [dna, setDna] = useState<BrandDnaSnapshot | null>(null);
-  const [skippedFeatureIds, setSkippedFeatureIds] = useState<string[]>([]);
-  const [openedFeatureIds, setOpenedFeatureIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const hydrated = useRef(false);
@@ -68,7 +66,6 @@ export function UnifiedOnboarding() {
     const initialStep = fromUrl || fromProgress || 'welcome';
 
     setStep(initialStep);
-    // Keep URL in sync for resume/OAuth
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       if (url.searchParams.get('step') !== initialStep) {
@@ -78,10 +75,6 @@ export function UnifiedOnboarding() {
     }
 
     if (progress?.brandId) setBrandId(progress.brandId);
-    if (progress?.skippedFeatureIds)
-      setSkippedFeatureIds(progress.skippedFeatureIds);
-    if (progress?.openedFeatureIds)
-      setOpenedFeatureIds(progress.openedFeatureIds);
 
     void (async () => {
       // Legacy company profile import (fills empty brand form)
@@ -132,13 +125,11 @@ export function UnifiedOnboarding() {
       const next: OnboardingProgress = {
         currentStep: partial.currentStep || step,
         brandId: partial.brandId ?? brandId,
-        skippedFeatureIds: partial.skippedFeatureIds ?? skippedFeatureIds,
-        openedFeatureIds: partial.openedFeatureIds ?? openedFeatureIds,
         version: ONBOARDING_VERSION,
       };
       await patch({ progress: next });
     },
-    [step, brandId, skippedFeatureIds, openedFeatureIds, patch]
+    [step, brandId, patch]
   );
 
   const goToStep = useCallback(
@@ -149,17 +140,14 @@ export function UnifiedOnboarding() {
         progress: {
           currentStep: next,
           brandId,
-          skippedFeatureIds,
-          openedFeatureIds,
           version: ONBOARDING_VERSION,
         },
       });
-      // keep URL in sync for OAuth return
       const url = new URL(window.location.href);
       url.searchParams.set('step', next);
       window.history.replaceState({}, '', url.toString());
     },
-    [brandId, skippedFeatureIds, openedFeatureIds, patch]
+    [brandId, patch]
   );
 
   const goNext = useCallback(() => {
@@ -185,15 +173,13 @@ export function UnifiedOnboarding() {
         progress: {
           currentStep: 'done',
           brandId,
-          skippedFeatureIds,
-          openedFeatureIds,
           version: ONBOARDING_VERSION,
         },
       });
     } finally {
       setLoading(false);
     }
-  }, [patch, brandId, skippedFeatureIds, openedFeatureIds]);
+  }, [patch, brandId]);
 
   const skipAll = useCallback(async () => {
     setLoading(true);
@@ -203,8 +189,6 @@ export function UnifiedOnboarding() {
         progress: {
           currentStep: 'done',
           brandId,
-          skippedFeatureIds,
-          openedFeatureIds,
           version: ONBOARDING_VERSION,
         },
       });
@@ -212,47 +196,7 @@ export function UnifiedOnboarding() {
     } finally {
       setLoading(false);
     }
-  }, [patch, brandId, skippedFeatureIds, openedFeatureIds, router]);
-
-  const markFeatureOpened = useCallback(
-    (id: string) => {
-      setOpenedFeatureIds((prev) => {
-        if (prev.includes(id)) return prev;
-        const next = [...prev, id];
-        void patch({
-          progress: {
-            currentStep: step,
-            brandId,
-            skippedFeatureIds,
-            openedFeatureIds: next,
-            version: ONBOARDING_VERSION,
-          },
-        });
-        return next;
-      });
-    },
-    [patch, step, brandId, skippedFeatureIds]
-  );
-
-  const markFeatureSkipped = useCallback(
-    (id: string) => {
-      setSkippedFeatureIds((prev) => {
-        if (prev.includes(id)) return prev;
-        const next = [...prev, id];
-        void patch({
-          progress: {
-            currentStep: step,
-            brandId,
-            skippedFeatureIds: next,
-            openedFeatureIds,
-            version: ONBOARDING_VERSION,
-          },
-        });
-        return next;
-      });
-    },
-    [patch, step, brandId, openedFeatureIds]
-  );
+  }, [patch, brandId, router]);
 
   const ctx: UnifiedOnboardingContext = useMemo(
     () => ({
@@ -262,10 +206,6 @@ export function UnifiedOnboarding() {
       setBrandId,
       dna,
       setDna,
-      skippedFeatureIds,
-      openedFeatureIds,
-      markFeatureOpened,
-      markFeatureSkipped,
       goToStep,
       goNext,
       goBack,
@@ -282,10 +222,6 @@ export function UnifiedOnboarding() {
       brandId,
       brandForm,
       dna,
-      skippedFeatureIds,
-      openedFeatureIds,
-      markFeatureOpened,
-      markFeatureSkipped,
       goToStep,
       goNext,
       goBack,
@@ -302,7 +238,7 @@ export function UnifiedOnboarding() {
     return (
       <PageShell>
         <PageBody>
-          <div className="flex items-center justify-center min-h-[240px] text-sm text-textItemBlur">
+          <div className="w-full max-w-[920px] mx-auto py-20 text-center text-sm text-textItemBlur">
             {t('loading', 'Carregando…')}
           </div>
         </PageBody>

@@ -15,42 +15,23 @@ export type OnboardingStepId =
   | 'brand-identity'
   | 'brand-analyze'
   | 'brand-review'
-  | 'connect-channels'
   | 'first-content'
-  | 'feature-tour'
+  | 'connect-channels'
   | 'done';
 
 export type OnboardingProgress = {
   currentStep?: OnboardingStepId | string;
   brandId?: string;
-  skippedFeatureIds?: string[];
-  openedFeatureIds?: string[];
   version?: string;
+  /** @deprecated feature-tour removido no v1 — mantido só para resume legado */
+  skippedFeatureIds?: string[];
+  /** @deprecated feature-tour removido no v1 — mantido só para resume legado */
+  openedFeatureIds?: string[];
 };
 
 export type OnboardingStatus = {
   completedAt: string | null;
   progress: OnboardingProgress | null;
-};
-
-export type FeatureSectionId =
-  | 'create'
-  | 'library'
-  | 'operate'
-  | 'measure'
-  | 'account';
-
-export type FeatureCardDef = {
-  id: string;
-  section: FeatureSectionId;
-  titleKey: string;
-  titleDefault: string;
-  descriptionKey: string;
-  descriptionDefault: string;
-  whyKey: string;
-  whyDefault: string;
-  path: string;
-  icon: LucideIcon;
 };
 
 export type StepMeta = {
@@ -70,9 +51,9 @@ export type GeneratedIdea = {
   score?: number;
 };
 
-export const ONBOARDING_VERSION = '3';
+export const ONBOARDING_VERSION = '4';
 
-// v1: conteúdo antes de OAuth; feature-tour removido
+// v1: URL → DNA → conteúdo → canais (opcional) → done. Sem feature-tour.
 export const ONBOARDING_STEPS: StepMeta[] = [
   {
     id: 'welcome',
@@ -148,10 +129,6 @@ export type UnifiedOnboardingContext = {
   setBrandId: (id: string) => void;
   dna: BrandDnaSnapshot | null;
   setDna: (dna: BrandDnaSnapshot | null) => void;
-  skippedFeatureIds: string[];
-  openedFeatureIds: string[];
-  markFeatureOpened: (id: string) => void;
-  markFeatureSkipped: (id: string) => void;
   goToStep: (step: OnboardingStepId) => void;
   goNext: () => void;
   goBack: () => void;
@@ -186,12 +163,12 @@ const STEP_ALIASES: Record<string, OnboardingStepId> = {
   'brand-review': 'brand-review',
   dna: 'brand-review',
   review: 'brand-review',
-  'connect-channels': 'connect-channels',
-  channels: 'connect-channels',
   'first-content': 'first-content',
   ideas: 'first-content',
   carousel: 'first-content',
   content: 'first-content',
+  'connect-channels': 'connect-channels',
+  channels: 'connect-channels',
   // feature-tour removido no v1 — resume manda pro done
   'feature-tour': 'done',
   tour: 'done',

@@ -51,12 +51,12 @@ export function ConnectChannelsStep({
     <div className="rounded-[14px] border border-newTableBorder bg-newSettings p-6 space-y-6">
       <div>
         <h2 className="text-2xl font-[800] text-newTextColor">
-          {t('connect_your_channels', 'Conecte seus canais')}
+          {t('connect_your_channels', 'Conecte um canal (opcional)')}
         </h2>
         <p className="text-sm text-textItemBlur mt-1">
           {t(
-            'connect_social_media_to_start',
-            'Conecte suas contas de redes sociais para começar a agendar e publicar.'
+            'connect_social_media_optional_v1',
+            'Instagram, Facebook, LinkedIn, X ou TikTok. Você pode pular e conectar depois em Canais — o conteúdo já está pronto.'
           )}
         </p>
       </div>
