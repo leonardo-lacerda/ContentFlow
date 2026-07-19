@@ -114,10 +114,36 @@ export function ContentSwipe({ brandId }: { brandId: string }) {
     async (idea: ContentIdea) => {
       setProcessingId(idea.id);
       try {
-        await createFromIdea(idea.id);
-        toaster.show('Carrossel criado! Redirecionando...', 'success');
+        let projectId = '';
+        try {
+          const project = await createFromIdea(idea.id);
+          projectId =
+            (project as any)?.id ||
+            (project as any)?.data?.id ||
+            '';
+        } catch {
+          // Continua mesmo se o project draft falhar — a ideia vai na URL.
+        }
+
         mutateIdeasByBrand(brandId);
-        router.push('/generate');
+
+        const params = new URLSearchParams();
+        params.set('from', 'swipe');
+        if (idea.id) params.set('ideaId', idea.id);
+        if (projectId) params.set('projectId', projectId);
+        if (idea.title) params.set('topic', idea.title);
+        if (idea.hook) params.set('hook', idea.hook);
+        if (idea.angle) params.set('angle', idea.angle);
+        if (idea.goal) params.set('goal', idea.goal);
+        if (idea.platformSuggestion) {
+          params.set('platform', idea.platformSuggestion);
+        }
+        if (idea.templateSuggestion) {
+          params.set('template', idea.templateSuggestion);
+        }
+
+        toaster.show('Abrindo estúdio com a ideia...', 'success');
+        router.push(`/generate?${params.toString()}`);
       } catch (err: any) {
         toaster.show(err.message || 'Erro ao criar carrossel', 'warning');
       } finally {

@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { useMediaDirectory } from '@gitroom/react/helpers/use.media.directory';
 import { useToaster } from '@gitroom/react/toaster/toaster';
@@ -67,15 +68,29 @@ import { useCarouselGeneration } from './use-carousel-generation';
 import { useCarouselExport } from './use-carousel-export';
 import { useCarouselProjects } from './use-carousel-projects';
 
+const normalizePlatformParam = (raw: string) => {
+  const value = raw.trim().toLowerCase();
+  if (!value) return '';
+  if (value.includes('instagram') || value === 'ig') return 'instagram';
+  if (value.includes('linkedin') || value === 'li') return 'linkedin';
+  if (value === 'x' || value.includes('twitter')) return 'x';
+  if (value.includes('facebook') || value === 'fb') return 'facebook';
+  if (value.includes('tiktok')) return 'tiktok';
+  if (value.includes('thread')) return 'threads';
+  return value;
+};
+
 export function useAiGenerateImagesStudio() {
   const fetch = useFetch();
   const mediaDirectory = useMediaDirectory();
   const toaster = useToaster();
+  const searchParams = useSearchParams();
   const { data: selectedBrand } = useSelectedBrand();
   const brandProfileId = selectedBrand?.id || selectedBrand?.data?.id || undefined;
   const referenceDataUrlCache = useRef(new Map<string, string>());
   const generationAbortRef = useRef<AbortController | null>(null);
   const importProjectInputRef = useRef<HTMLInputElement | null>(null);
+  const ideaPrefillDoneRef = useRef(false);
   const [topic, setTopic] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState(
     () => carouselTemplates?.[0]?.id || 'educational'
@@ -1014,6 +1029,71 @@ export function useAiGenerateImagesStudio() {
     };
   }, [applyCompanyBrandKit, references.syncBrandReferences]);
 
+  /**
+   * Content Swipe → Gerar: pré-preenche tópico, brief e meta da ideia.
+   * Query: topic, hook, angle, goal, platform, template, ideaId
+   */
+  useEffect(() => {
+    if (ideaPrefillDoneRef.current) return;
+
+    const topicParam = searchParams.get('topic')?.trim() || '';
+    const hook = searchParams.get('hook')?.trim() || '';
+    const angle = searchParams.get('angle')?.trim() || '';
+    const goalParam = searchParams.get('goal')?.trim() || '';
+    const platformParam = searchParams.get('platform')?.trim() || '';
+    const templateParam = searchParams.get('template')?.trim() || '';
+    const fromSwipe = searchParams.get('from') === 'swipe';
+
+    if (!topicParam && !hook && !angle && !fromSwipe) {
+      return;
+    }
+
+    ideaPrefillDoneRef.current = true;
+
+    if (topicParam) {
+      setTopic(topicParam);
+    } else if (hook) {
+      setTopic(hook);
+    }
+
+    if (goalParam) {
+      setGoal(goalParam);
+    }
+
+    const platform = normalizePlatformParam(platformParam);
+    if (platform) {
+      setPlatform(platform);
+    }
+
+    const briefParts: string[] = [];
+    if (hook) briefParts.push(`Hook: ${hook}`);
+    if (angle) briefParts.push(`Ângulo: ${angle}`);
+    if (goalParam) briefParts.push(`Objetivo: ${goalParam}`);
+    if (topicParam && topicParam !== hook) {
+      briefParts.unshift(`Tema: ${topicParam}`);
+    }
+    if (briefParts.length > 0) {
+      setSourceText(briefParts.join('\n'));
+    }
+
+    if (templateParam) {
+      const needle = templateParam.toLowerCase();
+      const match = (carouselTemplates || []).find((tpl) => {
+        const id = String(tpl.id || '').toLowerCase();
+        const name = String((tpl as any).name || '').toLowerCase();
+        return (
+          id === needle ||
+          name === needle ||
+          needle.includes(id) ||
+          id.includes(needle) ||
+          name.includes(needle)
+        );
+      });
+      if (match?.id) {
+        setSelectedTemplate(match.id);
+      }
+    }
+  }, [searchParams]);
 
   // Carrega as ideias já salvas da empresa selecionada (sem gastar tokens).
   useEffect(() => {

@@ -101,24 +101,44 @@ export function FirstContentStep({ ctx }: { ctx: UnifiedOnboardingContext }) {
 
   const createCarousel = async () => {
     if (selected == null || !ideas[selected]) return;
+    const idea = ideas[selected];
     const ideaId = persistedIds[selected];
     ctx.setLoading(true);
     ctx.setError('');
     try {
+      let projectId = '';
       if (ideaId) {
-        const res = await fetch(`/carousel-projects/from-idea/${ideaId}`, {
-          method: 'POST',
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && (data.id || data.projectId)) {
-          await ctx.persistProgress({ currentStep: 'connect-channels' });
-          const projectId = data.id || data.projectId;
-          router.push(`/generate?projectId=${projectId}`);
-          return;
+        try {
+          const res = await fetch(`/carousel-projects/from-idea/${ideaId}`, {
+            method: 'POST',
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            projectId = data.id || data.projectId || '';
+          }
+        } catch {
+          /* segue com query da ideia */
         }
       }
+
       await ctx.persistProgress({ currentStep: 'connect-channels' });
-      router.push('/generate');
+
+      const params = new URLSearchParams();
+      params.set('from', 'swipe');
+      if (ideaId) params.set('ideaId', ideaId);
+      if (projectId) params.set('projectId', projectId);
+      if (idea.title) params.set('topic', idea.title);
+      if (idea.hook) params.set('hook', idea.hook);
+      if (idea.angle) params.set('angle', idea.angle || '');
+      if (idea.goal) params.set('goal', idea.goal || '');
+      if (idea.platformSuggestion) {
+        params.set('platform', idea.platformSuggestion);
+      }
+      if (idea.templateSuggestion) {
+        params.set('template', idea.templateSuggestion);
+      }
+
+      router.push(`/generate?${params.toString()}`);
     } catch (err: any) {
       ctx.setError(
         err?.message ||
