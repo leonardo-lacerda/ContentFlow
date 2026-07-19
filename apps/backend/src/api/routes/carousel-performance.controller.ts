@@ -1,5 +1,4 @@
-import { UseGuards, Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { V1SurfaceGuard } from '@gitroom/backend/services/auth/v1-surface.guard';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -12,7 +11,6 @@ import { RecommendationService } from '@gitroom/nestjs-libraries/database/prisma
 import { RecommendationQueryDto } from '@gitroom/nestjs-libraries/dtos/carousel-performance/recommendation.dto';
 
 @ApiTags('Carousel Performance')
-@UseGuards(V1SurfaceGuard)
 @Controller('/carousel-performance')
 export class CarouselPerformanceController {
   constructor(

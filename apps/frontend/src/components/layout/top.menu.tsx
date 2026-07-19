@@ -82,6 +82,24 @@ const Icons = {
       <path d="M3 16l5-4 4 3 4-5 5 6" />
     </svg>
   ),
+  analytics: (
+    <svg {...iconClass}>
+      <path d="M4 19V5M4 19h16" />
+      <path d="M8 16V10M12 16V7M16 16v-5" />
+    </svg>
+  ),
+  performance: (
+    <svg {...iconClass}>
+      <path d="M3 17l6-6 4 4 8-8" />
+      <path d="M14 7h7v7" />
+    </svg>
+  ),
+  editorial: (
+    <svg {...iconClass}>
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 8h8M8 12h8M8 16h5" />
+    </svg>
+  ),
   billing: (
     <svg {...iconClass}>
       <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -106,9 +124,9 @@ export const useMenuItem = () => {
       path: '/',
     },
     {
-      name: t('my_brand', 'Minha marca'),
+      name: t('brands', 'Marcas'),
       icon: Icons.brand,
-      path: '/brand',
+      path: '/brands',
     },
     {
       name: t('content_swipe', 'Content Swipe'),
@@ -126,6 +144,11 @@ export const useMenuItem = () => {
       path: '/posts',
     },
     {
+      name: t('editorial', 'Editorial'),
+      icon: Icons.editorial,
+      path: '/editorial',
+    },
+    {
       name: t('calendar', 'Calendário'),
       icon: Icons.publish,
       path: '/publish',
@@ -134,6 +157,16 @@ export const useMenuItem = () => {
       name: t('channels', 'Canais'),
       icon: Icons.channels,
       path: '/channels',
+    },
+    {
+      name: t('analytics', 'Analytics'),
+      icon: Icons.analytics,
+      path: '/analytics',
+    },
+    {
+      name: t('carousel_performance', 'Performance'),
+      icon: Icons.performance,
+      path: '/analytics/carousel',
     },
     {
       name: t('media', 'Mídia'),
@@ -174,17 +207,22 @@ const MENU_SECTIONS: { id: string; label: string; paths: string[] }[] = [
   {
     id: 'marca',
     label: 'Marca',
-    paths: ['/brand'],
+    paths: ['/brands', '/brand'],
   },
   {
     id: 'criar',
     label: 'Criar',
-    paths: ['/swipe', '/generate', '/posts'],
+    paths: ['/swipe', '/generate', '/posts', '/editorial'],
   },
   {
     id: 'publicar',
     label: 'Publicar',
     paths: ['/publish', '/channels'],
+  },
+  {
+    id: 'insights',
+    label: 'Insights',
+    paths: ['/analytics', '/analytics/carousel'],
   },
   {
     id: 'biblioteca',

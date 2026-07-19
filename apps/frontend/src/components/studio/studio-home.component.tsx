@@ -93,7 +93,7 @@ export function StudioHome() {
           'studio_next_review_dna_desc',
           'Confira voz, público e visual antes de gerar conteúdo com a cara da marca.'
         ),
-        href: '/brand',
+        href: '/brands',
         cta: t('studio_cta_brand', 'Abrir Minha marca'),
         tone: 'warn',
       };
@@ -176,7 +176,7 @@ export function StudioHome() {
               {
                 icon: Building2,
                 label: t('studio_card_brand', 'Minha marca'),
-                href: '/brand',
+                href: '/brands',
                 meta: brand?.name || t('studio_card_brand_empty', 'Sem marca'),
               },
               {

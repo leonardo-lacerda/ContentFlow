@@ -58,7 +58,7 @@ export class BrandProfileService {
   }
 
   async createBrand(orgId: string, dto: CreateBrandProfileDto) {
-    // ContentFlow v1: 1 marca por conta
+    // Multi-marca: limite por plano (FREE 3 / STANDARD 10 / …)
     await this.planLimitsService.enforceLimit(orgId, 'brand_profile');
     return this.brandProfileRepository.create({
       organizationId: orgId,

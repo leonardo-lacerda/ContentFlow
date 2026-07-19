@@ -91,8 +91,8 @@ const nextConfig = {
         destination: '/posts',
         permanent: false,
       },
-      { source: '/brands', destination: '/brand', permanent: false },
-      { source: '/brands/:id', destination: '/brand', permanent: false },
+      // Multi-marca reativado: /brand é atalho para lista
+      { source: '/brand', destination: '/brands', permanent: false },
       {
         source: '/onboarding/company',
         destination: '/onboarding',
@@ -103,12 +103,9 @@ const nextConfig = {
         destination: '/onboarding',
         permanent: false,
       },
-      // Features fora do v1 → Estúdio
-      { source: '/editorial', destination: '/', permanent: false },
+      // Features ainda fora do core → Estúdio
       { source: '/agents', destination: '/', permanent: false },
       { source: '/agents/:path*', destination: '/', permanent: false },
-      { source: '/analytics', destination: '/', permanent: false },
-      { source: '/analytics/:path*', destination: '/', permanent: false },
       { source: '/plugs', destination: '/', permanent: false },
       { source: '/third-party', destination: '/', permanent: false },
       {
