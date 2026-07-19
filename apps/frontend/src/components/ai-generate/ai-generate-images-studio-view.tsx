@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   AiGenerateImagesHeader,
   CarouselLightbox,
@@ -18,6 +19,7 @@ import { EditorialBlockModal } from './editorial-block-modal';
 import { ReferenceLibraryPanel } from './reference-library-panel';
 import { PlanGeneratingState } from './ai-generate-images.loaders';
 import { PageShell } from '@gitroom/frontend/components/new-layout/page-system';
+import { AmpliarActions } from '@gitroom/frontend/components/ampliar/ampliar-actions.component';
 
 type AiGenerateImagesStudioViewProps = {
   studio: any;
@@ -26,6 +28,7 @@ type AiGenerateImagesStudioViewProps = {
 export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioViewProps) {
   const [showSavedProjects, setShowSavedProjects] = useState(false);
   const [showReferenceLibrary, setShowReferenceLibrary] = useState(false);
+  const searchParams = useSearchParams();
   const {
     activePreview,
     allowGenerateWithReviewIssues,
@@ -398,6 +401,36 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
 
         {plan && (
           <div className="flex flex-col gap-[24px]">
+            {/* Ampliar: handoff do carrossel pronto → ads / e-mail / roteiro */}
+            {(selectedCompanyId ||
+              companyProfile?.id ||
+              searchParams.get('brandId')) && (
+              <AmpliarActions
+                brandId={
+                  selectedCompanyId ||
+                  companyProfile?.id ||
+                  searchParams.get('brandId') ||
+                  ''
+                }
+                ideaId={searchParams.get('ideaId') || undefined}
+                projectId={searchParams.get('projectId') || undefined}
+                from="carousel"
+                topic={
+                  plan?.title ||
+                  topic ||
+                  searchParams.get('topic') ||
+                  undefined
+                }
+                hook={
+                  plan?.slides?.[0]?.headline ||
+                  searchParams.get('hook') ||
+                  undefined
+                }
+                angle={searchParams.get('angle') || undefined}
+                goal={goal || searchParams.get('goal') || undefined}
+              />
+            )}
+
             <DirectionPanel
               spec={directionSpec}
               setSpec={setDirectionSpec}
@@ -506,6 +539,12 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
               imageJobProgress={imageJobProgress}
               imageModel={imageModel}
               imageProvider={imageProvider}
+              renderMode={renderMode}
+              designSizeId={designSizeId}
+              designHandle={designHandle}
+              setRenderMode={setRenderMode}
+              setDesignSizeId={setDesignSizeId}
+              setDesignHandle={setDesignHandle}
               includePdfExport={includePdfExport}
               isOverSoftLimit={isOverSoftLimit}
               isOverUserLimit={isOverUserLimit}

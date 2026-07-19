@@ -2,7 +2,8 @@
 
 **Produto:** ContentFlow  
 **Data:** 2026-07-19  
-**Status:** Pronto para execução  
+**Status:** Must (Fases 0–3) **implementado** em 2026-07-19  
+**Fase 4 (distribuição ESP/render):** backlog opcional — fora do Must  
 **Depende de:** loop v1+ estável (DNA → Swipe → Carrossel → Publish)
 
 ---
