@@ -37,6 +37,304 @@ const inputClass = formControlClass + ' h-[48px]';
 
 const textAreaClass = formControlClass + ' resize-none min-h-[88px]';
 
+// --- New Components ---
+
+function ConfidenceBar({ label, value }: { label: string; value: number }) {
+  const pct = Math.round(value * 100);
+  const color = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-400';
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex justify-between text-[11px]">
+        <span className="text-textItemBlur font-[500]">{label}</span>
+        <span className="text-newTextColor font-[600]">{pct}%</span>
+      </div>
+      <div className="h-[6px] rounded-full bg-newTableBorder overflow-hidden">
+        <div className={"h-full rounded-full transition-all duration-500 " + color} style={{ width: pct + '%' }} />
+      </div>
+    </div>
+  );
+}
+
+function DnaSummaryCard({ dna }: { dna: any }) {
+  if (!dna) return null;
+  const { summary, voice, audience, offer, visual, constraints, messaging, contentGuidelines, confidence } = dna;
+  return (
+    <div className="flex flex-col gap-[16px]">
+      {/* Tagline & Description */}
+      {summary && (
+        <div className="border border-newTableBorder rounded-[10px] p-[14px] bg-gradient-to-br from-newBgColorInner to-transparent">
+          {summary.tagline && <div className="text-[14px] font-[700] text-newTextColor mb-[4px]">{summary.tagline}</div>}
+          {summary.description && <div className="text-[12px] text-textItemBlur leading-relaxed line-clamp-3">{summary.description}</div>}
+          <div className="flex flex-wrap gap-[6px] mt-[8px]">
+            {summary.industry && <span className="text-[10px] px-[6px] py-[2px] rounded-full bg-newSettings border border-newTableBorder text-textItemBlur">{summary.industry}</span>}
+            {summary.targetAudience && <span className="text-[10px] px-[6px] py-[2px] rounded-full bg-newSettings border border-newTableBorder text-textItemBlur">{summary.targetAudience}</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Confidence Scores */}
+      {confidence && (
+        <div className="border border-newTableBorder rounded-[10px] p-[14px] bg-newBgColorInner">
+          <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[10px]">Scores de Confianca</div>
+          <div className="flex flex-col gap-[8px]">
+            <ConfidenceBar label="Geral" value={confidence.overall} />
+            <ConfidenceBar label="Textual" value={confidence.textual} />
+            <ConfidenceBar label="Visual" value={confidence.visual} />
+            <ConfidenceBar label="Comercial" value={confidence.commercial} />
+          </div>
+        </div>
+      )}
+
+      {/* Quick DNA Summary Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-[12px]">
+        {/* Voice */}
+        {voice && (
+          <div className="border border-newTableBorder rounded-[10px] p-[12px] bg-newBgColorInner">
+            <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[8px]">Voz da Marca</div>
+            <div className="flex flex-col gap-[4px]">
+              {voice.tone && <div className="text-[12px] text-newTextColor"><span className="font-[600]">Tom:</span> {voice.tone}</div>}
+              {voice.style && <div className="text-[12px] text-newTextColor"><span className="font-[600]">Estilo:</span> {voice.style}</div>}
+              {voice.personality && <div className="text-[12px] text-newTextColor"><span className="font-[600]">Personalidade:</span> {voice.personality}</div>}
+              {voice.forbiddenWords && voice.forbiddenWords.length > 0 && (
+                <div className="text-[11px] text-red-400 mt-[4px]">Evitar: {voice.forbiddenWords.join(', ')}</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Audience */}
+        {audience && (
+          <div className="border border-newTableBorder rounded-[10px] p-[12px] bg-newBgColorInner">
+            <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[8px]">Publico</div>
+            <div className="flex flex-col gap-[4px]">
+              {audience.demographics && <div className="text-[12px] text-newTextColor"><span className="font-[600]">Demografia:</span> {audience.demographics}</div>}
+              {audience.painPoints && audience.painPoints.length > 0 && <div className="text-[12px] text-newTextColor"><span className="font-[600]">Dores:</span> {audience.painPoints.join(', ')}</div>}
+              {audience.desires && audience.desires.length > 0 && <div className="text-[12px] text-newTextColor"><span className="font-[600]">Desejos:</span> {audience.desires.join(', ')}</div>}
+            </div>
+          </div>
+        )}
+
+        {/* Offer */}
+        {offer && (
+          <div className="border border-newTableBorder rounded-[10px] p-[12px] bg-newBgColorInner">
+            <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[8px]">Oferta</div>
+            <div className="flex flex-col gap-[4px]">
+              {offer.products && offer.products.length > 0 && <div className="text-[12px] text-newTextColor"><span className="font-[600]">Produtos:</span> {offer.products.join(', ')}</div>}
+              {offer.services && offer.services.length > 0 && <div className="text-[12px] text-newTextColor"><span className="font-[600]">Servicos:</span> {offer.services.join(', ')}</div>}
+              {offer.uniqueSellingPoints && offer.uniqueSellingPoints.length > 0 && <div className="text-[12px] text-newTextColor"><span className="font-[600]">Diferenciais:</span> {offer.uniqueSellingPoints.join(', ')}</div>}
+              {offer.pricingHint && <div className="text-[12px] text-textItemBlur italic">Preco: {offer.pricingHint}</div>}
+            </div>
+          </div>
+        )}
+
+        {/* Visual Identity */}
+        {visual && (
+          <div className="border border-newTableBorder rounded-[10px] p-[12px] bg-newBgColorInner">
+            <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[8px]">Identidade Visual</div>
+            <div className="flex flex-col gap-[4px]">
+              {visual.colors && visual.colors.length > 0 && (
+                <div className="flex items-center gap-[6px]">
+                  <span className="text-[12px] text-newTextColor font-[600]">Cores:</span>
+                  <div className="flex gap-[4px]">
+                    {visual.colors.map((c: string, i: number) => (
+                      <span key={i} className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full border-2 border-newTableBorder shadow-sm" style={{ backgroundColor: c }} title={c}>
+                        <span className="text-[8px] font-bold mix-blend-difference text-white">{c.length > 0 ? '' : ''}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {visual.style && <div className="text-[12px] text-newTextColor"><span className="font-[600]">Estilo:</span> {visual.style}</div>}
+              {visual.typographyHint && <div className="text-[12px] text-textItemBlur italic">Tipografia: {visual.typographyHint}</div>}
+              {visual.photographyStyle && <div className="text-[12px] text-textItemBlur italic">Fotografia: {visual.photographyStyle}</div>}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Constraints */}
+      {constraints && (constraints.do.length > 0 || constraints.avoid.length > 0 || constraints.requiredElements.length > 0) && (
+        <div className="border border-newTableBorder rounded-[10px] p-[12px] bg-newBgColorInner">
+          <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[8px]">Diretrizes</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-[10px]">
+            {constraints.do.length > 0 && (
+              <div>
+                <div className="text-[10px] font-[600] text-green-400 uppercase mb-[4px]">Fazer</div>
+                {constraints.do.map((item: string, i: number) => <div key={i} className="text-[12px] text-newTextColor">+ {item}</div>)}
+              </div>
+            )}
+            {constraints.avoid.length > 0 && (
+              <div>
+                <div className="text-[10px] font-[600] text-red-400 uppercase mb-[4px]">Evitar</div>
+                {constraints.avoid.map((item: string, i: number) => <div key={i} className="text-[12px] text-newTextColor">- {item}</div>)}
+              </div>
+            )}
+            {constraints.requiredElements.length > 0 && (
+              <div>
+                <div className="text-[10px] font-[600] text-blue-400 uppercase mb-[4px]">Obrigatorio</div>
+                {constraints.requiredElements.map((item: string, i: number) => <div key={i} className="text-[12px] text-newTextColor">* {item}</div>)}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Messaging Pillars */}
+      {messaging && (messaging.brandValues?.length > 0 || messaging.brandStory || messaging.messagingPillars?.length > 0 || messaging.keyCTAs?.length > 0) && (
+        <div className="border border-newTableBorder rounded-[10px] p-[12px] bg-newBgColorInner">
+          <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[8px]">Comunicacao da Marca</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[12px]">
+            {messaging.brandValues && messaging.brandValues.length > 0 && (
+              <div>
+                <div className="text-[10px] font-[600] text-purple-400 uppercase mb-[4px]">Valores</div>
+                <div className="flex flex-wrap gap-[4px]">
+                  {messaging.brandValues.map((v: string, i: number) => (
+                    <span key={i} className="text-[11px] px-[6px] py-[2px] rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30">{v}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {messaging.brandStory && (
+              <div className="sm:col-span-2">
+                <div className="text-[10px] font-[600] text-amber-400 uppercase mb-[4px]">Historia da Marca</div>
+                <div className="text-[12px] text-newTextColor leading-relaxed italic">&ldquo;{messaging.brandStory}&rdquo;</div>
+              </div>
+            )}
+            {messaging.messagingPillars && messaging.messagingPillars.length > 0 && (
+              <div>
+                <div className="text-[10px] font-[600] text-cyan-400 uppercase mb-[4px]">Pilares de Comunicacao</div>
+                <div className="flex flex-col gap-[3px]">
+                  {messaging.messagingPillars.map((p: string, i: number) => (
+                    <div key={i} className="text-[12px] text-newTextColor flex items-start gap-1"><span className="text-cyan-400 shrink-0">&#9670;</span> {p}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {messaging.keyCTAs && messaging.keyCTAs.length > 0 && (
+              <div>
+                <div className="text-[10px] font-[600] text-pink-400 uppercase mb-[4px]">Chamadas para Acao</div>
+                <div className="flex flex-wrap gap-[4px]">
+                  {messaging.keyCTAs.map((cta: string, i: number) => (
+                    <span key={i} className="text-[11px] px-[6px] py-[2px] rounded-full bg-pink-500/15 text-pink-300 border border-pink-500/30">{cta}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {messaging.emotionalTriggers && messaging.emotionalTriggers.length > 0 && (
+              <div>
+                <div className="text-[10px] font-[600] text-rose-400 uppercase mb-[4px]">Gatilhos Emocionais</div>
+                <div className="flex flex-wrap gap-[4px]">
+                  {messaging.emotionalTriggers.map((t: string, i: number) => (
+                    <span key={i} className="text-[11px] px-[6px] py-[2px] rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Competitors */}
+      {messaging?.competitors && messaging.competitors.length > 0 && (
+        <div className="border border-newTableBorder rounded-[10px] p-[12px] bg-newBgColorInner">
+          <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[8px]">Concorrentes Identificados</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-[8px]">
+            {messaging.competitors.map((comp: string, i: number) => (
+              <div key={i} className="flex items-center gap-2 p-[8px] rounded-[8px] bg-newSettings border border-newTableBorder">
+                <div className="w-[28px] h-[28px] rounded-full bg-orange-500/15 flex items-center justify-center text-[11px] font-bold text-orange-300">{comp.charAt(0).toUpperCase()}</div>
+                <span className="text-[12px] text-newTextColor font-medium truncate">{comp}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Content Guidelines */}
+      {contentGuidelines && (contentGuidelines.postLengthHint || contentGuidelines.emojiUsage || contentGuidelines.hashtagStrategy?.length > 0 || contentGuidelines.contentMix?.length > 0 || contentGuidelines.bestPractices?.length > 0) && (
+        <div className="border border-newTableBorder rounded-[10px] p-[12px] bg-newBgColorInner">
+          <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[8px]">Diretrizes de Conteudo</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[10px]">
+            {contentGuidelines.postLengthHint && (
+              <div>
+                <div className="text-[10px] font-[600] text-blue-300 uppercase mb-[4px]">Tamanho dos Posts</div>
+                <div className="text-[12px] text-newTextColor">{contentGuidelines.postLengthHint}</div>
+              </div>
+            )}
+            {contentGuidelines.emojiUsage && (
+              <div>
+                <div className="text-[10px] font-[600] text-yellow-300 uppercase mb-[4px]">Uso de Emojis</div>
+                <div className="text-[12px] text-newTextColor">{contentGuidelines.emojiUsage}</div>
+              </div>
+            )}
+            {contentGuidelines.hashtagStrategy && contentGuidelines.hashtagStrategy.length > 0 && (
+              <div>
+                <div className="text-[10px] font-[600] text-indigo-300 uppercase mb-[4px]">Estrategia de Hashtags</div>
+                <div className="flex flex-wrap gap-[4px]">
+                  {contentGuidelines.hashtagStrategy.map((h: string, i: number) => (
+                    <span key={i} className="text-[11px] px-[6px] py-[2px] rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">{h}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {contentGuidelines.contentMix && contentGuidelines.contentMix.length > 0 && (
+              <div>
+                <div className="text-[10px] font-[600] text-teal-300 uppercase mb-[4px]">Mix de Conteudo</div>
+                <div className="flex flex-col gap-[3px]">
+                  {contentGuidelines.contentMix.map((m: string, i: number) => (
+                    <div key={i} className="text-[12px] text-newTextColor flex items-start gap-1"><span className="text-teal-300 shrink-0">&#9654;</span> {m}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {contentGuidelines.bestPractices && contentGuidelines.bestPractices.length > 0 && (
+              <div className="sm:col-span-2">
+                <div className="text-[10px] font-[600] text-lime-300 uppercase mb-[4px]">Melhores Praticas</div>
+                <div className="flex flex-wrap gap-[4px]">
+                  {contentGuidelines.bestPractices.map((bp: string, i: number) => (
+                    <span key={i} className="text-[11px] px-[6px] py-[2px] rounded-full bg-lime-500/15 text-lime-300 border border-lime-500/30">{bp}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BrandHealthBar({ dna }: { dna: any }) {
+  if (!dna) return null;
+  const fields = [
+    dna.summary?.tagline, dna.summary?.description, dna.summary?.industry, dna.summary?.targetAudience,
+    dna.voice?.tone, dna.voice?.style, dna.voice?.personality,
+    dna.audience?.demographics, dna.audience?.painPoints?.length > 0, dna.audience?.desires?.length > 0,
+    dna.offer?.products?.length > 0 || dna.offer?.services?.length > 0, dna.offer?.uniqueSellingPoints?.length > 0,
+    dna.visual?.colors?.length > 0, dna.visual?.style,
+    dna.constraints?.do?.length > 0 || dna.constraints?.avoid?.length > 0,
+    dna.messaging?.brandValues?.length > 0 || dna.messaging?.brandStory,
+    dna.messaging?.messagingPillars?.length > 0, dna.messaging?.competitors?.length > 0,
+    dna.messaging?.keyCTAs?.length > 0, dna.messaging?.emotionalTriggers?.length > 0,
+    dna.contentGuidelines?.postLengthHint || dna.contentGuidelines?.emojiUsage,
+    dna.contentGuidelines?.contentMix?.length > 0 || dna.contentGuidelines?.bestPractices?.length > 0,
+  ];
+  const filled = fields.filter(Boolean).length;
+  const total = fields.length;
+  const pct = Math.round((filled / total) * 100);
+  const color = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-400';
+  return (
+    <div className="flex items-center gap-[10px]">
+      <div className="flex-1">
+        <div className="h-[8px] rounded-full bg-newTableBorder overflow-hidden">
+          <div className={"h-full rounded-full transition-all duration-500 " + color} style={{ width: pct + '%' }} />
+        </div>
+      </div>
+      <span className="text-[12px] font-[600] text-newTextColor shrink-0">{pct}%</span>
+    </div>
+  );
+}
+
+
 export function BrandDetailPage(props: { brandId?: string } = {}) {
   const brandIdProp = props.brandId;
   const params = useParams();
@@ -104,6 +402,17 @@ export function BrandDetailPage(props: { brandId?: string } = {}) {
       constraintsDo: '',
       constraintsAvoid: '',
       constraintsRequiredElements: '',
+      messagingBrandValues: '',
+      messagingBrandStory: '',
+      messagingCompetitors: '',
+      messagingPillars: '',
+      messagingKeyCTAs: '',
+      messagingEmotionalTriggers: '',
+      contentGuidelinesPostLengthHint: '',
+      contentGuidelinesEmojiUsage: '',
+      contentGuidelinesHashtagStrategy: '',
+      contentGuidelinesContentMix: '',
+      contentGuidelinesBestPractices: '',
     };
 
     modals.openModal({
@@ -146,6 +455,21 @@ export function BrandDetailPage(props: { brandId?: string } = {}) {
             <Field label="Evitar (vírgula separada)" value={form.constraintsAvoid} onChange={(v) => { form.constraintsAvoid = v; }} />
             <Field label="Elementos obrigatórios (vírgula separada)" value={form.constraintsRequiredElements} onChange={(v) => { form.constraintsRequiredElements = v; }} />
           </Section>
+          <Section title="Comunicação da Marca">
+            <Field label="Valores da marca (vírgula separada)" value={form.messagingBrandValues} onChange={(v) => { form.messagingBrandValues = v; }} />
+            <Field label="História da marca" value={form.messagingBrandStory} onChange={(v) => { form.messagingBrandStory = v; }} textarea />
+            <Field label="Concorrentes (vírgula separada)" value={form.messagingCompetitors} onChange={(v) => { form.messagingCompetitors = v; }} />
+            <Field label="Pilares de comunicação (vírgula separada)" value={form.messagingPillars} onChange={(v) => { form.messagingPillars = v; }} />
+            <Field label="Chamadas para ação (vírgula separada)" value={form.messagingKeyCTAs} onChange={(v) => { form.messagingKeyCTAs = v; }} />
+            <Field label="Gatilhos emocionais (vírgula separada)" value={form.messagingEmotionalTriggers} onChange={(v) => { form.messagingEmotionalTriggers = v; }} />
+          </Section>
+          <Section title="Diretrizes de Conteúdo">
+            <Field label="Tamanho dos posts" value={form.contentGuidelinesPostLengthHint} onChange={(v) => { form.contentGuidelinesPostLengthHint = v; }} />
+            <Field label="Uso de emojis" value={form.contentGuidelinesEmojiUsage} onChange={(v) => { form.contentGuidelinesEmojiUsage = v; }} />
+            <Field label="Estratégia de hashtags (vírgula separada)" value={form.contentGuidelinesHashtagStrategy} onChange={(v) => { form.contentGuidelinesHashtagStrategy = v; }} />
+            <Field label="Mix de conteúdo (vírgula separada)" value={form.contentGuidelinesContentMix} onChange={(v) => { form.contentGuidelinesContentMix = v; }} />
+            <Field label="Melhores práticas (vírgula separada)" value={form.contentGuidelinesBestPractices} onChange={(v) => { form.contentGuidelinesBestPractices = v; }} />
+          </Section>
           <div className="flex justify-end gap-3 pt-4 border-t border-newTableBorder">
             <Button onClick={close} secondary>Cancelar</Button>
             <Button onClick={async () => {
@@ -185,6 +509,21 @@ export function BrandDetailPage(props: { brandId?: string } = {}) {
                     do: form.constraintsDo.split(',').map(s => s.trim()).filter(Boolean),
                     avoid: form.constraintsAvoid.split(',').map(s => s.trim()).filter(Boolean),
                     requiredElements: form.constraintsRequiredElements.split(',').map(s => s.trim()).filter(Boolean),
+                  },
+                  messaging: {
+                    brandValues: form.messagingBrandValues.split(',').map(s => s.trim()).filter(Boolean),
+                    brandStory: form.messagingBrandStory,
+                    competitors: form.messagingCompetitors.split(',').map(s => s.trim()).filter(Boolean),
+                    messagingPillars: form.messagingPillars.split(',').map(s => s.trim()).filter(Boolean),
+                    keyCTAs: form.messagingKeyCTAs.split(',').map(s => s.trim()).filter(Boolean),
+                    emotionalTriggers: form.messagingEmotionalTriggers.split(',').map(s => s.trim()).filter(Boolean),
+                  },
+                  contentGuidelines: {
+                    postLengthHint: form.contentGuidelinesPostLengthHint,
+                    emojiUsage: form.contentGuidelinesEmojiUsage,
+                    hashtagStrategy: form.contentGuidelinesHashtagStrategy.split(',').map(s => s.trim()).filter(Boolean),
+                    contentMix: form.contentGuidelinesContentMix.split(',').map(s => s.trim()).filter(Boolean),
+                    bestPractices: form.contentGuidelinesBestPractices.split(',').map(s => s.trim()).filter(Boolean),
                   },
                 });
                 toaster.show('Brand DNA criado com sucesso!', 'success');
@@ -325,7 +664,7 @@ export function BrandDetailPage(props: { brandId?: string } = {}) {
 
           <SectionCard
             title="Análise de site"
-            description="Extraia Brand DNA a partir do website da marca."
+            description="Analise o site para extrair Brand DNA automaticamente. O sistema analisa conteudo, estilo, publico e propostas de valor."
           >
             <div className="flex items-center gap-2 mb-3 text-textItemBlur">
               <Building2 className="w-4 h-4" />
@@ -354,7 +693,7 @@ export function BrandDetailPage(props: { brandId?: string } = {}) {
             )}
           </SectionCard>
 
-          <SectionCard title="Assets da marca">
+          <SectionCard title="Ativos da Marca">
             <BrandAssetList brandId={brand.id} />
           </SectionCard>
         </div>

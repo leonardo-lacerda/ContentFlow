@@ -1025,6 +1025,8 @@ model BrandDnaSnapshot {
   offer          Json
   visual         Json
   constraints    Json
+  messaging         Json?
+  contentGuidelines Json?
   confidence     Json?
   promptVersion  String
   model          String

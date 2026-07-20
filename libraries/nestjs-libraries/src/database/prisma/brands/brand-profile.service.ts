@@ -169,6 +169,8 @@ export class BrandProfileService {
       offer: dto.offer,
       visual: dto.visual,
       constraints: dto.constraints,
+      messaging: dto.messaging,
+      contentGuidelines: dto.contentGuidelines,
       promptVersion: 'manual',
       model: 'manual',
     });

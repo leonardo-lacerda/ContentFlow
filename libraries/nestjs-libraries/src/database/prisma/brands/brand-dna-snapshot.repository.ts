@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
 
 @Injectable()
@@ -30,6 +30,8 @@ export class BrandDnaSnapshotRepository {
     offer: any;
     visual: any;
     constraints: any;
+    messaging?: any;
+    contentGuidelines?: any;
     confidence?: any;
     promptVersion: string;
     model: string;

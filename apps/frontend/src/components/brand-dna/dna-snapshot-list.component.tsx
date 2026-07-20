@@ -14,7 +14,7 @@ function SnapshotModalView({
   snapshot: BrandDnaSnapshot;
   close: () => void;
 }) {
-  const { summary, voice, audience, offer, visual, constraints, confidence } =
+  const { summary, voice, audience, offer, visual, constraints, confidence, messaging, contentGuidelines } =
     snapshot;
 
   const Section = ({
@@ -112,6 +112,35 @@ function SnapshotModalView({
           items={constraints.requiredElements}
         />
       </Section>
+
+      {/* Messaging */}
+      {messaging && (messaging.brandValues?.length > 0 || messaging.brandStory || messaging.messagingPillars?.length > 0 || messaging.keyCTAs?.length > 0) && (
+        <Section title="Comunicação da Marca">
+          <ListField label="Valores da marca" items={messaging.brandValues} />
+          {messaging.brandStory && <div className="mb-1.5 italic">&ldquo;{messaging.brandStory}&rdquo;</div>}
+          <ListField label="Pilares de comunicação" items={messaging.messagingPillars} />
+          <ListField label="Chamadas para ação" items={messaging.keyCTAs} />
+          <ListField label="Gatilhos emocionais" items={messaging.emotionalTriggers} />
+        </Section>
+      )}
+
+      {/* Competitors */}
+      {messaging?.competitors && messaging.competitors.length > 0 && (
+        <Section title="Concorrentes Identificados">
+          <ListField label="" items={messaging.competitors} />
+        </Section>
+      )}
+
+      {/* Content Guidelines */}
+      {contentGuidelines && (contentGuidelines.postLengthHint || contentGuidelines.emojiUsage || contentGuidelines.hashtagStrategy?.length > 0 || contentGuidelines.contentMix?.length > 0 || contentGuidelines.bestPractices?.length > 0) && (
+        <Section title="Diretrizes de Conteúdo">
+          {contentGuidelines.postLengthHint && <Field label="Tamanho dos posts" value={contentGuidelines.postLengthHint} />}
+          {contentGuidelines.emojiUsage && <Field label="Uso de emojis" value={contentGuidelines.emojiUsage} />}
+          <ListField label="Estratégia de hashtags" items={contentGuidelines.hashtagStrategy} />
+          <ListField label="Mix de conteúdo" items={contentGuidelines.contentMix} />
+          <ListField label="Melhores práticas" items={contentGuidelines.bestPractices} />
+        </Section>
+      )}
 
       {confidence && (
         <Section title="Confiança">

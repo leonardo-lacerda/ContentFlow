@@ -25,4 +25,12 @@ export class CreateBrandDnaSnapshotDto {
 
   @IsObject()
   constraints!: Record<string, any>;
+
+  @IsOptional()
+  @IsObject()
+  messaging?: Record<string, any>;
+
+  @IsOptional()
+  @IsObject()
+  contentGuidelines?: Record<string, any>;
 }

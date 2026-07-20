@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { OpenaiService } from '@gitroom/nestjs-libraries/openai/openai.service';
 import { UrlValidationService } from '@gitroom/nestjs-libraries/openai/url-validation.service';
 import { WebsiteMetadataExtractor } from '@gitroom/nestjs-libraries/openai/website-metadata.extractor';
@@ -80,12 +80,12 @@ export class BrandDnaExtractionService {
 
       const dnaData: BrandDnaExtraction = validationResult.data;
 
-      // 7. Calcular próximo version
+      // 7. Calculate next version
       const latestSnapshot =
         await this.brandDnaSnapshotRepository.findLatest(brandProfileId);
       const nextVersion = latestSnapshot ? latestSnapshot.version + 1 : 1;
 
-      // 8. Salvar snapshot
+      // 8. Salvar snapshot (new fields go into existing Json columns)
       const snapshot = await this.brandDnaSnapshotRepository.create({
         brandProfileId,
         version: nextVersion,
@@ -97,6 +97,8 @@ export class BrandDnaExtractionService {
         offer: dnaData.offer,
         visual: dnaData.visual,
         constraints: dnaData.constraints,
+        messaging: dnaData.messaging,
+        contentGuidelines: dnaData.contentGuidelines,
         confidence: dnaData.confidence || null,
         promptVersion: VERSION,
         model: 'gpt-4.1',
@@ -137,7 +139,7 @@ export class BrandDnaExtractionService {
         status: BrandProfileStatus.NEEDS_REVIEW,
       });
 
-      // Serialize Prisma models to plain JSON-safe objects (no Decimal/BigInt surprises)
+      // Serialize Prisma models to plain JSON-safe objects
       return {
         success: true,
         snapshot: JSON.parse(
@@ -165,7 +167,7 @@ export class BrandDnaExtractionService {
   }
 
   private buildPrompt(metadata: any): string {
-    return `Analyze this brand website and extract structured brand DNA.
+    return `You are a senior brand strategist and content marketing expert. Analyze this brand website and extract a comprehensive, structured brand DNA profile. Be specific, insightful, and evidence-based.
 
 Website URL: ${metadata.url}
 Title: ${metadata.title || 'N/A'}
@@ -176,14 +178,74 @@ Website content:
 ${metadata.mainText?.slice(0, 10000) || 'No content extracted'}
 
 Extract the following as structured JSON:
-1. **Summary**: tagline, description, industry, target audience
-2. **Voice**: tone, style, personality, forbidden words
-3. **Audience**: demographics, pain points, desires, objections
-4. **Offer**: products, services, unique selling points, pricing hint
-5. **Visual**: colors, style, typography hint
-6. **Constraints**: things to do, things to avoid, required elements
-7. **Confidence**: overall, textual, visual, commercial (0-1)
 
-Be specific and use evidence from the website content. If information is not available, leave fields empty or use low confidence scores.`;
+## 1. Summary
+- **tagline**: A short, catchy tagline (from the website or inferred)
+- **description**: Concise description of what the brand does
+- **industry**: The industry the brand operates in
+- **targetAudience**: The primary target audience
+- **missionStatement**: The brand mission statement (empty string if not found)
+- **valueProposition**: The core value proposition - what unique value they deliver
+
+## 2. Voice
+- **tone**: Overall tone (e.g. "professional yet approachable", "bold and irreverent")
+- **style**: Writing style (e.g. "conversational", "technical", "storytelling")
+- **personality**: 2-4 personality adjectives that define the brand character
+- **forbiddenWords**: Words/phrases the brand clearly avoids
+- **examplePhrases**: 2-3 example sentences in the brand voice (rewrite key website phrases to illustrate tone)
+
+## 3. Audience
+- **demographics**: Key demographic info (age, gender, profession, income level)
+- **painPoints**: 2-4 primary pain points the audience faces that this brand addresses
+- **desires**: What the audience aspires to achieve
+- **objections**: Common objections to purchasing or engaging
+- **buyerPersonas**: Create 2-3 specific buyer personas, each with:
+  - name: A short persona label (e.g. "Startup Founder Sam", "Marketing Director Maria")
+  - description: 1-2 sentence description
+  - role: Their typical job role or life context
+
+## 4. Offer
+- **products**: All products mentioned on the site
+- **services**: All services offered
+- **uniqueSellingPoints**: 2-4 key differentiators vs competitors
+- **pricingHint**: Pricing positioning (e.g. "premium", "freemium", "enterprise pricing") or null
+- **category**: Product/service category (e.g. "SaaS", "E-commerce", "Agency", "Consulting") or null
+- **topCompetitors**: 2-4 competitor brand names detected from website mentions
+
+## 5. Visual
+- **colors**: Brand colors (use hex codes if extractable, otherwise descriptive names)
+- **style**: Visual style description (e.g. "minimalist with bold accent colors")
+- **typographyHint**: Typography preferences if identifiable, or null
+- **imageryStyle**: Type of imagery used (e.g. "lifestyle photography", "abstract illustrations", "product close-ups")
+
+## 6. Constraints
+- **do**: Specific things to do when representing this brand (5-8 items)
+- **avoid**: Specific things to avoid (5-8 items)
+- **requiredElements**: Elements that must be in every piece of content (e.g. "logo placement", "tagline", "brand colors")
+
+## 7. Messaging
+- **messagingPillars**: 3-5 core messaging pillars / recurring themes the brand emphasizes across channels
+- **keyMessages**: 2-4 key messages the brand consistently communicates
+- **callToActionStyle**: Preferred CTA style (e.g. "urgency-driven", "value-led", "soft invitation") or null
+
+## 8. Content Guidelines
+- **preferredFormats**: Content formats the brand favors (e.g. "carousels", "short-form video", "infographics")
+- **hashtagsStrategy**: Hashtag usage strategy observed, or null if not applicable
+- **emojiUsage**: Emoji usage pattern observed, or null
+
+## 9. Confidence (0-1 scale for each)
+- **overall**: Overall extraction confidence
+- **textual**: Confidence based on text content quality
+- **visual**: Confidence based on visual/style information available
+- **commercial**: Confidence in offer/pricing extraction
+- **messaging**: Confidence in messaging pillar extraction
+- **brandValues**: Confidence in mission/values extraction
+
+IMPORTANT RULES:
+- Use evidence from the website content - do not fabricate information
+- When inferring, use "inferred from context" reasoning
+- For fields where no evidence exists, use empty strings/arrays and low confidence scores (0.1-0.3)
+- Colors should prefer hex format (#RRGGBB) when detectable from CSS/meta
+- Buyer personas should feel specific and actionable, not generic`;
   }
 }
