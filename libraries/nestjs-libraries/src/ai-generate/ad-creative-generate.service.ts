@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+﻿import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import {
@@ -25,7 +25,7 @@ const SYSTEM_PROMPT = `You are a world-class performance marketing creative stra
 You generate high-converting ad creatives for paid campaigns on Meta (Facebook/Instagram) and LinkedIn.
 
 You MUST:
-1. Generate ad copy that is distinct from organic social media content — this is PAID advertising
+1. Generate ad copy that is distinct from organic social media content - this is PAID advertising
 2. Respect strict character limits per platform:
    - Meta Feed: headline 125 chars, primary text 125 chars (recommended) / 500 max
    - Instagram Feed: headline 125 chars, primary text 125 chars / 500 max
@@ -41,16 +41,27 @@ You MUST:
 6. Generate image prompts that match the ad's message and platform format
 7. For carousel ads, ensure each slide has a clear purpose in the narrative flow
 8. Include policy warnings for any potentially sensitive claims
+9. For EACH ad, you MUST provide rich strategic context that helps the user understand and optimize:
+
+FOR EACH AD, YOU MUST INCLUDE:
+- rationale: Explain WHY this specific headline, copy, and CTA combination works. Be specific about the psychology.
+- emotionalHook: Name the primary emotional trigger (fear of missing out, social proof, desire for growth, pain relief, aspiration, curiosity)
+- platformOptimization: Explain specifically how this ad leverages the platform's algorithm, user behavior, and format
+- targeting: 1-2 detailed audience targeting recommendations with demographics, interests, exclusions, and rationale
+- abTests: 2-3 specific A/B test suggestions with hypothesis (e.g. "Test this headline against a question-based headline because...")
+- growthTips: 2-3 actionable growth tips with category (budget, creative, targeting, landing-page, retargeting) and impact timeline
+- preLaunchChecklist: 3-4 specific items to verify before launching
+- expectedMetrics: Realistic CTR, CPC, and conversion rate ranges with context
 
 AD TEMPLATE STRATEGIES:
-- Problem→Solution: Hook with pain point, agitate, present solution, show benefit, CTA
+- Problem-Solution: Hook with pain point, agitate, present solution, show benefit, CTA
 - Social Proof: Lead with results/data, show testimonial, build trust, CTA
 - Offer/Promotion: Lead with the offer, show value, create urgency, CTA
 - Comparison/Before-After: Show current state, contrast with desired state, CTA
 - Testimonial/Case: Feature customer voice, show results, CTA
 
 IMPORTANT: These are NOT organic posts. They are PAID ADS. The language should be
-direct, benefit-focused, and conversion-oriented.`;
+direct, benefit-focused, and conversion-oriented. Always include rich strategic guidance.`;
 
 @Injectable()
 export class AdCreativeGenerateService {
@@ -131,8 +142,8 @@ export class AdCreativeGenerateService {
       type: 'AD_CREATIVE_GENERATION',
       model: 'gpt-4.1',
       provider: 'openai',
-      promptVersion: '1.0.0',
-      schemaVersion: '1.0.0',
+      promptVersion: '2.0.0',
+      schemaVersion: '2.0.0',
     });
 
     try {
@@ -232,8 +243,8 @@ export class AdCreativeGenerateService {
           claimsFlags: ad.claimsFlags ? JSON.parse(JSON.stringify(ad.claimsFlags)) : null,
           mediaAssets: ad.imagePrompts ? JSON.parse(JSON.stringify(ad.imagePrompts)) : null,
           generationJobId: jobId || null,
-          schemaVersion: '1.0.0',
-          promptVersion: '1.0.0',
+          schemaVersion: '2.0.0',
+          promptVersion: '2.0.0',
           status: 'DRAFT',
         },
       });
@@ -359,7 +370,7 @@ export class AdCreativeGenerateService {
 ## Brand DNA
 Brand Name: ${dna?.brandProfile?.name || dna?.summary?.tagline || 'Unknown'}
 Industry: ${dna?.brandProfile?.industry || dna?.summary?.industry || 'Unknown'}
-Voice: ${dna?.voice?.tone || 'professional'} — Style: ${dna?.voice?.style || 'clear'}
+Voice: ${dna?.voice?.tone || 'professional'} - Style: ${dna?.voice?.style || 'clear'}
 Target Audience: ${dna?.audience?.demographics || 'General'}
 Pain Points: ${Array.isArray(dna?.audience?.painPoints) ? dna.audience.painPoints.join(', ') : 'N/A'}
 Value Proposition: ${Array.isArray(dna?.offer?.uniqueSellingPoints) ? dna.offer.uniqueSellingPoints.join(', ') : 'N/A'}
@@ -393,7 +404,17 @@ IMPORTANT REMINDERS:
 - Include imagePrompts with specific descriptions for ad images
 - Run mental policy checks and include policyWarnings for anything sensitive
 - For carousel type, generate 3-5 slides with clear narrative flow
-- Each slide needs a headline and body text`;
+- Each slide needs a headline and body text
+
+STRATEGIC GUIDANCE (REQUIRED for each ad):
+- rationale: Explain the strategic reasoning behind your choices. Why headline X? Why CTA Y? What psychology is at play?
+- emotionalHook: Name the primary emotional trigger you are using
+- platformOptimization: How does this ad leverage the specific platform's algorithm and user behavior?
+- targeting: Provide 1-2 detailed audience targeting configs with demographics, interests, exclusions, and WHY
+- abTests: Suggest 2-3 A/B test variations with hypothesis (e.g. "Test headline A vs question headline B because...")
+- growthTips: 2-3 actionable growth tips (budget allocation, creative refresh, retargeting, landing page, etc.)
+- preLaunchChecklist: 3-4 specific verification items before going live
+- expectedMetrics: Realistic CTR, CPC, conversion rate ranges for this ad type on this platform`;
   }
 
   private exportMetaCsv(ad: any): object {

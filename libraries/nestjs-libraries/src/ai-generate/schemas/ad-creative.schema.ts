@@ -1,6 +1,6 @@
 ﻿import { z } from 'zod';
 
-export const VERSION = '1.0.0';
+export const VERSION = '2.0.0';
 
 // Platform constraints
 export const AD_PLATFORM_CONSTRAINTS: Record<
@@ -76,6 +76,29 @@ const AdCarouselSlideSchema = z.object({
   altText: z.string().nullable().optional().describe('Accessibility alt text'),
 });
 
+// ---- Strategic guidance sub-schemas ----
+
+const TargetingRecommendationSchema = z.object({
+  audience: z.string().describe('Recommended audience segment name'),
+  demographics: z.string().describe('Age range, gender, location targeting'),
+  interests: z.array(z.string()).describe('Interest/targeting keywords for the ad platform'),
+  exclusions: z.array(z.string()).optional().describe('Audiences to exclude'),
+  rationale: z.string().describe('Why this audience matches the ad objective'),
+});
+
+const ABTestSuggestionSchema = z.object({
+  variant: z.string().describe('What to test (headline, CTA, image, audience, placement)'),
+  currentValue: z.string().describe('The current value in this ad'),
+  suggestedAlternative: z.string().describe('Alternative to test against'),
+  hypothesis: z.string().describe('Why this alternative might perform better'),
+});
+
+const GrowthTipSchema = z.object({
+  category: z.string().describe('Tip category: budget, creative, targeting, landing-page, retargeting'),
+  tip: z.string().describe('Actionable growth tip'),
+  impact: z.enum(['quick-win', 'medium-term', 'long-term']).describe('Expected impact timeline'),
+});
+
 const AdImagePromptSchema = z.object({
   role: z.string().describe('Image role (e.g. hero, slide-1)'),
   prompt: z.string().describe('Image generation prompt'),
@@ -99,6 +122,11 @@ const AdCreativeSchema = z.object({
   ctaButton: z.string().describe('CTA button type'),
   destinationUrl: z.string().nullable().optional().describe('Destination URL'),
 
+  // Strategic rationale
+  rationale: z.string().min(1).describe('WHY this ad approach works: strategic reasoning behind headline, copy and CTA choices'),
+  emotionalHook: z.string().describe('The core emotional trigger used (fear of missing out, desire for growth, pain relief, etc.)'),
+  platformOptimization: z.string().describe('How this ad is specifically optimized for the target platform'),
+
   // Carousel (optional)
   slides: z.array(AdCarouselSlideSchema).min(2).max(10).nullable().optional().describe('Carousel slides'),
   slideCount: z.number().int().nullable().optional().describe('Number of slides'),
@@ -106,13 +134,32 @@ const AdCreativeSchema = z.object({
   // Image prompts
   imagePrompts: z.array(AdImagePromptSchema).nullable().optional().describe('Prompts for generating images'),
 
+  // Targeting recommendations
+  targeting: z.array(TargetingRecommendationSchema).min(1).describe('Recommended audience targeting configurations'),
+
+  // A/B testing suggestions
+  abTests: z.array(ABTestSuggestionSchema).min(1).describe('Suggested A/B test variations to optimize this ad'),
+
+  // Growth tips
+  growthTips: z.array(GrowthTipSchema).min(2).describe('Actionable tips to maximize ad performance'),
+
+  // Best practices checklist
+  preLaunchChecklist: z.array(z.string()).min(2).describe('Checklist items to verify before launching this ad'),
+
+  // Performance benchmarks
+  expectedMetrics: z.object({
+    ctr: z.string().describe('Expected CTR range for this ad type and platform'),
+    cpc: z.string().describe('Expected CPC range'),
+    conversionRate: z.string().describe('Expected conversion rate range'),
+    notes: z.string().describe('Context about these benchmarks'),
+  }).describe('Expected performance benchmarks based on industry and platform'),
+
   // Compliance
   policyWarnings: z.array(PolicyWarningSchema).default([]).describe('Ad policy warnings'),
   claimsFlags: z.array(ClaimFlagSchema).default([]).describe('Flagged claims'),
 
   // Metadata
   tone: z.string().nullable().optional().describe('Tone used'),
-  rationale: z.string().nullable().optional().describe('Why this approach'),
   notes: z.string().nullable().optional().describe('Internal notes'),
 });
 
@@ -129,7 +176,7 @@ export type AdCreativeBatch = z.infer<typeof AdCreativeBatchSchema>;
 // ---- Ad templates data ----
 
 export const AD_TEMPLATES = [
-  { id: 'problem-solution', name: 'Problem → Solution', description: 'Pain point followed by solution' },
+  { id: 'problem-solution', name: 'Problem -> Solution', description: 'Pain point followed by solution' },
   { id: 'social-proof', name: 'Social Proof', description: 'Testimonials, reviews, case studies' },
   { id: 'offer-promotion', name: 'Offer / Promotion', description: 'Direct offer with price/discount' },
   { id: 'comparison', name: 'Comparison', description: 'Before/After or Us vs Them' },

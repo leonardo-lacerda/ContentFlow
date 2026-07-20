@@ -63,6 +63,34 @@ const OBJECTIVES = [
 
 const AD_TYPES = ['AUTO', 'STATIC', 'CAROUSEL'] as const;
 
+const IMPACT_COLORS: Record<string, string> = {
+  'quick-win': 'bg-green-500/15 text-green-400',
+  'medium-term': 'bg-yellow-500/15 text-yellow-400',
+  'long-term': 'bg-blue-500/15 text-blue-400',
+};
+
+const IMPACT_LABELS: Record<string, string> = {
+  'quick-win': 'Rápido',
+  'medium-term': 'Médio prazo',
+  'long-term': 'Longo prazo',
+};
+
+
+function CollapsibleSection({ title, icon, children, defaultOpen = false }: { title: string; icon?: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const arrowCls = "transition-transform " + (open ? "rotate-180" : "");
+  return (
+    <div className="border border-newTableBorder rounded-[10px] overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-[12px] bg-newBgColorInner hover:bg-newSettings transition-colors text-left">
+        <div className="flex items-center gap-[8px]">{icon}<span className="text-[13px] font-[600] text-newTextColor">{title}</span></div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={arrowCls}>
+          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+      {open ? <div className="p-[12px] border-t border-newTableBorder">{children}</div> : null}
+    </div>
+  );
+}
 function PolicyWarningsList({ warnings }: { warnings: PolicyWarning[] }) {
   if (!warnings?.length) return null;
   return (
@@ -111,46 +139,132 @@ function AdCreativeCard({
         ) : null}
       </div>
 
-      <h3 className="text-[15px] font-[600] text-newTextColor">{ad.headline}</h3>
-      <p className="text-[13px] text-newTextColor/90">{ad.primaryText}</p>
-      {ad.description ? (
-        <p className="text-[12px] text-textItemBlur">{ad.description}</p>
-      ) : null}
-
-      <div className="flex items-center gap-[8px] text-[12px]">
-        <span className="px-[10px] py-[4px] rounded-[6px] font-[600] bg-btnPrimary text-btnText">
-          {ad.ctaButton}
-        </span>
-        {ad.destinationUrl ? (
-          <span className="text-textItemBlur truncate max-w-[240px]">
-            {ad.destinationUrl}
-          </span>
-        ) : null}
+      {/* Ad Copy Preview */}
+      <div className="border border-newTableBorder rounded-[10px] p-[14px] bg-gradient-to-br from-newBgColorInner to-transparent">
+        <h3 className="text-[15px] font-[600] text-newTextColor mb-[4px]">{ad.headline}</h3>
+        <p className="text-[13px] text-newTextColor/90 whitespace-pre-line">{ad.primaryText}</p>
+        {ad.description ? <p className="text-[12px] text-textItemBlur mt-[4px]">{ad.description}</p> : null}
+        <div className="flex items-center gap-[8px] text-[12px] mt-[10px]">
+          <span className="px-[10px] py-[4px] rounded-[6px] font-[600] bg-btnPrimary text-btnText">{ad.ctaButton}</span>
+          {ad.destinationUrl ? <span className="text-textItemBlur truncate max-w-[240px]">{ad.destinationUrl}</span> : null}
+        </div>
       </div>
 
-      {ad.slides && ad.slides.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[8px]">
-          {ad.slides.map((slide, i) => (
-            <div
-              key={i}
-              className="border border-newTableBorder rounded-[8px] p-[10px] text-[12px] bg-newBgColorInner"
-            >
-              <div className="font-[600] text-newTextColor">
-                Slide {slide.index + 1}: {slide.headline}
+      {/* Strategic Rationale */}
+      {(ad as any).rationale ? (
+        <CollapsibleSection title="Estratégia" defaultOpen={true} icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}>
+          <div className="flex flex-col gap-[10px]">
+            <div><div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[4px]">Por que esta abordagem funciona</div><p className="text-[13px] text-newTextColor">{(ad as any).rationale}</p></div>
+            {(ad as any).emotionalHook ? <div><div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[4px]">Gatilho Emocional</div><p className="text-[13px] text-newTextColor">{(ad as any).emotionalHook}</p></div> : null}
+            {(ad as any).platformOptimization ? <div><div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[4px]">Otimização para a Plataforma</div><p className="text-[13px] text-newTextColor">{(ad as any).platformOptimization}</p></div> : null}
+          </div>
+        </CollapsibleSection>
+      ) : null}
+
+      {/* Targeting */}
+      {(ad as any).targeting && (ad as any).targeting.length > 0 ? (
+        <CollapsibleSection title="Público-Alvo" icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}>
+          <div className="flex flex-col gap-[10px]">
+            {(ad as any).targeting.map((t: any, i: number) => (
+              <div key={i} className="border border-newTableBorder rounded-[8px] p-[10px] bg-newBgColorInner">
+                <div className="text-[13px] font-[600] text-newTextColor mb-[4px]">{t.audience}</div>
+                <div className="text-[12px] text-textItemBlur mb-[4px]"><b>Demográficos:</b> {t.demographics}</div>
+                <div className="text-[12px] text-textItemBlur mb-[4px]"><b>Interesses:</b> {t.interests.join(", ")}</div>
+                {t.exclusions && t.exclusions.length > 0 ? <div className="text-[12px] text-textItemBlur mb-[4px]"><b>Exclusões:</b> {t.exclusions.join(", ")}</div> : null}
+                <div className="text-[12px] text-newTextColor mt-[4px] italic">{t.rationale}</div>
               </div>
-              <div className="text-textItemBlur mt-[2px]">{slide.body}</div>
+            ))}
+          </div>
+        </CollapsibleSection>
+      ) : null}
+
+      {/* Image Prompts */}
+      {ad.imagePrompts && ad.imagePrompts.length > 0 ? (
+        <CollapsibleSection title="Direção Visual" icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}>
+          <div className="flex flex-col gap-[8px]">
+            {ad.imagePrompts.map((ip: any, i: number) => (
+              <div key={i} className="border border-newTableBorder rounded-[8px] p-[10px] bg-newBgColorInner">
+                <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide mb-[4px]">{ip.role}</div>
+                <p className="text-[12px] text-newTextColor">{ip.prompt}</p>
+                {ip.aspectRatio ? <span className="text-[11px] text-textItemBlur mt-[4px] inline-block">Ratio: {ip.aspectRatio}</span> : null}
+              </div>
+            ))}
+          </div>
+        </CollapsibleSection>
+      ) : null}
+
+      {/* A/B Tests */}
+      {(ad as any).abTests && (ad as any).abTests.length > 0 ? (
+        <CollapsibleSection title="Testes A/B" icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}>
+          <div className="flex flex-col gap-[8px]">
+            {(ad as any).abTests.map((test: any, i: number) => (
+              <div key={i} className="border border-newTableBorder rounded-[8px] p-[10px] bg-newBgColorInner">
+                <div className="text-[12px] font-[600] text-newTextColor mb-[4px]">Testar: {test.variant}</div>
+                <div className="text-[12px] text-textItemBlur mb-[2px]"><b>Atual:</b> {test.currentValue}</div>
+                <div className="text-[12px] text-textItemBlur mb-[4px]"><b>Alternativa:</b> {test.suggestedAlternative}</div>
+                <div className="text-[12px] text-newTextColor italic">{test.hypothesis}</div>
+              </div>
+            ))}
+          </div>
+        </CollapsibleSection>
+      ) : null}
+
+      {/* Growth Tips */}
+      {(ad as any).growthTips && (ad as any).growthTips.length > 0 ? (
+        <CollapsibleSection title="Dicas de Crescimento" icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}>
+          <div className="flex flex-col gap-[8px]">
+            {(ad as any).growthTips.map((tip: any, i: number) => (
+              <div key={i} className="flex items-start gap-[8px] border border-newTableBorder rounded-[8px] p-[10px] bg-newBgColorInner">
+                <span className={"text-[10px] px-[6px] py-[2px] rounded-full font-[600] whitespace-nowrap " + (IMPACT_COLORS[tip.impact] || "")}>{IMPACT_LABELS[tip.impact] || tip.impact}</span>
+                <div className="flex-1">
+                  <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide">{tip.category}</div>
+                  <div className="text-[12px] text-newTextColor mt-[2px]">{tip.tip}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CollapsibleSection>
+      ) : null}
+
+      {/* Expected Metrics */}
+      {(ad as any).expectedMetrics ? (
+        <CollapsibleSection title="Métricas Esperadas" icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}>
+          <div className="grid grid-cols-3 gap-[10px] mb-[8px]">
+            <div className="border border-newTableBorder rounded-[8px] p-[10px] bg-newBgColorInner text-center">
+              <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide">CTR</div>
+              <div className="text-[14px] font-[700] text-newTextColor mt-[2px]">{(ad as any).expectedMetrics.ctr}</div>
             </div>
-          ))}
-        </div>
+            <div className="border border-newTableBorder rounded-[8px] p-[10px] bg-newBgColorInner text-center">
+              <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide">CPC</div>
+              <div className="text-[14px] font-[700] text-newTextColor mt-[2px]">{(ad as any).expectedMetrics.cpc}</div>
+            </div>
+            <div className="border border-newTableBorder rounded-[8px] p-[10px] bg-newBgColorInner text-center">
+              <div className="text-[11px] font-[600] text-textItemBlur uppercase tracking-wide">Conversão</div>
+              <div className="text-[14px] font-[700] text-newTextColor mt-[2px]">{(ad as any).expectedMetrics.conversionRate}</div>
+            </div>
+          </div>
+          <p className="text-[12px] text-textItemBlur italic">{(ad as any).expectedMetrics.notes}</p>
+        </CollapsibleSection>
+      ) : null}
+
+      {/* Pre-Launch Checklist */}
+      {(ad as any).preLaunchChecklist && (ad as any).preLaunchChecklist.length > 0 ? (
+        <CollapsibleSection title="Checklist Pré-Lançamento" icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}>
+          <div className="flex flex-col gap-[6px]">
+            {(ad as any).preLaunchChecklist.map((item: string, i: number) => (
+              <div key={i} className="flex items-start gap-[8px] text-[12px] text-newTextColor">
+                <span className="text-btnPrimary mt-[1px]">&#9744;</span><span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </CollapsibleSection>
       ) : null}
 
       <PolicyWarningsList warnings={ad.policyWarnings || []} />
 
       {onSave ? (
-        <div className="pt-[4px]">
-          <Button secondary loading={saving} onClick={onSave} className="!h-[32px] !text-[12px]">
-            Salvar
-          </Button>
+        <div className="pt-[4px] flex gap-[8px]">
+          <Button secondary loading={saving} onClick={onSave} className="!h-[32px] !text-[12px]">Salvar</Button>
         </div>
       ) : null}
     </SectionCard>

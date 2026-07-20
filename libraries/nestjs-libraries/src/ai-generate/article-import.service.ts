@@ -39,7 +39,7 @@ export class ArticleImportService {
     // Extract content from URL
     let extractedContent: string;
     try {
-      extractedContent = await this._extractContentService.extractFromUrl(
+      extractedContent = await this._extractContentService.extractContent(
         data.url,
       );
     } catch (error: any) {
@@ -72,7 +72,7 @@ export class ArticleImportService {
    */
   async extractOnly(url: string) {
     try {
-      const content = await this._extractContentService.extractFromUrl(url);
+      const content = await this._extractContentService.extractContent(url);
       return {
         url,
         contentLength: content.length,

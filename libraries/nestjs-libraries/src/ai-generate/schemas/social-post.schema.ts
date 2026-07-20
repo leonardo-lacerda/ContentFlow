@@ -1,6 +1,6 @@
 ﻿import { z } from 'zod';
 
-export const VERSION = '1.0.0';
+export const VERSION = '2.0.0';
 
 /**
  * Platform-specific constraints for social media posts.
@@ -19,6 +19,35 @@ export const PLATFORM_CONSTRAINTS: Record<
   threads:   { maxChars: 500,  minHashtags: 3, maxHashtags: 5 },
   pinterest: { maxChars: 500,  minHashtags: 5, maxHashtags: 20 },
 };
+
+// ---- Sub-schemas for strategic guidance ----
+
+const VisualGuidanceSchema = z.object({
+  type: z.string().describe('Recommended visual type: photo, illustration, screenshot, meme, carousel, infographic, video-thumbnail'),
+  description: z.string().describe('Detailed description of what the image should contain'),
+  style: z.string().describe('Visual style: minimalist, bold, corporate, playful, cinematic'),
+  colors: z.string().nullable().optional().describe('Color palette recommendation'),
+  textOverlay: z.string().nullable().optional().describe('Text to overlay on the image, if any'),
+});
+
+const EngagementStrategySchema = z.object({
+  technique: z.string().describe('Engagement technique used (e.g. question hook, controversial take, story arc, list hook)'),
+  explanation: z.string().explain('How this technique drives engagement on this specific platform'),
+  expectedOutcome: z.string().describe('What kind of engagement to expect (comments, shares, saves, etc.)'),
+});
+
+const PostingStrategySchema = z.object({
+  bestTime: z.string().describe('Recommended posting time window'),
+  bestDay: z.string().describe('Recommended day of week'),
+  frequency: z.string().describe('How often to post similar content'),
+  repurposeSuggestions: z.array(z.string()).describe('How to repurpose this content on other platforms or formats'),
+});
+
+const GrowthTipSchema = z.object({
+  category: z.string().describe('Tip category: content, engagement, algorithm, growth, community, repurposing'),
+  tip: z.string().describe('Actionable growth tip specific to this post'),
+  impact: z.enum(['quick-win', 'medium-term', 'long-term']).describe('Expected impact timeline'),
+});
 
 // ---- Individual post schema ----
 
@@ -51,10 +80,36 @@ export const SocialPostSchema = z.object({
     .int()
     .nonnegative()
     .describe('Approximate character count of the post'),
+
+  // Strategic rationale
+  rationale: z.string().describe('WHY this specific post structure, hook, and angle will work for this platform and audience'),
+  hookAnalysis: z.string().describe('Analysis of why the opening line/hook will stop the scroll'),
+  platformOptimization: z.string().describe('How this post leverages the specific platform algorithm and user behavior'),
+
+  // Visual guidance
+  visualGuidance: z.array(VisualGuidanceSchema).min(1).describe('Visual recommendations for this post'),
+
+  // Engagement strategy
+  engagementStrategy: EngagementStrategySchema.describe('How this post is designed to drive engagement'),
+
+  // Posting strategy
+  postingStrategy: PostingStrategySchema.describe('When and how to post this content for maximum reach'),
+
+  // Growth tips
+  growthTips: z.array(GrowthTipSchema).min(2).describe('Actionable tips to maximize this post performance'),
+
+  // Performance expectations
+  expectedEngagement: z.object({
+    likes: z.string().describe('Expected likes range'),
+    comments: z.string().describe('Expected comments range'),
+    shares: z.string().describe('Expected shares/saves range'),
+    notes: z.string().describe('Context about these expectations'),
+  }).describe('Expected engagement metrics for this post'),
+
   notes: z
     .string()
     .nullable().optional()
-    .describe('Internal notes about the post (e.g. best time to post, strategy)'),
+    .describe('Internal notes about the post'),
 });
 
 export type SocialPost = z.infer<typeof SocialPostSchema>;

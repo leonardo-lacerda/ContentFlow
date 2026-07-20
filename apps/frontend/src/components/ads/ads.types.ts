@@ -14,6 +14,34 @@ export interface AdTemplateSummary {
   preferredPlatforms: string[];
 }
 
+export interface TargetingRecommendation {
+  audience: string;
+  demographics: string;
+  interests: string[];
+  exclusions?: string[];
+  rationale: string;
+}
+
+export interface ABTestSuggestion {
+  variant: string;
+  currentValue: string;
+  suggestedAlternative: string;
+  hypothesis: string;
+}
+
+export interface GrowthTip {
+  category: string;
+  tip: string;
+  impact: 'quick-win' | 'medium-term' | 'long-term';
+}
+
+export interface ExpectedMetrics {
+  ctr: string;
+  cpc: string;
+  conversionRate: string;
+  notes: string;
+}
+
 export interface GeneratedAdCreative {
   type: AdCreativeType;
   platform: AdPlatform;
@@ -24,13 +52,20 @@ export interface GeneratedAdCreative {
   description?: string;
   ctaButton: string;
   destinationUrl?: string;
+  rationale: string;
+  emotionalHook: string;
+  platformOptimization: string;
   slides?: AdCarouselSlide[];
   slideCount?: number;
   imagePrompts?: AdImagePrompt[];
+  targeting: TargetingRecommendation[];
+  abTests: ABTestSuggestion[];
+  growthTips: GrowthTip[];
+  preLaunchChecklist: string[];
+  expectedMetrics: ExpectedMetrics;
   policyWarnings: PolicyWarning[];
   claimsFlags: ClaimFlag[];
   tone?: string;
-  rationale?: string;
   notes?: string;
 }
 
