@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 export const VERSION = '2.0.0';
 
@@ -32,7 +32,7 @@ const VisualGuidanceSchema = z.object({
 
 const EngagementStrategySchema = z.object({
   technique: z.string().describe('Engagement technique used (e.g. question hook, controversial take, story arc, list hook)'),
-  explanation: z.string().explain('How this technique drives engagement on this specific platform'),
+  explanation: z.string().describe('How this technique drives engagement on this specific platform'),
   expectedOutcome: z.string().describe('What kind of engagement to expect (comments, shares, saves, etc.)'),
 });
 
