@@ -124,6 +124,25 @@ export class VideoScriptsController {
     return this.shortVideoService.updateStatus(id, org.id, body.status);
   }
 
+  @Patch('/:id')
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
+  async updateProject(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string,
+    @Body() body: {
+      name?: string;
+      format?: string;
+      script?: any;
+      totalDurationSec?: number;
+      status?: string;
+      aspectRatio?: string;
+      maxDurationSec?: number;
+      metadata?: any;
+    }
+  ) {
+    return this.shortVideoService.updateProject(id, org.id, body);
+  }
+
   @Delete('/:id')
   @CheckPolicies([AuthorizationActions.Delete, Sections.AI])
   async deleteProject(

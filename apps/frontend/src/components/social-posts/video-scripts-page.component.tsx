@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { Button } from '@gitroom/react/form/button';
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
@@ -27,112 +27,23 @@ import {
   type AmpliarAiPath,
 } from '@gitroom/frontend/components/ampliar/ampliar-ai-presets';
 import { useToaster } from '@gitroom/react/toaster/toaster';
-import { Clapperboard, Copy, Play, X } from 'lucide-react';
+import { Clapperboard, Copy, Play, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useVideoScripts } from './video-scripts.hooks';
+import { videoScriptsApi } from './video-scripts.api';
+import {
+  VIDEO_FORMAT_OPTIONS,
+  VIDEO_STATUS_LABELS,
+  VIDEO_STATUS_COLORS,
+  type VideoProject,
+  type VideoScene,
+} from './video-scripts.types';
+import { VideoTeleprompter } from './video-teleprompter.component';
+import { VideoScriptEditor } from './video-script-editor.component';
+import { VideoSceneTimeline } from './video-scene-timeline.component';
 
-interface VideoScene {
-  sceneNumber: number;
-  duration: number;
-  headline?: string;
-  body?: string;
-  voiceover?: string;
-  textOverlay?: string;
-  visualNotes?: string;
-  transition?: string;
-  imagePrompt?: string;
-}
-
-interface VideoScript {
-  title: string;
-  totalDuration: number;
-  scenes: VideoScene[];
-  narration?: string;
-  hashtags?: string[];
-  caption?: string;
-  _id?: string;
-  _createdAt?: string;
-  _format?: string;
-}
-
-const VIDEO_FORMATS = [
-  { id: 'REELS', name: 'Instagram Reels', maxDuration: 30, aspectRatio: '9:16' },
-  { id: 'TIKTOK', name: 'TikTok', maxDuration: 30, aspectRatio: '9:16' },
-  { id: 'SHORTS', name: 'YouTube Shorts', maxDuration: 60, aspectRatio: '9:16' },
-  { id: 'STORIES', name: 'Stories', maxDuration: 15, aspectRatio: '9:16' },
-];
-
-function Teleprompter({
-  script,
-  onClose,
-}: {
-  script: VideoScript;
-  onClose: () => void;
-}) {
-  const [index, setIndex] = useState(0);
-  const scenes = script.scenes || [];
-  const scene = scenes[index];
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === ' ') {
-        e.preventDefault();
-        setIndex((i) => Math.min(i + 1, scenes.length - 1));
-      }
-      if (e.key === 'ArrowLeft') {
-        setIndex((i) => Math.max(i - 1, 0));
-      }
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [scenes.length, onClose]);
-
-  if (!scene) return null;
-
-  const line =
-    scene.voiceover ||
-    scene.textOverlay ||
-    scene.headline ||
-    scene.body ||
-    '';
-
-  return (
-    <div className="fixed inset-0 z-[80] bg-black/95 text-white flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b border-white/10">
-        <div className="text-sm opacity-70">
-          Cena {index + 1}/{scenes.length} · ~{scene.duration || 0}s
-        </div>
-        <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-white/10">
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-      <div className="flex-1 flex items-center justify-center px-6 text-center">
-        <p className="text-2xl md:text-4xl font-semibold leading-snug max-w-3xl">
-          {line}
-        </p>
-      </div>
-      {scene.visualNotes ? (
-        <div className="px-6 pb-2 text-center text-xs text-white/50">
-          Visual: {scene.visualNotes}
-        </div>
-      ) : null}
-      <div className="flex items-center justify-center gap-3 p-4 border-t border-white/10">
-        <Button
-          secondary
-          disabled={index === 0}
-          onClick={() => setIndex((i) => Math.max(0, i - 1))}
-        >
-          Anterior
-        </Button>
-        <Button
-          disabled={index >= scenes.length - 1}
-          onClick={() => setIndex((i) => Math.min(scenes.length - 1, i + 1))}
-        >
-          Próxima
-        </Button>
-      </div>
-    </div>
-  );
-}
+/* ------------------------------------------------------------------ */
+/*  Generate Script Form (drawer)                                     */
+/* ------------------------------------------------------------------ */
 
 function GenerateVideoScriptForm({
   brandId,
@@ -145,7 +56,7 @@ function GenerateVideoScriptForm({
   initialDuration,
 }: {
   brandId?: string;
-  onGenerated: (script: VideoScript) => void;
+  onGenerated: () => void;
   onClose: () => void;
   initialProjectId?: string;
   initialIdeaId?: string;
@@ -154,6 +65,7 @@ function GenerateVideoScriptForm({
   initialDuration?: string;
 }) {
   const fetch = useFetch();
+  const toaster = useToaster();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [carouselProjectId, setCarouselProjectId] = useState(initialProjectId || '');
@@ -170,7 +82,7 @@ function GenerateVideoScriptForm({
 
   const handleFormatChange = (newFormat: string) => {
     setFormat(newFormat);
-    const fmt = VIDEO_FORMATS.find((f) => f.id === newFormat);
+    const fmt = VIDEO_FORMAT_OPTIONS.find((f) => f.id === newFormat);
     if (fmt) setMaxDuration(fmt.maxDuration);
   };
 
@@ -183,33 +95,16 @@ function GenerateVideoScriptForm({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/video-scripts/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brandProfileId: brandId,
-          carouselProjectId: carouselProjectId.trim() || undefined,
-          contentIdeaId: contentIdeaId.trim() || undefined,
-          format,
-          maxDuration,
-          name: additionalContext?.slice(0, 80) || 'Roteiro Ampliar',
-          additionalContext: additionalContext || undefined,
-        }),
+      await videoScriptsApi.generateScript(fetch, {
+        brandProfileId: brandId,
+        carouselProjectId: carouselProjectId.trim() || undefined,
+        contentIdeaId: contentIdeaId.trim() || undefined,
+        format,
+        maxDuration,
+        name: additionalContext?.slice(0, 80) || 'Roteiro Ampliar',
+        additionalContext: additionalContext || undefined,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.msg || 'Falha ao gerar o script');
-      }
-      const script = (data.script || data) as VideoScript;
-      onGenerated({
-        ...script,
-        scenes: script.scenes || data.scenes || [],
-        title: script.title || data.name || 'Roteiro',
-        totalDuration: script.totalDuration || data.totalDurationSec || maxDuration,
-        _id: data.id || `${Date.now()}`,
-        _createdAt: new Date().toISOString(),
-        _format: format,
-      });
+      onGenerated();
       onClose();
     } catch (e: any) {
       setError(e.message);
@@ -248,7 +143,7 @@ function GenerateVideoScriptForm({
             value={format}
             onChange={(e) => handleFormatChange(e.target.value)}
           >
-            {VIDEO_FORMATS.map((f) => (
+            {VIDEO_FORMAT_OPTIONS.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name} ({f.aspectRatio})
               </option>
@@ -293,6 +188,10 @@ function GenerateVideoScriptForm({
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Main Page                                                         */
+/* ------------------------------------------------------------------ */
+
 function VideoScriptsPageInner() {
   const fetch = useFetch();
   const { data: selectedBrand } = useSelectedBrand();
@@ -300,10 +199,15 @@ function VideoScriptsPageInner() {
   const { openCreateDrawer } = useCreateDrawer();
   const prefill = useAmpliarPrefill();
   const toaster = useToaster();
-  const [scripts, setScripts] = useState<VideoScript[]>([]);
-  const [teleprompter, setTeleprompter] = useState<VideoScript | null>(null);
+
+  const { projects, isLoading, mutate } = useVideoScripts(brandId || prefill.brandId);
+  const [teleprompterProject, setTeleprompterProject] = useState<VideoProject | null>(null);
+  const [editingProject, setEditingProject] = useState<VideoProject | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [aiLoadingId, setAiLoadingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  /* -- Generation handlers ----------------------------------------- */
 
   const openGenerate = () => {
     openCreateDrawer({
@@ -318,10 +222,7 @@ function VideoScriptsPageInner() {
           initialContext={buildContextFromPrefill(prefill)}
           initialFormat={prefill.format}
           initialDuration={prefill.duration}
-          onGenerated={(script) => {
-            setScripts((prev) => [script, ...prev]);
-            setExpandedId(script._id || null);
-          }}
+          onGenerated={() => mutate()}
         />
       ),
     });
@@ -349,36 +250,16 @@ function VideoScriptsPageInner() {
     try {
       const format = String(p.format || 'REELS');
       const maxDuration = Number(p.maxDuration) || 30;
-      const res = await fetch('/video-scripts/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brandProfileId: bid,
-          carouselProjectId: projectId || undefined,
-          contentIdeaId: ideaId || undefined,
-          format,
-          maxDuration,
-          name: String(p.name || prefill.topic || 'Roteiro Ampliar').slice(0, 80),
-          additionalContext: context || undefined,
-        }),
+      await videoScriptsApi.generateScript(fetch, {
+        brandProfileId: bid,
+        carouselProjectId: projectId || undefined,
+        contentIdeaId: ideaId || undefined,
+        format,
+        maxDuration,
+        name: String(p.name || prefill.topic || 'Roteiro Ampliar').slice(0, 80),
+        additionalContext: context || undefined,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.message || data.msg || 'Falha ao gerar roteiro');
-      }
-      const script = (data.script || data) as VideoScript;
-      const normalized: VideoScript = {
-        ...script,
-        scenes: script.scenes || data.scenes || [],
-        title: script.title || data.name || 'Roteiro',
-        totalDuration:
-          script.totalDuration || data.totalDurationSec || maxDuration,
-        _id: data.id || `${Date.now()}`,
-        _createdAt: new Date().toISOString(),
-        _format: format,
-      };
-      setScripts((prev) => [normalized, ...prev]);
-      setExpandedId(normalized._id || null);
+      await mutate();
       toaster.show('Roteiro gerado com IA', 'success');
     } catch (e: any) {
       toaster.show(e.message || 'Falha ao gerar com IA', 'warning');
@@ -387,12 +268,41 @@ function VideoScriptsPageInner() {
     }
   };
 
-  const copyCaption = async (script: VideoScript) => {
+  /* -- Delete handler ---------------------------------------------- */
+
+  const handleDelete = async (project: VideoProject) => {
+    setDeletingId(project.id);
+    try {
+      await videoScriptsApi.deleteProject(fetch, project.id);
+      await mutate();
+      toaster.show('Roteiro excluído', 'success');
+    } catch (e: any) {
+      toaster.show(e.message || 'Erro ao excluir', 'warning');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  /* -- Copy caption ------------------------------------------------ */
+
+  const copyCaption = async (project: VideoProject) => {
+    const script = project.script;
+    if (!script) return;
     const text = [script.caption, (script.hashtags || []).join(' ')]
       .filter(Boolean)
       .join('\n\n');
-    if (text) await navigator.clipboard.writeText(text);
+    if (text) {
+      await navigator.clipboard.writeText(text);
+      toaster.show('Caption copiada', 'success');
+    }
   };
+
+  /* -- Helpers ----------------------------------------------------- */
+
+  const getSceneText = (scene: VideoScene) =>
+    scene.voiceoverText || scene.headline || scene.body || '';
+
+  /* -- Render ------------------------------------------------------ */
 
   return (
     <PageShell>
@@ -400,7 +310,7 @@ function VideoScriptsPageInner() {
         description="Roteiros de Reels/TikTok a partir de ideia ou carrossel — com teleprompter."
         actions={<Button onClick={openGenerate}>Formulário avançado</Button>}
       />
-      <PageBody className={scripts.length === 0 ? '!p-0' : undefined}>
+      <PageBody className={projects.length === 0 ? '!p-0' : undefined}>
         <div className="px-[20px] pt-[12px] max-w-[960px] w-full mx-auto">
           <AmpliarSourceBanner prefill={prefill} />
           <AmpliarAiPaths
@@ -414,7 +324,12 @@ function VideoScriptsPageInner() {
             advancedLabel="Formulário avançado"
           />
         </div>
-        {scripts.length === 0 && !aiLoadingId ? (
+
+        {isLoading ? (
+          <div className="text-[13px] text-textItemBlur py-[40px] text-center">
+            Carregando roteiros…
+          </div>
+        ) : projects.length === 0 && !aiLoadingId ? (
           <EmptyState
             icon={<Clapperboard className="w-6 h-6" />}
             title="Escolha um formato acima"
@@ -422,32 +337,45 @@ function VideoScriptsPageInner() {
             actionLabel="Formulário avançado"
             onAction={openGenerate}
           />
-        ) : scripts.length === 0 && aiLoadingId ? (
+        ) : projects.length === 0 && aiLoadingId ? (
           <div className="text-[13px] text-textItemBlur py-[40px] text-center">
             Gerando roteiro com IA…
           </div>
         ) : (
           <div className="flex flex-col gap-4 p-5">
-            {scripts.map((script) => {
-              const id = script._id || script.title;
-              const open = expandedId === id;
+            {projects.map((project) => {
+              const script = project.script;
+              const scenes = script?.scenes || [];
+              const open = expandedId === project.id;
+              const statusColor = VIDEO_STATUS_COLORS[project.status] || VIDEO_STATUS_COLORS.DRAFT;
+              const statusLabel = VIDEO_STATUS_LABELS[project.status] || project.status;
+
               return (
-                <SectionCard key={id} className="!p-4">
+                <SectionCard key={project.id} className="!p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-base font-bold text-newTextColor">
-                        {script.title}
-                      </h3>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base font-bold text-newTextColor truncate">
+                          {project.name}
+                        </h3>
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${statusColor}`}>
+                          {statusLabel}
+                        </span>
+                      </div>
                       <p className="text-xs text-textItemBlur mt-1">
-                        {script.scenes?.length || 0} cenas · ~
-                        {script.totalDuration || 0}s · {script._format || 'REELS'}
+                        {scenes.length} cenas · ~
+                        {project.totalDurationSec || script?.totalDurationSec || 0}s · {project.format}
+                        {project.createdAt
+                          ? ` · ${new Date(project.createdAt).toLocaleDateString('pt-BR')}`
+                          : ''}
                       </p>
                     </div>
-                    <div className="flex gap-2 flex-wrap justify-end">
+                    <div className="flex gap-1.5 flex-wrap justify-end shrink-0">
                       <Button
                         secondary
                         className="!h-8 !text-xs"
-                        onClick={() => setTeleprompter(script)}
+                        onClick={() => setTeleprompterProject(project)}
+                        disabled={!script}
                       >
                         <Play className="w-3.5 h-3.5" />
                         Teleprompter
@@ -455,7 +383,16 @@ function VideoScriptsPageInner() {
                       <Button
                         secondary
                         className="!h-8 !text-xs"
-                        onClick={() => copyCaption(script)}
+                        onClick={() => setEditingProject(project)}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Editar
+                      </Button>
+                      <Button
+                        secondary
+                        className="!h-8 !text-xs"
+                        onClick={() => copyCaption(project)}
+                        disabled={!script}
                       >
                         <Copy className="w-3.5 h-3.5" />
                         Caption
@@ -463,38 +400,49 @@ function VideoScriptsPageInner() {
                       <Button
                         secondary
                         className="!h-8 !text-xs"
-                        onClick={() => setExpandedId(open ? null : id)}
+                        onClick={() => setExpandedId(open ? null : project.id)}
                       >
-                        {open ? 'Recolher' : 'Cenas'}
+                        {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        Cenas
+                      </Button>
+                      <Button
+                        secondary
+                        className="!h-8 !text-xs !text-red-400 hover:!bg-red-500/10"
+                        loading={deletingId === project.id}
+                        onClick={() => handleDelete(project)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>
-                  {open ? (
-                    <ol className="mt-4 space-y-2">
-                      {(script.scenes || []).map((scene, i) => (
+
+                  {open && script ? (
+                    <div className="mt-4 space-y-3">
+                      <VideoSceneTimeline scenes={scenes} />
+                      <ol className="space-y-2">
+                      {scenes.map((scene, i) => (
                         <li
-                          key={i}
+                          key={scene.index ?? i}
                           className="rounded-[10px] border border-newTableBorder bg-newBgColorInner p-3 text-sm"
                         >
                           <div className="text-[11px] font-semibold text-textItemBlur uppercase">
-                            Cena {scene.sceneNumber || i + 1} · {scene.duration || 0}s
+                            Cena {(scene.index ?? i) + 1} · {scene.durationSec || 0}s
                           </div>
                           <div className="text-newTextColor mt-1 font-medium">
-                            {scene.voiceover ||
-                              scene.textOverlay ||
-                              scene.headline ||
-                              scene.body}
+                            {getSceneText(scene)}
                           </div>
-                          {scene.visualNotes ? (
+                          {scene.motionNotes ? (
                             <div className="text-xs text-textItemBlur mt-1">
-                              Visual: {scene.visualNotes}
+                              Visual: {scene.motionNotes}
                             </div>
                           ) : null}
                         </li>
                       ))}
                     </ol>
+                    </div>
                   ) : null}
-                  {script.caption ? (
+
+                  {script?.caption ? (
                     <p className="text-xs text-textItemBlur mt-3 line-clamp-2">
                       {script.caption}
                     </p>
@@ -505,10 +453,22 @@ function VideoScriptsPageInner() {
           </div>
         )}
       </PageBody>
-      {teleprompter ? (
-        <Teleprompter
-          script={teleprompter}
-          onClose={() => setTeleprompter(null)}
+
+      {teleprompterProject ? (
+        <VideoTeleprompter
+          project={teleprompterProject}
+          onClose={() => setTeleprompterProject(null)}
+        />
+      ) : null}
+
+      {editingProject ? (
+        <VideoScriptEditor
+          project={editingProject}
+          onSaved={() => {
+            mutate();
+            setEditingProject(null);
+          }}
+          onClose={() => setEditingProject(null)}
         />
       ) : null}
     </PageShell>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState, useEffect, useCallback } from 'react';
+import React, { Suspense, useState, useMemo } from 'react';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { Button } from '@gitroom/react/form/button';
 import { useSelectedBrand } from '@gitroom/frontend/components/brand-dna/brand-dna.hooks';
@@ -28,67 +28,22 @@ import {
   type AmpliarAiPath,
 } from '@gitroom/frontend/components/ampliar/ampliar-ai-presets';
 import { useToaster } from '@gitroom/react/toaster/toaster';
+import { Pencil, Copy, Trash2, Eye, Download, Search } from 'lucide-react';
+import { useEmailCampaigns } from './email-campaigns.hooks';
+import { emailCampaignsApi } from './email-campaigns.api';
+import {
+  type EmailCampaign,
+  type EmailCampaignType,
+  EMAIL_TYPE_LABELS,
+  EMAIL_STATUS_LABELS,
+  EMAIL_STATUS_COLORS,
+} from './email-campaigns.types';
+import { EmailBlockEditor } from './email-block-editor.component';
+import { EmailPreviewPanel } from './email-preview-panel.component';
 
-type CampaignType = 'NEWSLETTER' | 'WELCOME_SEQUENCE' | 'PROMOTIONAL';
-type CampaignStatus = 'DRAFT' | 'GENERATING' | 'READY' | 'EXPORTED' | 'FAILED';
-
-interface EmailCampaign {
-  id: string;
-  name: string;
-  type: CampaignType;
-  status: CampaignStatus;
-  subject: string;
-  preheader?: string;
-  bodyHtml: string;
-  bodyJson?: { blocks: any[] };
-  ctaText?: string;
-  ctaUrl?: string;
-  ctaColor?: string;
-  primaryColor?: string;
-  secondaryColor?: string;
-  sequenceIndex?: number;
-  sequenceTotal?: number;
-  sequenceDelayDays?: number;
-  exportCount: number;
-  createdAt: string;
-}
-
-interface EmailTemplate {
-  id: string;
-  label: string;
-  labelEn: string;
-  description: string;
-  category: string;
-  exampleSubjects: string[];
-}
-
-const typeLabel = (type: CampaignType) => {
-  switch (type) {
-    case 'NEWSLETTER':
-      return 'Newsletter';
-    case 'WELCOME_SEQUENCE':
-      return 'Boas-vindas';
-    case 'PROMOTIONAL':
-      return 'Promocional';
-    default:
-      return type;
-  }
-};
-
-const statusClass = (status: CampaignStatus) => {
-  switch (status) {
-    case 'READY':
-      return 'bg-emerald-500/15 text-emerald-400';
-    case 'EXPORTED':
-      return 'bg-btnPrimary/20 text-newTextColor';
-    case 'GENERATING':
-      return 'bg-amber-500/15 text-amber-400';
-    case 'FAILED':
-      return 'bg-red-500/15 text-red-400';
-    default:
-      return 'bg-newSettings text-textItemBlur border border-newTableBorder';
-  }
-};
+/* ------------------------------------------------------------------ */
+/*  Generate Form (drawer)                                            */
+/* ------------------------------------------------------------------ */
 
 function GenerateCampaignForm({
   brandId,
@@ -102,7 +57,7 @@ function GenerateCampaignForm({
   carouselProjectId,
 }: {
   brandId?: string;
-  templates: EmailTemplate[];
+  templates: Array<{ id: string; label: string; labelEn: string }>;
   onDone: () => void;
   onClose: () => void;
   initialType?: string;
@@ -132,41 +87,28 @@ function GenerateCampaignForm({
   const handleGenerate = async () => {
     if (!brandId) return;
     if (campaignType !== 'welcome_sequence' && !campaignName.trim()) return;
-
     setGenerating(true);
     setError(null);
     try {
-      const endpoint =
-        campaignType === 'welcome_sequence'
-          ? '/email-campaigns/generate-welcome-sequence'
-          : '/email-campaigns/generate';
-
-      const body =
-        campaignType === 'welcome_sequence'
-          ? {
-              brandProfileId: brandId,
-              sequenceLength,
-              additionalContext,
-              contentIdeaId,
-              carouselProjectId,
-            }
-          : {
-              brandProfileId: brandId,
-              campaignType,
-              name: campaignName.trim(),
-              templateId: templateId || undefined,
-              additionalContext,
-              contentIdeaId,
-              carouselProjectId,
-            };
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Falha ao gerar campanha');
+      if (campaignType === 'welcome_sequence') {
+        await emailCampaignsApi.generateWelcomeSequence(fetch, {
+          brandProfileId: brandId,
+          sequenceLength,
+          additionalContext: additionalContext || undefined,
+          contentIdeaId,
+          carouselProjectId,
+        });
+      } else {
+        await emailCampaignsApi.generate(fetch, {
+          brandProfileId: brandId,
+          campaignType,
+          name: campaignName.trim(),
+          templateId: templateId || undefined,
+          additionalContext: additionalContext || undefined,
+          contentIdeaId,
+          carouselProjectId,
+        });
+      }
       onDone();
       onClose();
     } catch (e: any) {
@@ -177,18 +119,15 @@ function GenerateCampaignForm({
   };
 
   return (
-    <div className="flex flex-col gap-[16px]">
+    <div className="flex flex-col gap-4">
       {!brandId ? (
-        <div className="text-[13px] text-textItemBlur rounded-[10px] border border-newTableBorder bg-newSettings p-[12px]">
+        <div className="text-[13px] text-textItemBlur rounded-[10px] border border-newTableBorder bg-newSettings p-3">
           Selecione uma marca no seletor do topo antes de gerar.
         </div>
       ) : null}
 
       <FormField label="Tipo">
-        <FormSelect
-          value={campaignType}
-          onChange={(e) => setCampaignType(e.target.value)}
-        >
+        <FormSelect value={campaignType} onChange={(e) => setCampaignType(e.target.value)}>
           <option value="newsletter">Newsletter</option>
           <option value="promotional">Promocional</option>
           <option value="welcome_sequence">Sequência de boas-vindas</option>
@@ -197,67 +136,36 @@ function GenerateCampaignForm({
 
       {campaignType !== 'welcome_sequence' ? (
         <FormField label="Nome da campanha" required>
-          <FormInput
-            value={campaignName}
-            onChange={(e) => setCampaignName(e.target.value)}
-            placeholder="Ex.: Newsletter de março"
-          />
+          <FormInput value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="Ex.: Newsletter de março" />
         </FormField>
       ) : (
         <FormField label="Tamanho da sequência">
-          <FormInput
-            type="number"
-            min={2}
-            max={8}
-            value={sequenceLength}
-            onChange={(e) => setSequenceLength(Number(e.target.value) || 3)}
-          />
+          <FormInput type="number" min={2} max={8} value={sequenceLength} onChange={(e) => setSequenceLength(Number(e.target.value) || 3)} />
         </FormField>
       )}
 
       {templates.length > 0 && campaignType !== 'welcome_sequence' ? (
         <FormField label="Template" hint="Opcional">
-          <FormSelect
-            value={templateId}
-            onChange={(e) => setTemplateId(e.target.value)}
-          >
+          <FormSelect value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
             <option value="">Automático</option>
             {templates.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label || t.labelEn}
-              </option>
+              <option key={t.id} value={t.id}>{t.label || t.labelEn}</option>
             ))}
           </FormSelect>
         </FormField>
       ) : null}
 
       <FormField label="Contexto adicional" hint="Opcional">
-        <FormTextarea
-          value={additionalContext}
-          onChange={(e) => setAdditionalContext(e.target.value)}
-          rows={3}
-          placeholder="Temas, ofertas, tom..."
-        />
+        <FormTextarea value={additionalContext} onChange={(e) => setAdditionalContext(e.target.value)} rows={3} placeholder="Temas, ofertas, tom..." />
       </FormField>
 
       {error ? (
-        <div className="text-[13px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-[10px] p-[12px]">
-          {error}
-        </div>
+        <div className="text-[13px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-[10px] p-3">{error}</div>
       ) : null}
 
-      <div className="flex justify-end gap-[8px]">
-        <Button secondary onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button
-          onClick={handleGenerate}
-          loading={generating}
-          disabled={
-            !brandId ||
-            (campaignType !== 'welcome_sequence' && !campaignName.trim())
-          }
-        >
+      <div className="flex justify-end gap-2">
+        <Button secondary onClick={onClose}>Cancelar</Button>
+        <Button onClick={handleGenerate} loading={generating} disabled={!brandId || (campaignType !== 'welcome_sequence' && !campaignName.trim())}>
           Gerar campanha
         </Button>
       </div>
@@ -265,50 +173,9 @@ function GenerateCampaignForm({
   );
 }
 
-function PreviewPanel({
-  campaign,
-  html,
-  onClose,
-  onExport,
-}: {
-  campaign: EmailCampaign;
-  html: string | null;
-  onClose: () => void;
-  onExport: () => void;
-}) {
-  return (
-    <div className="flex flex-col gap-[14px]">
-      <div>
-        <div className="text-[14px] font-[600] text-newTextColor">
-          {campaign.name}
-        </div>
-        <div className="text-[12px] text-textItemBlur mt-[2px]">
-          Assunto: {campaign.subject}
-          {campaign.preheader ? ` · Preheader: ${campaign.preheader}` : ''}
-        </div>
-      </div>
-      <div className="rounded-[10px] border border-newTableBorder bg-white overflow-hidden min-h-[280px] max-h-[55vh] overflow-y-auto">
-        {html ? (
-          <iframe
-            title="preview"
-            srcDoc={html}
-            className="w-full min-h-[400px] border-0 bg-white"
-          />
-        ) : (
-          <div className="p-[20px] text-[13px] text-textItemBlur">
-            Carregando preview...
-          </div>
-        )}
-      </div>
-      <div className="flex justify-end gap-[8px]">
-        <Button secondary onClick={onClose}>
-          Fechar
-        </Button>
-        <Button onClick={onExport}>Exportar HTML</Button>
-      </div>
-    </div>
-  );
-}
+/* ------------------------------------------------------------------ */
+/*  Main Page                                                         */
+/* ------------------------------------------------------------------ */
 
 function EmailCampaignsPageInner() {
   const fetch = useFetch();
@@ -318,73 +185,39 @@ function EmailCampaignsPageInner() {
   const prefill = useAmpliarPrefill();
   const toaster = useToaster();
 
-  const [activeTab, setActiveTab] = useState<'all' | CampaignType>('all');
-  const [campaigns, setCampaigns] = useState<EmailCampaign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [activeTab, setActiveTab] = useState<'all' | EmailCampaignType>('all');
+  const [search, setSearch] = useState('');
   const [aiLoadingId, setAiLoadingId] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<Array<{ id: string; label: string; labelEn: string }>>([]);
+  const [editingCampaign, setEditingCampaign] = useState<EmailCampaign | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const loadCampaigns = useCallback(async () => {
-    setLoading(true);
-    try {
-      const query = activeTab !== 'all' ? `?type=${activeTab}` : '';
-      const res = await fetch(`/email-campaigns${query}`);
-      if (res.ok) {
-        const data = await res.json();
-        setCampaigns(Array.isArray(data) ? data : data?.items || []);
-      }
-    } catch {
-      setCampaigns([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetch, activeTab]);
+  const tabType = activeTab === 'all' ? undefined : activeTab;
+  const { campaigns, isLoading, mutate } = useEmailCampaigns(tabType);
 
-  useEffect(() => {
-    loadCampaigns();
-  }, [loadCampaigns]);
-
-  useEffect(() => {
+  // Load templates once
+  React.useEffect(() => {
     (async () => {
       try {
         const res = await fetch('/email-campaigns/templates');
         if (res.ok) setTemplates(await res.json());
-      } catch {
-        /* ignore */
-      }
+      } catch { /* ignore */ }
     })();
   }, [fetch]);
 
-  const handleExport = async (campaign: EmailCampaign) => {
-    try {
-      const res = await fetch(`/email-campaigns/${campaign.id}/export`, {
-        method: 'POST',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const blob = new Blob([data.html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = data.filename || `${campaign.name}.html`;
-        a.click();
-        URL.revokeObjectURL(url);
-        loadCampaigns();
-      }
-    } catch (e) {
-      console.error('Export failed', e);
-    }
-  };
+  // Client-side search filter
+  const filteredCampaigns = useMemo(() => {
+    if (!search.trim()) return campaigns;
+    const q = search.toLowerCase();
+    return campaigns.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.subject.toLowerCase().includes(q) ||
+        (c.preheader || '').toLowerCase().includes(q)
+    );
+  }, [campaigns, search]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Excluir esta campanha?')) return;
-    try {
-      await fetch(`/email-campaigns/${id}`, { method: 'DELETE' });
-      loadCampaigns();
-    } catch {
-      /* ignore */
-    }
-  };
+  /* -- Handlers ---------------------------------------------------- */
 
   const openGenerate = () => {
     openCreateDrawer({
@@ -395,7 +228,7 @@ function EmailCampaignsPageInner() {
           brandId={brandId || prefill.brandId}
           templates={templates}
           onClose={close}
-          onDone={loadCampaigns}
+          onDone={() => mutate()}
           initialType={prefill.emailType || (prefill.hasSource ? 'promotional' : 'welcome_sequence')}
           initialName={prefill.topic || ''}
           initialContext={buildContextFromPrefill(prefill)}
@@ -416,38 +249,26 @@ function EmailCampaignsPageInner() {
     try {
       const p = path.payload;
       const mode = String(p.mode || 'welcome_sequence');
-      const endpoint =
-        mode === 'welcome_sequence'
-          ? '/email-campaigns/generate-welcome-sequence'
-          : '/email-campaigns/generate';
-      const body =
-        mode === 'welcome_sequence'
-          ? {
-              brandProfileId: bid,
-              sequenceLength: Number(p.sequenceLength) || 4,
-              additionalContext: p.additionalContext,
-              contentIdeaId: p.contentIdeaId || prefill.ideaId,
-              carouselProjectId: p.carouselProjectId || prefill.projectId,
-            }
-          : {
-              brandProfileId: bid,
-              campaignType: p.campaignType || mode,
-              name: String(p.name || prefill.topic || 'Campanha'),
-              additionalContext: p.additionalContext,
-              contentIdeaId: p.contentIdeaId || prefill.ideaId,
-              carouselProjectId: p.carouselProjectId || prefill.projectId,
-            };
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.message || data.msg || 'Falha ao gerar e-mail');
+      if (mode === 'welcome_sequence') {
+        await emailCampaignsApi.generateWelcomeSequence(fetch, {
+          brandProfileId: bid,
+          sequenceLength: Number(p.sequenceLength) || 4,
+          additionalContext: String(p.additionalContext || ''),
+          contentIdeaId: String(p.contentIdeaId || prefill.ideaId || ''),
+          carouselProjectId: String(p.carouselProjectId || prefill.projectId || ''),
+        });
+      } else {
+        await emailCampaignsApi.generate(fetch, {
+          brandProfileId: bid,
+          campaignType: String(p.campaignType || mode),
+          name: String(p.name || prefill.topic || 'Campanha'),
+          additionalContext: String(p.additionalContext || ''),
+          contentIdeaId: String(p.contentIdeaId || prefill.ideaId || ''),
+          carouselProjectId: String(p.carouselProjectId || prefill.projectId || ''),
+        });
       }
       toaster.show('Campanha gerada com IA', 'success');
-      await loadCampaigns();
+      await mutate();
     } catch (e: any) {
       toaster.show(e.message || 'Falha ao gerar com IA', 'warning');
     } finally {
@@ -455,55 +276,67 @@ function EmailCampaignsPageInner() {
     }
   };
 
-  const openPreview = async (campaign: EmailCampaign) => {
-    let html: string | null = campaign.bodyHtml || null;
-    try {
-      const res = await fetch(`/email-campaigns/${campaign.id}/preview`);
-      if (res.ok) {
-        const data = await res.json();
-        html = data.html || html;
-      }
-    } catch {
-      /* keep bodyHtml */
-    }
-
+  const openPreview = (campaign: EmailCampaign) => {
     openCreateDrawer({
       title: 'Preview da campanha',
       size: 800,
       children: (close) => (
-        <PreviewPanel
-          campaign={campaign}
-          html={html}
-          onClose={close}
-          onExport={() => handleExport(campaign)}
-        />
+        <EmailPreviewPanel campaign={campaign} onClose={close} />
       ),
     });
   };
 
-  const tabs: Array<{ id: 'all' | CampaignType; label: string }> = [
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await emailCampaignsApi.delete(fetch, id);
+      await mutate();
+      toaster.show('Campanha excluída', 'success');
+    } catch (e: any) {
+      toaster.show(e.message || 'Erro ao excluir', 'warning');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDuplicate = async (campaign: EmailCampaign) => {
+    try {
+      await emailCampaignsApi.generate(fetch, {
+        brandProfileId: campaign.brandProfileId || brandId || '',
+        campaignType: campaign.type.toLowerCase(),
+        name: `${campaign.name} (cópia)`,
+        additionalContext: `Replicar a campanha "${campaign.name}" com o mesmo conteúdo e estilo.`,
+      });
+      await mutate();
+      toaster.show('Campanha duplicada', 'success');
+    } catch (e: any) {
+      toaster.show(e.message || 'Erro ao duplicar', 'warning');
+    }
+  };
+
+  /* -- Tabs -------------------------------------------------------- */
+
+  const tabs: Array<{ id: 'all' | EmailCampaignType; label: string }> = [
     { id: 'all', label: 'Todas' },
     { id: 'NEWSLETTER', label: 'Newsletter' },
     { id: 'WELCOME_SEQUENCE', label: 'Boas-vindas' },
     { id: 'PROMOTIONAL', label: 'Promocional' },
   ];
 
+  /* -- Render ------------------------------------------------------ */
+
   return (
     <PageShell>
       <PageHeader
         description="Newsletters, sequências de boas-vindas e e-mails promocionais gerados com a voz da marca."
         tabs={tabs.map((t) => (
-          <FilterChip
-            key={t.id}
-            active={activeTab === t.id}
-            onClick={() => setActiveTab(t.id)}
-          >
+          <FilterChip key={t.id} active={activeTab === t.id} onClick={() => setActiveTab(t.id)}>
             {t.label}
           </FilterChip>
         ))}
         actions={<Button onClick={openGenerate}>Gerar campanha</Button>}
       />
-      <PageBody className={!loading && campaigns.length === 0 ? '!p-0' : undefined}>
+      <PageBody className={!isLoading && filteredCampaigns.length === 0 ? '!p-0' : undefined}>
         <div className="px-5 pt-3 max-w-[960px] w-full mx-auto">
           <AmpliarSourceBanner prefill={prefill} />
           <AmpliarAiPaths
@@ -517,110 +350,110 @@ function EmailCampaignsPageInner() {
             advancedLabel="Formulário avançado"
           />
         </div>
-        {loading ? (
-          <div className="text-[13px] text-textItemBlur py-[40px] text-center">
-            Carregando campanhas...
+
+        {/* Search bar */}
+        {campaigns.length > 0 && (
+          <div className="px-5 pb-2 max-w-[960px] w-full mx-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textItemBlur" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por nome ou assunto..."
+                className="w-full pl-9 pr-3 py-2 text-sm bg-newBgColorInner border border-newTableBorder rounded-lg text-newTextColor placeholder:text-textItemBlur focus:outline-none focus:border-btnPrimary"
+              />
+            </div>
           </div>
-        ) : campaigns.length === 0 ? (
+        )}
+
+        {isLoading ? (
+          <div className="text-[13px] text-textItemBlur py-10 text-center">Carregando campanhas...</div>
+        ) : filteredCampaigns.length === 0 && !aiLoadingId ? (
           <EmptyState
-            icon={
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M4 6H20V18H4V6Z"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M4 7L12 13L20 7"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            }
+            icon={<span className="text-lg">&#9993;</span>}
             title="Escolha um caminho de e-mail acima"
             description="Welcome, promo da ideia ou newsletter — ou abra o formulário avançado."
             actionLabel="Formulário avançado"
             onAction={openGenerate}
           />
+        ) : filteredCampaigns.length === 0 && aiLoadingId ? (
+          <div className="text-[13px] text-textItemBlur py-10 text-center">Gerando campanha com IA...</div>
         ) : (
-          <div className="flex flex-col gap-[10px]">
-            {campaigns.map((campaign) => (
-              <SectionCard
-                key={campaign.id}
-                className="!p-[14px] flex items-center gap-[12px]"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-[8px] flex-wrap mb-[4px]">
-                    <span className="text-[14px] font-[600] text-newTextColor truncate">
-                      {campaign.name}
-                    </span>
-                    <span
-                      className={`text-[11px] px-[8px] py-[2px] rounded-full font-[600] ${statusClass(
-                        campaign.status
-                      )}`}
+          <div className="flex flex-col gap-2.5 px-5 pb-5 max-w-[960px] w-full mx-auto">
+            {filteredCampaigns.map((campaign) => (
+              <SectionCard key={campaign.id} className="!p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h3 className="text-sm font-bold text-newTextColor truncate">{campaign.name}</h3>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${EMAIL_STATUS_COLORS[campaign.status]}`}>
+                        {EMAIL_STATUS_LABELS[campaign.status]}
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-newSettings border border-newTableBorder text-textItemBlur">
+                        {EMAIL_TYPE_LABELS[campaign.type]}
+                      </span>
+                    </div>
+                    <p className="text-xs text-textItemBlur truncate">
+                      Assunto: {campaign.subject}
+                      {campaign.sequenceIndex != null && campaign.sequenceTotal != null
+                        ? ` · E-mail ${campaign.sequenceIndex + 1}/${campaign.sequenceTotal}`
+                        : ''}
+                    </p>
+                    {campaign.preheader ? (
+                      <p className="text-[11px] text-textItemBlur/60 truncate mt-0.5">{campaign.preheader}</p>
+                    ) : null}
+                    <p className="text-[11px] text-textItemBlur mt-1">
+                      {campaign.bodyJson?.blocks?.length || 0} blocos · {campaign.exportCount} exports ·{' '}
+                      {new Date(campaign.createdAt).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                    <Button secondary className="!h-7 !text-xs" onClick={() => setEditingCampaign(campaign)}>
+                      <Pencil className="w-3 h-3" /> Editar
+                    </Button>
+                    <Button secondary className="!h-7 !text-xs" onClick={() => openPreview(campaign)}>
+                      <Eye className="w-3 h-3" /> Preview
+                    </Button>
+                    <Button secondary className="!h-7 !text-xs" onClick={() => handleDuplicate(campaign)}>
+                      <Copy className="w-3 h-3" /> Duplicar
+                    </Button>
+                    <Button
+                      secondary
+                      className="!h-7 !text-xs !text-red-400 hover:!bg-red-500/10"
+                      loading={deletingId === campaign.id}
+                      onClick={() => handleDelete(campaign.id)}
                     >
-                      {campaign.status}
-                    </span>
-                    <span className="text-[11px] px-[8px] py-[2px] rounded-[6px] bg-newSettings border border-newTableBorder text-textItemBlur">
-                      {typeLabel(campaign.type)}
-                    </span>
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
                   </div>
-                  <div className="text-[12px] text-textItemBlur truncate">
-                    Assunto: {campaign.subject}
-                    {campaign.sequenceIndex !== undefined &&
-                    campaign.sequenceTotal !== undefined
-                      ? ` · E-mail ${campaign.sequenceIndex + 1}/${
-                          campaign.sequenceTotal
-                        }`
-                      : ''}
-                  </div>
-                  <div className="text-[11px] text-textItemBlur mt-[4px]">
-                    {new Date(campaign.createdAt).toLocaleDateString('pt-BR')} ·{' '}
-                    {campaign.exportCount} exports
-                  </div>
-                </div>
-                <div className="flex items-center gap-[8px] shrink-0">
-                  <Button
-                    secondary
-                    className="!h-[32px] !text-[12px]"
-                    onClick={() => openPreview(campaign)}
-                  >
-                    Preview
-                  </Button>
-                  <Button
-                    secondary
-                    className="!h-[32px] !text-[12px]"
-                    onClick={() => handleExport(campaign)}
-                  >
-                    Exportar
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(campaign.id)}
-                    className="text-[12px] text-textItemBlur hover:text-red-400 px-[8px] h-[32px]"
-                  >
-                    Excluir
-                  </button>
                 </div>
               </SectionCard>
             ))}
           </div>
         )}
       </PageBody>
+
+      {/* Block editor (fullscreen) */}
+      {editingCampaign ? (
+        <EmailBlockEditor
+          campaign={editingCampaign}
+          onSaved={() => {
+            mutate();
+            setEditingCampaign(null);
+          }}
+          onClose={() => setEditingCampaign(null)}
+        />
+      ) : null}
+
+      {/* Preview panel handled via openPreview below */}
     </PageShell>
   );
 }
 
 export function EmailCampaignsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="p-8 text-sm text-textItemBlur">Carregando e-mails…</div>
-      }
-    >
+    <Suspense fallback={<div className="p-8 text-sm text-textItemBlur">Carregando e-mails...</div>}>
       <EmailCampaignsPageInner />
     </Suspense>
   );

@@ -93,14 +93,20 @@ export function EditorialPlanPage() {
   const [selectedPlan, setSelectedPlan] = useState<EditorialPlan | null>(null);
   const [generating, setGenerating] = useState<string | null>(null);
   const [autoGenerating, setAutoGenerating] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const selectedPlanId = selectedPlan?.id;
   const { data: slots, isLoading: slotsLoading } = useEditorialSlots(selectedPlanId);
 
   const filteredPlans = useMemo(() => {
     if (!plans || !brand?.id) return plans || [];
-    return plans.filter((p: EditorialPlan) => p.brandProfileId === brand.id);
-  }, [plans, brand?.id]);
+    let result = plans.filter((p: EditorialPlan) => p.brandProfileId === brand.id);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((p: EditorialPlan) => p.name.toLowerCase().includes(q));
+    }
+    return result;
+  }, [plans, brand?.id, search]);
 
   const handleCreate = () => {
     let nameValue = '';
@@ -109,7 +115,7 @@ export function EditorialPlanPage() {
     let pillarsValue = '';
     let objectivesValue = '';
     let timezoneValue = 'America/Sao_Paulo';
-    const blackoutValue = '';
+    const blackoutValues: string[] = [];
 
     modals.openModal({
       title: 'Novo Plano Editorial',
@@ -206,10 +212,24 @@ export function EditorialPlanPage() {
             <input
               className={inputClass}
               type="date"
-              defaultValue={blackoutValue}
-              onChange={(e) => { blackoutValue; e.target.value; }}
+              onChange={(e) => {
+                if (e.target.value && !blackoutValues.includes(e.target.value)) {
+                  blackoutValues.push(e.target.value);
+                  e.target.value = '';
+                }
+              }}
             />
-            <p className="text-xs text-textItemBlur">Adicione datas individualmente</p>
+            {blackoutValues.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {blackoutValues.map((d, i) => (
+                  <span key={i} className="text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2 py-0.5 rounded flex items-center gap-1">
+                    {d}
+                    <button type="button" onClick={() => blackoutValues.splice(i, 1)} className="hover:text-red-800">×</button>
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            <p className="text-xs text-textItemBlur">Selecione datas para adicionar</p>
           </div>
           <div className="flex gap-[12px] justify-end mt-[8px]">
             <Button onClick={close}>Cancelar</Button>
@@ -227,7 +247,7 @@ export function EditorialPlanPage() {
                 try {
                   const pillars = pillarsValue.split('\n').map((s) => s.trim()).filter(Boolean);
                   const objectives = objectivesValue.split('\n').map((s) => s.trim()).filter(Boolean);
-                  const blackoutDates = blackoutValue ? [blackoutValue] : [];
+                  const blackoutDates = [...blackoutValues];
 
                   await createPlan({
                     brandProfileId: brand?.id,
@@ -420,6 +440,15 @@ export function EditorialPlanPage() {
       toaster.show(err.message || 'Erro ao gerar calendário', 'warning');
     } finally {
       setGenerating(null);
+    }
+  };
+
+  const handleSlotNotesChange = async (slot: EditorialSlot, notes: string) => {
+    try {
+      await updateSlot(slot.id, { notes });
+      mutateEditorialSlots(slot.editorialPlanId);
+    } catch (err: any) {
+      toaster.show(err.message || 'Erro ao atualizar notas', 'warning');
     }
   };
 
@@ -728,11 +757,19 @@ export function EditorialPlanPage() {
                               {slot.objective}
                             </span>
                           )}
-                          {slot.notes && (
-                            <span className="text-xs text-textItemBlur truncate max-w-[200px]">
-                              {slot.notes}
-                            </span>
-                          )}
+                          <input
+                            className="text-xs bg-transparent border-b border-transparent hover:border-newTableBorder focus:border-btnPrimary outline-none text-textItemBlur truncate max-w-[200px] px-1 py-0.5"
+                            defaultValue={slot.notes || ''}
+                            placeholder="Notas..."
+                            onBlur={(e) => {
+                              if (e.target.value !== (slot.notes || '')) {
+                                handleSlotNotesChange(slot, e.target.value);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                            }}
+                          />
                         </div>
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusConf.bg} ${statusConf.color}`}>
@@ -782,6 +819,18 @@ export function EditorialPlanPage() {
         }
       />
       <PageBody className={!filteredPlans.length ? '!p-0' : undefined}>
+        {/* Search */}
+        {filteredPlans.length > 0 && (
+          <div className="px-4 pt-3">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar plano..."
+              className="w-full max-w-[320px] px-3 py-2 text-sm bg-newBgColorInner border border-newTableBorder rounded-lg text-newTextColor placeholder:text-textItemBlur focus:outline-none focus:border-btnPrimary"
+            />
+          </div>
+        )}
       {filteredPlans.length === 0 ? (
         <EmptyState
           icon={<Calendar className="w-5 h-5" />}

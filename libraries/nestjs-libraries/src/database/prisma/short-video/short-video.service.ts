@@ -247,6 +247,24 @@ export class ShortVideoService {
     this.logger.log(`Video render completed for project ${project.id}`);
   }
 
+  async updateProject(id: string, orgId: string, data: {
+    name?: string;
+    format?: string;
+    script?: any;
+    totalDurationSec?: number;
+    status?: string;
+    aspectRatio?: string;
+    maxDurationSec?: number;
+    metadata?: any;
+  }) {
+    await this.getProject(id, orgId); // validate existence + ownership
+    return this.shortVideoRepository.update(id, orgId, {
+      ...data,
+      format: data.format as ShortVideoFormat | undefined,
+      status: data.status as ShortVideoStatus | undefined,
+    });
+  }
+
   async updateStatus(id: string, orgId: string, status: string) {
     await this.getProject(id, orgId); // validate existence + ownership
     return this.shortVideoRepository.updateStatus(id, orgId, status as ShortVideoStatus);

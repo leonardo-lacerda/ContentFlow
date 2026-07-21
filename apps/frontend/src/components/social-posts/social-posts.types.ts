@@ -11,6 +11,44 @@ export type PostTone =
   | 'authentic'
   | 'storytelling';
 
+// ---- Rich strategic fields (aligned with backend Zod schema) ----
+
+export interface VisualGuidance {
+  type: string;
+  description: string;
+  style?: string;
+  colors?: string[];
+  textOverlay?: string;
+}
+
+export interface EngagementStrategy {
+  technique: string;
+  explanation: string;
+  expectedOutcome: string;
+}
+
+export interface PostingStrategy {
+  bestTime?: string;
+  bestDay?: string;
+  frequency?: string;
+  repurposeSuggestions?: string[];
+}
+
+export interface GrowthTip {
+  category: string;
+  tip: string;
+  impact?: string;
+}
+
+export interface ExpectedEngagement {
+  likes?: string;
+  comments?: string;
+  shares?: string;
+  notes?: string;
+}
+
+// ---- Main post type (rich) ----
+
 export interface GeneratedSocialPost {
   platform: SocialPlatform;
   content: string;
@@ -20,6 +58,20 @@ export interface GeneratedSocialPost {
   tone: string;
   charCount: number;
   notes?: string;
+  // Strategic guidance
+  rationale?: string;
+  hookAnalysis?: string;
+  platformOptimization?: string;
+  // Visual
+  visualGuidance?: VisualGuidance[];
+  // Engagement
+  engagementStrategy?: EngagementStrategy;
+  // Posting
+  postingStrategy?: PostingStrategy;
+  // Growth
+  growthTips?: GrowthTip[];
+  // Expected
+  expectedEngagement?: ExpectedEngagement;
 }
 
 export interface SocialPostBatch {
@@ -37,7 +89,8 @@ export interface GenerateSocialPostsParams {
   additionalContext?: string;
 }
 
-// ContentFlow v1 — redes do core loop
+// ---- Constants ----
+
 export const AVAILABLE_PLATFORMS: SocialPlatform[] = [
   'instagram',
   'facebook',
@@ -45,6 +98,24 @@ export const AVAILABLE_PLATFORMS: SocialPlatform[] = [
   'twitter',
   'tiktok',
 ];
+
+export const PLATFORM_LABELS: Record<SocialPlatform, string> = {
+  instagram: 'Instagram',
+  facebook: 'Facebook',
+  linkedin: 'LinkedIn',
+  twitter: 'X / Twitter',
+  tiktok: 'TikTok',
+  threads: 'Threads',
+};
+
+export const PLATFORM_COLORS: Record<SocialPlatform, string> = {
+  instagram: 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-pink-300',
+  facebook: 'bg-blue-500/15 text-blue-400',
+  linkedin: 'bg-blue-600/15 text-blue-300',
+  twitter: 'bg-sky-500/15 text-sky-400',
+  tiktok: 'bg-red-500/15 text-red-400',
+  threads: 'bg-purple-400/15 text-purple-300',
+};
 
 export const AVAILABLE_TONES: { value: PostTone; label: string }[] = [
   { value: 'professional', label: 'Professional' },

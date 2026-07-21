@@ -29,6 +29,7 @@ import {
   AVAILABLE_PLATFORMS,
   AVAILABLE_TONES,
   AVAILABLE_LANGUAGES,
+  PLATFORM_LABELS,
 } from './social-posts.types';
 
 function GenerateSocialPostsForm({
@@ -115,7 +116,7 @@ function GenerateSocialPostsForm({
               active={selectedPlatforms.includes(p)}
               onClick={() => togglePlatform(p)}
             >
-              {p}
+              {PLATFORM_LABELS[p] || p}
             </FilterChip>
           ))}
         </div>
@@ -231,7 +232,7 @@ export function SocialPostsPage() {
                   active={platformFilter === p}
                   onClick={() => setPlatformFilter(p)}
                 >
-                  {p}
+                  {PLATFORM_LABELS[p] || p}
                 </FilterChip>
               ))}
             </div>
