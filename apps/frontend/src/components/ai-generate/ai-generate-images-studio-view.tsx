@@ -60,11 +60,14 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     costHistory,
     costLimitBrl,
     defaultCta,
+    designHandle,
+    designSizeId,
     editorialIssues,
     editorialReview,
     error,
     estimateGenerationCost,
     exportCarouselPackage,
+    exportSingleSlide,
     exportHeight,
     exportingPackage,
     exportWidth,
@@ -90,6 +93,8 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     imageJobProgress,
     imageModel,
     imageProvider,
+    renderMode,
+    setRenderMode,
     importProjectInputRef,
     importProjectJson,
     includePdfExport,
@@ -114,6 +119,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     projectedCostBrl,
     referenceCategoryFilter,
     referenceCategories,
+    referenceDisplayLimit,
     referenceImages,
     refreshCreativeBrief,
     regenerateSlideCopy,
@@ -154,6 +160,8 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     setCompanyIdeas,
     setCostLimitBrl,
     setDefaultCta,
+    setDesignHandle,
+    setDesignSizeId,
     setExportHeight,
     setExportWidth,
     setFinalCreativeBrief,
@@ -324,6 +332,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
           applyCompanyBrandKit={applyCompanyBrandKit}
           applyTemplate={applyTemplate}
           audience={audience}
+          backendTemplates={backendTemplates}
           brandColors={brandColors}
           brandFonts={brandFonts}
           brandLogoReferences={brandLogoReferences}
