@@ -49,9 +49,11 @@ export const emailCampaignsApi = {
     return res.json();
   },
 
-  async reRender(fetcher: Fetcher, id: string): Promise<{ html: string }> {
+  async reRender(fetcher: Fetcher, id: string, bodyJson?: { blocks: EmailBlock[] }): Promise<{ html: string }> {
     const res = await fetcher(`/email-campaigns/${id}/re-render`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyJson ? { bodyJson } : {}),
     });
     if (!res.ok) throw new Error('Erro ao re-renderizar');
     return res.json();

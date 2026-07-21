@@ -417,7 +417,7 @@ export function EmailBlockEditor({
         primaryColor: primaryColor || undefined,
         secondaryColor: secondaryColor || undefined,
       });
-      await emailCampaignsApi.reRender(fetch, campaign.id);
+      await emailCampaignsApi.reRender(fetch, campaign.id, { blocks });
       toaster.show('Campanha salva', 'success');
       onSaved();
     } catch (e: any) {
