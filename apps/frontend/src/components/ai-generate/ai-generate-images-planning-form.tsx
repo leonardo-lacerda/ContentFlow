@@ -177,6 +177,91 @@ function ChoiceChip({
   );
 }
 
+// Prévia da identidade: cores, CTA e posição do logo, atualizada em tempo
+// real conforme a pessoa ajusta o Brand Kit — sem precisar gerar o plano.
+function BrandPreviewCard({
+  bg,
+  text,
+  accent,
+  apoio,
+  brandName,
+  cta,
+  logoUsage,
+  logoPosition,
+  logoScale,
+}: {
+  bg: string;
+  text: string;
+  accent: string;
+  apoio: string;
+  brandName: string;
+  cta: string;
+  logoUsage: string;
+  logoPosition: string;
+  logoScale: string;
+}) {
+  const showLogo = logoUsage !== 'none';
+  const badge = logoUsage === 'text';
+  const logoText = (brandName || '').trim() || 'Sua marca';
+  const logoSizeClass =
+    logoScale === 'badge'
+      ? 'text-[9px] px-[9px] py-[4px]'
+      : logoScale === 'small'
+        ? 'text-[8px] px-[6px] py-[2px]'
+        : 'text-[9px] px-[8px] py-[3px]';
+  const vertical = logoPosition.startsWith('top') ? 'top' : 'bottom';
+  const horizontal = logoPosition.endsWith('left') ? 'left' : 'right';
+
+  return (
+    <div className="w-full max-w-[220px]">
+      <div
+        className="relative flex aspect-square w-full flex-col justify-between overflow-hidden rounded-[16px] border border-black/10 p-[16px] shadow-sm transition-colors duration-300 dark:border-white/10"
+        style={{ background: bg, color: text }}
+      >
+        {showLogo && (
+          <span
+            className={`absolute rounded-full font-[900] uppercase tracking-[0.08em] ${logoSizeClass} ${
+              badge ? 'border' : ''
+            }`}
+            style={{
+              [vertical]: 12,
+              [horizontal]: 12,
+              borderColor: badge ? `${text}40` : 'transparent',
+              background: badge ? `${text}12` : 'transparent',
+            } as React.CSSProperties}
+          >
+            {logoText}
+          </span>
+        )}
+
+        <div className="flex flex-1 flex-col justify-center gap-[8px] pt-[26px]">
+          <span
+            className="block h-[8px] w-[70%] rounded-full"
+            style={{ background: text, opacity: 0.9 }}
+          />
+          <span
+            className="block h-[5px] w-[50%] rounded-full"
+            style={{ background: text, opacity: 0.5 }}
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span
+            className="w-fit rounded-full px-[10px] py-[5px] text-[10px] font-[800]"
+            style={{ background: accent, color: bg }}
+          >
+            {cta?.trim() || 'Saiba mais'}
+          </span>
+          <span className="h-[10px] w-[10px] rounded-full" style={{ background: apoio }} />
+        </div>
+      </div>
+      <p className="mt-[8px] text-center text-[11px] text-black/45 dark:text-white/45">
+        Prévia da marca — cores, logo e CTA
+      </p>
+    </div>
+  );
+}
+
 export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningFormProps) {
   const {
     applyCompanyBrandKit,
@@ -634,7 +719,8 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
             </div>
 
             {editingBrandKit && (
-              <div className="mt-[14px] grid grid-cols-1 gap-[14px] md:grid-cols-2">
+              <div className="mt-[14px] flex flex-col gap-[14px] md:flex-row md:items-start">
+              <div className="grid min-w-0 flex-1 grid-cols-1 gap-[14px] md:grid-cols-2">
                 <label className="flex flex-col gap-[6px]">
                   <span className="text-[13px] font-[600]">Nome da marca</span>
                   <input value={brandName} onChange={(event) => setBrandName(event.target.value)} className={inputClass} maxLength={80} />
@@ -818,6 +904,21 @@ export function AiGenerateImagesPlanningForm(props: AiGenerateImagesPlanningForm
                   <span className="text-[12px] text-black/50 dark:text-white/50">
                     Guarda cores, fontes, CTA e termos no Brand DNA para vir prontos da próxima vez.
                   </span>
+                </div>
+              </div>
+
+                <div className="flex justify-center self-start md:sticky md:top-[16px] md:w-[220px] md:shrink-0">
+                  <BrandPreviewCard
+                    bg={bgColor}
+                    text={textColor}
+                    accent={colorsArr[2] || defaultBrandColors[2]}
+                    apoio={colorsArr[3] || defaultBrandColors[3]}
+                    brandName={brandName}
+                    cta={defaultCta}
+                    logoUsage={logoUsage}
+                    logoPosition={logoPosition}
+                    logoScale={logoScale}
+                  />
                 </div>
               </div>
             )}
