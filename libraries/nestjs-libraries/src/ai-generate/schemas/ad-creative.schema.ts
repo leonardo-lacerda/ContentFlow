@@ -82,7 +82,7 @@ const TargetingRecommendationSchema = z.object({
   audience: z.string().describe('Recommended audience segment name'),
   demographics: z.string().describe('Age range, gender, location targeting'),
   interests: z.array(z.string()).describe('Interest/targeting keywords for the ad platform'),
-  exclusions: z.array(z.string()).optional().describe('Audiences to exclude'),
+  exclusions: z.array(z.string()).nullable().describe('Audiences to exclude'),
   rationale: z.string().describe('Why this audience matches the ad objective'),
 });
 

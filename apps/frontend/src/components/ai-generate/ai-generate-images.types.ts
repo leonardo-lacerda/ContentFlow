@@ -29,9 +29,12 @@ export type CostEstimate = {
   };
 };
 
+export type CarouselSlideRole = 'cover' | 'content' | 'recap' | 'cta';
+
 export type CarouselSlide = {
   id: string;          // UUID estável — PK para todos os Record states internos
   index: number;       // Posição (1-based) — recalculado após operações CRUD
+  role?: CarouselSlideRole;
   headline: string;
   body: string;
   cta: string;
@@ -269,14 +272,41 @@ export type SavedAiProject = {
   }>;
 };
 
+export type EditorialReviewDimensions = {
+  focalHierarchy?: number | null;
+  compositionBalance?: number | null;
+  typeCraft?: number | null;
+  colorCraft?: number | null;
+  depthAtmosphere?: number | null;
+  legibilityContrast?: number | null;
+  safeZonesFit?: number | null;
+  copy?: number | null;
+  directionCommitment?: number | null;
+};
+
 export type EditorialReview = {
   score: number;
   verdict: string;
+  dimensions?: EditorialReviewDimensions | null;
   issues: Array<{
+    slideIndex?: number;
     slide?: number;
-    severity: 'low' | 'medium' | 'high';
-    issue: string;
-    suggestion: string;
+    field?: string;
+    message?: string;
+    issue?: string;
+    suggestion?: string;
+    type?: 'warning' | 'blocker';
+    severity?: 'low' | 'medium' | 'high';
   }>;
   strengths: string[];
+  forbiddenTermMatches?: Array<{
+    term: string;
+    slideIndex: number;
+    field: string;
+  }>;
+  templateCheckResults?: Array<{
+    checkId: string;
+    passed: boolean;
+    message?: string;
+  }>;
 };

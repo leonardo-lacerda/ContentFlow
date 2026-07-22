@@ -36,9 +36,22 @@ const ForbiddenTermMatchSchema = z.object({
 
 // ---- Main schema ----
 
+const DimensionsSchema = z.object({
+  focalHierarchy: z.number().min(0).max(5).nullable().optional(),
+  compositionBalance: z.number().min(0).max(5).nullable().optional(),
+  typeCraft: z.number().min(0).max(5).nullable().optional(),
+  colorCraft: z.number().min(0).max(5).nullable().optional(),
+  depthAtmosphere: z.number().min(0).max(5).nullable().optional(),
+  legibilityContrast: z.number().min(0).max(5).nullable().optional(),
+  safeZonesFit: z.number().min(0).max(5).nullable().optional(),
+  copy: z.number().min(0).max(5).nullable().optional(),
+  directionCommitment: z.number().min(0).max(5).nullable().optional(),
+}).nullable().optional();
+
 export const EditorialReviewSchema = z.object({
   verdict: z.string().describe('Overall verdict: approve, needs_changes, or reject'),
   score: z.number().min(0).max(100).describe('Overall quality score (0-100)'),
+  dimensions: DimensionsSchema.describe('9-dimension quality rubric scores (0-5 each)'),
   issues: z.array(IssueSchema).default([]).describe('List of editorial issues found'),
   strengths: z.array(z.string()).default([]).describe('Strengths of the carousel'),
   summary: z.string().nullable().optional().describe('Brief summary of the review'),

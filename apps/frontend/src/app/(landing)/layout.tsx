@@ -1,28 +1,29 @@
 import type { ReactNode } from 'react';
 
 export const metadata = {
-  title: 'ContentFlow — Gere carrosséis, posts e legendas com a cara da sua marca',
+  title: 'ContentFlow — Sua operação de conteúdo no piloto automático',
   description:
-    'ContentFlow é o estúdio de conteúdo com IA: gere carrosséis, posts e legendas on-brand para todas as redes em minutos.',
+    'O ContentFlow aprende seu posicionamento, gera ideias no seu nicho, monta carrosséis com a sua identidade e agenda nas 5 redes. Você aprova em 10 min; a máquina roda o resto.',
 };
 
 export default function LandingLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-        <link rel="stylesheet" href="/landing-styles.css" />
-      </head>
-      <body>{children}</body>
-    </html>
+    <>
+      <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+      <link
+        href="https://cdn.jsdelivr.net/fontsource/css/anton@latest/index.css"
+        rel="stylesheet"
+      />
+      <link
+        href="https://cdn.jsdelivr.net/fontsource/css/schibsted-grotesk@latest/index.css"
+        rel="stylesheet"
+      />
+      <link
+        href="https://cdn.jsdelivr.net/fontsource/css/space-mono@latest/index.css"
+        rel="stylesheet"
+      />
+      <link rel="stylesheet" href="/landing-styles.css" />
+      <div className="landing-root">{children}</div>
+    </>
   );
 }

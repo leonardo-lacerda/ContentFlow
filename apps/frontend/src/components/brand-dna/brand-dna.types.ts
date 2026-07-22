@@ -1,4 +1,4 @@
-﻿export type BrandStatus = 'DRAFT' | 'ANALYZING' | 'NEEDS_REVIEW' | 'ACTIVE' | 'FAILED';
+export type BrandStatus = 'DRAFT' | 'ANALYZING' | 'NEEDS_REVIEW' | 'ACTIVE' | 'FAILED';
 
 export interface BrandProfile {
   id: string;
@@ -13,11 +13,15 @@ export interface BrandProfile {
   deletedAt?: string;
 }
 
+// ---- DNA v2.0.0 types (matches extraction schema) ----
+
 export interface DnaSummary {
   tagline: string;
   description: string;
   industry: string;
   targetAudience: string;
+  missionStatement: string;
+  valueProposition: string;
 }
 
 export interface DnaVoice {
@@ -25,6 +29,13 @@ export interface DnaVoice {
   style: string;
   personality: string;
   forbiddenWords: string[];
+  examplePhrases: string[];
+}
+
+export interface DnaBuyerPersona {
+  name: string;
+  description: string;
+  role: string;
 }
 
 export interface DnaAudience {
@@ -32,20 +43,23 @@ export interface DnaAudience {
   painPoints: string[];
   desires: string[];
   objections: string[];
+  buyerPersonas: DnaBuyerPersona[];
 }
 
 export interface DnaOffer {
   products: string[];
   services: string[];
   uniqueSellingPoints: string[];
-  pricingHint?: string;
+  pricingHint: string | null;
+  category: string | null;
+  topCompetitors: string[];
 }
 
 export interface DnaVisual {
   colors: string[];
   style: string;
-  typographyHint?: string;
-  photographyStyle?: string;
+  typographyHint: string | null;
+  imageryStyle: string | null;
 }
 
 export interface DnaConstraints {
@@ -55,20 +69,15 @@ export interface DnaConstraints {
 }
 
 export interface DnaMessaging {
-  brandValues: string[];
-  brandStory: string;
-  competitors: string[];
   messagingPillars: string[];
-  keyCTAs: string[];
-  emotionalTriggers: string[];
+  keyMessages: string[];
+  callToActionStyle: string | null;
 }
 
 export interface DnaContentGuidelines {
-  postLengthHint: string;
-  hashtagStrategy: string[];
-  emojiUsage: string;
-  contentMix: string[];
-  bestPractices: string[];
+  preferredFormats: string[];
+  hashtagsStrategy: string | null;
+  emojiUsage: string | null;
 }
 
 export interface DnaConfidence {
@@ -76,6 +85,8 @@ export interface DnaConfidence {
   textual: number;
   visual: number;
   commercial: number;
+  messaging: number;
+  brandValues: number;
 }
 
 export interface BrandDnaSnapshot {
@@ -109,20 +120,7 @@ export interface BrandAsset {
   createdAt: string;
 }
 
+// ---- Legacy aliases (backward compat for components using old names) ----
 
-export interface BrandDnaMessaging {
-  brandValues?: string[];
-  brandStory?: string;
-  competitors?: string[];
-  messagingPillars?: string[];
-  keyCTAs?: string[];
-  emotionalTriggers?: string[];
-}
-
-export interface BrandDnaContentGuidelines {
-  postLengthHint?: string;
-  emojiUsage?: string;
-  hashtagStrategy?: string[];
-  contentMix?: string[];
-  bestPractices?: string[];
-}
+export type BrandDnaMessaging = DnaMessaging;
+export type BrandDnaContentGuidelines = DnaContentGuidelines;

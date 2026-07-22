@@ -18,7 +18,7 @@ export function NavHeader() {
         </nav>
 
         <div className="nav__actions">
-          <a href="/auth" className="btn btn--ghost">
+          <a href="/auth/login" className="btn btn--ghost">
             Entrar
           </a>
           <a href="/auth" className="btn btn--primary">
@@ -44,7 +44,7 @@ export function NavHeader() {
             {link.label}
           </a>
         ))}
-        <a href="/auth" className="btn btn--ghost">
+        <a href="/auth/login" className="btn btn--ghost">
           Entrar
         </a>
         <a href="/auth" className="btn btn--primary">

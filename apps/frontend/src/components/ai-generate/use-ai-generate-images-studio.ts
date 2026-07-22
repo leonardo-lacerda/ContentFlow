@@ -1550,6 +1550,8 @@ export function useAiGenerateImagesStudio() {
     setIdeasError,
     setImageModel,
     setImageProvider,
+    renderMode,
+    setRenderMode,
     setIncludePdfExport,
     setLightboxIndex,
     setLogoPosition,

@@ -515,7 +515,17 @@ export class AiGenerateService {
                 body.companyContext || 'Sem contexto detalhado'
               }\n\nHint opcional de tema: ${
                 body.topicHint || 'Sem hint'
-              }${avoidanceInstruction}\n\nRetorne EXATAMENTE:\n{\n  "ideas": [\n    {\n      "title": "tema curto do carrossel",\n      "hook": "frase gancho para abrir o post",\n      "goal": "objetivo do post (educar, autoridade, conversao, etc)",\n      "angle": "angulo editorial em 1 frase"\n    }\n  ]\n}\n\nGere entre 8 e 12 ideias, com variedade de formatos (educacional, storytelling, lista, mitos e verdades, case, antes/depois, oferta, autoridade).`,
+              }${avoidanceInstruction}\n\nRetorne EXATAMENTE:\n{\n  "ideas": [\n    {\n      "title": "tema curto do carrossel",\n      "hook": "frase gancho para abrir o post",\n      "goal": "objetivo do post (educar, autoridade, conversao, etc)",\n      "angle": "angulo editorial em 1 frase"\n    }\n  ]\n}\n\nGere entre 8 e 12 ideias, com variedade de formatos e hooks. Use estes tipos de gancho (1-2 de cada):
+- question: pergunta que provoca curiosidade ("E se {topic} fosse mais simples?")
+- bold_claim: afirmação ousada que quebra expectativa ("Seu {topic} esta custando clientes.")
+- listicle: lista numerada que promete valor rapido ("5 erros de {topic} que voce comete")
+- curiosity: mistério que obriga a swipar ("Ninguem te conta isso sobre {topic}")
+- contrarian: opinião contra o mainstream ("Pare de postar todo dia. Foque em {topic}")
+- transformation: antes/depois que mostra resultado ("De zero a 20k mudando {topic}")
+- mistake: erro comum que o leitor comete ("O erro #1 que faz seu {topic} falhar")
+- cta: chamada para ação direta ("Salve isso pro seu proximo {topic}")
+
+Escolha o hook mais forte para cada ideia. O titulo deve ser curto (max 8 palavras), concreto, sem hashtags.`,
             },
           ],
         }),
@@ -948,7 +958,7 @@ export class AiGenerateService {
             {
               role: 'system',
               content:
-                'Voce e um diretor de arte e copywriter senior para carrosseis de redes sociais. Gere copy curta para ser renderizada dentro das imagens, alem de prompts visuais com layout editorial. Responda somente JSON valido, sem markdown.',
+                'Voce e um diretor de arte e copywriter senior para carrosseis de redes sociais. Gere copy curta para ser renderizada dentro das imagens, alem de prompts visuais com layout editorial premium. Responda somente JSON valido, sem markdown.\n\nREGRAS DE DESIGN PREMIUM:\n- Tipografia: display fonts bold + peso 800-900, tracking -0.02em a -0.04em, line-height 0.95-1.05. Nunca usar Arial/Inter/Roboto como fonte de destaque.\n- Cor: paleta base (60%), neutra (30%), um acento travado (10%). Sem gradiente roxo/azul genérico em fundo branco.\n- Profundidade: todo slide precisa de pelo menos 1 elemento de profundidade (gradiente sutil, textura grain, sombra tintada, shapes sobrepostos). Nunca fundo flat cor única.\n- Contraste: texto deve ter minimo 4.5:1 contra o fundo. Texto claro em fundo claro = proibido.\n- Layout: padding generoso (6-8% da largura), hierarquia visual clara, um ponto focal dominante por slide.\n- Icones: SVG inline (Lucide/Phosphor), nunca emoji como estrutura.\n- Anti-AI-tell: evitar glow roxo/azul em branco, cards idênticos em grid, tudo centralizado, espaçamento mecânico uniforme.',
             },
             {
               role: 'user',
@@ -960,7 +970,7 @@ export class AiGenerateService {
                 sourceContent
                   ? `\n\nCONTEUDO DE ORIGEM (transforme ISTO em carrossel; extraia os pontos principais, resuma e adapte para slides curtos e impactantes; se nao houver tema definido, crie um titulo forte a partir deste conteudo):\n"""\n${sourceContent}\n"""`
                   : ''
-              }${templateEnrichment}\n\nFormato obrigatorio do JSON:\n{\n  "title": "titulo do post",\n  "platform": "instagram",\n  "language": "pt-BR",\n  "caption": "legenda curta para acompanhar o post fora da imagem",\n  "hashtags": ["#tag"],\n  "imageStyleGuide": "guia visual consistente para todas as imagens, incluindo tipografia, cores, composicao e elementos de marca",\n  "slides": [\n    {\n      "index": 1,\n      "headline": "frase principal curta que deve aparecer GRANDE dentro da imagem",\n      "body": "texto de apoio curto que tambem deve aparecer dentro da imagem",\n      "cta": "micro chamada visual opcional para aparecer no slide",\n      "imagePrompt": "descricao visual do fundo, objeto/personagem/metafora, layout e espacos de respiro para encaixar a tipografia",\n      "altText": "descricao acessivel da imagem"\n    }\n  ]\n}\n\nRegras: headline e body sao copy visual para dentro do criativo, nao descricao do post. Escreva pouco texto por slide, com quebras naturais e alto impacto. Use uma linguagem natural em portugues do Brasil. Cada slide deve funcionar como uma peca editorial quadrada: tipografia grande, hierarquia clara, bastante margem e uma metafora visual forte. O imagePrompt deve preparar uma imagem que contenha texto renderizado com legibilidade, sem pedir legenda externa. Evite promessas exageradas, nao invente logos; se nao houver marca, use um pequeno selo textual com o tema ou categoria.`,
+              }${templateEnrichment}\n\nESTRUTURA DO CARROSSEL (papeis dos slides):\n- Slide 1 (CAPA): Obrigatório. Gancho forte que obriga a swipar. Headline grande e ousada, visual chamativo. Use um tipo de hook: question, bold_claim, curiosity, mistake, ou contrarian.\n- Slides 2 a N-1 (CONTEÚDO): Um insight por slide. Grid disciplinado, consistente. Cada slide = 1 ideia clara.\n- Último slide (CTA): Chamada para ação clara (salvar, comentar, seguir, link na bio). Incluir engajamento: "Salve para depois", "Comente X", ou "Siga para mais".\n\nMÓDULOS VISUAIS (use no imagePrompt para enriquecer o layout):\n- Pill/chip: containers arredondados para badges, handles, datas, categorias\n- Stat chip: card com ícone + label + número/gráfico (para dados e estatísticas)\n- Dual-panel: comparação lado a lado com divisor "VS" ou seta\n- Before/After: barra de transformação visual\n- Payoff bar: frase de efeito na parte inferior do slide\n- Number hero: um número gigante (70-80% do canvas) como elemento focal\n\nFormato obrigatorio do JSON:\n{\n  "title": "titulo do post",\n  "platform": "instagram",\n  "language": "pt-BR",\n  "caption": "legenda curta para acompanhar o post fora da imagem",\n  "hashtags": ["#tag"],\n  "imageStyleGuide": "guia visual consistente para todas as imagens, incluindo paleta (base 60%, neutra 30%, acento 10%), tipografia display (peso 800-900, tracking negativo), profundidade (gradiente sutil, grain, ou shapes), e margens generosas (6-8%)",\n  "slides": [\n    {\n      "index": 1,\n      "headline": "frase principal curta que deve aparecer GRANDE dentro da imagem (max 8 palavras)",\n      "body": "texto de apoio curto que tambem deve aparecer dentro da imagem",\n      "cta": "micro chamada visual opcional para aparecer no slide",\n      "imagePrompt": "descricao visual detalhada: fundo com profundidade (gradiente, textura, shapes), objeto/personagem/metafora, modulo visual sugerido (pill, stat-chip, dual-panel, number-hero), espacos de respiro para tipografia, e contraste garantido para legibilidade",\n      "altText": "descricao acessivel da imagem"\n    }\n  ]\n}\n\nREGRAS DE COPY VISUAL:\n- Headline: max 78 caracteres, aparece GRANDE na imagem (peso 800-900)\n- Body: abaixo de 140 caracteres, texto de apoio\n- Texto dentro da imagem deve ser legível no celular (fundo escuro = texto claro, e vice-versa)\n- Uma ideia por slide. Sem claims absolutos ("o melhor", "nunca", "100%")\n- Sem inventar dados ou estatísticas fictícias\n- Use linguagem natural em portugues do Brasil\n- Tipografia curva (aspas reais ""), travessões para pausa, sem excesso de emojis\n\nO imagePrompt deve preparar uma imagem com texto renderizado com legibilidade. Evite promessas exageradas, nao invente logos; se nao houver marca, use um pequeno selo textual com o tema ou categoria.`,
             },
           ],
         }),
@@ -1104,11 +1114,11 @@ export class AiGenerateService {
           {
             role: 'system',
             content:
-              'Você é editor sênior de carrosseis e diretor de arte. Avalie legibilidade, clareza, promessa exagerada, consistência com marca, função de cada slide e qualidade visual. Verifique também as regras editoriais do template e termos proibidos da marca. Responda somente JSON válido.',
+              'Você é editor sênior de carrosseis e diretor de arte. Avalie legibilidade, clareza, promessa exagerada, consistência com marca, função de cada slide e qualidade visual. Verifique também as regras editoriais do template e termos proibidos da marca. Responda somente JSON válido.\n\nRUBRICA DE 9 DIMENSÕES (score 0-5 cada, CRITICAL = obrigatório >=4):\n1. FOCAL HIERARCHY [CRITICAL] — Um elemento domina o olhar em 0.5s. Se não, fixe: aumente hierarquia, reduza competidores, adicione whitespace.\n2. COMPOSITION & BALANCE [CRITICAL] — Grid consistente, margens ópticas (6-8% da largura), alinhamento claro. Fixe: centre em um sistema de alinhamento.\n3. TYPE CRAFT — Fontes display distintas (nunca Arial/Inter/Roboto), tracking negativo no headline, peso 800-900, line-height 0.95-1.05. Corpo >=24px em 1080w.\n4. COLOR CRAFT — Base 60%, neutra 30%, acento 10% (um acento travado). Sombras tintadas (nunca #000 puro). Gradientes sem banding. Sem glow roxo/azul em fundo branco.\n5. DEPTH & ATMOSPHERE — Pelo menos 1 dispositivo de profundidade por slide: gradiente mesh, grain 4-8%, glow tintado, shapes sobrepostos, ou tipo gigante ao fundo.\n6. LEGIBILITY & CONTRAST [CRITICAL] — Texto minimo 4.5:1 (normal) ou 3:1 (display). Texto sobre imagem = scrim obrigatório. Sem texto cinza claro em fundo branco.\n7. SAFE ZONES & FIT — Dimensões exatas da plataforma, conteúdo crítico nos 80% centrais. Stories/Reels: respeitar overlay de UI.\n8. COPY — Headline <=8 palavras, uma ideia por slide. Sem filler, sem stats fictícios. Aspas reais, sem excesso de emojis.\n9. DIRECTION COMMITMENT [CRITICAL] — Todo slide pertence a uma estética coesa. Pelo menos 2 motivos visuais identificáveis por slide. Teste: um desconhecido conseguiria nomear o vibe?',
           },
           {
             role: 'user',
-            content: `Revise este carrossel antes da geração final de imagens.${templateChecksSection}${forbiddenSection}
+            content: `Revise este carrossel antes da geração final de imagens. Aplique a rubrica de 9 dimensões do system prompt.${templateChecksSection}${forbiddenSection}
 
 Payload:
 ${payload.slice(0, 14000)}
@@ -1117,6 +1127,17 @@ Retorne exatamente:
 {
   "score": 0-100,
   "verdict": "resumo curto do nível editorial",
+  "dimensions": {
+    "focalHierarchy": 0-5,
+    "compositionBalance": 0-5,
+    "typeCraft": 0-5,
+    "colorCraft": 0-5,
+    "depthAtmosphere": 0-5,
+    "legibilityContrast": 0-5,
+    "safeZonesFit": 0-5,
+    "copy": 0-5,
+    "directionCommitment": 0-5
+  },
   "issues": [
     {
       "slideIndex": 1,
@@ -1143,7 +1164,7 @@ Retorne exatamente:
   ]
 }
 
-Se estiver bom, issues pode ser vazio. Use pt-BR.`,
+Score geral = média das 9 dimensões × 20. Dimensões CRITICAL (focalHierarchy, compositionBalance, legibilityContrast, directionCommitment) com score <4 geram blocker automático. Se estiver bom, issues pode ser vazio. Use pt-BR.`,
           },
         ],
       }),
@@ -1264,7 +1285,7 @@ Se estiver bom, issues pode ser vazio. Use pt-BR.`,
           {
             role: 'system',
             content:
-              'Voce e editor senior de carrosseis e diretor de arte. Corrija copy visual e prompts mantendo estrategia, ordem dos slides e identidade de marca. Responda somente JSON valido.',
+              'Voce e editor senior de carrosseis e diretor de arte. Corrija copy visual e prompts mantendo estrategia, ordem dos slides e identidade de marca. Responda somente JSON valido.\n\nREGRAS DE DESIGN APLICAR NA CORREÇÃO:\n- Headline: peso 800-900, tracking negativo, max 78 caracteres, destaque visual dominante\n- Profundidade: todo slide precisa de 1+ elemento de profundidade (gradiente, grain, shapes) — nunca fundo flat\n- Contraste: minimo 4.5:1 para texto normal, 3:1 para display. Texto sobre imagem = scrim\n- Cor: paleta coesa (base/neutra/acento), sombras tintadas, sem #000 puro\n- Modular: sugerir módulos visuais no imagePrompt quando apropriado (pill, stat-chip, number-hero)\n- Anti-AI: evitar glow roxo/azul em branco, grid idêntico, tudo centralizado',
           },
           {
             role: 'user',
@@ -1378,7 +1399,7 @@ Se estiver bom, issues pode ser vazio. Use pt-BR.`,
 
     return {
       id: job.id,
-      status: job.status,
+      status: job.status.toLowerCase(),
       total: normalizedSlides.length,
       completed: 0,
       failed: 0,

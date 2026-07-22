@@ -68,6 +68,8 @@ function SnapshotModalView({
         <Field label="Descrição" value={summary.description} />
         <Field label="Indústria" value={summary.industry} />
         <Field label="Público-alvo" value={summary.targetAudience} />
+        {summary.missionStatement && <Field label="Missão" value={summary.missionStatement} />}
+        {summary.valueProposition && <Field label="Proposta de valor" value={summary.valueProposition} />}
       </Section>
 
       <Section title="Voz da Marca">
@@ -75,6 +77,16 @@ function SnapshotModalView({
         <Field label="Estilo" value={voice.style} />
         <Field label="Personalidade" value={voice.personality} />
         <ListField label="Palavras proibidas" items={voice.forbiddenWords} />
+        {voice.examplePhrases?.length > 0 && (
+          <div className="mt-2 space-y-1">
+            <span className="font-medium text-textItemBlur">Exemplos de voz:</span>
+            {voice.examplePhrases.map((phrase, i) => (
+              <div key={i} className="italic text-black/50 dark:text-white/50 pl-3 border-l-2 border-black/10 dark:border-white/10">
+                &ldquo;{phrase}&rdquo;
+              </div>
+            ))}
+          </div>
+        )}
       </Section>
 
       <Section title="Público">
@@ -82,81 +94,79 @@ function SnapshotModalView({
         <ListField label="Dores" items={audience.painPoints} />
         <ListField label="Desejos" items={audience.desires} />
         <ListField label="Objeções" items={audience.objections} />
+        {audience.buyerPersonas?.length > 0 && (
+          <div className="mt-2 space-y-2">
+            <span className="font-medium text-textItemBlur">Personas:</span>
+            {audience.buyerPersonas.map((p, i) => (
+              <div key={i} className="rounded-lg bg-black/[0.03] dark:bg-white/[0.03] p-2.5 text-[13px]">
+                <span className="font-semibold">{p.name}</span>
+                <span className="text-black/40 dark:text-white/40 ml-1.5">({p.role})</span>
+                <p className="text-black/60 dark:text-white/60 mt-0.5">{p.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </Section>
 
       <Section title="Oferta">
         <ListField label="Produtos" items={offer.products} />
         <ListField label="Serviços" items={offer.services} />
-        <ListField
-          label="Diferenciais"
-          items={offer.uniqueSellingPoints}
-        />
-        {offer.pricingHint && (
-          <Field label="Sugestão de preço" value={offer.pricingHint} />
+        <ListField label="Diferenciais" items={offer.uniqueSellingPoints} />
+        {offer.pricingHint && <Field label="Sugestão de preço" value={offer.pricingHint} />}
+        {offer.category && <Field label="Categoria" value={offer.category} />}
+        {offer.topCompetitors?.length > 0 && (
+          <ListField label="Principais concorrentes" items={offer.topCompetitors} />
         )}
       </Section>
 
       <Section title="Identidade Visual">
         <ListField label="Cores" items={visual.colors} />
         <Field label="Estilo" value={visual.style} />
-        {visual.typographyHint && (
-          <Field label="Dica tipográfica" value={visual.typographyHint} />
-        )}
+        {visual.typographyHint && <Field label="Dica tipográfica" value={visual.typographyHint} />}
+        {visual.imageryStyle && <Field label="Estilo de imagens" value={visual.imageryStyle} />}
       </Section>
 
       <Section title="Diretrizes">
         <ListField label="Fazer" items={constraints.do} />
         <ListField label="Evitar" items={constraints.avoid} />
-        <ListField
-          label="Elementos obrigatórios"
-          items={constraints.requiredElements}
-        />
+        <ListField label="Elementos obrigatórios" items={constraints.requiredElements} />
       </Section>
 
-      {/* Messaging */}
-      {messaging && (messaging.brandValues?.length > 0 || messaging.brandStory || messaging.messagingPillars?.length > 0 || messaging.keyCTAs?.length > 0) && (
-        <Section title="Comunicação da Marca">
-          <ListField label="Valores da marca" items={messaging.brandValues} />
-          {messaging.brandStory && <div className="mb-1.5 italic">&ldquo;{messaging.brandStory}&rdquo;</div>}
+      {messaging && (messaging.messagingPillars?.length > 0 || messaging.keyMessages?.length > 0) && (
+        <Section title="Messaging">
           <ListField label="Pilares de comunicação" items={messaging.messagingPillars} />
-          <ListField label="Chamadas para ação" items={messaging.keyCTAs} />
-          <ListField label="Gatilhos emocionais" items={messaging.emotionalTriggers} />
+          <ListField label="Mensagens-chave" items={messaging.keyMessages} />
+          {messaging.callToActionStyle && <Field label="Estilo de CTA" value={messaging.callToActionStyle} />}
         </Section>
       )}
 
-      {/* Competitors */}
-      {messaging?.competitors && messaging.competitors.length > 0 && (
-        <Section title="Concorrentes Identificados">
-          <ListField label="" items={messaging.competitors} />
-        </Section>
-      )}
-
-      {/* Content Guidelines */}
-      {contentGuidelines && (contentGuidelines.postLengthHint || contentGuidelines.emojiUsage || contentGuidelines.hashtagStrategy?.length > 0 || contentGuidelines.contentMix?.length > 0 || contentGuidelines.bestPractices?.length > 0) && (
+      {contentGuidelines && (contentGuidelines.preferredFormats?.length > 0 || contentGuidelines.hashtagsStrategy || contentGuidelines.emojiUsage) && (
         <Section title="Diretrizes de Conteúdo">
-          {contentGuidelines.postLengthHint && <Field label="Tamanho dos posts" value={contentGuidelines.postLengthHint} />}
+          <ListField label="Formatos preferidos" items={contentGuidelines.preferredFormats} />
+          {contentGuidelines.hashtagsStrategy && <Field label="Estratégia de hashtags" value={contentGuidelines.hashtagsStrategy} />}
           {contentGuidelines.emojiUsage && <Field label="Uso de emojis" value={contentGuidelines.emojiUsage} />}
-          <ListField label="Estratégia de hashtags" items={contentGuidelines.hashtagStrategy} />
-          <ListField label="Mix de conteúdo" items={contentGuidelines.contentMix} />
-          <ListField label="Melhores práticas" items={contentGuidelines.bestPractices} />
         </Section>
       )}
 
       {confidence && (
         <Section title="Confiança">
-          <Field label="Geral" value={`${(confidence.overall * 100).toFixed(0)}%`} />
-          <Field
-            label="Textual"
-            value={`${(confidence.textual * 100).toFixed(0)}%`}
-          />
-          <Field
-            label="Visual"
-            value={`${(confidence.visual * 100).toFixed(0)}%`}
-          />
-          <Field
-            label="Comercial"
-            value={`${(confidence.commercial * 100).toFixed(0)}%`}
-          />
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              ['Geral', confidence.overall],
+              ['Textual', confidence.textual],
+              ['Visual', confidence.visual],
+              ['Comercial', confidence.commercial],
+              ['Messaging', confidence.messaging],
+              ['Valores', confidence.brandValues],
+            ] as [string, number][]).map(([label, val]) => (
+              <div key={label} className="text-center">
+                <div className="text-[11px] text-textItemBlur">{label}</div>
+                <div className={`text-[14px] font-bold ${val >= 0.7 ? 'text-emerald-600' : val >= 0.4 ? 'text-amber-600' : 'text-red-600'}`}>
+                  {(val * 100).toFixed(0)}%
+                </div>
+              </div>
+            ))}
+          </div>
         </Section>
       )}
 

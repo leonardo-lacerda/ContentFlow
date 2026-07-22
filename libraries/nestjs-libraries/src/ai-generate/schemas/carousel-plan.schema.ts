@@ -6,6 +6,7 @@ export const VERSION = '1.0.0';
 
 const SlideSchema = z.object({
   index: z.number().int().min(0).describe('Zero-based slide index'),
+  role: z.enum(['cover', 'content', 'recap', 'cta']).nullable().optional().describe('Slide role: cover, content, recap, or cta'),
   headline: z.string().describe('The slide headline/title'),
   body: z.string().describe('The slide body text'),
   cta: z.string().nullable().optional().describe('Call-to-action text for this slide'),

@@ -118,7 +118,7 @@ export const BrandSelector: FC = () => {
           </div>
           <div className="p-1 border-t border-newTableBorder">
             <Link
-              href="/brand"
+              href="/brands"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 px-3 py-2 text-[12px] font-medium text-textItemBlur hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-[6px] transition-colors"
             >

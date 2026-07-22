@@ -38,6 +38,20 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     <html>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+        <link
+          href="https://cdn.jsdelivr.net/fontsource/css/anton@latest/index.css"
+          rel="stylesheet"
+        />
+        <link
+          href="https://cdn.jsdelivr.net/fontsource/css/schibsted-grotesk@latest/index.css"
+          rel="stylesheet"
+        />
+        <link
+          href="https://cdn.jsdelivr.net/fontsource/css/space-mono@latest/index.css"
+          rel="stylesheet"
+        />
+        <link rel="stylesheet" href="/landing-styles.css" />
       </head>
       <body
         className={clsx(
