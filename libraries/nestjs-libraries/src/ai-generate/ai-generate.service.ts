@@ -1473,12 +1473,17 @@ Score geral = média das 9 dimensões × 20. Dimensões CRITICAL (focalHierarchy
             lastError = undefined;
             break;
           } catch (error: unknown) {
-            lastError =
-              error instanceof HttpException
-                ? String(error.getResponse())
-                : error instanceof Error
-                ? error.message
-                : 'Image generation failed';
+            if (error instanceof HttpException) {
+              const res = error.getResponse();
+              lastError =
+                typeof res === 'string'
+                  ? res
+                  : (res as { message?: string })?.message || error.message;
+            } else if (error instanceof Error) {
+              lastError = error.message;
+            } else {
+              lastError = 'Image generation failed';
+            }
 
             if (attempt < maxRetries - 1) {
               const delay = backoffMs[attempt] || 16000;
@@ -1537,6 +1542,9 @@ Score geral = média das 9 dimensões × 20. Dimensões CRITICAL (focalHierarchy
       reference_mode: referenceModeRaw,
       input_fidelity: _inputFidelity,
       persist,
+      // brandProfileId é metadado interno; nunca deve ir para o provider de
+      // imagem (OpenAI rejeita parâmetros desconhecidos com 400).
+      brandProfileId: _brandProfileId,
       ...requestBody
     } = body;
     const referenceMode: 'brand' | 'balanced' | 'inspiration' =
