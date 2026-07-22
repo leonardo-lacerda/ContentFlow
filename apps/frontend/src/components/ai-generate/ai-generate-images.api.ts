@@ -384,6 +384,31 @@ export const aiGenerateImagesApi = {
     payload
   ),
 
+  // Etapa 2 — Direção de Arte por LLM: expande os briefings crus dos slides
+  // em render briefs cinematográficos amarrados a um conceito de campanha.
+  artDirectCarousel: async (
+    fetcher: AiGenerateFetcher,
+    payload: {
+      title?: string;
+      imageStyleGuide?: string;
+      directionSummary?: string;
+      brandName?: string;
+      brandColors?: string;
+      textModel?: string;
+      slides: Array<{
+        index: number;
+        headline?: string;
+        body?: string;
+        cta?: string;
+        imagePrompt?: string;
+      }>;
+    }
+  ) =>
+    postJson<{
+      campaignConcept: string;
+      slides: Array<{ index: number; renderBrief: string }>;
+    }>(fetcher, '/ai-generate/art-direction', payload),
+
   createImageJob: async (
     fetcher: AiGenerateFetcher,
     slides: Array<{ slideIndex: number; request: Record<string, unknown> }>

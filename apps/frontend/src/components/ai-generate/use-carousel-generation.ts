@@ -17,6 +17,7 @@ import {
 import { buildLimitedBrief, compactText } from './ai-generate-images.utils';
 import { aiGenerateImagesApi } from './ai-generate-images.api';
 import { ensureSlideIds } from './slide-operations';
+import { summarizeDirection } from './direction-compiler';
 import type { DirectionSpec } from './direction-compiler';
 import { trackTemplateUsage } from './template-registry';
 
@@ -613,10 +614,64 @@ export function useCarouselGeneration(
         return;
       }
 
+      // ── Etapa 2: Direção de Arte por LLM ──────────────────────────────
+      // Antes de montar os prompts, um modelo de texto atua como diretor de
+      // arte: inventa um conceito de campanha e expande o briefing de cada
+      // slide em um render brief cinematográfico e único. Best-effort — se a
+      // chamada falhar, seguimos com os imagePrompts originais do plano.
+      let renderBriefBySlide = new Map<number, string>();
+      let campaignConcept = '';
+      try {
+        const artDirection = await aiGenerateImagesApi.artDirectCarousel(
+          fetch,
+          {
+            title: plan.title,
+            imageStyleGuide: plan.imageStyleGuide,
+            directionSummary: summarizeDirection(
+              effectiveDirectionSpec,
+              platform
+            ),
+            brandName,
+            brandColors,
+            textModel: trimmedTextModel || undefined,
+            slides: plan.slides.map((slide) => ({
+              index: slide.index,
+              headline: slide.headline,
+              body: slide.body,
+              cta: slide.cta,
+              imagePrompt: slide.imagePrompt,
+            })),
+          }
+        );
+        if (artDirection.ok && artDirection.data?.slides?.length) {
+          campaignConcept = artDirection.data.campaignConcept || '';
+          renderBriefBySlide = new Map(
+            artDirection.data.slides.map((item) => [
+              item.index,
+              item.renderBrief,
+            ])
+          );
+        }
+      } catch {
+        // Direção de arte é um upgrade de qualidade, nunca um bloqueio.
+      }
+
       const slides = plan.slides.map((slide) => {
+        const renderBrief = renderBriefBySlide.get(slide.index);
+        // O render brief substitui o imagePrompt cru como "cena deste slide";
+        // o conceito da campanha entra junto para amarrar a família visual.
+        const effectiveSlide = renderBrief
+          ? {
+              ...slide,
+              imagePrompt: campaignConcept
+                ? `Conceito assinatura da campanha: ${campaignConcept}\n${renderBrief}`
+                : renderBrief,
+            }
+          : slide;
+
         const requestBody: Record<string, unknown> = {
           provider: imageProvider,
-          prompt: buildSlidePromptFor(slide),
+          prompt: buildSlidePromptFor(effectiveSlide),
           model: trimmedImageModel,
           n: 1,
           brandProfileId,

@@ -1350,6 +1350,175 @@ Score geral = média das 9 dimensões × 20. Dimensões CRITICAL (focalHierarchy
     return result;
   }
 
+  // ─── Etapa de Direção de Arte (LLM) ─────────────────────────────────────
+  // Passe intermediário entre o plano e a geração de imagens: um modelo de
+  // texto expande o imagePrompt de cada slide em um "render brief" vívido e
+  // específico, todos derivados de um único conceito de campanha. Custo baixo
+  // (uma chamada de texto) e ganho alto de qualidade/variedade visual.
+  async artDirectCarousel(
+    orgId: string,
+    body: {
+      title?: string;
+      imageStyleGuide?: string;
+      directionSummary?: string;
+      brandName?: string;
+      brandColors?: string;
+      textModel?: string;
+      slides?: Array<{
+        index?: number;
+        headline?: string;
+        body?: string;
+        cta?: string;
+        imagePrompt?: string;
+      }>;
+    }
+  ) {
+    const slides = (Array.isArray(body.slides) ? body.slides : [])
+      .map((slide, position) => ({
+        index: Number(slide.index || position + 1),
+        headline: (slide.headline || '').slice(0, 200),
+        body: (slide.body || '').slice(0, 300),
+        cta: (slide.cta || '').slice(0, 120),
+        imagePrompt: (slide.imagePrompt || '').slice(0, 600),
+      }))
+      .slice(0, 12);
+
+    if (!slides.length) {
+      throw new HttpException(
+        'At least one slide is required for art direction',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    const openAiApiKey =
+      process.env.AI_GENERATE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+    const openAiBaseUrl =
+      process.env.AI_GENERATE_OPENAI_BASE_URL?.replace(/\/$/, '') ||
+      'https://api.openai.com';
+
+    if (!openAiApiKey) {
+      throw new HttpException(
+        'OpenAI official API is not configured',
+        HttpStatus.SERVICE_UNAVAILABLE
+      );
+    }
+
+    const resolvedModel =
+      body.textModel?.trim() ||
+      process.env.AI_GENERATE_OPENAI_TEXT_MODEL ||
+      'gpt-4.1-mini';
+    const timeoutMs = Number(process.env.AI_GENERATE_TIMEOUT_MS || 120000);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(`${openAiBaseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${openAiApiKey}`,
+        },
+        body: JSON.stringify({
+          model: resolvedModel,
+          temperature: 0.9,
+          response_format: { type: 'json_object' },
+          user: orgId,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Voce e um diretor de arte premiado (Cannes Lions, D&AD) especializado em social media de alto nivel. Sua funcao: transformar briefings crus de slides em RENDER BRIEFS cinematograficos para um modelo de geracao de imagem — descricoes vividas, especificas e declarativas da arte final, como se voce descrevesse uma peca ja pronta pendurada na parede do estudio.\n\nPRINCIPIOS:\n- Primeiro invente UM conceito criativo de campanha: uma metafora visual ou dispositivo grafico assinatura, especifico do tema (nunca generico), que se repete e EVOLUI slide a slide.\n- Cada render brief descreve UMA cena unica: objeto focal proprio, enquadramento proprio, dispositivo grafico proprio. Slides irmaos jamais repetem fundo ou composicao.\n- Escreva em linguagem visual concreta: materiais, texturas, iluminacao, angulo de camera, profundidade, acabamento. "Uma engrenagem de latao fotografada de topo sobre feltro grafite, sombra dura as 14h" — nao "imagem moderna de engrenagem".\n- Respeite rigorosamente a paleta e o design system informados; o acento cobre ~10% da area.\n- Reserve SEMPRE uma zona de respiro clara para a tipografia entrar depois (indique onde: tercio superior, faixa inferior, coluna esquerda...).\n- Anti-AI-look: proibido gradiente roxo/azul generico, glow neon em branco, blobs 3D brilhantes, tudo centralizado, pessoas com cara de banco de imagem.\n\nResponda somente JSON valido, sem markdown.',
+            },
+            {
+              role: 'user',
+              content: `Campanha: ${body.title || 'carrossel de redes sociais'}
+Marca: ${body.brandName || 'nao informada'}
+Paleta da marca: ${body.brandColors || 'livre, desde que coesa'}
+Design system escolhido: ${body.directionSummary || 'editorial premium'}
+Guia visual do plano: ${body.imageStyleGuide || 'nao informado'}
+
+Slides (briefings crus):
+${JSON.stringify(slides, null, 2)}
+
+Tarefa: crie o conceito criativo da campanha e, para CADA slide, um render brief de 60-110 palavras derivado desse conceito. O slide 1 e a CAPA (cena mais ousada, gancho visual maximo); o ultimo e o FECHAMENTO (composicao estavel conduzindo ao CTA); os demais sao CONTEUDO com diagramacoes distintas entre si.\n\nRetorne exatamente:\n{\n  "campaignConcept": "o conceito assinatura em 1-2 frases especificas",\n  "slides": [\n    { "index": 1, "renderBrief": "descricao vivida da cena final, com objeto focal, material/textura, iluminacao, enquadramento, dispositivo grafico do conceito e zona de respiro para o texto" }\n  ]\n}\n\nUse pt-BR. Um render brief por slide, indices iguais aos de entrada.`,
+            },
+          ],
+        }),
+        signal: controller.signal,
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        choices?: Array<{ message?: { content?: string } }>;
+        usage?: Record<string, unknown>;
+        message?: string;
+        error?: { message?: string } | string;
+      };
+
+      if (!response.ok) {
+        const errorMessage =
+          data.message ||
+          (typeof data.error === 'string' ? data.error : data.error?.message) ||
+          'Art direction failed';
+        const status =
+          response.status < 500 ? response.status : HttpStatus.BAD_GATEWAY;
+        throw new HttpException(errorMessage, status);
+      }
+
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) {
+        throw new HttpException(
+          'OpenAI did not return art direction content',
+          HttpStatus.BAD_GATEWAY
+        );
+      }
+
+      const parsed = parseJsonPayload(content);
+      const rawSlides = Array.isArray(parsed.slides) ? parsed.slides : [];
+      const briefs = rawSlides
+        .map((item) => {
+          const record = item as Record<string, unknown>;
+          return {
+            index: Number(record.index) || 0,
+            renderBrief: firstString(record.renderBrief).slice(0, 1400),
+          };
+        })
+        .filter((item) => item.index > 0 && item.renderBrief.trim());
+
+      const result = {
+        campaignConcept: firstString(parsed.campaignConcept).slice(0, 600),
+        slides: briefs,
+        provider: 'openai_official',
+        model: resolvedModel,
+        usage: data.usage,
+        cost_estimate: estimateCostInUsdAndBrl(data.usage),
+      };
+      this.recordCost(
+        orgId,
+        'text',
+        `Direção de arte: ${(body.title || 'carrossel').slice(0, 80)}`,
+        result.cost_estimate
+      );
+      return result;
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new HttpException(
+          'Art direction request timed out',
+          HttpStatus.GATEWAY_TIMEOUT
+        );
+      }
+      throw new HttpException(
+        'Unable to reach OpenAI for art direction',
+        HttpStatus.BAD_GATEWAY
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async startCarouselImageJob(
     orgId: string,
     body: { slides?: Array<{ slideIndex?: number; request?: AiGenerateImageDto }> }

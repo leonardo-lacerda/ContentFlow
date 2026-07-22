@@ -218,6 +218,29 @@ export class AiGenerateController {
     return this._aiGenerateService.getCostHistory(org.id);
   }
 
+  @Post('/art-direction')
+  artDirectCarousel(
+    @GetOrgFromRequest() org: Organization,
+    @Body()
+    body: {
+      title?: string;
+      imageStyleGuide?: string;
+      directionSummary?: string;
+      brandName?: string;
+      brandColors?: string;
+      textModel?: string;
+      slides?: Array<{
+        index?: number;
+        headline?: string;
+        body?: string;
+        cta?: string;
+        imagePrompt?: string;
+      }>;
+    }
+  ) {
+    return this._aiGenerateService.artDirectCarousel(org.id, body);
+  }
+
   @Post('/carousel-image-jobs')
   startCarouselImageJob(
     @GetOrgFromRequest() org: Organization,
