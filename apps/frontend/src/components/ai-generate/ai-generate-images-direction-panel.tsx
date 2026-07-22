@@ -589,8 +589,8 @@ export function DirectionPanel(props: DirectionPanelProps) {
         </div>
       )}
 
-      <div className="grid gap-[16px] md:grid-cols-[1fr_280px]">
-      <div className="flex flex-col gap-[16px] rounded-[14px] border border-black/10 bg-stone-50 p-[16px] dark:border-white/10 dark:bg-black/20">
+      <div className="flex flex-col items-stretch gap-[16px] md:flex-row md:items-start">
+      <div className="flex min-w-0 flex-1 flex-col gap-[16px] rounded-[14px] border border-black/10 bg-stone-50 p-[16px] dark:border-white/10 dark:bg-black/20">
         <AxisRow
           axisKey="editorial"
           title="Estilo editorial"
@@ -647,7 +647,7 @@ export function DirectionPanel(props: DirectionPanelProps) {
         />
       </div>
 
-        <div className="md:sticky md:top-[16px] flex justify-center self-start">
+        <div className="flex justify-center self-start md:sticky md:top-[16px] md:w-[280px] md:shrink-0">
           <SlidePreview
             spec={spec}
             brandColors={brandColors}
