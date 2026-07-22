@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { inputClass } from './ai-generate-images.constants';
-import { formatCurrency } from './ai-generate-images.utils';
+import { formatCurrency, recommendsDesignSystem } from './ai-generate-images.utils';
 import { AnimatedDots, IndeterminateBar, Spinner } from './ai-generate-images.loaders';
 import { DesignLivePreview } from './design-live-preview';
 import type {
@@ -42,6 +42,8 @@ type ImageGenerationPanelProps = {
   imageJobProgress: number;
   imageModel: string;
   imageProvider: 'ia_generate' | 'openai_official';
+  imageQuality: 'draft' | 'final';
+  setImageQuality: (value: 'draft' | 'final') => void;
   includePdfExport: boolean;
   isOverSoftLimit: boolean;
   isOverUserLimit: boolean;
@@ -95,6 +97,8 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
     imageJobProgress,
     imageModel,
     imageProvider,
+    imageQuality,
+    setImageQuality,
     plan,
     preflightEstimate,
     projectedCostBrl,
@@ -124,6 +128,11 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
   } = props;
 
   const hasGeneratedImages = Object.keys(slideImages).length > 0;
+  // D — sugere o modo sem custo de imagem quando o conteúdo é template-friendly.
+  const designSystemHint =
+    renderMode !== 'design_system'
+      ? recommendsDesignSystem(plan)
+      : { recommend: false, reason: '' };
 
   const handleCreatePost = async () => {
     setNavigating(true);
@@ -200,6 +209,44 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
                 ? 'A IA cria só o fundo (sem texto); a tipografia entra por cima em HTML — texto sempre nítido e no lugar.'
                 : 'Modelo de imagem com texto baked-in (fluxo clássico).'}
             </p>
+
+            {/* A — Qualidade por estágio (só nos modos que gastam tokens) */}
+            {renderMode !== 'design_system' && (
+              <div className="mt-[4px] flex flex-col gap-[6px]">
+                <span className="text-[13px] font-[500]">Qualidade</span>
+                <div className="flex flex-wrap gap-[8px]">
+                  <button
+                    type="button"
+                    onClick={() => setImageQuality('draft')}
+                    className={`rounded-[10px] border px-[12px] py-[8px] text-[13px] font-[600] transition ${
+                      imageQuality === 'draft'
+                        ? 'border-stone-800 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-black'
+                        : 'border-black/10 bg-white text-black/70 dark:border-white/15 dark:bg-transparent dark:text-white/70'
+                    }`}
+                  >
+                    Rascunho · barato
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageQuality('final')}
+                    className={`rounded-[10px] border px-[12px] py-[8px] text-[13px] font-[600] transition ${
+                      imageQuality === 'final'
+                        ? 'border-stone-800 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-black'
+                        : 'border-black/10 bg-white text-black/70 dark:border-white/15 dark:bg-transparent dark:text-white/70'
+                    }`}
+                  >
+                    Final · alta
+                  </button>
+                </div>
+                <p className="text-[12px] text-black/55 dark:text-white/55">
+                  {imageQuality === 'draft'
+                    ? 'Gera em baixa resolução (~7x mais barato) para você escolher a composição antes de investir no final.'
+                    : renderMode === 'ai_hybrid'
+                    ? 'Fundo em qualidade média — o texto nítido vem do HTML, então não precisa de alta.'
+                    : 'Qualidade máxima do modelo (texto queimado na imagem precisa de nitidez).'}
+                </p>
+              </div>
+            )}
           </div>
           {renderMode === 'design_system' ? (
             <div className="grid grid-cols-1 gap-[12px] sm:grid-cols-2">
@@ -228,6 +275,22 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
               </label>
             </div>
           ) : null}
+
+          {/* D — dica de economia: rotear conteúdo template-friendly */}
+          {designSystemHint.recommend && (
+            <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-[10px] rounded-[12px] border border-emerald-500/30 bg-emerald-500/10 px-[14px] py-[10px]">
+              <span className="text-[12px] font-[600] text-emerald-700 dark:text-emerald-200">
+                💡 {designSystemHint.reason}
+              </span>
+              <button
+                type="button"
+                onClick={() => setRenderMode('design_system')}
+                className="shrink-0 rounded-[8px] border border-emerald-500/40 bg-emerald-500/15 px-[12px] py-[6px] text-[12px] font-[800] text-emerald-800 transition hover:bg-emerald-500/25 dark:text-emerald-100"
+              >
+                Usar Sistema de design
+              </button>
+            </div>
+          )}
 
           {/* Fase 1 — preview verdadeiro (mesmo HTML do PNG final) */}
           {renderMode === 'design_system' && plan?.slides?.length ? (

@@ -15,7 +15,12 @@ import {
   MAX_CAROUSEL_SLIDES,
   MIN_CAROUSEL_SLIDES,
 } from './ai-generate-images.constants';
-import { buildLimitedBrief, compactText } from './ai-generate-images.utils';
+import {
+  buildLimitedBrief,
+  compactText,
+  resolveImageQuality,
+  slideGenerationSignature,
+} from './ai-generate-images.utils';
 import { aiGenerateImagesApi } from './ai-generate-images.api';
 import { ensureSlideIds } from './slide-operations';
 import { summarizeDirection } from './direction-compiler';
@@ -49,6 +54,13 @@ export interface UseCarouselGenerationParams {
   trimmedTextModel: string;
   imageProvider: 'ia_generate' | 'openai_official';
   trimmedImageModel: string;
+  /** Estágio de qualidade (A): draft = low, final = medium/high por modo. */
+  imageQuality: import('./ai-generate-images.utils').ImageQualityStage;
+  /** Dedupe (C): assinaturas de input dos slides já gerados. */
+  slideImageHashes: Record<string, string>;
+  setSlideImageHashes: React.Dispatch<
+    React.SetStateAction<Record<string, string>>
+  >;
   /** Render path: AI image / HTML design system / híbrido (IA + texto HTML) */
   renderMode: CarouselRenderMode;
   designRecipe: import('./ai-generate-images.types').DesignRecipe | null;
@@ -149,6 +161,9 @@ export function useCarouselGeneration(
     trimmedTextModel,
     imageProvider,
     trimmedImageModel,
+    imageQuality,
+    slideImageHashes,
+    setSlideImageHashes,
     renderMode,
     designRecipe,
     designSizeId,
@@ -195,6 +210,23 @@ export function useCarouselGeneration(
     saveSnapshot,
     editorialReview,
   } = params;
+
+  // Qualidade efetiva (A/B) para o modo/estágio atuais.
+  const effectiveQuality = () => resolveImageQuality(renderMode, imageQuality);
+
+  // Assinatura de input do slide (C): muda quando copy, cena, direção, modo,
+  // qualidade ou cores mudam — é o que decide se um slide precisa re-gerar.
+  const signatureFor = (slide: CarouselSlide) =>
+    slideGenerationSignature({
+      headline: slide.headline,
+      body: slide.body,
+      cta: slide.cta,
+      imagePrompt: slide.imagePrompt,
+      renderMode,
+      quality: effectiveQuality() || '',
+      directionKey: summarizeDirection(effectiveDirectionSpec, platform),
+      brandColors,
+    });
 
   // ── Fase 2 (híbrido): contrato de composição enviado ao backend ─────────
   // Copy + marca que o HybridComposeService deita por cima do fundo da IA.
@@ -573,24 +605,47 @@ export function useCarouselGeneration(
       return;
     }
 
+    // Dedupe (C): no modo imagem, só re-geramos slides cujo input mudou. Slides
+    // com imagem e mesma assinatura são reaproveitados — não re-pagam tokens.
+    // (design_system é barato/local, então sempre re-renderiza tudo.)
+    const isImageMode =
+      renderMode === 'ai_image' || renderMode === 'ai_hybrid';
+    const slidesToGenerate = isImageMode
+      ? plan.slides.filter(
+          (slide) =>
+            !slideImages[slide.id]?.image ||
+            slideImageHashes[slide.id] !== signatureFor(slide)
+        )
+      : plan.slides;
+
+    if (isImageMode && !slidesToGenerate.length) {
+      setError(
+        'Nada mudou desde a última geração — as imagens atuais já estão atualizadas.'
+      );
+      return;
+    }
+
     setGeneratingImages(true);
     setError('');
     setImageJob(null);
     setSlideImageHistory((current) => {
       const next = { ...current };
-      Object.entries(slideImages).forEach(([slideId, result]) => {
+      slidesToGenerate.forEach((slide) => {
+        const result = slideImages[slide.id];
         if (result?.image) {
-          next[slideId] = [...(next[slideId] || []), result].slice(-6);
+          next[slide.id] = [...(next[slide.id] || []), result].slice(-6);
         }
       });
       return next;
     });
-    setSlideImages(
-      plan.slides.reduce<Record<string, SlideImageResult>>((acc, slide) => {
-        acc[slide.id] = {};
-        return acc;
-      }, {})
-    );
+    // Limpa apenas os slides que serão regenerados; preserva os reaproveitados.
+    setSlideImages((current) => {
+      const next = { ...current };
+      slidesToGenerate.forEach((slide) => {
+        next[slide.id] = {};
+      });
+      return next;
+    });
     setSavedCarouselCount(0);
 
     try {
@@ -664,7 +719,7 @@ export function useCarouselGeneration(
             brandName,
             brandColors,
             textModel: trimmedTextModel || undefined,
-            slides: plan.slides.map((slide) => ({
+            slides: slidesToGenerate.map((slide) => ({
               index: slide.index,
               headline: slide.headline,
               body: slide.body,
@@ -687,7 +742,8 @@ export function useCarouselGeneration(
       }
 
       const isHybrid = renderMode === 'ai_hybrid';
-      const slides = plan.slides.map((slide) => {
+      const quality = effectiveQuality();
+      const slides = slidesToGenerate.map((slide) => {
         const renderBrief = renderBriefBySlide.get(slide.index);
         // O render brief substitui o imagePrompt cru como "cena deste slide";
         // o conceito da campanha entra junto para amarrar a família visual.
@@ -711,6 +767,11 @@ export function useCarouselGeneration(
           n: 1,
           brandProfileId,
         };
+
+        // Economia (A/B): qualidade por estágio/modo.
+        if (quality) {
+          requestBody.quality = quality;
+        }
 
         if (isHybrid) {
           requestBody.compose = buildComposePayload(slide);
@@ -738,6 +799,15 @@ export function useCarouselGeneration(
         setGeneratingImages(false);
         return;
       }
+
+      // Registra as assinaturas dos slides despachados (dedupe futuro).
+      setSlideImageHashes((current) => {
+        const next = { ...current };
+        slidesToGenerate.forEach((slide) => {
+          next[slide.id] = signatureFor(slide);
+        });
+        return next;
+      });
 
       setImageJob(data);
     } catch (err) {
@@ -772,6 +842,7 @@ export function useCarouselGeneration(
 
     try {
       const isHybrid = renderMode === 'ai_hybrid';
+      const quality = effectiveQuality();
       const requestBody: Record<string, unknown> = {
         provider: imageProvider,
         prompt: isHybrid
@@ -781,6 +852,10 @@ export function useCarouselGeneration(
         n: 1,
         brandProfileId,
       };
+
+      if (quality) {
+        requestBody.quality = quality;
+      }
 
       if (isHybrid) {
         requestBody.compose = buildComposePayload(slide);
@@ -823,6 +898,11 @@ export function useCarouselGeneration(
           background: result.background,
           cost_estimate: result.cost_estimate,
         },
+      }));
+      // Dedupe (C): registra a assinatura para o lote reaproveitar este slide.
+      setSlideImageHashes((current) => ({
+        ...current,
+        [slide.id]: signatureFor(slide),
       }));
       await loadCostHistory();
     } catch (err) {

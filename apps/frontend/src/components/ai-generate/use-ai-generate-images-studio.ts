@@ -115,6 +115,16 @@ export function useAiGenerateImagesStudio() {
     'ia_generate' | 'openai_official'
   >('openai_official');
   const [imageModel, setImageModel] = useState('gpt-image-2');
+  // Estágio de qualidade (A): 'draft' = low (barato p/ escolher), 'final' =
+  // qualidade adequada ao modo (high na IA pura, medium no híbrido).
+  const [imageQuality, setImageQuality] = useState<
+    import('./ai-generate-images.utils').ImageQualityStage
+  >('final');
+  // Dedupe (C): assinatura do input de cada slide já gerado — evita re-pagar
+  // por slides que não mudaram no próximo "Gerar as artes".
+  const [slideImageHashes, setSlideImageHashes] = useState<
+    Record<string, string>
+  >({});
   const [renderMode, setRenderMode] = useState<
     import('./ai-generate-images.types').CarouselRenderMode
   >('design_system');
@@ -861,6 +871,9 @@ export function useAiGenerateImagesStudio() {
     trimmedTextModel,
     imageProvider,
     trimmedImageModel,
+    imageQuality,
+    slideImageHashes,
+    setSlideImageHashes,
     renderMode,
     designRecipe,
     designSizeId,
@@ -1492,6 +1505,8 @@ export function useAiGenerateImagesStudio() {
     imageJobProgress,
     imageModel,
     imageProvider,
+    imageQuality,
+    setImageQuality,
     renderMode,
     setRenderMode,
     designRecipe,

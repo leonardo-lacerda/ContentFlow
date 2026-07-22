@@ -32,6 +32,119 @@ export function imagePayload(image?: GeneratedImage) {
   );
 }
 
+// ─── Economia de tokens ─────────────────────────────────────────────────
+// Qualidade por estágio × modo de render. O rascunho usa 'low' (~7x mais
+// barato) para escolher composição; o final usa a qualidade adequada ao modo:
+// 'high' na imagem pura (texto queimado precisa de nitidez) e 'medium' no
+// híbrido (o texto vem do HTML, então o fundo não precisa de alta).
+export type ImageQualityStage = 'draft' | 'final';
+
+export function resolveImageQuality(
+  renderMode: 'ai_image' | 'design_system' | 'ai_hybrid',
+  stage: ImageQualityStage
+): 'low' | 'medium' | 'high' | undefined {
+  if (renderMode === 'design_system') {
+    return undefined; // sem tokens de imagem
+  }
+  if (stage === 'draft') {
+    return 'low';
+  }
+  return renderMode === 'ai_hybrid' ? 'medium' : 'high';
+}
+
+// Hash estável e barato (djb2) do INPUT de um slide — usado para reaproveitar
+// imagens de slides que não mudaram entre gerações (dedupe).
+export function stableHash(value: string): string {
+  let hash = 5381;
+  for (let i = 0; i < value.length; i++) {
+    hash = ((hash << 5) + hash + value.charCodeAt(i)) | 0;
+  }
+  return (hash >>> 0).toString(36);
+}
+
+export function slideGenerationSignature(input: {
+  headline: string;
+  body: string;
+  cta: string;
+  imagePrompt: string;
+  renderMode: string;
+  quality?: string;
+  directionKey?: string;
+  brandColors?: string;
+  adjustment?: string;
+}): string {
+  return stableHash(
+    [
+      input.headline,
+      input.body,
+      input.cta,
+      input.imagePrompt,
+      input.renderMode,
+      input.quality || '',
+      input.directionKey || '',
+      input.brandColors || '',
+      input.adjustment || '',
+    ].join('␟')
+  );
+}
+
+// D — Conteúdo que renderiza perfeitamente em template HTML (zero tokens de
+// imagem): listas, comparações, dados/estatísticas e citações. Quando os
+// sinais aparecem, sugerimos o modo "Sistema de design" para economizar.
+export function recommendsDesignSystem(
+  plan: CarouselPlan | null
+): { recommend: boolean; reason: string } {
+  if (!plan?.slides?.length) {
+    return { recommend: false, reason: '' };
+  }
+  const slides = plan.slides;
+  const allText = slides
+    .map((s) => `${s.headline} ${s.body}`)
+    .join(' ')
+    .toLowerCase();
+
+  const numberedLead = slides.filter((s) =>
+    /^\s*(\d{1,2}|passo|dica|item)\b/i.test(s.headline.trim())
+  ).length;
+  const isList = numberedLead >= Math.max(2, Math.ceil(slides.length * 0.4));
+  const isComparison = /\b(vs\.?|versus|antes\s+e\s+depois|comparativo)\b/.test(
+    allText
+  );
+  const statHits = (allText.match(/\d+\s?%|\br\$\s?\d|\d+x\b/g) || []).length;
+  const isStats = statHits >= Math.max(2, Math.ceil(slides.length * 0.5));
+  const isQuote = slides.filter((s) => /["“”].+["“”]/.test(s.headline)).length >= 2;
+
+  if (isList) {
+    return {
+      recommend: true,
+      reason:
+        'Este carrossel é uma lista — templates HTML renderizam listas com tipografia perfeita e sem gastar tokens de imagem.',
+    };
+  }
+  if (isComparison) {
+    return {
+      recommend: true,
+      reason:
+        'Conteúdo de comparação/antes-e-depois fica mais nítido em template HTML — e sem custo de imagem.',
+    };
+  }
+  if (isStats) {
+    return {
+      recommend: true,
+      reason:
+        'Muitos números e dados — o "Sistema de design" renderiza estatísticas com precisão e custo zero de imagem.',
+    };
+  }
+  if (isQuote) {
+    return {
+      recommend: true,
+      reason:
+        'Citações ficam impecáveis em template HTML, sem gastar tokens de imagem.',
+    };
+  }
+  return { recommend: false, reason: '' };
+}
+
 export function formatCurrency(value: number, currency: 'USD' | 'BRL') {
   return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'pt-BR', {
     style: 'currency',
@@ -84,6 +197,14 @@ export type SlideRenderSpec = {
   // alta prioridade na regeneração da imagem.
   adjustment?: string;
 };
+
+// E — Blocos invariantes condensados, idênticos em todos os slides. Como uma
+// única string estável, reduz tokens (versão enxuta do que eram ~8 linhas) e
+// favorece cache de prefixo quando o provedor suportar.
+const CRAFT_LINE =
+  'Craft de estúdio: UM ponto focal dominante (resto em suporte); margens ópticas 6-8%; hierarquia por contraste de escala (chave 3-5x maior); profundidade real (grain fino, gradiente tonal ou sombra tintada — nunca fundo chapado nem preto puro); tipografia com kerning nítido e legível no celular.';
+const ANTI_AI_LINE =
+  'Evite aparência de IA: sem gradiente roxo/azul genérico, glow neon em branco, blobs 3D; sem tudo centralizado com espaçamento mecânico; sem pessoas de banco de imagem ou anatomia estranha; sem emoji como elemento gráfico.';
 
 export function buildSlideImagePrompt(
   plan: CarouselPlan,
@@ -184,18 +305,10 @@ export function buildSlideImagePrompt(
       hasBrandLogos &&
         'Assinatura da marca discreta e consistente, na mesma posição definida pelas diretrizes.',
       '',
-      'ACABAMENTO OBRIGATÓRIO (craft de estúdio):',
-      '- UM ponto focal dominante que captura o olhar em meio segundo; todo o resto em papel de suporte.',
-      '- Margens ópticas generosas (6-8% da largura), alinhamentos intencionais, hierarquia por contraste dramático de escala (elemento-chave 3-5x maior que o secundário).',
-      '- Profundidade e atmosfera reais: grain fino, gradiente tonal sutil ou sombra tintada com a cor do ambiente — nunca fundo chapado sem vida, nunca sombra preta pura.',
-      '- Tipografia com personalidade e kerning profissional; texto nítido e perfeitamente legível em tela de celular.',
-      '',
-      'PROIBIDO NESTA ARTE (nada de aparência de "feito por IA"):',
-      '- gradiente roxo/azul genérico, glow neon sobre fundo branco, blobs 3D brilhantes;',
-      '- tudo centralizado com espaçamentos mecânicos idênticos; molduras decorativas aleatórias;',
-      '- pessoas com cara de banco de imagem ou anatomia estranha; emojis como elementos gráficos;',
-      styleAvoid?.trim() && `- ${styleAvoid.trim()}`,
-      '- qualquer palavra, letra ou número que não esteja no TEXTO OBRIGATÓRIO acima.'
+      CRAFT_LINE,
+      ANTI_AI_LINE,
+      styleAvoid?.trim() && `Evite ainda: ${styleAvoid.trim()}`,
+      'Não inclua nenhuma palavra, letra ou número além do TEXTO OBRIGATÓRIO acima.'
     );
   }
 
@@ -266,14 +379,10 @@ export function buildSlideBackgroundPrompt(
     brandColors?.trim() &&
       `Paleta da marca (fundo dominante, um acento em ~10% da área): ${brandColors.trim()}.`,
     '',
-    'RESERVA PARA A TIPOGRAFIA (obrigatório):',
-    '- Terço inferior e canto inferior-esquerdo CALMOS: sem detalhes de alto contraste, sem elementos pequenos e agitados — é onde o texto vai entrar.',
-    '- Faixa superior (primeiros ~12%) tranquila para rubrica e numeração.',
-    '- O interesse visual principal vive no centro-direita e no terço superior da cena.',
-    '',
+    'RESERVA PARA A TIPOGRAFIA: terço inferior e canto inferior-esquerdo CALMOS (sem detalhes de alto contraste — é onde o texto entra); faixa superior (~12%) tranquila para rubrica/numeração; interesse visual principal no centro-direita e terço superior.',
     'ACABAMENTO: profundidade real (grain fino, gradiente tonal, sombra tintada), um ponto focal claro, atmosfera cinematográfica.',
-    'PROIBIDO: gradiente roxo/azul genérico, glow neon, blobs 3D brilhantes, pessoas com cara de banco de imagem' +
-      (styleAvoid?.trim() ? `, ${styleAvoid.trim()}` : '.'),
+    ANTI_AI_LINE,
+    styleAvoid?.trim() && `Evite ainda: ${styleAvoid.trim()}`,
     brief?.trim() && `\nContexto da marca: ${brief.trim()}`,
     adjustment?.trim() &&
       `AJUSTE PRIORITARIO DO USUARIO (mantendo o fundo sem texto): ${adjustment.trim()}`,

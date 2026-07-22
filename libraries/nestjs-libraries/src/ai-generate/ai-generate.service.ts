@@ -1721,6 +1721,14 @@ Tarefa: crie o conceito criativo da campanha e, para CADA slide, um render brief
       compose,
       ...requestBody
     } = body;
+
+    // Economia (B): no modo híbrido o texto vem do HTML (sempre nítido), então
+    // o FUNDO não precisa de qualidade alta. Se o cliente não travou uma
+    // qualidade, cai para 'medium' — mesma percepção, ~metade dos tokens.
+    if (compose && !requestBody.quality) {
+      requestBody.quality = 'medium';
+    }
+
     const referenceMode: 'brand' | 'balanced' | 'inspiration' =
       referenceModeRaw === 'brand' || referenceModeRaw === 'inspiration'
         ? referenceModeRaw
@@ -2040,7 +2048,7 @@ Use esse brief visual como tempero (composição, enquadramento, textura, ilumin
       },
       provider: 'hybrid_compose',
       model: 'overlay-text@chromium',
-      cost_estimate: null,
+      cost_estimate: null as CostEstimate | null,
     };
   }
 

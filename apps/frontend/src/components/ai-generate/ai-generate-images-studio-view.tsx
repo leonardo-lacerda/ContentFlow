@@ -94,6 +94,8 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     imageJobProgress,
     imageModel,
     imageProvider,
+    imageQuality,
+    setImageQuality,
     renderMode,
     setRenderMode,
     importProjectInputRef,
@@ -554,6 +556,8 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
               imageJobProgress={imageJobProgress}
               imageModel={imageModel}
               imageProvider={imageProvider}
+              imageQuality={imageQuality}
+              setImageQuality={setImageQuality}
               renderMode={renderMode}
               designSizeId={designSizeId}
               designHandle={designHandle}
