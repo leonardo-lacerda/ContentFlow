@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { AiGenerateService } from '@gitroom/nestjs-libraries/ai-generate/ai-generate.service';
@@ -255,6 +256,10 @@ export class AiGenerateController {
     return this._aiGenerateService.startCarouselImageJob(org.id, body);
   }
 
+  // Polling de progresso (a cada ~2.5s pelo frontend): isento do rate limit
+  // global de 30/h por rota, senão a leitura do progresso estoura o limite
+  // antes de as imagens terminarem e a fila trava em 0% (HTTP 429).
+  @SkipThrottle()
   @Get('/carousel-image-jobs/:id')
   getCarouselImageJob(
     @GetOrgFromRequest() org: Organization,
@@ -300,6 +305,8 @@ export class AiGenerateController {
     return this._designJobs.startJob(org.id, body);
   }
 
+  // Mesmo caso do polling de imagens: isento do rate limit global.
+  @SkipThrottle()
   @Get('/carousel-design-jobs/:id')
   getCarouselDesignJob(
     @GetOrgFromRequest() org: Organization,
