@@ -36,7 +36,8 @@ export function formatCurrency(value: number, currency: 'USD' | 'BRL') {
   return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'pt-BR', {
     style: 'currency',
     currency,
-    maximumFractionDigits: 6,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value);
 }
 
