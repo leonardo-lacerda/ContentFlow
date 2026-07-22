@@ -282,14 +282,24 @@ export const buildDirectionRenderSpec = (
   context: { brandColors?: string; brief?: string } = {}
 ): SlideRenderSpec => {
   const fragments = resolveDirectionFragments(spec);
+  const editorialOption = findDirectionOption(editorialPresets, spec.editorial);
+  const compositionOption = findDirectionOption(
+    compositionPresets,
+    spec.composition
+  );
 
   return {
     structureLayout: [fragments.composition, fragments.hierarchy]
       .filter(Boolean)
       .join(' '),
+    // Variações de diagramação do sistema escolhido: o builder rotaciona pelo
+    // índice do slide para que slides irmãos nunca repitam o mesmo layout.
+    compositionVariations: compositionOption.variations,
     stylePrompt: [fragments.editorial, fragments.density, fragments.imagery]
       .filter(Boolean)
       .join(' '),
+    // Proibições específicas do design system escolhido (anti-genérico).
+    styleAvoid: editorialOption.avoid,
     colorPrompt: '',
     brandColors: context.brandColors,
     typographyPrompt: '',

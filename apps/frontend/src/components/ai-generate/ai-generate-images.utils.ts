@@ -61,9 +61,14 @@ export function sumCosts(costs: Array<CostEstimate | null | undefined>) {
 export type SlideRenderSpec = {
   // Layout/estrutura escolhida (vazio = a IA decide pelo conteúdo).
   structureLayout?: string;
+  // Variações de diagramação do sistema de composição: rotacionadas pelo
+  // índice do slide para que slides irmãos nunca saiam com o mesmo layout.
+  compositionVariations?: string[];
   // Prompts dos presets de estilo/cor/tipografia (ignorados quando as
   // inspirações comandam o visual).
   stylePrompt?: string;
+  // Proibições específicas do design system escolhido (anti-genérico).
+  styleAvoid?: string;
   colorPrompt?: string;
   brandColors?: string;
   typographyPrompt?: string;
@@ -87,7 +92,9 @@ export function buildSlideImagePrompt(
 ) {
   const {
     structureLayout,
+    compositionVariations,
     stylePrompt,
+    styleAvoid,
     colorPrompt,
     brandColors,
     typographyPrompt,
@@ -99,6 +106,25 @@ export function buildSlideImagePrompt(
   } = spec;
 
   const inspirationsLead = !!hasInspirations && !!inspirationsLeadVisual;
+
+  // ── Papel do slide na narrativa do carrossel ────────────────────────────
+  // Capa, conteúdo e fechamento têm objetivos visuais diferentes; um diretor
+  // de arte nunca diagrama os três do mesmo jeito.
+  const total = plan?.slides?.length || 0;
+  const index = Math.max(1, Number(slide.index) || 1);
+  const isCover = index <= 1;
+  const isClosing = total > 1 && index >= total;
+  const roleLine = isCover
+    ? 'PAPEL DO SLIDE: CAPA — o scroll-stopper do carrossel. A headline é o gancho e deve dominar com presença de cartaz; este é o slide visualmente mais ousado do conjunto.'
+    : isClosing
+    ? 'PAPEL DO SLIDE: FECHAMENTO — o convite à ação. Composição estável que conduz o olhar até o CTA; a assinatura da marca pode ganhar um pouco mais de presença aqui.'
+    : `PAPEL DO SLIDE: CONTEÚDO (slide ${index} de ${total}) — um único insight bem diagramado, da mesma família visual da capa porém com diagramação própria.`;
+
+  // Variação de diagramação: rotaciona dentro do sistema de composição para
+  // que slides irmãos NUNCA repitam o mesmo layout.
+  const variation = compositionVariations?.length
+    ? compositionVariations[(index - 1) % compositionVariations.length]
+    : '';
 
   const textBlocks = [
     slide.headline.trim() && `HEADLINE PRINCIPAL: "${slide.headline.trim()}"`,
@@ -114,66 +140,73 @@ export function buildSlideImagePrompt(
   const slideConcept = slide.imagePrompt?.trim();
 
   const parts: Array<string | false | undefined> = [
-    'Crie uma arte quadrada 1:1 para um slide de carrossel de Instagram premium.',
-    'O texto abaixo deve aparecer DENTRO da imagem, com grafia exatamente igual, em portugues, sem trocar palavras, sem traduzir e sem adicionar outros textos.',
+    'Arte final de campanha publicitária para Instagram, formato quadrado 1:1 — design gráfico de estúdio premiado, executado por um diretor de arte sênior. Peça de carrossel com acabamento impecável.',
+    '',
+    roleLine,
+    '',
+    'TEXTO OBRIGATÓRIO NA ARTE (grafia exatamente igual, em português; NENHUM outro texto, letra ou número além destes):',
     textBlocks,
     '',
     // O QUE mostrar neste slide (briefing). Sempre presente quando existir.
     slideConcept &&
-      `Conceito visual deste slide (siga fielmente o briefing): ${slideConcept}`,
-    // COMO organizar: sistema de layout da Direção Criativa. Complementa o
-    // conceito acima, sem substituí-lo.
-    structureLayout?.trim() &&
-      `Estrutura/layout do slide: ${structureLayout.trim()}`,
-    // Fallback só quando não há nem conceito de slide nem estrutura definida.
-    !slideConcept &&
-      !structureLayout?.trim() &&
-      'Estrutura do slide: arte editorial limpa, com a headline em destaque e o apoio em hierarquia clara.',
+      `CENA DESTE SLIDE (siga fielmente o briefing): ${slideConcept}`,
   ];
 
   if (inspirationsLead) {
     // Prompt curto: as imagens anexadas assumem o visual. Sem descrever
     // estilo/cor/tipografia em texto para não competir com elas.
     parts.push(
+      variation && `Diagramação deste slide: ${variation}`,
       'Estilo visual: siga FIELMENTE as imagens de referencia anexadas — composicao, enquadramento, paleta de cores, tipografia, textura, iluminacao e atmosfera. As imagens definem o visual; em caso de conflito com qualquer outra instrucao, priorize as imagens.'
     );
   } else {
     parts.push(
+      '',
+      'SISTEMA VISUAL DA CAMPANHA (mesma família em todos os slides):',
       stylePrompt?.trim()
-        ? `Estilo visual: ${stylePrompt.trim()}`
-        : `Direcao visual geral: ${plan.imageStyleGuide}`,
+        ? stylePrompt.trim()
+        : `Direção visual geral: ${plan.imageStyleGuide}`,
+      // COMO organizar: sistema de layout da Direção Criativa + variação
+      // única deste slide dentro do sistema.
+      structureLayout?.trim() && `Composição: ${structureLayout.trim()}`,
+      variation && `Diagramação específica DESTE slide: ${variation}`,
+      // Fallback só quando não há nem conceito de slide nem estrutura definida.
+      !slideConcept &&
+        !structureLayout?.trim() &&
+        'Estrutura do slide: arte editorial com a headline em destaque dominante e o apoio em hierarquia clara.',
       colorPrompt?.trim()
         ? `Cores: ${colorPrompt.trim()}`
-        : brandColors?.trim() && `Cores a respeitar: ${brandColors.trim()}.`,
+        : brandColors?.trim() &&
+          `Paleta da marca (papéis disciplinados — fundo, texto, UM acento usado em ~10% da área): ${brandColors.trim()}.`,
       typographyPrompt?.trim() && `Tipografia: ${typographyPrompt.trim()}.`,
       hasInspirations &&
-        'As imagens de referencia anexadas sao apoio de composicao e atmosfera, equilibradas com o estilo acima.'
+        'As imagens de referencia anexadas sao apoio de composicao e atmosfera, equilibradas com o estilo acima.',
+      hasBrandLogos &&
+        'Assinatura da marca discreta e consistente, na mesma posição definida pelas diretrizes.',
+      '',
+      'ACABAMENTO OBRIGATÓRIO (craft de estúdio):',
+      '- UM ponto focal dominante que captura o olhar em meio segundo; todo o resto em papel de suporte.',
+      '- Margens ópticas generosas (6-8% da largura), alinhamentos intencionais, hierarquia por contraste dramático de escala (elemento-chave 3-5x maior que o secundário).',
+      '- Profundidade e atmosfera reais: grain fino, gradiente tonal sutil ou sombra tintada com a cor do ambiente — nunca fundo chapado sem vida, nunca sombra preta pura.',
+      '- Tipografia com personalidade e kerning profissional; texto nítido e perfeitamente legível em tela de celular.',
+      '',
+      'PROIBIDO NESTA ARTE (nada de aparência de "feito por IA"):',
+      '- gradiente roxo/azul genérico, glow neon sobre fundo branco, blobs 3D brilhantes;',
+      '- tudo centralizado com espaçamentos mecânicos idênticos; molduras decorativas aleatórias;',
+      '- pessoas com cara de banco de imagem ou anatomia estranha; emojis como elementos gráficos;',
+      styleAvoid?.trim() && `- ${styleAvoid.trim()}`,
+      '- qualquer palavra, letra ou número que não esteja no TEXTO OBRIGATÓRIO acima.'
     );
-
-    // Reforça cores de marca como restrição de paleta proeminente
-    // (mesmo quando colorPrompt já existe — garante visibilidade da marca).
-    if (brandColors?.trim()) {
-      parts.push(
-        `Use estas cores de marca de forma proeminente na composicao: ${brandColors.trim()}.`
-      );
-    }
-
-    // Se há logos de marca, instrui posicionamento sutil.
-    if (hasBrandLogos) {
-      parts.push(
-        'Inclua posicionamento sutil do logo da marca conforme as diretrizes de identidade visual.'
-      );
-    }
   }
 
   parts.push(
-    brief?.trim() && `Contexto da marca e campanha: ${brief.trim()}`,
+    brief?.trim() && `\nContexto da marca e campanha: ${brief.trim()}`,
     // Ajuste do usuário é a instrução de maior prioridade: vem por último e é
     // explicitamente marcado para o modelo aplicar sobre tudo acima.
     adjustment?.trim() &&
       `AJUSTE PRIORITARIO PEDIDO PELO USUARIO (aplique sobre todas as instrucoes acima, mantendo o texto e o conceito do slide): ${adjustment.trim()}`,
     '',
-    'Regras: texto perfeitamente legivel no celular, alto contraste, margens seguras, hierarquia tipografica clara e muito respiro. Nao copie marcas, logos, rostos ou elementos protegidos.'
+    'Nao copie marcas, logos, rostos ou elementos protegidos.'
   );
 
   return parts.filter(Boolean).join('\n');
