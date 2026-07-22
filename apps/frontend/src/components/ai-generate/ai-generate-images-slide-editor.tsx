@@ -44,6 +44,8 @@ type SlideEditorPanelProps = {
   duplicateSlide: (index: number) => void;
   exportSingleSlide: (slideId: string) => void;
   generateSlideImage: (slide: CarouselSlide) => void;
+  /** Fase 3 — recompõe só o texto sobre o fundo híbrido salvo (custo ~zero). */
+  recomposeSlideText?: (slide: CarouselSlide) => void;
   moveSlide: (fromIndex: number, toIndex: number) => void;
   plan: CarouselPlan;
   regenerateSlideCopy: (slide: CarouselSlide, mode: string) => void;
@@ -115,6 +117,7 @@ export const SlideEditorPanel = memo(function SlideEditorPanel(props: SlideEdito
     duplicateSlide,
     exportSingleSlide,
     generateSlideImage,
+    recomposeSlideText,
     moveSlide,
     plan,
     regenerateSlideCopy,
@@ -515,18 +518,40 @@ export const SlideEditorPanel = memo(function SlideEditorPanel(props: SlideEdito
                     <span className="text-[13px] font-[600]">
                       Imagem Gerada
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => generateSlideImage(slide)}
-                      disabled={
-                        !!slideLoading[slide.id] ||
-                        !trimmedImageModel
-                      }
-                      className="flex items-center gap-[6px] rounded-[8px] border border-newTableBorder px-[9px] py-[6px] text-[12px] font-[600] hover:border-primary disabled:opacity-60"
-                    >
-                      {loadingImage && <Spinner size={12} />}
-                      {loadingImage ? 'Gerando...' : 'Regenerar imagem'}
-                    </button>
+                    <div className="flex items-center gap-[6px]">
+                      {/* Fase 3 — híbrido: recompõe só a camada de texto
+                          sobre o fundo salvo, sem nova chamada de IA. */}
+                      {recomposeSlideText && result?.background && (
+                        <button
+                          type="button"
+                          onClick={() => recomposeSlideText(slide)}
+                          disabled={!!slideLoading[slide.id]}
+                          title="Reaplica a copy atual sobre o mesmo fundo (custo ~zero)"
+                          className="flex items-center gap-[6px] rounded-[8px] border border-emerald-500/30 bg-emerald-500/10 px-[9px] py-[6px] text-[12px] font-[700] text-emerald-700 hover:border-emerald-500/60 disabled:opacity-60 dark:text-emerald-200"
+                        >
+                          {slideLoading[slide.id] === 'texto' && (
+                            <Spinner size={12} />
+                          )}
+                          Regenerar texto
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => generateSlideImage(slide)}
+                        disabled={
+                          !!slideLoading[slide.id] ||
+                          !trimmedImageModel
+                        }
+                        className="flex items-center gap-[6px] rounded-[8px] border border-newTableBorder px-[9px] py-[6px] text-[12px] font-[600] hover:border-primary disabled:opacity-60"
+                      >
+                        {loadingImage && <Spinner size={12} />}
+                        {loadingImage
+                          ? 'Gerando...'
+                          : result?.background
+                          ? 'Regenerar fundo'
+                          : 'Regenerar imagem'}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-[6px]">

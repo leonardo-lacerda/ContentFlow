@@ -59,7 +59,9 @@ export type CarouselPlan = {
 export type GenerateImageResponse = {
   created: number;
   images: GeneratedImage[];
-  provider?: 'ia_generate' | 'openai_official';
+  /** Modo híbrido: fundo cru persistido (sem texto) para recompose barato. */
+  background?: GeneratedImage;
+  provider?: 'ia_generate' | 'openai_official' | 'hybrid_compose';
   model?: string;
   usage?: Record<string, unknown>;
   cost_estimate?: CostEstimate | null;
@@ -80,7 +82,7 @@ export type CarouselImageJob = {
 };
 
 /** Visual render path for carousel slides */
-export type CarouselRenderMode = 'ai_image' | 'design_system';
+export type CarouselRenderMode = 'ai_image' | 'design_system' | 'ai_hybrid';
 
 export type DesignRecipe = {
   directionId: string;
@@ -136,6 +138,8 @@ export type CostHistoryResponse = {
 
 export type SlideImageResult = {
   image?: GeneratedImage;
+  /** Modo híbrido: fundo cru (sem texto) — habilita "regenerar só o texto". */
+  background?: GeneratedImage;
   error?: string;
   cost_estimate?: CostEstimate | null;
 };

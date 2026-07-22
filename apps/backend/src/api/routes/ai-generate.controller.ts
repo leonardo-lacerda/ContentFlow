@@ -219,6 +219,16 @@ export class AiGenerateController {
     return this._aiGenerateService.getCostHistory(org.id);
   }
 
+  // Fase 3 — recompõe só a camada de texto sobre um fundo já gerado
+  // (modo híbrido). Sem chamada ao modelo de imagem: custo ~zero.
+  @Post('/hybrid/recompose')
+  recomposeHybridSlide(
+    @GetOrgFromRequest() org: Organization,
+    @Body() body: { compose?: Record<string, unknown> }
+  ) {
+    return this._aiGenerateService.recomposeHybridSlide(org.id, body);
+  }
+
   @Post('/art-direction')
   artDirectCarousel(
     @GetOrgFromRequest() org: Organization,
@@ -303,6 +313,17 @@ export class AiGenerateController {
     @Body() body: CreateCarouselDesignJobDto
   ) {
     return this._designJobs.startJob(org.id, body);
+  }
+
+  // Fase 1 — preview verdadeiro: o mesmo HTML que o Playwright renderiza,
+  // devolvido para o navegador exibir em iframe (preview = resultado).
+  @SkipThrottle()
+  @Post('/carousel-design-jobs/preview')
+  previewCarouselDesignJob(
+    @GetOrgFromRequest() _org: Organization,
+    @Body() body: CreateCarouselDesignJobDto
+  ) {
+    return this._designJobs.previewHtml(body);
   }
 
   // Mesmo caso do polling de imagens: isento do rate limit global.

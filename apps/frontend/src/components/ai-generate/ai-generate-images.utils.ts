@@ -212,6 +212,76 @@ export function buildSlideImagePrompt(
   return parts.filter(Boolean).join('\n');
 }
 
+// ─── Fase 2 (híbrido): prompt de FUNDO — a IA não renderiza nenhum texto ───
+// A camada tipográfica entra depois, por cima, via HTML/Chromium no backend
+// (overlay-text.html). O fundo precisa: (a) zero texto/letras/números;
+// (b) zona inferior-esquerda calma para o bloco de texto; (c) faixa superior
+// tranquila para rubrica e contador.
+export function buildSlideBackgroundPrompt(
+  plan: CarouselPlan,
+  slide: CarouselSlide,
+  spec: SlideRenderSpec = {}
+) {
+  const {
+    structureLayout,
+    compositionVariations,
+    stylePrompt,
+    styleAvoid,
+    brandColors,
+    brief,
+    adjustment,
+  } = spec;
+
+  const total = plan?.slides?.length || 0;
+  const index = Math.max(1, Number(slide.index) || 1);
+  const isCover = index <= 1;
+  const isClosing = total > 1 && index >= total;
+  const roleLine = isCover
+    ? 'PAPEL: fundo de CAPA — a cena mais ousada e magnética do conjunto.'
+    : isClosing
+    ? 'PAPEL: fundo de FECHAMENTO — composição estável, energia conduzindo para a zona de ação.'
+    : `PAPEL: fundo de CONTEÚDO (slide ${index} de ${total}) — mesma família visual, cena própria.`;
+
+  const variation = compositionVariations?.length
+    ? compositionVariations[(index - 1) % compositionVariations.length]
+    : '';
+
+  const slideConcept = slide.imagePrompt?.trim();
+
+  const parts: Array<string | false | undefined> = [
+    'Fundo de campanha publicitária premium para Instagram, formato quadrado 1:1 — arte de diretor sênior, SEM NENHUM TEXTO. Esta imagem é a camada de fundo de um slide; a tipografia será aplicada depois por outro sistema.',
+    '',
+    'REGRA ABSOLUTA: a imagem NÃO pode conter nenhuma palavra, letra, número, logotipo, marca d\'água, assinatura ou caractere de qualquer alfabeto. Apenas cena, formas, texturas, objetos e atmosfera.',
+    '',
+    roleLine,
+    '',
+    slideConcept && `CENA (siga o briefing, ignorando instruções de texto): ${slideConcept}`,
+    variation && `Massa visual: ${variation} — mas SEM os elementos de texto citados.`,
+    '',
+    'SISTEMA VISUAL DA CAMPANHA:',
+    stylePrompt?.trim()
+      ? stylePrompt.trim()
+      : `Direção visual geral: ${plan.imageStyleGuide}`,
+    structureLayout?.trim() && `Composição: ${structureLayout.trim()}`,
+    brandColors?.trim() &&
+      `Paleta da marca (fundo dominante, um acento em ~10% da área): ${brandColors.trim()}.`,
+    '',
+    'RESERVA PARA A TIPOGRAFIA (obrigatório):',
+    '- Terço inferior e canto inferior-esquerdo CALMOS: sem detalhes de alto contraste, sem elementos pequenos e agitados — é onde o texto vai entrar.',
+    '- Faixa superior (primeiros ~12%) tranquila para rubrica e numeração.',
+    '- O interesse visual principal vive no centro-direita e no terço superior da cena.',
+    '',
+    'ACABAMENTO: profundidade real (grain fino, gradiente tonal, sombra tintada), um ponto focal claro, atmosfera cinematográfica.',
+    'PROIBIDO: gradiente roxo/azul genérico, glow neon, blobs 3D brilhantes, pessoas com cara de banco de imagem' +
+      (styleAvoid?.trim() ? `, ${styleAvoid.trim()}` : '.'),
+    brief?.trim() && `\nContexto da marca: ${brief.trim()}`,
+    adjustment?.trim() &&
+      `AJUSTE PRIORITARIO DO USUARIO (mantendo o fundo sem texto): ${adjustment.trim()}`,
+  ];
+
+  return parts.filter(Boolean).join('\n');
+}
+
 export function getEditorialIssues(
   slides: CarouselSlide[],
   forbiddenTerms?: string,

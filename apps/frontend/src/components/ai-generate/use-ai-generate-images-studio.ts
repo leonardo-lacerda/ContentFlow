@@ -49,6 +49,7 @@ import {
 import type { DirectionAxisKey, DirectionSpec } from './direction-compiler';
 import {
   buildLimitedBrief,
+  buildSlideBackgroundPrompt,
   buildSlideImagePrompt,
   companyBrandReferences,
   getEditorialIssues,
@@ -683,6 +684,27 @@ export function useAiGenerateImagesStudio() {
     ]
   );
 
+  // Fase 2 (híbrido): prompt de FUNDO — mesma direção criativa, mas a IA gera
+  // a cena sem nenhum texto; a tipografia entra por cima via HTML no backend.
+  const buildSlideBackgroundPromptFor = useCallback(
+    (slide: CarouselSlide) =>
+      buildSlideBackgroundPrompt(plan as CarouselPlan, slide, {
+        ...buildDirectionRenderSpec(effectiveDirectionSpec, {
+          brandColors,
+          brief: finalCreativeBrief || computedCreativeBrief,
+        }),
+        adjustment: slideImageAdjustments[slide.id]?.trim() || undefined,
+      }),
+    [
+      brandColors,
+      computedCreativeBrief,
+      effectiveDirectionSpec,
+      finalCreativeBrief,
+      plan,
+      slideImageAdjustments,
+    ]
+  );
+
   const setSlideImageAdjustment = useCallback(
     (slideId: string, value: string) => {
       setSlideImageAdjustments((current) => ({
@@ -880,6 +902,7 @@ export function useAiGenerateImagesStudio() {
     setImageJob,
     setSlideImageAdjustments,
     buildSlidePromptFor,
+    buildSlideBackgroundPromptFor,
     loadCostHistory,
     saveSnapshot: undoRedo.saveSnapshot,
     editorialReview,
@@ -1167,6 +1190,9 @@ export function useAiGenerateImagesStudio() {
             if (slide.status === 'completed' && slide.result?.images?.[0]) {
               next[slideKey] = {
                 image: slide.result.images[0],
+                // Modo híbrido: fundo cru persistido — habilita "regenerar
+                // só o texto" sem nova chamada de IA.
+                background: slide.result.background,
                 cost_estimate: slide.result.cost_estimate,
               };
             }
@@ -1451,6 +1477,7 @@ export function useAiGenerateImagesStudio() {
     generateCompanyIdeas: projects.generateCompanyIdeas,
     generatePlan: generation.generatePlan,
     generateSlideImage: generation.generateSlideImage,
+    recomposeSlideText: generation.recomposeSlideText,
     generatedSlides,
     generatingImages,
     globalReferencesCount,
@@ -1550,8 +1577,6 @@ export function useAiGenerateImagesStudio() {
     setIdeasError,
     setImageModel,
     setImageProvider,
-    renderMode,
-    setRenderMode,
     setIncludePdfExport,
     setLightboxIndex,
     setLogoPosition,

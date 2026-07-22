@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { BrandTokenMapper } from './brand/brand-token-mapper';
 import { TemplateFillService } from './build/template-fill.service';
 import { DesignSystemCatalogService } from './catalog/catalog.service';
+import { HybridComposeService } from './hybrid/hybrid-compose.service';
 import { IdeateService } from './ideate/ideate.service';
 import { DesignSystemJobService } from './jobs/design-system-job.service';
 import { PlaywrightRenderService } from './render/playwright-render.service';
@@ -18,6 +19,7 @@ import { PlaywrightRenderService } from './render/playwright-render.service';
     BrandTokenMapper,
     PlaywrightRenderService,
     DesignSystemJobService,
+    HybridComposeService,
   ],
   exports: [
     DesignSystemCatalogService,
@@ -26,6 +28,7 @@ import { PlaywrightRenderService } from './render/playwright-render.service';
     BrandTokenMapper,
     PlaywrightRenderService,
     DesignSystemJobService,
+    HybridComposeService,
   ],
 })
 export class DesignSystemModule {}

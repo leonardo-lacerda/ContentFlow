@@ -44,8 +44,9 @@ export const CarouselPreviewPanel = memo(function CarouselPreviewPanel(props: Ca
             Preview do carrossel
           </h3>
           <p className="text-[14px] text-textItemBlur">
-            Visualize a sequência no formato final antes de gerar ou
-            regenerar imagens.
+            Slides com imagem mostram o resultado final exato. Cards
+            marcados como “rascunho” são só um esquema da copy — a arte
+            ainda não existe.
           </p>
         </div>
         <div className="hidden rounded-[10px] border border-newTableBorder px-[12px] py-[8px] text-[12px] text-textItemBlur md:block">
@@ -75,17 +76,54 @@ export const CarouselPreviewPanel = memo(function CarouselPreviewPanel(props: Ca
               }`}
             >
               {src ? (
-                <img
-                  src={src}
-                  alt={slide.altText}
-                  loading="lazy"
-                  decoding="async"
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
+                <>
+                  {/* Fase 0 — resultado real: só o PNG, sem sobrepor texto em
+                      HTML (a arte já tem o texto queimado nos pixels). */}
+                  <img
+                    src={src}
+                    alt={slide.altText}
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                  <span className="absolute bottom-[10px] right-[10px] z-10 rounded-full bg-black/55 px-[8px] py-[3px] text-[10px] font-[800] text-white">
+                    {slide.index}/{plan.slides.length}
+                  </span>
+                </>
               ) : (
-                <div className="absolute inset-0 bg-[linear-gradient(135deg,#f7f7f2,#d7dde8)]" />
+                <>
+                  {/* Rascunho esquemático: a arte ainda não existe; isto é só
+                      a copy diagramada de forma genérica. */}
+                  <div className="absolute inset-0 bg-[linear-gradient(135deg,#f7f7f2,#d7dde8)]" />
+                  <div className="absolute inset-0 bg-black/25" />
+                  <span className="absolute right-[10px] top-[10px] z-10 rounded-full bg-black/55 px-[8px] py-[3px] text-[9px] font-[800] uppercase tracking-[0.1em] text-white/90">
+                    rascunho
+                  </span>
+                  <div className="relative flex h-full flex-col justify-between p-[18px] text-white">
+                    <div className="flex items-center justify-between text-[11px] font-[700] uppercase tracking-[0.08em]">
+                      <span>{brandName.trim() || template.label}</span>
+                      <span>
+                        {slide.index}/{plan.slides.length}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="text-[22px] font-[800] leading-[26px]">
+                        {slide.headline}
+                      </div>
+                      {slide.body && (
+                        <div className="mt-[10px] max-h-[52px] overflow-hidden text-[12px] font-[500] leading-[17px] text-white/85">
+                          {slide.body}
+                        </div>
+                      )}
+                    </div>
+                    {slide.cta && (
+                      <div className="w-fit rounded-full bg-white px-[10px] py-[5px] text-[11px] font-[700] text-black">
+                        {slide.cta}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
-              <div className="absolute inset-0 bg-black/25" />
               {pending && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-[8px] bg-black/45 backdrop-blur-[1px]">
                   <Spinner size={24} className="text-white" />
@@ -94,29 +132,6 @@ export const CarouselPreviewPanel = memo(function CarouselPreviewPanel(props: Ca
                   </span>
                 </div>
               )}
-              <div className="relative flex h-full flex-col justify-between p-[18px] text-white">
-                <div className="flex items-center justify-between text-[11px] font-[700] uppercase tracking-[0.08em]">
-                  <span>{brandName.trim() || template.label}</span>
-                  <span>
-                    {slide.index}/{plan.slides.length}
-                  </span>
-                </div>
-                <div>
-                  <div className="text-[22px] font-[800] leading-[26px]">
-                    {slide.headline}
-                  </div>
-                  {slide.body && (
-                    <div className="mt-[10px] max-h-[52px] overflow-hidden text-[12px] font-[500] leading-[17px] text-white/85">
-                      {slide.body}
-                    </div>
-                  )}
-                </div>
-                {slide.cta && (
-                  <div className="w-fit rounded-full bg-white px-[10px] py-[5px] text-[11px] font-[700] text-black">
-                    {slide.cta}
-                  </div>
-                )}
-              </div>
             </button>
           );
         })}

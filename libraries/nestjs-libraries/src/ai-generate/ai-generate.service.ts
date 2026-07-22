@@ -13,6 +13,7 @@ import {
 } from './ai-response-validator';
 import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.service';
 import { GenerationCostService } from '@gitroom/nestjs-libraries/database/prisma/generation-costs/generation-cost.service';
+import { HybridComposeService } from '@gitroom/nestjs-libraries/design-system/hybrid/hybrid-compose.service';
 import { CircuitBreakerService } from './circuit-breaker.service';
 import { PromptInjectionGuard } from './prompt-injection-guard';
 
@@ -384,7 +385,8 @@ export class AiGenerateService {
     private _extractContentService: ExtractContentService,
     private _generationJobService: GenerationJobService,
     private _generationCostService: GenerationCostService,
-    private _circuitBreaker: CircuitBreakerService
+    private _circuitBreaker: CircuitBreakerService,
+    private _hybridCompose: HybridComposeService
   ) {}
 
   private recordCost(
@@ -1714,6 +1716,9 @@ Tarefa: crie o conceito criativo da campanha e, para CADA slide, um render brief
       // brandProfileId é metadado interno; nunca deve ir para o provider de
       // imagem (OpenAI rejeita parâmetros desconhecidos com 400).
       brandProfileId: _brandProfileId,
+      // compose é o contrato do modo híbrido (Fase 2): também não vai para o
+      // provider — é consumido aqui depois da geração do fundo.
+      compose,
       ...requestBody
     } = body;
     const referenceMode: 'brand' | 'balanced' | 'inspiration' =
@@ -1932,11 +1937,36 @@ Use esse brief visual como tempero (composição, enquadramento, textura, ilumin
         );
       }
 
+      // ── Fase 2 (híbrido): o provider gerou apenas o FUNDO. Deitamos a
+      // camada tipográfica determinística por cima (HTML → Chromium) e
+      // preservamos o fundo cru para permitir "regenerar só o texto".
+      const composeInput = compose
+        ? this._hybridCompose.parseComposeInput(compose)
+        : null;
+      let finalImages = images;
+      let backgroundImage: AiGenerateImage | undefined;
+
+      if (composeInput) {
+        const rawBackground = images[0];
+        const composedPng = await this._hybridCompose.composeToPng({
+          ...composeInput,
+          backgroundDataUrl: rawBackground.b64_json
+            ? `data:image/png;base64,${rawBackground.b64_json}`
+            : composeInput.backgroundDataUrl,
+          backgroundUrl: rawBackground.url || composeInput.backgroundUrl,
+        });
+        finalImages = [{ b64_json: composedPng.toString('base64') }];
+        backgroundImage =
+          persist === false
+            ? rawBackground
+            : await this.persistGeneratedImage(orgId, rawBackground, 0);
+      }
+
       const normalizedImages =
         persist === false
-          ? images
+          ? finalImages
           : await Promise.all(
-              images.map((image, index) =>
+              finalImages.map((image, index) =>
                 this.persistGeneratedImage(orgId, image, index)
               )
             );
@@ -1944,6 +1974,9 @@ Use esse brief visual como tempero (composição, enquadramento, textura, ilumin
       const result = {
         created: data.created,
         images: normalizedImages,
+        // Fundo cru persistido (só no modo híbrido): habilita o recompose de
+        // texto sem nova chamada de IA (Fase 3).
+        ...(backgroundImage ? { background: backgroundImage } : {}),
         usage: data.usage,
         provider,
         model: resolvedModel,
@@ -1974,6 +2007,41 @@ Use esse brief visual como tempero (composição, enquadramento, textura, ilumin
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  /**
+   * Fase 3 — "Regenerar só o texto": recompõe a camada tipográfica sobre um
+   * fundo já gerado/persistido, sem nova chamada ao modelo de imagem.
+   * Custo: apenas um render de Chromium (centavos de CPU, zero API).
+   */
+  async recomposeHybridSlide(
+    orgId: string,
+    body: { compose?: Record<string, unknown> }
+  ) {
+    const input = this._hybridCompose.parseComposeInput(body?.compose);
+    if (!input || (!input.backgroundDataUrl && !input.backgroundUrl)) {
+      throw new HttpException(
+        'A background image (backgroundUrl or backgroundDataUrl) is required to recompose',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    const png = await this._hybridCompose.composeToPng(input);
+    const image = await this.persistGeneratedImage(
+      orgId,
+      { b64_json: png.toString('base64') },
+      0
+    );
+
+    return {
+      images: [image],
+      background: {
+        url: input.backgroundUrl,
+      },
+      provider: 'hybrid_compose',
+      model: 'overlay-text@chromium',
+      cost_estimate: null,
+    };
   }
 
   private async persistGeneratedImage(

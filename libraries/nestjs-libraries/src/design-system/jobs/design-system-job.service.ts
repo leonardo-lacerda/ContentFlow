@@ -134,6 +134,73 @@ export class DesignSystemJobService {
     };
   }
 
+  /**
+   * Fase 1 — Preview verdadeiro: devolve o MESMO HTML por slide que o job
+   * renderizaria via Playwright, sem criar job nem gastar render. Exibido em
+   * um iframe no navegador, é pixel a pixel o resultado final (mesmo motor).
+   */
+  previewHtml(body: CreateDesignJobBody) {
+    if (!this.catalog.isEnabled()) {
+      throw new HttpException(
+        'Design system is disabled (DESIGN_SYSTEM_ENABLED)',
+        HttpStatus.SERVICE_UNAVAILABLE
+      );
+    }
+
+    const slidesIn = Array.isArray(body.slides) ? body.slides : [];
+    if (!slidesIn.length) {
+      throw new HttpException(
+        'At least one slide is required',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    const recipeIn = this.resolveRecipe(body);
+    const planned = this.ideate.planSlides(
+      recipeIn,
+      slidesIn.map((s, i) => ({
+        slideIndex: Number(s.slideIndex || i + 1),
+        headline: s.headline,
+        body: s.body,
+        cta: s.cta,
+      }))
+    );
+    const slides: DesignSlideInput[] = planned.map((p, i) => ({
+      ...p,
+      templateId: slidesIn[i]?.templateId || p.templateId,
+      role: (slidesIn[i]?.role as DesignSlideInput['role']) || p.role,
+    }));
+
+    const { recipe, palette, font, logoUrl } = this.brandMapper.applyBrand(
+      recipeIn,
+      body.brand
+    );
+
+    return {
+      recipe,
+      slides: slides.map((slide) => {
+        const { html } = this.fill.fillSlide({
+          templateId: slide.templateId || 'quote-bold',
+          width: recipe.width,
+          height: recipe.height,
+          palette,
+          font,
+          slide,
+          handle: recipe.handle,
+          logoUrl,
+        });
+        return {
+          slideIndex: slide.slideIndex,
+          templateId: slide.templateId,
+          role: slide.role,
+          width: recipe.width,
+          height: recipe.height,
+          html,
+        };
+      }),
+    };
+  }
+
   async getJob(orgId: string, id: string) {
     const job = await this.jobs.getJob(id, orgId);
     if (!job) {

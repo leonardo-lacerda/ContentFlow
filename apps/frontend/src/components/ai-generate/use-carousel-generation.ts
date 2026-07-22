@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useRef } from 'react';
 import type {
   CarouselImageJob,
   CarouselPlan,
+  CarouselRenderMode,
   CarouselSlide,
   CompanyProfile,
   EditorialReview,
@@ -48,8 +49,8 @@ export interface UseCarouselGenerationParams {
   trimmedTextModel: string;
   imageProvider: 'ia_generate' | 'openai_official';
   trimmedImageModel: string;
-  /** Dual-mode: AI image models vs HTML design system (xniper-style) */
-  renderMode: 'ai_image' | 'design_system';
+  /** Render path: AI image / HTML design system / híbrido (IA + texto HTML) */
+  renderMode: CarouselRenderMode;
   designRecipe: import('./ai-generate-images.types').DesignRecipe | null;
   designSizeId: string;
   designHandle: string;
@@ -96,6 +97,9 @@ export interface UseCarouselGenerationParams {
 
   // Functions from other hooks
   buildSlidePromptFor: (slide: CarouselSlide) => string;
+  // Fase 2 (híbrido): prompt de FUNDO sem texto — a tipografia entra por
+  // cima via HTML no backend (HybridComposeService).
+  buildSlideBackgroundPromptFor: (slide: CarouselSlide) => string;
   loadCostHistory: () => Promise<void>;
   saveSnapshot: () => void;
 
@@ -109,6 +113,8 @@ export interface UseCarouselGenerationReturn {
   generatePlan: (event: FormEvent) => Promise<void>;
   generateCarouselImages: () => Promise<void>;
   generateSlideImage: (slide: CarouselSlide) => Promise<void>;
+  /** Fase 3 — recompõe só a camada de texto sobre o fundo já gerado. */
+  recomposeSlideText: (slide: CarouselSlide) => Promise<void>;
   regenerateSlideCopy: (slide: CarouselSlide, mode: string) => Promise<void>;
   reviewCarouselQuality: (silent?: boolean) => Promise<EditorialReview | null>;
   applyEditorialQuickFixes: () => void;
@@ -184,10 +190,34 @@ export function useCarouselGeneration(
     setImageJob,
     setSlideImageAdjustments,
     buildSlidePromptFor,
+    buildSlideBackgroundPromptFor,
     loadCostHistory,
     saveSnapshot,
     editorialReview,
   } = params;
+
+  // ── Fase 2 (híbrido): contrato de composição enviado ao backend ─────────
+  // Copy + marca que o HybridComposeService deita por cima do fundo da IA.
+  const buildComposePayload = (slide: CarouselSlide) => ({
+    width: 1080,
+    height: 1080,
+    copy: {
+      headline: slide.headline,
+      body: slide.body,
+      cta: slide.cta,
+      eyebrow: brandName?.trim() || undefined,
+      handle: designHandle?.trim() || undefined,
+      index: slide.index,
+      total: plan?.slides?.length || 1,
+    },
+    brand: {
+      colors: brandColors
+        .split(/[,\n]/)
+        .map((c) => c.trim())
+        .filter(Boolean),
+      fontFamily: brandFonts || undefined,
+    },
+  });
 
   /* ─────────────── Image job polling ─────────────── */
 
@@ -656,6 +686,7 @@ export function useCarouselGeneration(
         // Direção de arte é um upgrade de qualidade, nunca um bloqueio.
       }
 
+      const isHybrid = renderMode === 'ai_hybrid';
       const slides = plan.slides.map((slide) => {
         const renderBrief = renderBriefBySlide.get(slide.index);
         // O render brief substitui o imagePrompt cru como "cena deste slide";
@@ -671,11 +702,19 @@ export function useCarouselGeneration(
 
         const requestBody: Record<string, unknown> = {
           provider: imageProvider,
-          prompt: buildSlidePromptFor(effectiveSlide),
+          // Híbrido: a IA gera só o FUNDO (sem texto); a tipografia entra por
+          // cima no backend via compose (texto sempre nítido e no lugar).
+          prompt: isHybrid
+            ? buildSlideBackgroundPromptFor(effectiveSlide)
+            : buildSlidePromptFor(effectiveSlide),
           model: trimmedImageModel,
           n: 1,
           brandProfileId,
         };
+
+        if (isHybrid) {
+          requestBody.compose = buildComposePayload(slide);
+        }
 
         if (imageProvider === 'ia_generate') {
           requestBody.response_format = 'b64_json';
@@ -732,13 +771,20 @@ export function useCarouselGeneration(
     setSavedCarouselCount(0);
 
     try {
+      const isHybrid = renderMode === 'ai_hybrid';
       const requestBody: Record<string, unknown> = {
         provider: imageProvider,
-        prompt: buildSlidePromptFor(slide),
+        prompt: isHybrid
+          ? buildSlideBackgroundPromptFor(slide)
+          : buildSlidePromptFor(slide),
         model: trimmedImageModel,
         n: 1,
         brandProfileId,
       };
+
+      if (isHybrid) {
+        requestBody.compose = buildComposePayload(slide);
+      }
 
       if (imageProvider === 'ia_generate') {
         requestBody.response_format = 'b64_json';
@@ -774,6 +820,7 @@ export function useCarouselGeneration(
         ...current,
         [slide.id]: {
           image: result.images?.[0],
+          background: result.background,
           cost_estimate: result.cost_estimate,
         },
       }));
@@ -782,6 +829,79 @@ export function useCarouselGeneration(
       setSlideImages((current) => ({
         ...current,
         [slide.id]: { error: 'Não foi possível conectar ao servidor.' },
+      }));
+    } finally {
+      setSlideLoading((current) => ({ ...current, [slide.id]: '' }));
+    }
+  };
+
+  /* ─── Fase 3: recompor só a camada de texto (modo híbrido) ───
+     Reaproveita o fundo já gerado — sem nova chamada ao modelo de imagem. */
+
+  const recomposeSlideText = async (slide: CarouselSlide) => {
+    const existing = slideImages[slide.id];
+    const backgroundUrl = existing?.background?.url;
+    const backgroundB64 = existing?.background?.b64_json;
+    if (!plan || (!backgroundUrl && !backgroundB64)) {
+      setError(
+        'Este slide não tem um fundo híbrido salvo. Gere a imagem no modo Híbrido primeiro.'
+      );
+      return;
+    }
+
+    setSlideLoading((current) => ({ ...current, [slide.id]: 'texto' }));
+
+    try {
+      const { ok, data, message } = await aiGenerateImagesApi.recomposeSlide(
+        fetch,
+        {
+          compose: {
+            ...buildComposePayload(slide),
+            backgroundUrl,
+            backgroundDataUrl: backgroundB64
+              ? `data:image/png;base64,${backgroundB64}`
+              : undefined,
+          },
+        }
+      );
+
+      if (!ok || !data?.images?.[0]) {
+        setSlideImages((current) => ({
+          ...current,
+          [slide.id]: {
+            ...current[slide.id],
+            error: message || 'Falha ao recompor o texto.',
+          },
+        }));
+        return;
+      }
+
+      setSlideImageHistory((current) => {
+        const previous = slideImages[slide.id];
+        if (!previous?.image) {
+          return current;
+        }
+        return {
+          ...current,
+          [slide.id]: [...(current[slide.id] || []), previous].slice(-6),
+        };
+      });
+      setSlideImages((current) => ({
+        ...current,
+        [slide.id]: {
+          image: data.images[0],
+          background: existing?.background,
+          cost_estimate: current[slide.id]?.cost_estimate,
+        },
+      }));
+      setSavedCarouselCount(0);
+    } catch {
+      setSlideImages((current) => ({
+        ...current,
+        [slide.id]: {
+          ...current[slide.id],
+          error: 'Não foi possível conectar ao servidor.',
+        },
       }));
     } finally {
       setSlideLoading((current) => ({ ...current, [slide.id]: '' }));
@@ -894,6 +1014,7 @@ export function useCarouselGeneration(
     generatePlan,
     generateCarouselImages,
     generateSlideImage,
+    recomposeSlideText,
     regenerateSlideCopy,
     reviewCarouselQuality,
     applyEditorialQuickFixes,

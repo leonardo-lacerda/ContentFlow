@@ -5,22 +5,27 @@ import { useState } from 'react';
 import { inputClass } from './ai-generate-images.constants';
 import { formatCurrency } from './ai-generate-images.utils';
 import { AnimatedDots, IndeterminateBar, Spinner } from './ai-generate-images.loaders';
+import { DesignLivePreview } from './design-live-preview';
 import type {
   CarouselImageJob,
   CarouselPlan,
   CarouselRenderMode,
   CostEstimate,
   CostHistoryResponse,
+  DesignRecipe,
   SlideImageResult,
 } from './ai-generate-images.types';
 
 type ImageGenerationPanelProps = {
   allowOverBudget: boolean;
+  brandColors?: string;
+  brandFonts?: string;
   canSaveCarousel: boolean;
   cancelCarouselGeneration: () => void;
   costHistory: CostHistoryResponse | null;
   costLimitBrl: number;
   designHandle: string;
+  designRecipe?: DesignRecipe | null;
   designSizeId: string;
   error: string;
   estimateGenerationCost: () => void;
@@ -68,10 +73,13 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
   const [navigating, setNavigating] = useState(false);
   const {
     allowOverBudget,
+    brandColors,
+    brandFonts,
     canSaveCarousel,
     cancelCarouselGeneration,
     costHistory,
     costLimitBrl,
+    designRecipe,
     error,
     estimateGenerationCost,
     exportCarouselPackage,
@@ -164,6 +172,17 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
               </button>
               <button
                 type="button"
+                onClick={() => setRenderMode('ai_hybrid')}
+                className={`rounded-[10px] border px-[12px] py-[8px] text-[13px] font-[600] transition ${
+                  renderMode === 'ai_hybrid'
+                    ? 'border-stone-800 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-black'
+                    : 'border-black/10 bg-white text-black/70 dark:border-white/15 dark:bg-transparent dark:text-white/70'
+                }`}
+              >
+                Híbrido
+              </button>
+              <button
+                type="button"
                 onClick={() => setRenderMode('ai_image')}
                 className={`rounded-[10px] border px-[12px] py-[8px] text-[13px] font-[600] transition ${
                   renderMode === 'ai_image'
@@ -177,6 +196,8 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
             <p className="text-[12px] text-black/55 dark:text-white/55">
               {renderMode === 'design_system'
                 ? 'Templates HTML + tipografia real → PNG via Playwright (qualidade editorial, custo baixo).'
+                : renderMode === 'ai_hybrid'
+                ? 'A IA cria só o fundo (sem texto); a tipografia entra por cima em HTML — texto sempre nítido e no lugar.'
                 : 'Modelo de imagem com texto baked-in (fluxo clássico).'}
             </p>
           </div>
@@ -206,6 +227,19 @@ export function ImageGenerationPanel(props: ImageGenerationPanelProps) {
                 />
               </label>
             </div>
+          ) : null}
+
+          {/* Fase 1 — preview verdadeiro (mesmo HTML do PNG final) */}
+          {renderMode === 'design_system' && plan?.slides?.length ? (
+            <DesignLivePreview
+              plan={plan}
+              designSizeId={designSizeId}
+              designHandle={designHandle}
+              brandColors={brandColors || ''}
+              brandFonts={brandFonts}
+              designRecipe={designRecipe}
+              query={plan.title}
+            />
           ) : null}
         </div>
 

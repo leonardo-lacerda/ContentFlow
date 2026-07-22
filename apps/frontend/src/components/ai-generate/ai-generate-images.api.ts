@@ -384,6 +384,24 @@ export const aiGenerateImagesApi = {
     payload
   ),
 
+  // Fase 1 — Preview verdadeiro do design system: devolve o MESMO HTML por
+  // slide que o Playwright renderiza no export (preview = resultado).
+  previewDesignHtml: async (
+    fetcher: AiGenerateFetcher,
+    payload: Record<string, unknown>
+  ) =>
+    postJson<{
+      recipe: Record<string, unknown>;
+      slides: Array<{
+        slideIndex: number;
+        templateId?: string;
+        role?: string;
+        width: number;
+        height: number;
+        html: string;
+      }>;
+    }>(fetcher, '/ai-generate/carousel-design-jobs/preview', payload),
+
   // Etapa 2 — Direção de Arte por LLM: expande os briefings crus dos slides
   // em render briefs cinematográficos amarrados a um conceito de campanha.
   artDirectCarousel: async (
@@ -427,6 +445,18 @@ export const aiGenerateImagesApi = {
       fetcher,
       '/ai-generate/images',
       requestBody
+    ),
+
+  // Fase 3 — recompõe só a camada de texto sobre um fundo híbrido já gerado
+  // (sem nova chamada ao modelo de imagem; custo ~zero).
+  recomposeSlide: async (
+    fetcher: AiGenerateFetcher,
+    payload: { compose: Record<string, unknown> }
+  ) =>
+    postJson<GenerateImageResponse>(
+      fetcher,
+      '/ai-generate/hybrid/recompose',
+      payload
     ),
 
   saveCarousel: async (

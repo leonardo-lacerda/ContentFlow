@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Max,
@@ -118,4 +119,14 @@ export class AiGenerateImageDto {
   @IsOptional()
   @MaxLength(128)
   brandProfileId?: string;
+
+  /**
+   * Fase 2 (híbrido): quando presente, o prompt gera apenas o FUNDO (sem
+   * texto) e o backend deita a camada tipográfica por cima via HTML/Chromium
+   * (HybridComposeService). Estrutura: { width, height, copy: { headline,
+   * body, cta, eyebrow, handle, index, total }, brand: { colors, fontFamily } }.
+   */
+  @IsObject()
+  @IsOptional()
+  compose?: Record<string, unknown>;
 }

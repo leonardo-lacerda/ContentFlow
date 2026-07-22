@@ -61,6 +61,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     costLimitBrl,
     defaultCta,
     designHandle,
+    designRecipe,
     designSizeId,
     editorialIssues,
     editorialReview,
@@ -117,6 +118,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
     platform,
     preflightEstimate,
     projectedCostBrl,
+    recomposeSlideText,
     referenceCategoryFilter,
     referenceCategories,
     referenceDisplayLimit,
@@ -494,6 +496,7 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
 
             <SlideEditorPanel
               generateSlideImage={generateSlideImage}
+              recomposeSlideText={recomposeSlideText}
               exportSingleSlide={exportSingleSlide}
               plan={plan}
               regenerateSlideCopy={regenerateSlideCopy}
@@ -529,6 +532,9 @@ export function AiGenerateImagesStudioView({ studio }: AiGenerateImagesStudioVie
 
             <ImageGenerationPanel
               allowOverBudget={allowOverBudget}
+              brandColors={brandColors}
+              brandFonts={brandFonts}
+              designRecipe={designRecipe}
               canSaveCarousel={canSaveCarousel}
               cancelCarouselGeneration={cancelCarouselGeneration}
               costHistory={costHistory}
