@@ -14,7 +14,8 @@ RUN npm --no-update-notifier --no-fund --global install pnpm@10.6.1 pm2
 WORKDIR /app
 COPY . /app
 COPY var/docker/nginx.conf /etc/nginx/nginx.conf
-RUN chmod +x /app/var/docker/start-vultr.sh \
+RUN sed -i 's/\r$//' /app/var/docker/start-vultr.sh \
+ && chmod +x /app/var/docker/start-vultr.sh \
  && mkdir -p /uploads && chmod 777 /uploads
 
 RUN pnpm install --frozen-lockfile || pnpm install
