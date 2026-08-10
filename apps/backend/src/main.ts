@@ -58,7 +58,12 @@ async function start() {
     },
   });
 
-  if (process.env.DISABLE_MCP !== 'true') {
+  const mcpEnabled =
+    process.env.DISABLE_MCP !== 'true' &&
+    (process.env.NODE_ENV === 'production' ||
+      process.env.ENABLE_MCP_LOCAL === 'true');
+
+  if (mcpEnabled) {
     const { startMcp } = await import('@gitroom/nestjs-libraries/chat/start.mcp');
     await startMcp(app);
   }

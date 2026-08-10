@@ -67,6 +67,8 @@ postiz-app/
 
 .claude/worktrees/
 studio/
+!apps/frontend/src/app/(app)/(site)/studio/
+!apps/frontend/src/app/(app)/(site)/studio/**
 !libraries/nestjs-libraries/src/chat/studio/
 !libraries/nestjs-libraries/src/chat/studio/**
 Cole/
