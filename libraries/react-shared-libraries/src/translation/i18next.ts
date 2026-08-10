@@ -16,11 +16,16 @@ i18next
   .init({
     supportedLngs: languages,
     fallbackLng,
-    lng: undefined,
+    // Keep the first client render identical to SSR. The persisted/browser
+    // language is applied by HtmlComponent immediately after hydration.
+    lng: fallbackLng,
     fallbackNS: defaultNS,
     defaultNS,
     detection: {
-      order: ['cookie', 'header'],
+      // Automatic detection runs before hydration and can make the client
+      // render a different language than SSR. HtmlComponent applies the
+      // persisted/browser language after hydration instead.
+      order: [],
     },
     preload: runsOnServerSide ? languages : [],
   });

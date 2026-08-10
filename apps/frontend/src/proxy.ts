@@ -36,7 +36,10 @@ export async function proxy(request: NextRequest) {
   });
 
   if (lng) {
-    topResponse.headers.set(cookieName, lng);
+    topResponse.cookies.set(cookieName, lng, {
+      path: '/',
+      sameSite: 'lax',
+    });
   }
 
   if (nextUrl.pathname.startsWith('/modal/') && !authCookie) {

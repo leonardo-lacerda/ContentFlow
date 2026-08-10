@@ -16,10 +16,11 @@ import { PHProvider } from '@gitroom/react/helpers/posthog';
 import UtmSaver from '@gitroom/helpers/utils/utm.saver';
 import { DubAnalytics } from '@gitroom/frontend/components/layout/dubAnalytics';
 import { FacebookComponent } from '@gitroom/frontend/components/layout/facebook.component';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import {
   cookieName,
   fallbackLng,
+  headerName,
 } from '@gitroom/react/translation/i18n.config';
 import { HtmlComponent } from '@gitroom/frontend/components/layout/html.component';
 import Script from 'next/script';
@@ -43,7 +44,14 @@ const fraunces = Fraunces({
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const cookieStore = await cookies();
-  const language = cookieStore.get(cookieName)?.value || fallbackLng;
+  const requestHeaders = await headers();
+  // The proxy resolves the browser's Accept-Language into this request
+  // header. Use it during SSR when the language cookie does not exist yet so
+  // the first server render matches i18next's browser detector.
+  const language =
+    cookieStore.get(cookieName)?.value ||
+    requestHeaders.get(headerName) ||
+    fallbackLng;
   const mode = cookieStore.get('mode')?.value === 'dark' ? 'dark' : 'light';
   const billingEnabled = !!(
     process.env.NEXT_PUBLIC_BILLING_ENABLED === 'true' ||

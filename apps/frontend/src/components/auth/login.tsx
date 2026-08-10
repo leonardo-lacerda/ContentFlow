@@ -59,13 +59,14 @@ export function Login() {
   };
   return (
     <FormProvider {...form}>
-      <form className="flex w-full" onSubmit={form.handleSubmit(onSubmit)}>
+      <form suppressHydrationWarning className="flex w-full" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="flex w-full flex-col">
           <div>
             <div className="mb-[10px] inline-flex rounded-full border border-newBorder bg-cf-cream px-[12px] py-[6px] text-[12px] font-[600] text-cf-amber">
               {t('welcome_back', 'Welcome back')}
             </div>
-            <h1 className="text-start font-serif text-[34px] font-[600] leading-[1.05] tracking-[-0.02em] text-cf-ink md:text-[40px]">
+            {/* i18next resolves the saved language on the client after SSR. */}
+            <h1 suppressHydrationWarning className="text-start font-serif text-[34px] font-[600] leading-[1.05] tracking-[-0.02em] text-cf-ink md:text-[40px]">
               {t('sign_in', 'Sign In')}
             </h1>
             <p className="mt-[12px] text-[14px] leading-[1.6] text-cf-muted">
