@@ -16,13 +16,13 @@ export interface ValidationError {
   message: string;
 }
 
-const PRIVATE_RANGES = [
-  { prefix: '10.', mask: null },
-  { prefix: '172.16.', mask: null },
-  { prefix: '192.168.', mask: null },
-  { prefix: '169.254.', mask: null },
-  { prefix: '127.', mask: null },
-  { prefix: '0.', mask: null },
+const PRIVATE_RANGES: Array<{ prefix: string }> = [
+  { prefix: '10.' },
+  { prefix: '172.16.' },
+  { prefix: '192.168.' },
+  { prefix: '169.254.' },
+  { prefix: '127.' },
+  { prefix: '0.' },
 ];
 
 const DANGEROUS_HOSTNAMES = [

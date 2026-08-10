@@ -35,14 +35,18 @@ export class ConfigurationChecker {
       'OPENAI_API_KEY',
       'Needed for AI content/image generation and the AI agents.'
     );
-    this.checkNonEmpty(
-      'STRIPE_SECRET_KEY',
-      'Needed to create checkouts and manage subscriptions.'
-    );
-    this.checkNonEmpty(
-      'STRIPE_SIGNING_KEY',
-      'Needed to validate Stripe webhook events.'
-    );
+    const hasCakto = !!(this.cfg.CAKTO_STARTER_CHECKOUT_URL || this.cfg.CAKTO_PRO_CHECKOUT_URL || this.cfg.CAKTO_SCALE_CHECKOUT_URL);
+    const hasStripe = !!this.cfg.STRIPE_SECRET_KEY;
+    if (!hasCakto && !hasStripe) {
+      this.checkNonEmpty(
+        'STRIPE_SECRET_KEY',
+        'Needed to create checkouts and manage subscriptions. (Or set CAKTO_*_CHECKOUT_URL for Cakto)'
+      );
+      this.checkNonEmpty(
+        'STRIPE_SIGNING_KEY',
+        'Needed to validate Stripe webhook events. (Or set CAKTO_WEBHOOK_* for Cakto)'
+      );
+    }
   }
 
   checkNonEmpty(key: string, description?: string): boolean {

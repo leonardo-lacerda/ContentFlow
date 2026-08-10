@@ -53,6 +53,9 @@ export const VideoScriptSchema = z.object({
 
 export type VideoScene = z.infer<typeof VideoSceneSchema>;
 export type VideoScript = z.infer<typeof VideoScriptSchema>;
+export type VideoScriptValidation =
+  | { success: true; data: VideoScript; errors: null }
+  | { success: false; data: null; errors: z.ZodError };
 export type TextOverlay = z.infer<typeof TextOverlaySchema>;
 
 export const VIDEO_FORMATS = [
@@ -63,7 +66,7 @@ export const VIDEO_FORMATS = [
   { id: 'CUSTOM', name: 'Custom', maxDuration: 180, aspectRatio: '9:16' },
 ] as const;
 
-export function validate(data: unknown) {
+export function validate(data: unknown): VideoScriptValidation {
   const result = VideoScriptSchema.safeParse(data);
   if (result.success) return { success: true, data: result.data, errors: null };
   return { success: false, data: null, errors: result.error };

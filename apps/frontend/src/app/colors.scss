@@ -243,3 +243,106 @@
     --color-modalCustom: transparent;
   }
 }
+
+/* Keep the landing palette authoritative after legacy compatibility blocks. */
+:root .light {
+  --new-back-drop: var(--cf-ink);
+  --new-settings: var(--cf-bg-subtle);
+  --new-border: var(--cf-border);
+  --new-bgColor: var(--cf-bg);
+  --new-bgColorInner: var(--cf-bg-elevated);
+  --new-bgLineColor: var(--cf-bg-subtle);
+  --new-sep: var(--cf-border);
+  --new-textItemFocused: var(--cf-ink);
+  --new-textItemBlur: var(--cf-fg-muted);
+  --new-textColor: 20 23 26;
+  --new-btn-text: var(--cf-ink);
+  --new-btn-primary: var(--cf-blue);
+  --new-ai-btn: var(--cf-ink);
+  --new-boxFocused: var(--cf-blue-soft);
+  --new-box-hover: var(--cf-paper-2);
+  --new-table-border: var(--cf-border);
+  --new-table-header: var(--cf-bg-subtle);
+  --new-table-text: var(--cf-fg-muted);
+  --new-table-text-focused: var(--cf-blue);
+  --new-blockSeparator: var(--cf-border);
+  --new-btn-simple: var(--cf-bg-subtle);
+  --new-col-color: var(--cf-bg-subtle);
+  --new-small-strips: var(--cf-paper-2);
+  --new-big-strips: var(--cf-bg);
+  --new-menu-dots: var(--cf-fg-faint);
+  --new-menu-hover: var(--cf-ink);
+  --menu-shadow: var(--cf-shadow);
+  --popup-color: rgba(20, 23, 26, 0.28);
+  --color-primary: var(--cf-bg);
+  --color-secondary: var(--cf-card);
+  --color-text: var(--cf-ink);
+  --color-third: var(--cf-card);
+  --color-forth: var(--cf-blue);
+  --color-gray: var(--cf-fg-muted);
+  --color-input: var(--cf-card);
+  --color-input-text: var(--cf-fg-muted);
+  --color-table-border: var(--cf-border);
+  --color-custom4: var(--cf-blue);
+  --color-custom7: var(--cf-blue);
+  --color-custom12: var(--cf-blue-soft);
+  --color-custom13: var(--cf-yellow);
+  --color-custom19: var(--cf-coral);
+  --color-custom22: var(--cf-coral);
+  --color-custom24: var(--cf-lime);
+  --color-custom42: var(--cf-green);
+  --color-custom45: var(--cf-blue);
+  --color-custom51: var(--cf-blue);
+}
+
+/* The dark theme uses the same semantic names as the light theme. This
+ * prevents legacy --new-* consumers from falling back to the old amber map. */
+:root .dark {
+  --new-back-drop: var(--cf-bg);
+  --new-settings: var(--cf-bg-subtle);
+  --new-border: var(--cf-border);
+  --new-bgColor: var(--cf-bg);
+  --new-bgColorInner: var(--cf-bg-elevated);
+  --new-bgLineColor: var(--cf-bg-subtle);
+  --new-sep: var(--cf-border);
+  --new-textItemFocused: var(--cf-fg);
+  --new-textItemBlur: var(--cf-fg-muted);
+  --new-textColor: 245 247 242;
+  --new-btn-text: var(--cf-fg);
+  --new-btn-primary: var(--cf-lime);
+  --new-ai-btn: var(--cf-lime);
+  --new-boxFocused: rgba(198, 242, 78, 0.16);
+  --new-box-hover: var(--cf-bg-subtle);
+  --new-table-border: var(--cf-border);
+  --new-table-header: var(--cf-bg);
+  --new-table-text: var(--cf-fg-muted);
+  --new-table-text-focused: var(--cf-lime);
+  --new-blockSeparator: var(--cf-border);
+  --new-btn-simple: var(--cf-bg-subtle);
+  --new-col-color: var(--cf-bg-subtle);
+  --new-small-strips: var(--cf-bg);
+  --new-big-strips: var(--cf-bg);
+  --new-menu-dots: var(--cf-fg-faint);
+  --new-menu-hover: var(--cf-fg);
+  --menu-shadow: var(--cf-shadow);
+  --popup-color: rgba(0, 0, 0, 0.55);
+  --color-primary: var(--cf-bg);
+  --color-secondary: var(--cf-bg-elevated);
+  --color-text: var(--cf-fg);
+  --color-third: var(--cf-bg-elevated);
+  --color-forth: var(--cf-lime);
+  --color-gray: var(--cf-fg-muted);
+  --color-input: var(--cf-bg-elevated);
+  --color-input-text: var(--cf-fg-muted);
+  --color-table-border: var(--cf-border);
+  --color-custom4: var(--cf-lime);
+  --color-custom7: var(--cf-lime);
+  --color-custom12: rgba(198, 242, 78, 0.16);
+  --color-custom13: var(--cf-yellow);
+  --color-custom19: var(--cf-coral);
+  --color-custom22: var(--cf-coral);
+  --color-custom24: var(--cf-lime);
+  --color-custom42: var(--cf-green);
+  --color-custom45: var(--cf-lime);
+  --color-custom51: var(--cf-lime);
+}

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 
 @Injectable()
@@ -11,7 +12,14 @@ export class CarouselDraftRepository {
     status?: string;
     data: Record<string, unknown>;
   }) {
-    return this.prisma.carouselDraft.create({ data });
+    return this.prisma.carouselDraft.create({
+      data: {
+        organizationId: data.organizationId,
+        brandProfileId: data.brandProfileId,
+        status: data.status,
+        data: data.data as Prisma.InputJsonValue,
+      },
+    });
   }
 
   async findById(id: string) {
@@ -44,7 +52,11 @@ export class CarouselDraftRepository {
   }) {
     return this.prisma.carouselDraft.updateMany({
       where: { id, organizationId },
-      data: { ...data, updatedAt: new Date() },
+      data: {
+        status: data.status,
+        data: data.data as Prisma.InputJsonValue | undefined,
+        updatedAt: new Date(),
+      },
     });
   }
 

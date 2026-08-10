@@ -24,10 +24,10 @@ export class DevToProvider extends SocialAbstract implements SocialProvider {
   dto = DevToSettingsDto;
 
   async generateAuthUrl() {
-    const state = makeId(6);
+    const state = makeId(32);
     return {
       url: state,
-      codeVerifier: makeId(10),
+      codeVerifier: makeId(48),
       state,
     };
   }

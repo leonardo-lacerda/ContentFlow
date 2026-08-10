@@ -183,10 +183,14 @@ export class AdCreativeGenerateService {
       const batch = validation.data as AdCreativeBatch;
 
       // 8. Run policy checks on each ad
+      const constraints = (dna?.constraints || {}) as {
+        avoid?: string[];
+        do?: string[];
+      };
       for (const ad of batch.ads) {
         const policyResult = runAdPolicyChecks(ad, {
-          forbiddenTerms: dna?.constraints?.avoid as string[],
-          complianceNotes: dna?.constraints?.do as string[],
+          forbiddenTerms: constraints.avoid || [],
+          complianceNotes: constraints.do || [],
         });
         ad.policyWarnings = policyResult.warnings as any;
         ad.claimsFlags = ad.claimsFlags || [];

@@ -10,16 +10,26 @@ const ModeComponent = () => {
   const [mode, setMode] = useCookie('mode', 'light');
 
   const changeMode = useCallback(() => {
-    modeEmitter.emit('mode', mode === 'dark' ? 'light' : 'dark');
-    setMode(mode === 'dark' ? 'light' : 'dark');
+    const nextMode = mode === 'dark' ? 'light' : 'dark';
+    modeEmitter.emit('mode', nextMode);
+    setMode(nextMode);
   }, [mode]);
 
   useEffect(() => {
-    document.body.classList.remove('dark', 'light');
-    document.body.classList.add(mode);
+    const elements = [document.documentElement, document.body];
+    elements.forEach((element) => {
+      element.classList.remove('dark', 'light');
+      element.classList.add(mode);
+    });
+    document.documentElement.style.colorScheme = mode;
   }, [mode]);
   return (
-    <div onClick={changeMode} className="select-none cursor-pointer">
+    <button
+      type="button"
+      onClick={changeMode}
+      aria-label={mode === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+      className="select-none cursor-pointer rounded-[8px] p-1 transition hover:bg-boxHover"
+    >
       {mode === 'dark' ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -53,7 +63,7 @@ const ModeComponent = () => {
           />
         </svg>
       )}
-    </div>
+    </button>
   );
 };
 export default ModeComponent;

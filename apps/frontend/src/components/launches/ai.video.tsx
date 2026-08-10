@@ -175,6 +175,10 @@ export const AiVideo: FC<{
     <>
       <div className="relative group">
         <div
+          role="button"
+          tabIndex={0}
+          aria-label={value.length < 30 ? 'Digite pelo menos 30 caracteres para gerar um vídeo com IA' : 'Gerar vídeo com IA'}
+          title={value.length < 30 ? 'Digite pelo menos 30 caracteres para gerar um vídeo com IA' : 'Gerar vídeo com IA. Passe o mouse para escolher o modelo.'}
           {...(value.length < 30
             ? {
                 'data-tooltip-id': 'tooltip',
@@ -235,6 +239,7 @@ export const AiVideo: FC<{
                   onClick={generateVideo(p)}
                   key={p.identifier}
                   className="hover:bg-sixth"
+                  title={`Gerar vídeo com ${p.title}`}
                 >
                   {p.title}
                 </li>

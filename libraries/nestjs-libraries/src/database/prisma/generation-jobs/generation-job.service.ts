@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { GenerationJobRepository } from './generation-job.repository';
 import { GenerationJobStatus, GenerationJobType } from '@prisma/client';
 
@@ -25,10 +25,14 @@ export class GenerationJobService {
     promptVersion?: string;
     schemaVersion?: string;
     costEstimate?: number;
+    progress?: any;
   }) {
     // Check idempotency key if provided
     if (data.idempotencyKey) {
-      const existing = await this.generationJobRepository.findByIdempotencyKey(data.idempotencyKey);
+      const existing = await this.generationJobRepository.findByIdempotencyKey(
+        data.idempotencyKey,
+        data.organizationId
+      );
       if (existing) {
         return existing;
       }
@@ -52,7 +56,11 @@ export class GenerationJobService {
     return this.generationJobRepository.fail(id, error);
   }
 
-  async cancelJob(id: string) {
+  async cancelJob(id: string, orgId: string) {
+    const job = await this.generationJobRepository.findById(id, orgId);
+    if (!job) {
+      throw new NotFoundException('Generation job not found');
+    }
     return this.generationJobRepository.cancel(id);
   }
 

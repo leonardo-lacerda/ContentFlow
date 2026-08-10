@@ -1,80 +1,136 @@
-/* ============================================================
-   ContentFlow Design System — primitive tokens
-   SSOT visual: landing/styles.css (editorial light, amber)
-   Consumed by colors.scss → Tailwind (--new-*, --color-*)
-   ============================================================ */
+/*
+ * ContentFlow Design System
+ *
+ * The internal product intentionally shares the visual vocabulary of the
+ * landing page: editorial typography, paper surfaces, hard ink borders and
+ * a small set of expressive accents. Keep component code on semantic tokens
+ * (cf-bg, cf-surface, cf-accent, ...); primitive values live here only.
+ */
 
 :root {
-  /* Primitives */
-  --cf-white: #ffffff;
-  --cf-offwhite: #fafafa;
-  --cf-cream: #f7f2ea;
-  --cf-sand: #efe7da;
-  --cf-ink: #1c1917;
-  --cf-muted: #78716c;
-  --cf-stone-400: #a8a29e;
-  --cf-stone-300: #d6d3d1;
-  --cf-line: rgba(28, 25, 23, 0.1);
-  --cf-line-soft: rgba(28, 25, 23, 0.06);
-  --cf-line-solid: #e7e5e4;
-  --cf-line-strong: rgba(28, 25, 23, 0.18);
+  /* Landing primitives */
+  --cf-paper: #eef1ea;
+  --cf-paper-2: #e3e7dd;
+  --cf-card: #ffffff;
+  --cf-ink: #14171a;
+  --cf-ink-soft: rgba(20, 23, 26, 0.62);
+  --cf-ink-faint: rgba(20, 23, 26, 0.42);
+  --cf-line: rgba(20, 23, 26, 0.18);
+  --cf-line-soft: rgba(20, 23, 26, 0.1);
+  --cf-line-strong: rgba(20, 23, 26, 0.72);
 
-  --cf-amber: #b4530a;
-  --cf-amber-dark: #8a3f08;
-  --cf-amber-soft: #f3e6d8;
-  --cf-ok: #3f7d4e;
-  --cf-ok-bg: #e8f2ea;
-  --cf-danger: #b91c1c;
-  --cf-danger-soft: #fef2f2;
+  --cf-lime: #c6f24e;
+  --cf-lime-dark: #a9d831;
+  --cf-blue: #2e62ff;
+  --cf-blue-soft: #e2e9ff;
+  --cf-coral: #ff5a3c;
+  --cf-coral-soft: #ffe2dc;
+  --cf-green: #0fb37b;
+  --cf-green-soft: #d6f5e8;
+  --cf-yellow: #ffc93c;
+  --cf-yellow-soft: #fff1c9;
 
-  /* Semantic (light default) */
-  --cf-bg: var(--cf-offwhite);
-  --cf-bg-elevated: var(--cf-white);
-  --cf-bg-warm: var(--cf-cream);
+  /* Semantic light theme */
+  --cf-bg: var(--cf-paper);
+  --cf-bg-subtle: var(--cf-paper-2);
+  --cf-bg-elevated: var(--cf-card);
   --cf-fg: var(--cf-ink);
-  --cf-fg-muted: var(--cf-muted);
-  --cf-fg-inverse: var(--cf-white);
-  --cf-border: var(--cf-line-solid);
-  --cf-accent: var(--cf-amber);
-  --cf-accent-hover: var(--cf-amber-dark);
-  --cf-accent-soft: var(--cf-amber-soft);
-  --cf-success: var(--cf-ok);
-  --cf-success-bg: var(--cf-ok-bg);
+  --cf-fg-muted: var(--cf-ink-soft);
+  --cf-fg-faint: var(--cf-ink-faint);
+  --cf-fg-inverse: var(--cf-paper);
+  --cf-border: var(--cf-line);
+  --cf-border-strong: var(--cf-line-strong);
+  --cf-accent: var(--cf-lime);
+  --cf-accent-hover: var(--cf-lime-dark);
+  --cf-accent-ink: var(--cf-ink);
+  --cf-info: var(--cf-blue);
+  --cf-info-bg: var(--cf-blue-soft);
+  --cf-success: var(--cf-green);
+  --cf-success-bg: var(--cf-green-soft);
+  --cf-warning: var(--cf-yellow);
+  --cf-warning-bg: var(--cf-yellow-soft);
+  --cf-danger: var(--cf-coral);
+  --cf-danger-bg: var(--cf-coral-soft);
 
   /* Type */
-  --cf-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    sans-serif;
-  --cf-font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
-  --cf-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --cf-font-display: 'Anton', Impact, Haettenschweiler, sans-serif;
+  --cf-font-body: 'Schibsted Grotesk', Inter, system-ui, sans-serif;
+  --cf-font-sans: var(--cf-font-body);
+  --cf-font-serif: var(--cf-font-display);
+  --cf-font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Radius */
+  /* Layout */
+  --cf-radius-xs: 6px;
   --cf-radius-sm: 10px;
   --cf-radius: 14px;
   --cf-radius-md: 16px;
-  --cf-radius-lg: 18px;
-  --cf-radius-xl: 24px;
+  --cf-radius-lg: 20px;
+  --cf-radius-xl: 28px;
   --cf-radius-pill: 999px;
+  --cf-content-max: 1440px;
 
-  /* Shadow */
-  --cf-shadow: 0 1px 2px rgba(28, 25, 23, 0.04),
-    0 12px 32px rgba(28, 25, 23, 0.06);
-  --cf-shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05),
-    0 6px 18px rgba(28, 25, 23, 0.05);
-  --cf-shadow-accent: 0 8px 18px rgba(180, 83, 10, 0.22);
-  --cf-shadow-focus: 0 0 0 4px rgba(180, 83, 10, 0.08);
-  --cf-shadow-xs: 0 1px 2px rgba(28, 25, 23, 0.04);
-  --cf-shadow-lg: 0 4px 12px rgba(28, 25, 23, 0.06), 0 16px 40px rgba(28, 25, 23, 0.08);
-  --cf-shadow-xl: 0 8px 24px rgba(28, 25, 23, 0.08), 0 24px 64px rgba(28, 25, 23, 0.12);
-  --cf-shadow-glow: 0 0 0 4px rgba(180, 83, 10, 0.06), 0 0 16px rgba(180, 83, 10, 0.1);
-
-  /* Motion */
+  /* Landing motion and shadows */
+  --cf-shadow-hard: 4px 4px 0 var(--cf-ink);
+  --cf-shadow-hard-sm: 3px 3px 0 var(--cf-ink);
+  --cf-shadow: 0 18px 40px rgba(20, 23, 26, 0.12);
+  --cf-shadow-sm: 0 8px 22px rgba(20, 23, 26, 0.08);
+  --cf-shadow-lg: 10px 10px 0 var(--cf-blue);
+  --cf-shadow-focus: 0 0 0 4px rgba(46, 98, 255, 0.18);
   --cf-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --cf-transition-fast: 120ms var(--cf-ease);
+  --cf-transition: 180ms var(--cf-ease);
+  --cf-transition-slow: 280ms var(--cf-ease);
+
+  /* Compatibility aliases for existing components during migration. */
+  --cf-white: var(--cf-card);
+  --cf-offwhite: var(--cf-paper);
+  --cf-cream: var(--cf-paper-2);
+  --cf-sand: #d4dccd;
+  --cf-muted: var(--cf-ink-soft);
+  --cf-stone-400: #7f8980;
+  --cf-stone-300: #cbd3c8;
+  --cf-line-solid: #cbd3c8;
+  --cf-amber: var(--cf-blue);
+  --cf-amber-dark: #2047c7;
+  --cf-amber-soft: var(--cf-blue-soft);
+  --cf-ok: var(--cf-green);
+  --cf-ok-bg: var(--cf-green-soft);
+  --cf-shadow-accent: var(--cf-shadow-hard-sm);
+  --cf-shadow-xs: 0 1px 2px rgba(20, 23, 26, 0.06);
+  --cf-shadow-xl: 12px 12px 0 var(--cf-ink);
+  --cf-shadow-glow: var(--cf-shadow-focus);
   --cf-duration-fast: 0.15s;
   --cf-duration: 0.2s;
+}
 
-  /* Transitions */
-  --cf-transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
-  --cf-transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
-  --cf-transition-slow: 280ms cubic-bezier(0.4, 0, 0.2, 1);
-  --cf-transition-spring: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+/* Dark surfaces are reserved for focused creative workspaces, not the app
+ * shell. They retain the same accent language and contrast with paper UI. */
+.dark {
+  --cf-paper: #111315;
+  --cf-paper-2: #191c1f;
+  --cf-card: #202428;
+  --cf-line: rgba(245, 247, 242, 0.16);
+  --cf-line-soft: rgba(245, 247, 242, 0.1);
+  --cf-line-strong: rgba(245, 247, 242, 0.72);
+  --cf-stone-300: #3b4146;
+  --cf-stone-400: #8b959d;
+  --cf-bg: #111315;
+  --cf-bg-subtle: #191c1f;
+  --cf-bg-elevated: #202428;
+  --cf-fg: #f5f7f2;
+  --cf-fg-muted: rgba(245, 247, 242, 0.64);
+  --cf-fg-faint: rgba(245, 247, 242, 0.42);
+  --cf-fg-inverse: var(--cf-ink);
+  --cf-border: rgba(245, 247, 242, 0.16);
+  --cf-border-strong: rgba(245, 247, 242, 0.72);
+  --cf-accent: var(--cf-lime);
+  --cf-accent-hover: #d5ff72;
+  --cf-info-bg: rgba(46, 98, 255, 0.2);
+  --cf-success-bg: rgba(15, 179, 123, 0.2);
+  --cf-warning-bg: rgba(255, 201, 60, 0.2);
+  --cf-danger-bg: rgba(255, 90, 60, 0.2);
+  --cf-shadow-hard: 4px 4px 0 rgba(0, 0, 0, 0.65);
+  --cf-shadow-hard-sm: 3px 3px 0 rgba(0, 0, 0, 0.65);
+  --cf-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  --cf-shadow-sm: 0 8px 22px rgba(0, 0, 0, 0.22);
 }

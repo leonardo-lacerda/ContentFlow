@@ -6,6 +6,7 @@ import { useUser } from '@gitroom/frontend/components/layout/user.context';
 import { useVariables } from '@gitroom/react/helpers/variable.context';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
 import { MenuItem } from '@gitroom/frontend/components/new-layout/menu-item';
+import { PlanUsageBadge } from '@gitroom/frontend/components/billing/plan-usage-badge';
 
 interface MenuItemInterface {
   id?: string;
@@ -118,6 +119,12 @@ const Icons = {
       <path d="M17 10l4-2v8l-4-2v-4z" />
     </svg>
   ),
+  creative: (
+    <svg {...iconClass}>
+      <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" />
+      <path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16z" />
+    </svg>
+  ),
   billing: (
     <svg {...iconClass}>
       <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -142,69 +149,39 @@ export const useMenuItem = () => {
       path: '/',
     },
     {
-      name: t('brands', 'Marcas'),
+      name: t('studio_nav', 'Estúdio'),
+      icon: Icons.creative,
+      path: '/studio',
+    },
+    {
+      name: t('projects', 'Projetos'),
+      icon: Icons.posts,
+      path: '/studio/new?view=projects',
+    },
+    {
+      name: t('brands', 'Marca'),
       icon: Icons.brand,
       path: '/brands',
     },
     {
-      name: t('content_swipe', 'Content Swipe'),
-      icon: Icons.swipe,
-      path: '/swipe',
+      name: t('library', 'Biblioteca'),
+      icon: Icons.media,
+      path: '/media',
     },
     {
-      name: t('generate_carousel', 'Gerar carrossel'),
-      icon: Icons.generate,
-      path: '/generate',
-    },
-    {
-      name: t('posts', 'Posts'),
-      icon: Icons.posts,
-      path: '/posts',
-    },
-    {
-      name: t('editorial', 'Editorial'),
-      icon: Icons.editorial,
-      path: '/editorial',
-    },
-    {
-      name: t('ads', 'Anúncios'),
-      icon: Icons.ads,
-      path: '/ads',
-    },
-    {
-      name: t('email_campaigns', 'E-mail'),
-      icon: Icons.email,
-      path: '/email',
-    },
-    {
-      name: t('video_scripts', 'Roteiro de vídeo'),
-      icon: Icons.video,
-      path: '/video',
-    },
-    {
-      name: t('calendar', 'Calendário'),
+      name: t('calendar', 'Publicar'),
       icon: Icons.publish,
       path: '/publish',
+    },
+    {
+      name: t('analytics', 'Insights'),
+      icon: Icons.analytics,
+      path: '/analytics',
     },
     {
       name: t('channels', 'Canais'),
       icon: Icons.channels,
       path: '/channels',
-    },
-    {
-      name: t('analytics', 'Analytics'),
-      icon: Icons.analytics,
-      path: '/analytics',
-    },
-    {
-      name: t('carousel_performance', 'Performance'),
-      icon: Icons.performance,
-      path: '/analytics/carousel',
-    },
-    {
-      name: t('media', 'Mídia'),
-      icon: Icons.media,
-      path: '/media',
     },
   ] satisfies MenuItemInterface[] as MenuItemInterface[];
 
@@ -245,7 +222,7 @@ const MENU_SECTIONS: { id: string; label: string; paths: string[] }[] = [
   {
     id: 'criar',
     label: 'Criar',
-    paths: ['/swipe', '/generate', '/posts', '/editorial', '/ads', '/email', '/video'],
+    paths: ['/studio', '/studio/new', '/creative', '/creative?view=projects'],
   },
   {
     id: 'publicar',
@@ -350,6 +327,9 @@ export const TopMenu: FC = () => {
               ))}
             </div>
           ))}
+      </div>
+      <div className="px-[4px] shrink-0">
+        <PlanUsageBadge />
       </div>
       <div className="flex flex-col gap-[2px] shrink-0 border-t border-newSep pt-[8px] blurMe">
         <MenuSectionLabel label="Conta" />

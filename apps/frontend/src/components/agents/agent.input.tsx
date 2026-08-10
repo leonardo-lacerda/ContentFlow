@@ -1,8 +1,9 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useCopilotContext, useCopilotReadable } from '@copilotkit/react-core';
 import AutoResizingTextarea from '@gitroom/frontend/components/agents/agent.textarea';
 import { useChatContext } from '@copilotkit/react-ui';
 import { InputProps } from '@copilotkit/react-ui/dist/components/chat/props';
+import { useSearchParams } from 'next/navigation';
 const MAX_NEWLINES = 6;
 
 export const Input = ({
@@ -16,9 +17,11 @@ export const Input = ({
 }: InputProps & { onChange: (value: string) => void }) => {
   const context = useChatContext();
   const copilotContext = useCopilotContext();
+  const searchParams = useSearchParams();
   const showPoweredBy = !copilotContext.copilotApiConfig?.publicApiKey;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hydratedPromptRef = useRef<string | null>(null);
   const [isComposing, setIsComposing] = useState(false);
 
   const handleDivClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -35,10 +38,26 @@ export const Input = ({
   };
 
   const [text, setText] = useState('');
+
+  useEffect(() => {
+    const initialPrompt = searchParams.get('prompt');
+    if (!initialPrompt || text || hydratedPromptRef.current === initialPrompt) return;
+    hydratedPromptRef.current = initialPrompt;
+    setText(initialPrompt);
+    onChange(initialPrompt);
+  }, [onChange, searchParams, text]);
   const send = () => {
     if (inProgress) return;
-    onSend(text);
-    setText('');
+    const sentText = text;
+    // Preserve the prompt until the transport accepts it so transient errors
+    // do not silently discard what the user just wrote.
+    void Promise.resolve(onSend(sentText))
+      .then(() => {
+        setText((current) => (current === sentText ? '' : current));
+      })
+      .catch(() => {
+        textareaRef.current?.focus();
+      });
 
     textareaRef.current?.focus();
   };

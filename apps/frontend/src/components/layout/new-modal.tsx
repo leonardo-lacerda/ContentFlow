@@ -402,8 +402,15 @@ export const useDecisionModal = () => {
       onlyApprove = false,
       approveLabel = 'Yes',
       cancelLabel = 'No',
-      newRes,
-    } = {}) => {
+       newRes,
+     }: {
+       title?: string;
+       description?: string;
+       onlyApprove?: boolean;
+       approveLabel?: string;
+       cancelLabel?: string;
+       newRes?: (value: boolean) => void;
+     } = {}) => {
       return new Promise<boolean>((res) => {
         modals.openModal({
           title,

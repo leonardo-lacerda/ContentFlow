@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
-import { CarouselProjectStatus } from '@prisma/client';
+import { ApprovalStatus, CarouselProjectStatus } from '@prisma/client';
 
 @Injectable()
 export class CarouselProjectRepository {
@@ -47,7 +47,7 @@ export class CarouselProjectRepository {
     hashtags?: string[];
     status?: CarouselProjectStatus;
     metadata?: any;
-    approvalStatus?: string;
+    approvalStatus?: ApprovalStatus;
     approvedBy?: string;
     approvedAt?: Date;
     rejectionReason?: string;

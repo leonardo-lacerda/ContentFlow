@@ -12,6 +12,9 @@ import { NotificationService } from '@gitroom/nestjs-libraries/database/prisma/n
 import { Request } from 'express';
 import { Nowpayments } from '@gitroom/nestjs-libraries/crypto/nowpayments';
 import { AuthService } from '@gitroom/helpers/auth/auth.service';
+import { BillingAccountingService } from '@gitroom/nestjs-libraries/services/billing-accounting.service';
+import { BillingStripeService } from '@gitroom/nestjs-libraries/services/billing-stripe.service';
+import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
 
 @ApiTags('Billing')
 @Controller('/billing')
@@ -23,15 +26,177 @@ export class BillingController {
     private _stripeService: StripeService,
     private _caktoService: CaktoService,
     private _notificationService: NotificationService,
-    private _nowpayments: Nowpayments
+    private _nowpayments: Nowpayments,
+    private readonly _billingAccounting: BillingAccountingService,
+    private readonly _billingStripe: BillingStripeService,
+    private readonly _pricingCatalog: PricingCatalogService
   ) {}
 
   @Get('/plans')
-  plans() {
+  async plans() {
+    if (process.env.BILLING_CREDITS_V2 !== 'false') {
+      return {
+        provider: 'stripe',
+        billingPeriod: 'MONTHLY',
+        plans: await this._billingAccounting.listPlans(),
+        topups: await this._billingAccounting.listTopups(),
+      };
+    }
     return {
       provider: this._caktoService.isConfigured() ? 'cakto' : 'stripe',
       plans: this._caktoService.commercialPlans,
     };
+  }
+
+  @Get('/v2/plans')
+  async billingPlansV2() {
+    return {
+      provider: 'stripe',
+      billingPeriod: 'MONTHLY',
+      plans: await this._billingAccounting.listPlans(),
+      topups: await this._billingAccounting.listTopups(),
+    };
+  }
+
+  @Get('/v2/pricing')
+  billingPricingV2() {
+    return this._pricingCatalog.list();
+  }
+
+  @Post('/v2/quote')
+  billingQuoteV2(@Body() body: {
+    capability?: string;
+    operation?: string;
+    model?: string;
+    durationSec?: number;
+    resolution?: string;
+    hasInput?: boolean;
+    provider?: string;
+    metadata?: Record<string, unknown>;
+  }) {
+    return this._pricingCatalog.quote(body as any);
+  }
+
+  @Get('/v2/account')
+  async billingAccountV2(@GetOrgFromRequest() org: Organization) {
+    return {
+      subscription: await this._billingAccounting.getSubscription(org.id),
+      credits: await this._billingAccounting.getBalance(org.id),
+    };
+  }
+
+  @Get('/v2/credits')
+  async billingCreditsV2(@GetOrgFromRequest() org: Organization) {
+    return {
+      balance: await this._billingAccounting.getBalance(org.id),
+      usage: await this._billingAccounting.getUsage(org.id, 30),
+      ledger: await this._billingAccounting.getLedger(org.id, 100),
+    };
+  }
+
+  @Get('/v2/invoices')
+  async billingInvoicesV2(@GetOrgFromRequest() org: Organization) {
+    return this._billingAccounting.getInvoices(org.id);
+  }
+
+  @Post('/v2/checkout')
+  billingCheckoutV2(
+    @GetOrgFromRequest() org: Organization,
+    @GetUserFromRequest() user: User,
+    @Body() body: { planCode: string; successUrl?: string; cancelUrl?: string }
+  ) {
+    return this._billingStripe.createSubscriptionCheckout({
+      organizationId: org.id,
+      userId: user.id,
+      email: user.email,
+      organizationName: org.name,
+      planCode: body.planCode,
+      successUrl: body.successUrl,
+      cancelUrl: body.cancelUrl,
+    });
+  }
+
+  @Post('/v2/topups/checkout')
+  billingTopupCheckoutV2(
+    @GetOrgFromRequest() org: Organization,
+    @GetUserFromRequest() user: User,
+    @Body() body: { priceCode: string; successUrl?: string; cancelUrl?: string }
+  ) {
+    return this._billingStripe.createTopupCheckout({
+      organizationId: org.id,
+      userId: user.id,
+      email: user.email,
+      organizationName: org.name,
+      priceCode: body.priceCode,
+      successUrl: body.successUrl,
+      cancelUrl: body.cancelUrl,
+    });
+  }
+
+  @Post('/v2/change-plan')
+  billingChangePlanV2(@GetOrgFromRequest() org: Organization, @Body() body: { planCode: string }) {
+    return this._billingStripe.changePlan(org.id, body.planCode);
+  }
+
+  @Post('/v2/cancel')
+  billingCancelV2(@GetOrgFromRequest() org: Organization) {
+    return this._billingStripe.cancel(org.id);
+  }
+
+  @Get('/v2/portal')
+  billingPortalV2(@GetOrgFromRequest() org: Organization) {
+    return this._billingStripe.createPortal(org.id);
+  }
+
+  @Get('/v2/admin/summary')
+  billingAdminSummaryV2(@GetUserFromRequest() user: User) {
+    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
+    return this._billingAccounting.adminSummary();
+  }
+
+  @Get('/v2/admin/pricing')
+  async billingAdminPricingV2(@GetUserFromRequest() user: User) {
+    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
+    return this._pricingCatalog.list();
+  }
+
+  @Post('/v2/admin/adjust-credits')
+  billingAdminAdjustCreditsV2(
+    @GetUserFromRequest() user: User,
+    @Body() body: { organizationId: string; credits: number; reason: string; reference?: string }
+  ) {
+    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
+    return this._billingAccounting.adjustCredits(body.organizationId, body.credits, body.reason, user.id, body.reference);
+  }
+
+  @Post('/v2/admin/plans/:code')
+  billingAdminUpdatePlanV2(
+    @GetUserFromRequest() user: User,
+    @Param('code') code: string,
+    @Body() body: { name?: string; priceCents?: number; monthlyCredits?: number; active?: boolean }
+  ) {
+    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
+    return this._billingAccounting.updatePlan(code, { ...body, updatedBy: user.id });
+  }
+
+  @Post('/v2/admin/topups/:code')
+  billingAdminUpdateTopupV2(
+    @GetUserFromRequest() user: User,
+    @Param('code') code: string,
+    @Body() body: { amountCents?: number; credits?: number; validityDays?: number; active?: boolean }
+  ) {
+    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
+    return this._billingAccounting.updateTopup(code, { ...body, updatedBy: user.id });
+  }
+
+  @Post('/v2/admin/pricing/:code')
+  billingAdminUpdatePricingV2(
+    @GetUserFromRequest() user: User,
+    @Param('code') code: string,
+    @Body() body: { baseCredits?: number; minCredits?: number; providerCostUsd?: number; active?: boolean }
+  ) {
+    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
+    return this._pricingCatalog.update(code, { ...body, updatedBy: user.id });
   }
 
   @Get('/check/:id')

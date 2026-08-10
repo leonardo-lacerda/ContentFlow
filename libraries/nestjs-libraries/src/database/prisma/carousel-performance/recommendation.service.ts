@@ -61,8 +61,8 @@ export class RecommendationService {
       totalCount,
     ] = await Promise.all([
       this.carouselPerformanceRepository.getTopPerformersByBrand(brandProfileId, 10),
-      this.carouselPerformanceRepository.getAggregatedByTemplateForBrand(brandProfileId),
-      this.carouselPerformanceRepository.getAggregatedByThemeForBrand(brandProfileId),
+      this.carouselPerformanceRepository.getAggregatedByTemplateForBrand(brandProfileId) as Promise<any[]>,
+      this.carouselPerformanceRepository.getAggregatedByThemeForBrand(brandProfileId) as Promise<any[]>,
       this.carouselPerformanceRepository.getAggregatedByPlatformForBrand(brandProfileId),
       this.carouselPerformanceRepository.getCountByBrand(brandProfileId),
     ]);

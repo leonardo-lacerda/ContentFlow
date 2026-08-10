@@ -62,13 +62,13 @@ export function Login() {
       <form className="flex w-full" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="flex w-full flex-col">
           <div>
-            <div className="mb-[10px] inline-flex rounded-full border border-white/10 bg-white/[0.05] px-[12px] py-[6px] text-[12px] text-white/60">
+            <div className="mb-[10px] inline-flex rounded-full border border-newBorder bg-cf-cream px-[12px] py-[6px] text-[12px] font-[600] text-cf-amber">
               {t('welcome_back', 'Welcome back')}
             </div>
-            <h1 className="text-start text-[34px] font-[600] leading-[1.02] tracking-[-1.2px] text-white md:text-[40px]">
+            <h1 className="text-start font-serif text-[34px] font-[600] leading-[1.05] tracking-[-0.02em] text-cf-ink md:text-[40px]">
               {t('sign_in', 'Sign In')}
             </h1>
-            <p className="mt-[12px] text-[14px] leading-[1.6] text-white/58">
+            <p className="mt-[12px] text-[14px] leading-[1.6] text-cf-muted">
               {t(
                 'access_your_workspace_and_keep_creating',
                 'Acesse seu workspace e continue criando conteúdo.'
@@ -76,7 +76,7 @@ export function Login() {
             </p>
           </div>
           <div className="mt-[28px] flex flex-col">
-            <div className="mb-[12px] text-[13px] font-[500] text-white/62">
+            <div className="mb-[12px] text-[13px] font-[500] text-cf-muted">
               {t('continue_with', 'Continue With')}
             </div>
             {isGeneral && genericOauth ? (
@@ -89,9 +89,9 @@ export function Login() {
               </div>
             )}
             <div className="relative my-[24px] h-[20px]">
-              <div className="absolute top-[50%] h-[1px] w-full -translate-y-[50%] bg-white/10" />
+              <div className="absolute top-[50%] h-[1px] w-full -translate-y-[50%] bg-newBorder" />
               <div className="absolute -top-[4px] start-0 z-[1] flex w-full items-center justify-center">
-                <div className="bg-[#12141D] px-[16px] text-[13px] text-white/45">
+                <div className="bg-white px-[16px] text-[13px] text-cf-muted">
                   {t('or', 'or')}
                 </div>
               </div>
@@ -115,8 +115,8 @@ export function Login() {
                 />
               </div>
               {notActivated && (
-                <div className="mb-[4px] rounded-[14px] border border-amber-500/30 bg-amber-500/10 p-[14px]">
-                  <p className="mb-[8px] text-sm leading-[1.55] text-amber-300">
+                <div className="mb-[4px] rounded-[14px] border border-amber-300 bg-amber-50 p-[14px]">
+                  <p className="mb-[8px] text-sm leading-[1.55] text-amber-800">
                     {t(
                       'account_not_activated',
                       'Your account is not activated yet. Please check your email for the activation link.'
@@ -124,7 +124,7 @@ export function Login() {
                   </p>
                   <Link
                     href="/auth/activate"
-                    className="text-sm text-amber-200 underline hover:text-amber-100"
+                    className="text-sm text-amber-700 underline hover:text-amber-900"
                   >
                     {t('resend_activation_email', 'Resend Activation Email')}
                   </Link>
@@ -140,11 +140,11 @@ export function Login() {
                     {t('sign_in_1', 'Sign in')}
                   </Button>
                 </div>
-                <p className="mt-[18px] text-sm text-white/54">
+                <p className="mt-[18px] text-sm text-cf-muted">
                   {t('don_t_have_an_account', "Don't Have An Account?")}&nbsp;
                   <Link
                     href="/auth"
-                    className="cursor-pointer text-white underline hover:text-[#f3e6d8]"
+                    className="cursor-pointer text-cf-ink underline hover:text-cf-amber"
                   >
                     {t('sign_up', 'Sign Up')}
                   </Link>
@@ -152,7 +152,7 @@ export function Login() {
                 <p className="mt-[12px] text-sm">
                   <Link
                     href="/auth/forgot"
-                    className="cursor-pointer text-white/72 underline hover:text-white"
+                    className="cursor-pointer text-cf-muted underline hover:text-cf-ink"
                   >
                     {t('forgot_password', 'Forgot password')}
                   </Link>

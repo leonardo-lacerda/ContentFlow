@@ -78,7 +78,7 @@ export class MeweProvider extends SocialAbstract implements SocialProvider {
   }
 
   async generateAuthUrl() {
-    const state = makeId(6);
+    const state = makeId(32);
     return {
       url:
         `${this.meweHost}/login` +
@@ -87,7 +87,7 @@ export class MeweProvider extends SocialAbstract implements SocialProvider {
           `${process.env.FRONTEND_URL}/integrations/social/mewe`
         )}` +
         `&state=${state}`,
-      codeVerifier: makeId(10),
+      codeVerifier: makeId(48),
       state,
     };
   }

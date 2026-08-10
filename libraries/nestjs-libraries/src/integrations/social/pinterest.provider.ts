@@ -98,7 +98,7 @@ export class PinterestProvider
   }
 
   async generateAuthUrl() {
-    const state = makeId(6);
+    const state = makeId(32);
     return {
       url: `https://www.pinterest.com/oauth/?client_id=${
         process.env.PINTEREST_CLIENT_ID
@@ -107,7 +107,7 @@ export class PinterestProvider
       )}&response_type=code&scope=${encodeURIComponent(
         'boards:read,boards:write,pins:read,pins:write,user_accounts:read'
       )}&state=${state}`,
-      codeVerifier: makeId(10),
+      codeVerifier: makeId(48),
       state,
     };
   }

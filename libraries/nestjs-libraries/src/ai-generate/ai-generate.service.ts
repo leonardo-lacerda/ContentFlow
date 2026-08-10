@@ -13,6 +13,7 @@ import {
 } from './ai-response-validator';
 import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.service';
 import { GenerationCostService } from '@gitroom/nestjs-libraries/database/prisma/generation-costs/generation-cost.service';
+import { PlanLimitsService, GenerationType } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import { HybridComposeService } from '@gitroom/nestjs-libraries/design-system/hybrid/hybrid-compose.service';
 import { CircuitBreakerService } from './circuit-breaker.service';
 import { PromptInjectionGuard } from './prompt-injection-guard';
@@ -385,6 +386,7 @@ export class AiGenerateService {
     private _extractContentService: ExtractContentService,
     private _generationJobService: GenerationJobService,
     private _generationCostService: GenerationCostService,
+    private _planLimitsService: PlanLimitsService,
     private _circuitBreaker: CircuitBreakerService,
     private _hybridCompose: HybridComposeService
   ) {}
@@ -456,6 +458,7 @@ export class AiGenerateService {
   }
 
   async generateCarouselIdeas(orgId: string, body: AiGenerateCarouselIdeasDto) {
+    await this._planLimitsService.enforceLimit(orgId, 'content_idea');
     const openAiApiKey =
       process.env.AI_GENERATE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
     const openAiBaseUrl =
@@ -643,6 +646,7 @@ Escolha o hook mais forte para cada ideia. O titulo deve ser curto (max 8 palavr
   // Gera a legenda do post + hashtags adaptadas à rede escolhida, a partir do
   // conteúdo do carrossel já criado.
   async generateCarouselCaption(orgId: string, body: AiGenerateCaptionDto) {
+    await this._planLimitsService.enforceLimit(orgId, 'carousel_generation');
     const openAiApiKey =
       process.env.AI_GENERATE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
     const openAiBaseUrl =
@@ -840,6 +844,7 @@ Escolha o hook mais forte para cada ideia. O titulo deve ser curto (max 8 palavr
   }
 
   async generateCarouselPlan(orgId: string, body: AiGenerateCarouselDto) {
+    await this._planLimitsService.enforceLimit(orgId, 'carousel_generation');
     const topic = body.topic?.trim();
     const sourceUrl = body.sourceUrl?.trim();
     const sourceTextInput = body.sourceText?.trim();
@@ -1056,6 +1061,7 @@ Escolha o hook mais forte para cada ideia. O titulo deve ser curto (max 8 palavr
   }
 
   async reviewCarousel(orgId: string, body: AiGenerateCarouselDto) {
+    await this._planLimitsService.enforceLimit(orgId, 'carousel_generation');
     const openAiApiKey =
       process.env.AI_GENERATE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
     const openAiBaseUrl =
@@ -1211,7 +1217,10 @@ Score geral = média das 9 dimensões × 20. Dimensões CRITICAL (focalHierarchy
     // --- Local forbidden terms validation as fallback ---
     if (forbiddenTerms && Array.isArray(parsed.issues)) {
       const terms = forbiddenTerms.split(/[,;]\s*/).map(t => t.trim().toLowerCase()).filter(Boolean);
-      const planSlides = (parsedPayload.plan?.slides || parsedPayload.slides || []) as Array<{
+      const parsedPlan = parsedPayload.plan && typeof parsedPayload.plan === 'object'
+        ? parsedPayload.plan as Record<string, unknown>
+        : {};
+      const planSlides = (parsedPlan.slides || parsedPayload.slides || []) as Array<{
         index?: number; headline?: string; body?: string; cta?: string;
       }>;
       const existingMatches = (parsed.forbiddenTermMatches || []) as Array<{
@@ -1251,6 +1260,7 @@ Score geral = média das 9 dimensões × 20. Dimensões CRITICAL (focalHierarchy
   }
 
   async fixCarouselWithEditorialReview(orgId: string, body: AiGenerateCarouselDto) {
+    await this._planLimitsService.enforceLimit(orgId, 'carousel_generation');
     const openAiApiKey =
       process.env.AI_GENERATE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
     const openAiBaseUrl =
@@ -1375,6 +1385,7 @@ Score geral = média das 9 dimensões × 20. Dimensões CRITICAL (focalHierarchy
       }>;
     }
   ) {
+    await this._planLimitsService.enforceLimit(orgId, 'carousel_generation');
     const slides = (Array.isArray(body.slides) ? body.slides : [])
       .map((slide, position) => ({
         index: Number(slide.index || position + 1),
@@ -1525,6 +1536,7 @@ Tarefa: crie o conceito criativo da campanha e, para CADA slide, um render brief
     orgId: string,
     body: { slides?: Array<{ slideIndex?: number; request?: AiGenerateImageDto }> }
   ) {
+    await this._planLimitsService.enforceLimit(orgId, 'image_generation');
     const slides = Array.isArray(body.slides) ? body.slides : [];
     const normalizedSlides = slides
       .map((slide, index) => ({
@@ -1703,6 +1715,7 @@ Tarefa: crie o conceito criativo da campanha e, para CADA slide, um render brief
   }
 
   async generateImage(orgId: string, body: AiGenerateImageDto) {
+    await this._planLimitsService.enforceLimit(orgId, 'image_generation');
     const provider: ImageProvider =
       body.provider === 'openai_official' ? 'openai_official' : 'ia_generate';
     const {

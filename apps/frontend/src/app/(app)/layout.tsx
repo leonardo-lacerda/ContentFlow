@@ -2,6 +2,7 @@ import { SentryComponent } from '@gitroom/frontend/components/layout/sentry.comp
 
 export const dynamic = 'force-dynamic';
 import '../global.scss';
+import '../internal-ds.scss';
 import 'react-tooltip/dist/react-tooltip.css';
 import '@copilotkit/react-ui/styles.css';
 import LayoutContext from '@gitroom/frontend/components/layout/layout.context';
@@ -43,7 +44,9 @@ const fraunces = Fraunces({
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const cookieStore = await cookies();
   const language = cookieStore.get(cookieName)?.value || fallbackLng;
+  const mode = cookieStore.get('mode')?.value === 'dark' ? 'dark' : 'light';
   const billingEnabled = !!(
+    process.env.NEXT_PUBLIC_BILLING_ENABLED === 'true' ||
     process.env.STRIPE_PUBLISHABLE_KEY ||
     process.env.CAKTO_STARTER_CHECKOUT_URL ||
     process.env.CAKTO_PRO_CHECKOUT_URL ||
@@ -54,9 +57,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     ? PlausibleProvider
     : Fragment;
   return (
-    <html>
+    <html className={mode} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Anton&family=Schibsted+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+        />
         {!!process.env.DATAFAST_WEBSITE_ID && (
           <Script
             data-website-id={process.env.DATAFAST_WEBSITE_ID}
@@ -69,10 +78,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <ChangeDirClient />
       <body
         className={clsx(
-          inter.className,
           inter.variable,
           fraunces.variable,
-          'light text-primary !bg-primary font-sans'
+          mode,
+          'font-sans'
         )}
       >
         <VariableContextComponent

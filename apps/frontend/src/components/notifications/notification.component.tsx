@@ -8,12 +8,13 @@ import dayjs from 'dayjs';
 import { useClickAway } from '@uidotdev/usehooks';
 import ReactLoading from '@gitroom/frontend/components/layout/loading';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
+import { sanitizeHtml } from '@gitroom/frontend/components/layout/sanitize-html';
 function replaceLinks(text: string) {
   const urlRegex =
     /(\bhttps?:\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gi;
   return text.replace(
     urlRegex,
-    '<a class="cursor-pointer underline font-bold" target="_blank" href="$1">$1</a>'
+    '<a class="cursor-pointer underline font-bold" target="_blank" rel="noopener noreferrer" href="$1">$1</a>'
   );
 }
 export const ShowNotification: FC<{
@@ -40,7 +41,10 @@ export const ShowNotification: FC<{
       <div
         className="break-words"
         dangerouslySetInnerHTML={{
-          __html: replaceLinks(notification.content),
+          // Sanitize *after* linkifying: the URL charset includes `&` and `;`,
+          // so an entity smuggled through a pre-sanitized string could decode
+          // back into a quote inside the generated href and break out of it.
+          __html: sanitizeHtml(replaceLinks(notification.content)),
         }}
       />
       <div

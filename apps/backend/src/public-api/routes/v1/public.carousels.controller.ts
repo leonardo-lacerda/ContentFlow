@@ -57,7 +57,7 @@ export class PublicCarouselsController {
     @Param('id') id: string,
   ) {
     Sentry.metrics.count('public_api-request', 1);
-    const brand = await this._brandProfileService.getBrand(id);
+    const brand = await this._brandProfileService.getBrand(id, org.id);
     if (!brand || brand.organizationId !== org.id) {
       throw new HttpException({ msg: 'Brand not found' }, 404);
     }
@@ -73,11 +73,11 @@ export class PublicCarouselsController {
     @Body() body?: { url?: string },
   ) {
     Sentry.metrics.count('public_api-request', 1);
-    const brand = await this._brandProfileService.getBrand(id);
+    const brand = await this._brandProfileService.getBrand(id, org.id);
     if (!brand || brand.organizationId !== org.id) {
       throw new HttpException({ msg: 'Brand not found' }, 404);
     }
-    return this._brandProfileService.analyzeBrand(id, body?.url || brand.website);
+    return this._brandProfileService.analyzeBrand(org.id, id, { url: body?.url || brand.website });
   }
 
   @Get('/brands/:id/dna')
@@ -86,7 +86,7 @@ export class PublicCarouselsController {
     @Param('id') id: string,
   ) {
     Sentry.metrics.count('public_api-request', 1);
-    const brand = await this._brandProfileService.getBrand(id);
+    const brand = await this._brandProfileService.getBrand(id, org.id);
     if (!brand || brand.organizationId !== org.id) {
       throw new HttpException({ msg: 'Brand not found' }, 404);
     }
@@ -103,10 +103,11 @@ export class PublicCarouselsController {
     @Query('status') status?: string,
   ) {
     Sentry.metrics.count('public_api-request', 1);
-    const ideas = await this._contentIdeaService.getIdeas(org.id, {
-      brandProfileId,
-      status: status as any,
-    });
+    const allIdeas = await this._contentIdeaService.getIdeas(org.id);
+    const ideas = allIdeas.filter((idea: any) =>
+      (!brandProfileId || idea.brandProfileId === brandProfileId) &&
+      (!status || idea.status === status)
+    );
     return { ideas };
   }
 
@@ -119,13 +120,13 @@ export class PublicCarouselsController {
     if (!body.brandProfileId) {
       throw new HttpException({ msg: 'brandProfileId is required' }, 400);
     }
-    const brand = await this._brandProfileService.getBrand(body.brandProfileId);
+    const brand = await this._brandProfileService.getBrand(body.brandProfileId, org.id);
     if (!brand || brand.organizationId !== org.id) {
       throw new HttpException({ msg: 'Brand not found' }, 404);
     }
     return this._aiGenerateService.generateCarouselIdeas(org.id, {
       brandProfileId: body.brandProfileId,
-      topic: body.topic,
+      topicHint: body.topic,
     });
   }
 
@@ -137,9 +138,10 @@ export class PublicCarouselsController {
     @Query('brandProfileId') brandProfileId?: string,
   ) {
     Sentry.metrics.count('public_api-request', 1);
-    const projects = await this._carouselProjectService.getProjects(org.id, {
-      brandProfileId,
-    });
+    const allProjects = await this._carouselProjectService.getProjects(org.id);
+    const projects = allProjects.filter((project: any) =>
+      !brandProfileId || project.brandProfileId === brandProfileId
+    );
     return { projects };
   }
 
@@ -149,7 +151,7 @@ export class PublicCarouselsController {
     @Param('id') id: string,
   ) {
     Sentry.metrics.count('public_api-request', 1);
-    const project = await this._carouselProjectService.getProject(id);
+    const project = await this._carouselProjectService.getProject(id, org.id);
     if (!project || project.organizationId !== org.id) {
       throw new HttpException({ msg: 'Project not found' }, 404);
     }
@@ -176,7 +178,7 @@ export class PublicCarouselsController {
         400,
       );
     }
-    const brand = await this._brandProfileService.getBrand(body.brandProfileId);
+    const brand = await this._brandProfileService.getBrand(body.brandProfileId, org.id);
     if (!brand || brand.organizationId !== org.id) {
       throw new HttpException({ msg: 'Brand not found' }, 404);
     }
@@ -198,9 +200,8 @@ export class PublicCarouselsController {
     @Query('status') status?: string,
   ) {
     Sentry.metrics.count('public_api-request', 1);
-    const jobs = await this._generationJobService.getJobs(org.id, {
-      status: status as any,
-    });
+    const allJobs = await this._generationJobService.getJobs(org.id);
+    const jobs = allJobs.filter((job: any) => !status || job.status === status);
     return { jobs };
   }
 
@@ -210,7 +211,7 @@ export class PublicCarouselsController {
     @Param('id') id: string,
   ) {
     Sentry.metrics.count('public_api-request', 1);
-    const job = await this._generationJobService.getJob(id);
+    const job = await this._generationJobService.getJob(id, org.id);
     if (!job || job.organizationId !== org.id) {
       throw new HttpException({ msg: 'Job not found' }, 404);
     }

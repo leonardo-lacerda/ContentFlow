@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { StripeService } from '@gitroom/nestjs-libraries/services/stripe.service';
 import { CaktoService } from '@gitroom/nestjs-libraries/services/cakto.service';
+import { BillingStripeService } from '@gitroom/nestjs-libraries/services/billing-stripe.service';
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Stripe')
@@ -14,17 +15,22 @@ import { ApiTags } from '@nestjs/swagger';
 export class StripeController {
   constructor(
     private readonly _stripeService: StripeService,
-    private readonly _caktoService: CaktoService
+    private readonly _caktoService: CaktoService,
+    private readonly _billingStripeService: BillingStripeService
   ) {}
 
   @Post('/')
-  stripe(@Req() req: RawBodyRequest<Request>) {
+  async stripe(@Req() req: RawBodyRequest<Request>) {
     const event = this._stripeService.validateRequest(
       req.rawBody,
       // @ts-ignore
       req.headers['stripe-signature'],
       process.env.STRIPE_SIGNING_KEY
     );
+
+    if (await this._billingStripeService.isBillingV2Event(event)) {
+      return this._billingStripeService.handleWebhook(event);
+    }
 
     // Maybe it comes from another stripe webhook
     if (

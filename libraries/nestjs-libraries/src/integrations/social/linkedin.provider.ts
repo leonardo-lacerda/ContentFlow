@@ -115,8 +115,8 @@ export class LinkedinProvider extends SocialAbstract implements SocialProvider {
   }
 
   async generateAuthUrl() {
-    const state = makeId(6);
-    const codeVerifier = makeId(30);
+    const state = makeId(32);
+    const codeVerifier = makeId(48);
     const url = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${
       process.env.LINKEDIN_CLIENT_ID
     }&prompt=none&redirect_uri=${encodeURIComponent(

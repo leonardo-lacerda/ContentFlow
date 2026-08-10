@@ -1,6 +1,5 @@
 'use client';
 
-import { Slider } from '@gitroom/react/form/slider';
 import React, { FC, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@gitroom/react/form/button';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
@@ -28,6 +27,9 @@ import { FinishTrial } from '@gitroom/frontend/components/billing/finish.trial';
 import { newDayjs } from '@gitroom/frontend/components/layout/set.timezone';
 import { useDubClickId } from '@gitroom/frontend/components/layout/dubAnalytics';
 import { LogoutComponent } from '@gitroom/frontend/components/layout/logout.component';
+
+const dispFont = { fontFamily: "'Anton', sans-serif" };
+const monoFont = { fontFamily: "'Space Mono', ui-monospace, monospace" };
 
 export const Prorate: FC<{
   period: 'MONTHLY' | 'YEARLY';
@@ -76,9 +78,10 @@ export const Prorate: FC<{
   );
 };
 export const Features: FC<{
-  pack: 'FREE' | 'STANDARD' | 'PRO' | 'TEAM';
+  pack: 'FREE' | 'STANDARD' | 'PRO' | 'TEAM' | 'ULTIMATE';
+  inverted?: boolean;
 }> = (props) => {
-  const { pack } = props;
+  const { pack, inverted } = props;
   const features = useMemo(() => {
     const currentPricing = pricing[pack];
     const channelsOr = currentPricing.channel;
@@ -128,27 +131,23 @@ export const Features: FC<{
     return list;
   }, [pack]);
   return (
-    <div className="flex flex-col gap-[10px] justify-center text-[16px] text-customColor18">
+    <ul className="flex-1 flex flex-col gap-[11px] justify-center text-[14px] font-[600] list-none">
       {features.map((feature) => (
-        <div key={feature} className="flex gap-[20px]">
-          <div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-            >
-              <path
-                d="M16.2806 9.21937C16.3504 9.28903 16.4057 9.37175 16.4434 9.46279C16.4812 9.55384 16.5006 9.65144 16.5006 9.75C16.5006 9.84856 16.4812 9.94616 16.4434 10.0372C16.4057 10.1283 16.3504 10.211 16.2806 10.2806L11.0306 15.5306C10.961 15.6004 10.8783 15.6557 10.7872 15.6934C10.6962 15.7312 10.5986 15.7506 10.5 15.7506C10.4014 15.7506 10.3038 15.7312 10.2128 15.6934C10.1218 15.6557 10.039 15.6004 9.96938 15.5306L7.71938 13.2806C7.57865 13.1399 7.49959 12.949 7.49959 12.75C7.49959 12.551 7.57865 12.3601 7.71938 12.2194C7.86011 12.0786 8.05098 11.9996 8.25 11.9996C8.44903 11.9996 8.6399 12.0786 8.78063 12.2194L10.5 13.9397L15.2194 9.21937C15.289 9.14964 15.3718 9.09432 15.4628 9.05658C15.5538 9.01884 15.6514 8.99941 15.75 8.99941C15.8486 8.99941 15.9462 9.01884 16.0372 9.05658C16.1283 9.09432 16.211 9.14964 16.2806 9.21937ZM21.75 12C21.75 13.9284 21.1782 15.8134 20.1068 17.4168C19.0355 19.0202 17.5127 20.2699 15.7312 21.0078C13.9496 21.7458 11.9892 21.9389 10.0979 21.5627C8.20656 21.1865 6.46928 20.2579 5.10571 18.8943C3.74215 17.5307 2.81355 15.7934 2.43735 13.9021C2.06114 12.0108 2.25422 10.0504 2.99218 8.26884C3.73013 6.48726 4.97982 4.96451 6.58319 3.89317C8.18657 2.82183 10.0716 2.25 12 2.25C14.585 2.25273 17.0634 3.28084 18.8913 5.10872C20.7192 6.93661 21.7473 9.41498 21.75 12ZM20.25 12C20.25 10.3683 19.7661 8.77325 18.8596 7.41655C17.9531 6.05984 16.6646 5.00242 15.1571 4.37799C13.6497 3.75357 11.9909 3.59019 10.3905 3.90852C8.79017 4.22685 7.32016 5.01259 6.16637 6.16637C5.01259 7.32015 4.22685 8.79016 3.90853 10.3905C3.5902 11.9908 3.75358 13.6496 4.378 15.1571C5.00242 16.6646 6.05984 17.9531 7.41655 18.8596C8.77326 19.7661 10.3683 20.25 12 20.25C14.1873 20.2475 16.2843 19.3775 17.8309 17.8309C19.3775 16.2843 20.2475 14.1873 20.25 12Z"
-                fill="#06ff00"
-              />
-            </svg>
-          </div>
-          <div>{feature}</div>
-        </div>
+        <li key={feature} className="flex gap-[11px] items-start">
+          <span
+            className={clsx(
+              'shrink-0 mt-[1px] w-[22px] h-[22px] rounded-[6px] border-[1.5px] grid place-items-center text-[11px] font-[900]',
+              inverted
+                ? 'bg-[#C6F24E]/[0.18] border-white/40 text-[#C6F24E]'
+                : 'bg-[#D6F5E8] border-[#14171A] text-[#0FB37B]'
+            )}
+          >
+            ✓
+          </span>
+          <span>{feature}</span>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 };
 
@@ -231,12 +230,22 @@ const billingDisplayName = (name: string) => {
     return 'Início';
   }
   if (name === 'STANDARD') {
-    return 'Profissional';
+    return 'Starter';
   }
   if (name === 'TEAM') {
+    return 'Pro';
+  }
+  if (name === 'ULTIMATE') {
     return 'Scale';
   }
   return name.charAt(0) + name.slice(1).toLowerCase();
+};
+
+const planTagline = (name: string) => {
+  if (name === 'STANDARD') return 'Pra criar o hábito de postar toda semana';
+  if (name === 'TEAM') return 'Pra quem publica sempre e quer escalar';
+  if (name === 'ULTIMATE') return 'Pra agências e times sem limite de ritmo';
+  return '';
 };
 
 const MainBillingContent: FC<{
@@ -300,7 +309,7 @@ const MainBillingContent: FC<{
     return subscription?.subscriptionTier;
   }, [subscription, initialChannels, monthlyOrYearly, period]);
   const moveToCheckout = useCallback(
-    (billing: 'STANDARD' | 'PRO' | 'TEAM' | 'FREE', reactivate = false) =>
+    (billing: 'STANDARD' | 'PRO' | 'TEAM' | 'ULTIMATE' | 'FREE', reactivate = false) =>
       async () => {
         if (reactivate) {
           setLoading(true);
@@ -464,116 +473,225 @@ const MainBillingContent: FC<{
     [monthlyOrYearly, subscription, user, utm]
   );
   return (
-    <div className="flex flex-col gap-[16px]">
-      <div className="flex flex-row">
-        <div className="flex-1">
-          <div className="text-[20px]">{t('plans', 'Meu Plano')}</div>
-          <div className="text-[13px] text-customColor18 mt-[4px]">
-            Controle sua assinatura, troque de plano e acompanhe os limites.
+    <div className="flex flex-col gap-[28px] text-[#14171A]">
+      <div className="flex flex-wrap items-center justify-between gap-[16px]">
+        <div>
+          <div
+            className="uppercase leading-none"
+            style={{ ...dispFont, fontSize: '30px', letterSpacing: '.5px' }}
+          >
+            {t('plans', 'Meu Plano')}
+          </div>
+          <div className="text-[14px] font-[600] text-[#14171A]/60 mt-[8px]">
+            Escolha o plano ideal para o seu ritmo de criação.
           </div>
         </div>
-        <div className="flex items-center gap-[16px]">
-          <div>{t('monthly', 'MONTHLY')}</div>
-          <div>
-            <Slider value={monthlyOrYearly} onChange={setMonthlyOrYearly} />
-          </div>
-          <div>{t('yearly', 'YEARLY')}</div>
+        <div className="flex items-center gap-[2px] border-[1.5px] border-[#14171A] rounded-full p-[4px] bg-white shadow-[3px_3px_0_#14171A]">
+          <button
+            type="button"
+            onClick={() => setMonthlyOrYearly('off')}
+            className={clsx(
+              'px-[16px] py-[8px] rounded-full text-[12px] font-[800] transition-colors',
+              monthlyOrYearly === 'off'
+                ? 'bg-[#14171A] text-[#EEF1EA]'
+                : 'text-[#14171A]/55'
+            )}
+          >
+            {t('monthly', 'Mensal')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMonthlyOrYearly('on')}
+            className={clsx(
+              'px-[16px] py-[8px] rounded-full text-[12px] font-[800] transition-colors',
+              monthlyOrYearly === 'on'
+                ? 'bg-[#14171A] text-[#EEF1EA]'
+                : 'text-[#14171A]/55'
+            )}
+          >
+            {t('yearly', 'Anual')}
+          </button>
         </div>
       </div>
 
       {finishTrial && <FinishTrial close={() => setFinishTrial(false)} />}
-      <div className="flex gap-[16px] [@media(max-width:1024px)]:flex-col [@media(max-width:1024px)]:text-center">
+      {/* FREE plan banner */}
+      {!subscription && (
+        <div className="rounded-[14px] border-2 border-dashed border-[#14171A] bg-white px-[20px] py-[16px] flex items-center gap-[14px]">
+          <span className="w-[10px] h-[10px] rotate-45 bg-[#FF5A3C] border-[1.5px] border-[#14171A] shrink-0" />
+          <div className="text-[14px] font-[600]">
+            Você está no plano <b className="uppercase">Início (FREE)</b> —
+            faça upgrade para desbloquear mais gerações, canais e recursos.
+          </div>
+        </div>
+      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[28px] items-stretch pt-[6px]">
         {Object.entries(pricing)
           .filter(([name]) =>
-            // ContentFlow v1: só Início + Profissional na vitrine
-            ['FREE', 'STANDARD'].includes(name)
+            // ContentFlow v1: 3 planos pagos na vitrine
+            ['STANDARD', 'TEAM', 'ULTIMATE'].includes(name)
           )
-          .map(([name, values]) => (
-            <div
-              key={name}
-              className="flex-1 bg-sixth border border-customColor6 rounded-[4px] p-[24px] gap-[16px] flex flex-col [@media(max-width:1024px)]:items-center"
-            >
-              <div className="text-[18px]">{billingDisplayName(name)}</div>
-              <div className="text-[38px] flex gap-[2px] items-center">
-                <div>
-                  R$
-                  {monthlyOrYearly === 'on'
-                    ? values.year_price
-                    : values.month_price}
-                </div>
-                <div className={`text-[14px] text-customColor18`}>
-                  {monthlyOrYearly === 'on' ? '/ano' : '/mês'}
-                </div>
-              </div>
-              <div className="text-[14px] flex gap-[10px]">
-                {currentPackage === name.toUpperCase() &&
-                subscription?.cancelAt ? (
-                  <div className="gap-[3px] flex flex-col">
-                    <div>
-                      <Button
-                        onClick={moveToCheckout('FREE', true)}
-                        loading={loading}
-                      >
-                        {t(
-                          'reactivate_subscription',
-                          'Reactivate subscription'
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    loading={loading}
-                    disabled={
-                      (!!subscription?.cancelAt &&
-                        name.toUpperCase() === 'FREE') ||
-                      currentPackage === name.toUpperCase()
-                    }
-                    className={clsx(
-                      subscription &&
-                        name.toUpperCase() === 'FREE' &&
-                        '!bg-red-500'
-                    )}
-                    onClick={moveToCheckout(
-                      name.toUpperCase() as 'STANDARD' | 'PRO' | 'TEAM'
-                    )}
-                  >
-                    {currentPackage === name.toUpperCase()
-                      ? 'Plano atual'
-                      : name.toUpperCase() === 'FREE'
-                      ? subscription?.cancelAt
-                        ? `Downgrade on ${dayjs
-                            .utc(subscription?.cancelAt)
-                            .local()
-                            .format('D MMM, YYYY')}`
-                        : 'Cancelar assinatura'
-                      : // @ts-ignore
-                      (user?.tier === 'FREE' ||
-                          user?.tier?.current === 'FREE') &&
-                        user.allowTrial
-                      ? t('start_7_days_free_trial', 'Start 7 days free trial')
-                      : `Escolher ${billingDisplayName(name)}`}
-                  </Button>
+          .map(([name, values]) => {
+            const isCurrent = currentPackage === name.toUpperCase();
+            const isPopular = name === 'TEAM';
+            return (
+              <div
+                key={name}
+                className={clsx(
+                  'relative flex flex-col rounded-[16px] border-2 border-[#14171A] p-[32px] transition-all duration-200',
+                  isPopular
+                    ? 'bg-[#14171A] text-[#EEF1EA] shadow-[10px_10px_0_#2E62FF] hover:-translate-y-[7px]'
+                    : 'bg-white text-[#14171A] shadow-[6px_6px_0_#14171A] hover:-translate-y-[5px] hover:shadow-[8px_8px_0_#14171A]'
                 )}
-                {subscription &&
-                  currentPackage !== name.toUpperCase() &&
-                  name !== 'FREE' &&
-                  !!name && (
-                    <Prorate
-                      period={monthlyOrYearly === 'on' ? 'YEARLY' : 'MONTHLY'}
-                      pack={name.toUpperCase() as 'STANDARD' | 'PRO' | 'TEAM'}
-                    />
+              >
+                {isPopular && (
+                  <span
+                    className="absolute -top-[16px] right-[24px] bg-[#C6F24E] text-[#14171A] border-2 border-[#14171A] px-[14px] py-[7px] rounded-full rotate-3 shadow-[3px_3px_0_#14171A] text-[11px] font-[800] uppercase tracking-[.06em]"
+                    style={monoFont}
+                  >
+                    ★ mais assinado
+                  </span>
+                )}
+                {isCurrent && (
+                  <span
+                    className="absolute -top-[14px] left-[24px] bg-[#FF5A3C] text-white border-2 border-[#14171A] px-[14px] py-[7px] rounded-full -rotate-3 shadow-[3px_3px_0_#14171A] text-[11px] font-[800] uppercase tracking-[.04em]"
+                    style={monoFont}
+                  >
+                    seu plano
+                  </span>
+                )}
+                <div
+                  className="uppercase leading-none"
+                  style={{ ...dispFont, fontSize: '27px', letterSpacing: '.5px' }}
+                >
+                  {billingDisplayName(name)}
+                </div>
+                <div
+                  className={clsx(
+                    'mt-[8px] text-[13px] font-[600]',
+                    isPopular ? 'text-[#EEF1EA]/70' : 'text-[#14171A]/60'
                   )}
+                >
+                  {planTagline(name)}
+                </div>
+                <div className="flex items-baseline gap-[8px] mt-[22px] mb-[4px]">
+                  <span
+                    className={clsx('uppercase', isPopular && 'text-[#C6F24E]')}
+                    style={{ ...dispFont, fontSize: '40px', lineHeight: 1 }}
+                  >
+                    R$
+                    {monthlyOrYearly === 'on'
+                      ? values.year_price
+                      : values.month_price}
+                  </span>
+                  <span
+                    className={clsx(
+                      'text-[11px] font-[700]',
+                      isPopular ? 'text-[#EEF1EA]/70' : 'text-[#14171A]/55'
+                    )}
+                    style={monoFont}
+                  >
+                    {monthlyOrYearly === 'on' ? '/ano' : '/mês'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-[6px] mt-[16px] mb-[8px]">
+                  {currentPackage === name.toUpperCase() &&
+                  subscription?.cancelAt ? (
+                    <Button
+                      onClick={moveToCheckout('FREE', true)}
+                      loading={loading}
+                      className="!rounded-full !border-2 !border-[#14171A] !bg-[#C6F24E] !text-[#14171A] !shadow-[3px_3px_0_#14171A] hover:!shadow-[5px_5px_0_#14171A] hover:!-translate-y-[2px] !font-[800]"
+                    >
+                      {t('reactivate_subscription', 'Reactivate subscription')}
+                    </Button>
+                  ) : (
+                    <Button
+                      loading={loading}
+                      disabled={
+                        (!!subscription?.cancelAt &&
+                          name.toUpperCase() === 'FREE') ||
+                        isCurrent
+                      }
+                      className={clsx(
+                        '!rounded-full !border-2 !border-[#14171A] !font-[800] !shadow-[3px_3px_0_#14171A] hover:!shadow-[5px_5px_0_#14171A] hover:!-translate-y-[2px]',
+                        isCurrent
+                          ? isPopular
+                            ? '!bg-transparent !text-[#EEF1EA] !border-[#EEF1EA]/40 !shadow-none hover:!shadow-none hover:!translate-y-0'
+                            : '!bg-white !text-[#14171A]/50 !shadow-none hover:!shadow-none hover:!translate-y-0'
+                          : subscription && name.toUpperCase() === 'FREE'
+                          ? '!bg-[#FF5A3C] !text-white'
+                          : isPopular
+                          ? '!bg-[#C6F24E] !text-[#14171A]'
+                          : '!bg-[#14171A] !text-[#EEF1EA]'
+                      )}
+                      onClick={moveToCheckout(
+                        name.toUpperCase() as
+                          | 'STANDARD'
+                          | 'PRO'
+                          | 'TEAM'
+                          | 'ULTIMATE'
+                      )}
+                    >
+                      {isCurrent
+                        ? 'Plano atual'
+                        : name.toUpperCase() === 'FREE'
+                        ? subscription?.cancelAt
+                          ? `Downgrade on ${dayjs
+                              .utc(subscription?.cancelAt)
+                              .local()
+                              .format('D MMM, YYYY')}`
+                          : 'Cancelar assinatura'
+                        : // @ts-ignore
+                        (user?.tier === 'FREE' ||
+                            user?.tier?.current === 'FREE') &&
+                          user.allowTrial
+                        ? t(
+                            'start_7_days_free_trial',
+                            'Start 7 days free trial'
+                          )
+                        : `Escolher ${billingDisplayName(name)}`}
+                    </Button>
+                  )}
+                  {subscription &&
+                    !isCurrent &&
+                    name !== 'FREE' &&
+                    !!name && (
+                      <Prorate
+                        period={
+                          monthlyOrYearly === 'on' ? 'YEARLY' : 'MONTHLY'
+                        }
+                        pack={name.toUpperCase() as 'STANDARD' | 'PRO' | 'TEAM'}
+                      />
+                    )}
+                </div>
+                <div
+                  className={clsx(
+                    'border-t pt-[16px] mt-[6px]',
+                    isPopular ? 'border-white/15' : 'border-[#14171A]/12'
+                  )}
+                >
+                  <Features
+                    pack={
+                      name.toUpperCase() as
+                        | 'FREE'
+                        | 'STANDARD'
+                        | 'PRO'
+                        | 'TEAM'
+                        | 'ULTIMATE'
+                    }
+                    inverted={isPopular}
+                  />
+                </div>
               </div>
-              <Features
-                pack={name.toUpperCase() as 'FREE' | 'STANDARD' | 'PRO' | 'TEAM'}
-              />
-            </div>
-          ))}
+            );
+          })}
       </div>
       {!!subscription?.id && (
-        <div className="flex justify-center mt-[20px] gap-[10px]">
-          <Button onClick={updatePayment}>
+        <div className="flex flex-wrap justify-center gap-[12px] border-2 border-[#14171A] rounded-[14px] bg-white p-[18px]">
+          <Button
+            className="!rounded-full !border-2 !border-[#14171A] !bg-white !text-[#14171A] !font-[800] !shadow-[3px_3px_0_#14171A] hover:!shadow-[5px_5px_0_#14171A] hover:!-translate-y-[2px]"
+            onClick={updatePayment}
+          >
             {t(
               'update_payment_method_invoices_history',
               'Update Payment Method / Invoices History'
@@ -581,7 +699,7 @@ const MainBillingContent: FC<{
           </Button>
           {isGeneral && !subscription?.cancelAt && (
             <Button
-              className="bg-red-500"
+              className="!rounded-full !border-2 !border-[#14171A] !bg-[#FF5A3C] !text-white !font-[800] !shadow-[3px_3px_0_#14171A] hover:!shadow-[5px_5px_0_#14171A] hover:!-translate-y-[2px]"
               loading={loading}
               onClick={moveToCheckout('FREE')}
             >
@@ -591,12 +709,14 @@ const MainBillingContent: FC<{
         </div>
       )}
       {subscription?.cancelAt && isGeneral && (
-        <div className="text-center">
+        <div className="text-center text-[13px] font-[600] text-[#14171A]/70">
           {t(
             'your_subscription_will_be_canceled_at',
             'Your subscription will be canceled at'
           )}{' '}
-          {newDayjs(subscription.cancelAt).local().format('D MMM, YYYY')}
+          <span className="text-[#14171A] font-[800]">
+            {newDayjs(subscription.cancelAt).local().format('D MMM, YYYY')}
+          </span>
           <br />
           {t(
             'you_will_never_be_charged_again',
@@ -605,7 +725,7 @@ const MainBillingContent: FC<{
         </div>
       )}
       <FAQComponent />
-      <div className="flex justify-center mt-[20px]">
+      <div className="flex justify-center border-t-2 border-[#14171A]/15 pt-[24px]">
         <LogoutComponent />
       </div>
     </div>

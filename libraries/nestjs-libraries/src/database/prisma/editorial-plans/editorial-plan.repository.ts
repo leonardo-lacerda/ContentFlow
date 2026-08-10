@@ -13,15 +13,20 @@ export class EditorialPlanRepository {
     });
   }
 
-  findByBrand(brandProfileId: string) {
+  findByBrand(brandProfileId: string, orgId: string) {
     return this.prisma.editorialPlan.findMany({
-      where: { brandProfileId },
+      where: { brandProfileId, organizationId: orgId },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  findById(id: string) {
-    return this.prisma.editorialPlan.findUnique({ where: { id } });
+  // orgId is required on every lookup by id: findUnique({ where: { id } }) would
+  // happily return another tenant's plan, and passing `organizationId: undefined`
+  // to Prisma drops the filter entirely rather than matching nothing.
+  findById(id: string, orgId: string) {
+    return this.prisma.editorialPlan.findFirst({
+      where: { id, organizationId: orgId },
+    });
   }
 
   create(data: {
@@ -49,22 +54,24 @@ export class EditorialPlanRepository {
   }
 
   // Slots
-  findSlotsByPlan(editorialPlanId: string) {
+  findSlotsByPlan(editorialPlanId: string, orgId: string) {
     return this.prisma.editorialSlot.findMany({
-      where: { editorialPlanId },
+      where: { editorialPlanId, organizationId: orgId },
       orderBy: { scheduledDate: 'asc' },
     });
   }
 
-  findSlotsByBrand(brandProfileId: string) {
+  findSlotsByBrand(brandProfileId: string, orgId: string) {
     return this.prisma.editorialSlot.findMany({
-      where: { brandProfileId },
+      where: { brandProfileId, organizationId: orgId },
       orderBy: { scheduledDate: 'asc' },
     });
   }
 
-  findSlotById(id: string) {
-    return this.prisma.editorialSlot.findUnique({ where: { id } });
+  findSlotById(id: string, orgId: string) {
+    return this.prisma.editorialSlot.findFirst({
+      where: { id, organizationId: orgId },
+    });
   }
 
   createSlot(data: {

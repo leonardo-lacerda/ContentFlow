@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { OrganizationService } from '@gitroom/nestjs-libraries/database/prisma/organizations/organization.service';
 import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/subscription.service';
@@ -7,7 +7,7 @@ import { BillingSubscribeDto } from '@gitroom/nestjs-libraries/dtos/billing/bill
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { Organization, User } from '@prisma/client';
 
-type ContentFlowBillingTier = 'STANDARD' | 'PRO' | 'TEAM';
+type ContentFlowBillingTier = 'STANDARD' | 'PRO' | 'TEAM' | 'ULTIMATE';
 type CaktoOrderStatus =
   | 'paid'
   | 'authorized'
@@ -55,15 +55,16 @@ type ParsedCaktoWebhook = {
 const caktoPlanByBilling: Record<ContentFlowBillingTier, string> = {
   STANDARD: 'starter',
   PRO: 'pro',
-  TEAM: 'scale',
+  TEAM: 'pro',
+  ULTIMATE: 'scale',
 };
 
 function toBilling(value: string | undefined): ContentFlowBillingTier {
   const normalized = String(value || '').toUpperCase();
-  if (normalized === 'STANDARD' || normalized === 'PRO' || normalized === 'TEAM') {
+  if (normalized === 'STANDARD' || normalized === 'PRO' || normalized === 'TEAM' || normalized === 'ULTIMATE') {
     return normalized;
   }
-  return 'PRO';
+  return 'STANDARD';
 }
 
 function isPaidStatus(status: string | undefined): boolean {
@@ -150,17 +151,56 @@ export class CaktoService {
       {
         tier: 'starter',
         billing: 'STANDARD',
-        name: 'Profissional',
+        name: 'Starter',
         price: pricing.STANDARD.month_price,
         yearlyPrice: pricing.STANDARD.year_price,
         channels: pricing.STANDARD.channel,
         postsPerMonth: pricing.STANDARD.posts_per_month,
         features: [
-          '1 marca (Brand DNA)',
+          `${pricing.STANDARD.brand_profiles} marca (Brand DNA)`,
           `${pricing.STANDARD.channel} canais (IG, FB, LinkedIn, X, TikTok)`,
           `${pricing.STANDARD.carousel_generations_per_month} carrosséis / mês`,
           `${pricing.STANDARD.content_ideas_per_month} ideias / mês`,
           `${pricing.STANDARD.image_generation_count} imagens IA / mês`,
+          `${pricing.STANDARD.video_scripts_per_month} roteiros de vídeo / mês`,
+          'Agendar e publicar',
+        ],
+      },
+      {
+        tier: 'pro',
+        billing: 'TEAM',
+        name: 'Pro',
+        price: pricing.TEAM.month_price,
+        yearlyPrice: pricing.TEAM.year_price,
+        channels: pricing.TEAM.channel,
+        postsPerMonth: pricing.TEAM.posts_per_month,
+        features: [
+          `${pricing.TEAM.brand_profiles} marcas (Brand DNA)`,
+          `${pricing.TEAM.channel} canais`,
+          `${pricing.TEAM.carousel_generations_per_month} carrosséis / mês`,
+          `${pricing.TEAM.content_ideas_per_month} ideias / mês`,
+          `${pricing.TEAM.image_generation_count} imagens IA / mês`,
+          `${pricing.TEAM.video_scripts_per_month} roteiros de vídeo / mês`,
+          `${pricing.TEAM.email_campaigns_per_month} campanhas de e-mail / mês`,
+          'Agendar e publicar',
+        ],
+      },
+      {
+        tier: 'scale',
+        billing: 'ULTIMATE',
+        name: 'Scale',
+        price: pricing.ULTIMATE.month_price,
+        yearlyPrice: pricing.ULTIMATE.year_price,
+        channels: pricing.ULTIMATE.channel,
+        postsPerMonth: pricing.ULTIMATE.posts_per_month,
+        features: [
+          `${pricing.ULTIMATE.brand_profiles} marcas (Brand DNA)`,
+          `${pricing.ULTIMATE.channel} canais`,
+          'Carrosséis ilimitados',
+          'Ideias ilimitadas',
+          `${pricing.ULTIMATE.image_generation_count} imagens IA / mês`,
+          'Roteiros ilimitados',
+          'Campanhas de e-mail ilimitadas',
           'Agendar e publicar',
         ],
       },
@@ -180,6 +220,9 @@ export class CaktoService {
       return process.env.CAKTO_STARTER_CHECKOUT_URL || '';
     }
     if (billing === 'TEAM') {
+      return process.env.CAKTO_PRO_CHECKOUT_URL || '';
+    }
+    if (billing === 'ULTIMATE') {
       return process.env.CAKTO_SCALE_CHECKOUT_URL || '';
     }
     return process.env.CAKTO_PRO_CHECKOUT_URL || '';
@@ -247,7 +290,23 @@ export class CaktoService {
     const expectedHmacSecret = process.env.CAKTO_WEBHOOK_HMAC_SECRET || '';
 
     if (!expectedToken && !expectedSecret && !expectedHmacSecret) {
-      return process.env.NODE_ENV !== 'production';
+      // Fail closed. Without a configured secret there is nothing to verify, so
+      // accepting the request would let anyone forge a paid subscription.
+      // ALLOW_UNSIGNED_WEBHOOKS is an explicit, loud opt-out for local testing
+      // only — never set it anywhere that touches real billing data.
+      if (process.env.ALLOW_UNSIGNED_WEBHOOKS === 'true') {
+        Logger.error(
+          'Cakto webhook signature verification is DISABLED (ALLOW_UNSIGNED_WEBHOOKS=true). Anyone can forge subscription events.',
+          'CaktoService'
+        );
+        return true;
+      }
+
+      Logger.error(
+        'Rejected Cakto webhook: no CAKTO_WEBHOOK_TOKEN / CAKTO_WEBHOOK_SECRET / CAKTO_WEBHOOK_HMAC_SECRET configured.',
+        'CaktoService'
+      );
+      return false;
     }
 
     if (expectedToken) {

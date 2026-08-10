@@ -112,17 +112,28 @@ function LayoutContextInner(params: { children: ReactNode }) {
       }
 
       if (response.status === 402) {
-        if (
-          await deleteDialog(
-            (
-              await response.json()
-            ).message,
-            'Move to billing',
-            'Payment Required'
-          )
-        ) {
-          window.open('/billing', '_blank');
-          return false;
+        try {
+          const body = await response.json();
+          const isPlanLimit = body.code === 'PLAN_LIMIT_EXCEEDED';
+          const message = isPlanLimit
+            ? `Limite do plano ${body.plan || ''} atingido.\n${body.type ? `Tipo: ${body.type}. ` : ''}Uso: ${body.current ?? '?'}/${body.limit ?? '?'}.\n${body.upgradeMessage || 'Faça upgrade para continuar.'}`
+            : body.message || 'Payment Required';
+          if (
+            await deleteDialog(
+              message,
+              isPlanLimit ? 'Fazer upgrade' : 'Ir para billing',
+              isPlanLimit ? 'Limite do plano' : 'Payment Required'
+            )
+          ) {
+            window.location.href = '/billing';
+            return false;
+          }
+        } catch {
+          // fallback se JSON parsing falhar
+          if (await deleteDialog('Payment Required', 'Ir para billing')) {
+            window.location.href = '/billing';
+            return false;
+          }
         }
         return true;
       }

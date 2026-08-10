@@ -10,7 +10,7 @@ import {
 import clsx from 'clsx';
 
 const controlClass = [
-  'w-full bg-newBgColorInner border border-newTableBorder rounded-[10px] px-[12px] py-[10px]',
+  'cf-control',
   'text-[13px] text-newTextColor placeholder:text-textItemBlur',
   'outline-none transition-all duration-[180ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
   'focus:border-btnPrimary focus:shadow-cfGlow',

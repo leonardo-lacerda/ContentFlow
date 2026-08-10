@@ -1,20 +1,69 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { EditorialPlanRepository } from './editorial-plan.repository';
+import { PlanLimitsService } from '../subscriptions/plan-limits.service';
+
+// Fields a client is allowed to set through the generic update endpoints.
+// Without this, a `Record<string, unknown>` body reaches Prisma untouched and
+// `organizationId` becomes writable — letting a caller move a plan into their
+// own org and sidestep every ownership check below.
+const UPDATABLE_PLAN_FIELDS = [
+  'name',
+  'frequencyPerWeek',
+  'platforms',
+  'pillars',
+  'objectives',
+  'languages',
+  'timezone',
+  'blackoutDates',
+  'autoGenerate',
+  'generationWindow',
+  'maxCostPerMonth',
+] as const;
+
+const UPDATABLE_SLOT_FIELDS = [
+  'scheduledDate',
+  'pillar',
+  'objective',
+  'platform',
+  'status',
+  'contentIdeaId',
+  'carouselProjectId',
+  'notes',
+] as const;
+
+const pick = (
+  data: Record<string, unknown>,
+  allowed: readonly string[]
+): Record<string, unknown> =>
+  Object.fromEntries(
+    Object.entries(data ?? {}).filter(([key]) => allowed.includes(key))
+  );
 
 @Injectable()
 export class EditorialPlanService {
-  constructor(private repository: EditorialPlanRepository) {}
+  constructor(
+    private repository: EditorialPlanRepository,
+    private planLimitsService: PlanLimitsService,
+  ) {}
+
+  private async assertPlan(planId: string, orgId: string) {
+    const plan = await this.repository.findById(planId, orgId);
+    if (!plan) {
+      throw new NotFoundException('Editorial plan not found');
+    }
+    return plan;
+  }
 
   getPlans(orgId: string) {
     return this.repository.findByOrganization(orgId);
   }
 
-  getPlansByBrand(brandProfileId: string) {
-    return this.repository.findByBrand(brandProfileId);
+  getPlansByBrand(brandProfileId: string, orgId: string) {
+    return this.repository.findByBrand(brandProfileId, orgId);
   }
 
-  getPlan(id: string) {
-    return this.repository.findById(id);
+  getPlan(id: string, orgId: string) {
+    return this.assertPlan(id, orgId);
   }
 
   createPlan(data: {
@@ -33,33 +82,41 @@ export class EditorialPlanService {
     return this.repository.create(data);
   }
 
-  updatePlan(id: string, data: Record<string, unknown>) {
-    return this.repository.update(id, data);
+  async updatePlan(id: string, orgId: string, data: Record<string, unknown>) {
+    await this.assertPlan(id, orgId);
+    return this.repository.update(id, pick(data, UPDATABLE_PLAN_FIELDS));
   }
 
-  deletePlan(id: string) {
+  async deletePlan(id: string, orgId: string) {
+    await this.assertPlan(id, orgId);
     return this.repository.delete(id);
   }
 
-  getSlots(planId: string) {
-    return this.repository.findSlotsByPlan(planId);
+  async getSlots(planId: string, orgId: string) {
+    await this.assertPlan(planId, orgId);
+    return this.repository.findSlotsByPlan(planId, orgId);
   }
 
-  getSlotsByBrand(brandProfileId: string) {
-    return this.repository.findSlotsByBrand(brandProfileId);
+  getSlotsByBrand(brandProfileId: string, orgId: string) {
+    return this.repository.findSlotsByBrand(brandProfileId, orgId);
   }
 
-  getSlot(id: string) {
-    return this.repository.findSlotById(id);
+  async getSlot(id: string, orgId: string) {
+    const slot = await this.repository.findSlotById(id, orgId);
+    if (!slot) {
+      throw new NotFoundException('Editorial slot not found');
+    }
+    return slot;
   }
 
-  updateSlot(id: string, data: Record<string, unknown>) {
-    return this.repository.updateSlot(id, data);
+  async updateSlot(id: string, orgId: string, data: Record<string, unknown>) {
+    await this.getSlot(id, orgId);
+    return this.repository.updateSlot(id, pick(data, UPDATABLE_SLOT_FIELDS));
   }
 
-  async generateCalendar(planId: string, days: number = 30) {
-    const plan = await this.repository.findById(planId);
-    if (!plan) throw new Error('Editorial plan not found');
+  async generateCalendar(planId: string, orgId: string, days: number = 30) {
+    const plan = await this.assertPlan(planId, orgId);
+    await this.planLimitsService.enforceLimit(plan.organizationId, 'editorial_plan');
 
     const slots = [];
     const now = new Date();
@@ -108,15 +165,15 @@ export class EditorialPlanService {
     return { generated: slots.length, slots };
   }
 
-  async runGeneration(planId: string) {
-    const plan = await this.repository.findById(planId);
-    if (!plan) throw new Error('Editorial plan not found');
+  async runGeneration(planId: string, orgId: string) {
+    const plan = await this.assertPlan(planId, orgId);
+    await this.planLimitsService.enforceLimit(plan.organizationId, 'editorial_plan');
     if (!plan.autoGenerate) throw new Error('Auto-generation is not enabled for this plan');
 
     // Generate calendar for next 30 days if no slots exist
-    const existingSlots = await this.repository.findSlotsByPlan(planId);
+    const existingSlots = await this.repository.findSlotsByPlan(planId, orgId);
     if (existingSlots.length === 0) {
-      await this.generateCalendar(planId, 30);
+      await this.generateCalendar(planId, orgId, 30);
     }
 
     // Update lastRunAt and reset consecutive fails
@@ -128,7 +185,8 @@ export class EditorialPlanService {
     return { success: true, message: 'Generation triggered successfully' };
   }
 
-  async toggleAutoGeneration(planId: string, autoGenerate: boolean) {
+  async toggleAutoGeneration(planId: string, orgId: string, autoGenerate: boolean) {
+    await this.assertPlan(planId, orgId);
     return this.repository.update(planId, { autoGenerate });
   }
 }

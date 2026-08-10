@@ -63,6 +63,7 @@ import { GenerationCostRepository } from '@gitroom/nestjs-libraries/database/pri
 import { CarouselDraftService } from '@gitroom/nestjs-libraries/database/prisma/carousel-drafts/carousel-draft.service';
 import { CarouselDraftRepository } from '@gitroom/nestjs-libraries/database/prisma/carousel-drafts/carousel-draft.repository';
 import { TemporalService } from 'nestjs-temporal-core';
+import { CreditAccountingService } from '@gitroom/nestjs-libraries/services/credit-accounting.service';
 
 // Quando o Temporal esta desabilitado (DISABLE_TEMPORAL=true), o modulo global
 // do Temporal nao e carregado e o TemporalService deixa de existir no container
@@ -74,10 +75,10 @@ const temporalDisabled = process.env.DISABLE_TEMPORAL === 'true';
 
 const temporalStub = {
   client: {
-    getRawClient: () => undefined,
-    getWorkflowHandle: () => undefined,
+    getRawClient: (): undefined => undefined,
+    getWorkflowHandle: (): undefined => undefined,
   },
-  terminateWorkflow: () => undefined,
+  terminateWorkflow: (): undefined => undefined,
 } as unknown as TemporalService;
 
 const temporalStubProvider = temporalDisabled
@@ -152,6 +153,7 @@ const temporalStubProvider = temporalDisabled
     BrandLearningRepository,
     GenerationCostService,
     GenerationCostRepository,
+    CreditAccountingService,
     CarouselDraftService,
     CarouselDraftRepository,
     ...temporalStubProvider,

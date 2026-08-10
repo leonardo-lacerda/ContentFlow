@@ -13,7 +13,7 @@ export const PageShell: FC<{
   return (
     <div
       className={clsx(
-        'bg-newBgColorInner flex flex-1 flex-col min-h-0 min-w-0 overflow-hidden',
+        'cf-page-shell flex flex-1 flex-col min-h-0 min-w-0 overflow-hidden',
         'transition-[background-color] duration-200',
         variant === 'split' && 'flex-row',
         className

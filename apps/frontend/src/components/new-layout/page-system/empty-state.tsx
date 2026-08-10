@@ -26,7 +26,7 @@ export const EmptyState: FC<{
   return (
     <div
       className={clsx(
-        'flex flex-1 flex-col items-center justify-center gap-[16px] text-center px-6 py-16 min-h-[320px]',
+        'cf-empty flex flex-1 flex-col items-center justify-center gap-[16px] text-center px-6 py-16 min-h-[320px]',
         className
       )}
     >

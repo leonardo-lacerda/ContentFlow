@@ -50,7 +50,7 @@ export class VideoScriptGenerateService {
     maxDuration?: number;
     additionalContext?: string;
   }): Promise<VideoScript> {
-    const brand = await this.brandProfileService.getBrand(dto.brandProfileId);
+    const brand = await this.brandProfileService.getBrand(dto.brandProfileId, orgId);
     if (!brand || brand.organizationId !== orgId) throw new Error('Brand not found');
 
     if (!dto.carouselProjectId && !dto.contentIdeaId) {

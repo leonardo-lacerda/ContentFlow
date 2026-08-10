@@ -1,64 +1,43 @@
 /**
  * HTML sanitizer for dangerouslySetInnerHTML usage.
  *
- * SSR: strips all HTML tags (safe default).
- * Client with DOMPurify: allow-list sanitization.
- * Client without DOMPurify: regex fallback removing dangerous patterns.
+ * Backed by DOMPurify on both server and client. The previous version looked
+ * for a `window.__DOMPurify` global that nothing ever assigned, so in the
+ * browser it always fell through to a regex pass that missed, among others,
+ * `<svg/onload=...>` (the handler pattern required leading whitespace) and
+ * unquoted `href=javascript:...`.
  */
 
-const ALLOWED_TAGS = new Set([
+import DOMPurify from 'isomorphic-dompurify';
+
+const ALLOWED_TAGS = [
   'p', 'br', 'strong', 'em', 'b', 'i', 'u', 's', 'strike',
   'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'blockquote', 'code', 'pre', 'span', 'div', 'img',
   'table', 'thead', 'tbody', 'tr', 'td', 'th',
-]);
+];
 
-const ALLOWED_ATTRS = new Set([
+// `style` is deliberately absent: ALLOWED_URI_REGEXP does not reach inside CSS,
+// so an inline style survives with `url(javascript:...)` and with layout tricks
+// usable for UI redress. sanitizePostContent (the canonical post sanitizer in
+// libraries/helpers) drops it too, so previews already render without it.
+const ALLOWED_ATTR = [
   'href', 'target', 'rel', 'src', 'alt', 'width', 'height',
-  'class', 'style',
-]);
-
-function regexSanitize(dirty: string): string {
-  // Remove script/style tags and their content
-  let clean = dirty.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-  clean = clean.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
-  // Remove on* event handlers
-  clean = clean.replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, '');
-  clean = clean.replace(/\s+on\w+\s*=\s*[^\s>]*/gi, '');
-  // Remove javascript: URIs
-  clean = clean.replace(/href\s*=\s*["']javascript:[^"']*["']/gi, '');
-  clean = clean.replace(/src\s*=\s*["']javascript:[^"']*["']/gi, '');
-  // Remove data: URIs on src (except images)
-  clean = clean.replace(/src\s*=\s*["']data:(?!image\/)[^"']*["']/gi, '');
-  return clean;
-}
+  'class',
+];
 
 export function sanitizeHtml(dirty: string): string {
   if (!dirty) return '';
 
-  // Server-side: strip all HTML
-  if (typeof window === 'undefined') {
-    return dirty.replace(/<[^>]*>/g, '');
-  }
-
-  // Try DOMPurify first
-  try {
-    // Dynamic import check — DOMPurify may not be installed
-    const DOMPurify = (window as Record<string, unknown>).__DOMPurify as
-      | { sanitize: (s: string, o: Record<string, unknown>) => string }
-      | undefined;
-
-    if (DOMPurify?.sanitize) {
-      return DOMPurify.sanitize(dirty, {
-        ALLOWED_TAGS: [...ALLOWED_TAGS],
-        ALLOWED_ATTR: [...ALLOWED_ATTRS],
-        ALLOW_DATA_ATTR: true,
-      });
-    }
-  } catch {
-    // Fall through to regex
-  }
-
-  // Regex fallback
-  return regexSanitize(dirty);
+  return DOMPurify.sanitize(dirty, {
+    ALLOWED_TAGS,
+    ALLOWED_ATTR,
+    ALLOW_DATA_ATTR: true,
+    // Blocks javascript:, vbscript: and non-image data: URIs on href/src.
+    ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|data:image\/|\/|#)/i,
+    // Setting ALLOWED_URI_REGEXP makes DOMPurify run that test against every
+    // allowed attribute, so `target="_blank"` and `rel="noopener"` fail it and
+    // get dropped. Neither holds a URI, so exempt them explicitly.
+    ADD_URI_SAFE_ATTR: ['target', 'rel'],
+  });
 }

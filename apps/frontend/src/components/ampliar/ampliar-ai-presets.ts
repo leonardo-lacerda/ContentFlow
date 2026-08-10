@@ -69,7 +69,7 @@ export function buildAdsAiPaths(
     variants: 3,
   };
 
-  return [
+  const paths: AmpliarAiPath[] = [
     {
       id: 'ads-ig-traffic',
       domain: 'ads',
@@ -131,6 +131,8 @@ export function buildAdsAiPaths(
       },
     },
   ];
+
+  return paths;
 }
 
 export function buildEmailAiPaths(prefill: AmpliarPrefill): AmpliarAiPath[] {
@@ -138,7 +140,7 @@ export function buildEmailAiPaths(prefill: AmpliarPrefill): AmpliarAiPath[] {
   const nameBase = prefill.topic || 'Campanha da marca';
   const hasIdea = Boolean(prefill.ideaId || prefill.topic || prefill.hook);
 
-  return [
+  const paths: AmpliarAiPath[] = [
     {
       id: 'email-welcome',
       domain: 'email',
@@ -188,6 +190,8 @@ export function buildEmailAiPaths(prefill: AmpliarPrefill): AmpliarAiPath[] {
       },
     },
   ];
+
+  return paths;
 }
 
 export function buildVideoAiPaths(prefill: AmpliarPrefill): AmpliarAiPath[] {
@@ -201,7 +205,7 @@ export function buildVideoAiPaths(prefill: AmpliarPrefill): AmpliarAiPath[] {
 
   const hasSource = Boolean(prefill.ideaId || prefill.projectId || prefill.topic);
 
-  return [
+  const paths: AmpliarAiPath[] = [
     {
       id: 'video-reels-30',
       domain: 'video',
@@ -239,7 +243,9 @@ export function buildVideoAiPaths(prefill: AmpliarPrefill): AmpliarAiPath[] {
       why: 'Bom para urgência ou enquete — menos “peça pronta”.',
       payload: { ...base, format: 'STORIES', maxDuration: 15 },
     },
-  ].map((p) => ({
+  ];
+
+  return paths.map((p): AmpliarAiPath => ({
     ...p,
     // desabilita visualmente no consumer se não houver source — payload ainda ok se user colar id
     subtitle: hasSource ? p.subtitle : `${p.subtitle} · use ideia ou carrossel`,

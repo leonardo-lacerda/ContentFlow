@@ -5,6 +5,7 @@ import { WebsiteMetadataExtractor } from '@gitroom/nestjs-libraries/openai/websi
 import { BrandProfileRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.repository';
 import { BrandDnaSnapshotRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-dna-snapshot.repository';
 import { BrandAssetRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-asset.repository';
+import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import {
   BrandDnaExtractionSchema,
   VERSION,
@@ -28,18 +29,25 @@ export class BrandDnaExtractionService {
     private brandProfileRepository: BrandProfileRepository,
     private brandDnaSnapshotRepository: BrandDnaSnapshotRepository,
     private brandAssetRepository: BrandAssetRepository,
+    private planLimitsService: PlanLimitsService,
   ) {}
 
   async analyze(
     brandProfileId: string,
     rawUrl: string,
+    orgId?: string,
   ): Promise<ExtractionResult> {
     const errors: string[] = [];
+
+    // 0. Enforce plan limits
+    if (orgId) {
+      await this.planLimitsService.enforceLimit(orgId, 'dna_extraction');
+    }
 
     // 1. Validar URL
     const validation = await this.urlValidationService.validate(rawUrl);
     if (!validation.success) {
-      return { success: false, errors: [validation.error.message] };
+      return { success: false, errors: ['URL validation failed'] };
     }
     const { url } = validation.data;
 

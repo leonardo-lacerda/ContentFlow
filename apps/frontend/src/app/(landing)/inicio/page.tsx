@@ -9,7 +9,8 @@ export default function LandingPage() {
     const scripts = document.querySelectorAll('#landing-body script');
     scripts.forEach((old) => {
       const s = document.createElement('script');
-      if (old.src) s.src = old.src;
+      const script = old as HTMLScriptElement;
+      if (script.src) s.src = script.src;
       else s.textContent = old.textContent;
       document.body.appendChild(s);
       old.remove();

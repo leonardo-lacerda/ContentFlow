@@ -101,7 +101,7 @@ export class BrandProfileService {
     if (!brand) {
       throw new Error('Brand not found');
     }
-    return this.brandDnaExtractionService.analyze(brandId, dto.url);
+    return this.brandDnaExtractionService.analyze(brandId, dto.url, orgId);
   }
 
   async migrateFromLegacy(orgId: string, org: Organization) {

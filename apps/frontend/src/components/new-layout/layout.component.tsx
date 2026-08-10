@@ -54,7 +54,7 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
   const load = useCallback(async (path: string) => {
     return await (await fetch(path)).json();
   }, []);
-  const { data: user, mutate } = useSWR('/user/self', load, {
+  const { data: user, error: userError, mutate } = useSWR('/user/self', load, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     revalidateIfStale: false,
@@ -62,7 +62,34 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
     refreshWhenHidden: false,
   });
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <main className="flex min-h-[100dvh] w-full items-center justify-center bg-cf-bg px-6 text-cf-text">
+        <section className="w-full max-w-md rounded-2xl border border-cf-border bg-cf-surface p-8 text-center shadow-cf">
+          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-cf-accent text-xl font-semibold text-cf-ink">
+            {userError ? '!' : '…'}
+          </div>
+          <h1 className="font-serif text-2xl font-semibold">
+            {userError ? 'Não conseguimos abrir o ContentFlow' : 'Carregando o ContentFlow'}
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-cf-muted">
+            {userError
+              ? 'A sessão não pôde ser carregada agora. Verifique se o backend está online e tente novamente.'
+              : 'Estamos carregando seu espaço de trabalho.'}
+          </p>
+          {userError && (
+            <button
+              type="button"
+              onClick={() => mutate()}
+              className="mt-6 rounded-xl bg-cf-accent px-5 py-3 text-sm font-semibold text-cf-ink transition hover:brightness-95"
+            >
+              Tentar novamente
+            </button>
+          )}
+        </section>
+      </main>
+    );
+  }
 
   return (
     <ContextWrapper user={user}>
@@ -82,15 +109,13 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
             <PreConditionComponent />
             <NewSubscription />
             <ContinueProvider />
-            <div
-              className="flex flex-col min-h-screen min-w-screen text-newTextColor p-[12px] font-sans"
-            >
+            <div className="cf-app-shell box-border flex h-[100dvh] max-h-[100dvh] min-h-0 w-full min-w-0 overflow-hidden p-[12px] font-sans">
               <div>{user?.admin ? <Impersonate /> : <div />}</div>
               {/* ContentFlow v1: FREE tem acesso ao loop (limites no backend). Sem paywall full-screen. */}
               <OnboardingGate>
                 <>
                   <AnnouncementBanner />
-                  <div className="flex-1 flex gap-[8px]">
+                  <div className="flex min-h-0 flex-1 gap-[8px]">
                     <Support />
                     {/* Spacer keeps content offset; actual menu is fixed and expands on hover */}
                     <div className="flex flex-col w-[72px] shrink-0" aria-hidden />
@@ -99,8 +124,7 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
                       className={clsx(
                         'group/sidebar fixed z-[200] start-[12px] top-[12px]',
                         'h-[calc(100dvh-24px)] w-[72px] hover:w-[228px]',
-                        'flex flex-col bg-newBgColorInner rounded-[14px]',
-                        'border border-newBorder',
+                        'cf-app-sidebar flex flex-col',
                         'overflow-hidden transition-[width,box-shadow] duration-200 ease-out',
                         'hover:shadow-cf',
                         user?.admin && 'pt-[48px]'
@@ -111,8 +135,8 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
                         <TopMenu />
                       </div>
                     </div>
-                    <div className="flex-1 bg-newBgLineColor rounded-[14px] overflow-hidden flex flex-col gap-[1px] blurMe border border-newBorder">
-                      <div className="flex bg-newBgColorInner h-[72px] px-[20px] items-center border-b border-newTableBorder">
+                    <div className="cf-main-frame flex min-h-0 min-w-0 flex-1 overflow-hidden flex-col gap-[1px] blurMe">
+                      <div className="cf-topbar flex h-[72px] px-[20px] items-center">
                         <div className="text-[24px] font-[600] flex flex-1 min-w-0">
                           <Title />
                         </div>
@@ -132,7 +156,7 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
                           <NotificationComponent />
                         </div>
                       </div>
-                      <div className="flex flex-1 min-h-0 gap-[1px]">{children}</div>
+                      <div className="flex min-h-0 flex-1 gap-[1px]">{children}</div>
                     </div>
                   </div>
                 </>

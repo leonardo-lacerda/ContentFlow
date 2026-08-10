@@ -26,10 +26,10 @@ export class HashnodeProvider extends SocialAbstract implements SocialProvider {
   dto = HashnodeSettingsDto;
 
   async generateAuthUrl() {
-    const state = makeId(6);
+    const state = makeId(32);
     return {
       url: state,
-      codeVerifier: makeId(10),
+      codeVerifier: makeId(48),
       state,
     };
   }

@@ -6,6 +6,11 @@ import { VideoFunctionTool } from '@gitroom/nestjs-libraries/chat/tools/video.fu
 import { GenerateVideoTool } from '@gitroom/nestjs-libraries/chat/tools/generate.video.tool';
 import { GenerateImageTool } from '@gitroom/nestjs-libraries/chat/tools/generate.image.tool';
 import { IntegrationListTool } from '@gitroom/nestjs-libraries/chat/tools/integration.list.tool';
+import { CreativeEngineTool } from '@gitroom/nestjs-libraries/chat/tools/creative.engine.tool';
+import { ContentStudioTool } from '@gitroom/nestjs-libraries/chat/tools/content.studio.tool';
+import { StudioArtifactTool } from '@gitroom/nestjs-libraries/chat/tools/studio.artifact.tool';
+import { CreationOptionsTool } from '@gitroom/nestjs-libraries/chat/tools/creation.options.tool';
+import { ContentPresentationTool } from '@gitroom/nestjs-libraries/chat/tools/content.presentation.tool';
 
 export const toolList = [
   IntegrationListTool,
@@ -16,4 +21,9 @@ export const toolList = [
   VideoFunctionTool,
   GenerateVideoTool,
   GenerateImageTool,
+  CreativeEngineTool,
+  ContentStudioTool,
+  StudioArtifactTool,
+  CreationOptionsTool,
+  ContentPresentationTool,
 ];

@@ -279,7 +279,16 @@ export const MediaBox: FC<{
   const maximize = useCallback(
     (media: Media) => async (e: any) => {
       e.stopPropagation();
-      const extendedMedia = media as Media & { carouselProject?: unknown; isCarousel?: boolean; children?: Array<{ id: string; path: string; alt?: string }> };
+      const extendedMedia = media as Media & {
+        carouselProject?: {
+          company?: { name?: string };
+          generation?: { totalCost?: { brl?: number } };
+          plan?: { title?: string };
+          creativeBrief?: string;
+        };
+        isCarousel?: boolean;
+        children?: Array<{ id: string; path: string; alt?: string }>;
+      };
       const project = extendedMedia.carouselProject;
       const carouselChildren = extendedMedia.isCarousel
         ? extendedMedia.children || []

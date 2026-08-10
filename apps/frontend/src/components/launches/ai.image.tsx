@@ -60,6 +60,10 @@ ${type}
   return (
     <div className="relative group">
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={value.length < 30 ? 'Digite pelo menos 30 caracteres para gerar uma imagem com IA' : 'Gerar imagem com IA'}
+        title={value.length < 30 ? 'Digite pelo menos 30 caracteres para gerar uma imagem com IA' : 'Gerar imagem com IA. Passe o mouse para escolher o estilo.'}
         {...(value.length < 30
           ? {
               'data-tooltip-id': 'tooltip',
@@ -114,7 +118,7 @@ ${type}
         <div className="text-[12px] -mt-[10px] w-[200px] absolute bottom-[100%] z-[500] start-0 hidden group-hover:block">
           <ul className="cursor-pointer rounded-[4px] border border-dashed mt-[3px] p-[5px] border-newBgLineColor bg-newColColor">
             {list.map((p) => (
-              <li onClick={generateImage(p)} key={p} className="hover:bg-sixth">
+                <li onClick={generateImage(p)} key={p} className="hover:bg-sixth" title={`Gerar imagem no estilo ${p}`}>
                 {p}
               </li>
             ))}

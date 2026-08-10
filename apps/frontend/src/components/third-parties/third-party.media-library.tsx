@@ -235,10 +235,13 @@ export const ThirdPartyMediaLibrary: FC<{
   const modals = useModals();
 
   const loadThirdParties = useCallback(async () => {
-    return (await (await fetch('/third-party')).json()).filter(
+    const response = await fetch('/third-party');
+    if (!response.ok) return [];
+    const payload = await response.json().catch(() => []);
+    return (Array.isArray(payload) ? payload : []).filter(
       (f: any) => f.position === 'media-library'
     );
-  }, []);
+  }, [fetch]);
 
   const { data, isLoading } = useSWR(
     'third-party-media-library',

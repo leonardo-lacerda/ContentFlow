@@ -4,8 +4,8 @@ export class BillingSubscribeDto {
   @IsIn(['MONTHLY', 'YEARLY'])
   period: 'MONTHLY' | 'YEARLY';
 
-  @IsIn(['STANDARD', 'PRO', 'TEAM'])
-  billing: 'STANDARD' | 'PRO' | 'TEAM';
+  @IsIn(['STANDARD', 'PRO', 'TEAM', 'ULTIMATE'])
+  billing: 'STANDARD' | 'PRO' | 'TEAM' | 'ULTIMATE';
 
   utm: string;
 

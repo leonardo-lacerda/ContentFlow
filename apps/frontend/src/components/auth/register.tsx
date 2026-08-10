@@ -119,7 +119,6 @@ export function RegisterAfter({
       }),
     })
       .then(async (response) => {
-        setLoading(false);
         if (response.status === 200) {
           fireEvents('register');
           return track(TrackEnum.CompleteRegistration).then(() => {
@@ -142,6 +141,9 @@ export function RegisterAfter({
             e.toString() +
             '. Please check your browser console.',
         });
+      })
+      .finally(() => {
+        setLoading(false);
       });
   };
   return (
@@ -149,13 +151,13 @@ export function RegisterAfter({
       <form className="flex w-full" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="flex w-full flex-col">
           <div>
-            <div className="mb-[10px] inline-flex rounded-full border border-white/10 bg-white/[0.05] px-[12px] py-[6px] text-[12px] text-white/60">
+            <div className="mb-[10px] inline-flex rounded-full border border-newBorder bg-cf-cream px-[12px] py-[6px] text-[12px] font-[600] text-cf-amber">
               {t('start_free', 'Start free')}
             </div>
-            <h1 className="text-start text-[34px] font-[600] leading-[1.02] tracking-[-1.2px] text-white md:text-[40px]">
+            <h1 className="text-start font-serif text-[34px] font-[600] leading-[1.05] tracking-[-0.02em] text-cf-ink md:text-[40px]">
               {t('sign_up', 'Sign Up')}
             </h1>
-            <p className="mt-[12px] text-[14px] leading-[1.6] text-white/58">
+            <p className="mt-[12px] text-[14px] leading-[1.6] text-cf-muted">
               {t(
                 'start_creating_content_in_one_place',
                 'Comece grátis e organize sua criação de conteúdo em um só lugar.'
@@ -164,7 +166,7 @@ export function RegisterAfter({
           </div>
           <div className="mt-[28px] flex flex-col">
             {!isAfterProvider && (
-              <div className="mb-[12px] text-[13px] font-[500] text-white/62">
+              <div className="mb-[12px] text-[13px] font-[500] text-cf-muted">
                 {t('continue_with', 'Continue With')}
               </div>
             )}
@@ -182,9 +184,9 @@ export function RegisterAfter({
               ))}
             {!isAfterProvider && (
               <div className="relative my-[24px] h-[20px]">
-                <div className="absolute top-[50%] h-[1px] w-full -translate-y-[50%] bg-white/10" />
+                <div className="absolute top-[50%] h-[1px] w-full -translate-y-[50%] bg-newBorder" />
                 <div className="absolute -top-[4px] start-0 z-[1] flex w-full items-center justify-center">
-                  <div className="bg-[#12141D] px-[16px] text-[13px] text-white/45">
+                  <div className="bg-white px-[16px] text-[13px] text-cf-muted">
                     {t('or', 'or')}
                   </div>
                 </div>
@@ -220,7 +222,7 @@ export function RegisterAfter({
                   placeholder={t('label_company', 'Company')}
                 />
               </div>
-              <div className={clsx('text-[12px] leading-[1.6] text-white/48')}>
+              <div className={clsx('text-[12px] leading-[1.6] text-cf-muted')}>
                 {t(
                   'by_registering_you_agree_to_our',
                   'By registering you agree to our'
@@ -228,7 +230,7 @@ export function RegisterAfter({
                 &nbsp;
                 <a
                   href={`https://contentflow.com/terms`}
-                  className="text-white/78 underline hover:text-white"
+                  className="text-cf-ink underline hover:text-cf-amber"
                   rel="nofollow"
                 >
                   {t('terms_of_service', 'Terms of Service')}
@@ -238,7 +240,7 @@ export function RegisterAfter({
                 <a
                   href={`https://contentflow.com/privacy`}
                   rel="nofollow"
-                  className="text-white/78 underline hover:text-white"
+                  className="text-cf-ink underline hover:text-cf-amber"
                 >
                   {t('privacy_policy', 'Privacy Policy')}
                 </a>
@@ -254,12 +256,12 @@ export function RegisterAfter({
                     {t('create_account', 'Create Account')}
                   </Button>
                 </div>
-                <p className="mt-[18px] text-sm text-white/54">
+                <p className="mt-[18px] text-sm text-cf-muted">
                   {t('already_have_an_account', 'Already Have An Account?')}
                   &nbsp;
                   <Link
                     href="/auth/login"
-                    className="cursor-pointer text-white underline hover:text-[#f3e6d8]"
+                    className="cursor-pointer text-cf-ink underline hover:text-cf-amber"
                   >
                     {t('sign_in', 'Sign In')}
                   </Link>

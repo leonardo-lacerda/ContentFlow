@@ -19,8 +19,26 @@ import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/
 import { AiGenerateService } from '@gitroom/nestjs-libraries/ai-generate/ai-generate.service';
 import { PublicAuthMiddleware } from '@gitroom/backend/services/auth/public.auth.middleware';
 import { IdempotencyMiddleware } from '@gitroom/backend/services/auth/idempotency.middleware';
+import { PublicCreativeController } from '@gitroom/backend/public-api/routes/v1/public.creative.controller';
+import { CreativeEngineService } from '@gitroom/nestjs-libraries/creative-engine/creative-engine.service';
+import { CreativeWorkflowService } from '@gitroom/nestjs-libraries/creative-engine/creative-workflow.service';
+import { CreativeProviderService } from '@gitroom/nestjs-libraries/creative-engine/creative-provider.service';
+import { CreativeCreditService } from '@gitroom/nestjs-libraries/creative-engine/creative-credit.service';
+import { CreditAccountingService } from '@gitroom/nestjs-libraries/services/credit-accounting.service';
+import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
+import { CreativeWebhookService } from '@gitroom/nestjs-libraries/creative-engine/creative-webhook.service';
+import { CreativeModerationService } from '@gitroom/nestjs-libraries/creative-engine/creative-moderation.service';
+import { CreativeMediaToolService } from '@gitroom/nestjs-libraries/creative-engine/creative-media-tool.service';
+import { CreativeOutputValidationService } from '@gitroom/nestjs-libraries/creative-engine/creative-output-validation.service';
+import { CreativeMetricsService } from '@gitroom/nestjs-libraries/creative-engine/creative-metrics.service';
+import { CreativeExportService } from '@gitroom/nestjs-libraries/creative-engine/creative-export.service';
+import { CreativeEvaluationService } from '@gitroom/nestjs-libraries/creative-engine/creative-evaluation.service';
+import { CreativePublishService } from '@gitroom/nestjs-libraries/creative-engine/creative-publish.service';
+import { CreativeOutputStorageService } from '@gitroom/nestjs-libraries/creative-engine/creative-output-storage.service';
+import { CreativeSceneGraphService } from '@gitroom/nestjs-libraries/creative-engine/creative-scene-graph.service';
+import { CreativeFeatureFlagGuard } from '@gitroom/nestjs-libraries/creative-engine/creative-feature-flag.guard';
 
-const authenticatedController = [PublicIntegrationsController, PublicCarouselsController];
+const authenticatedController = [PublicIntegrationsController, PublicCarouselsController, PublicCreativeController];
 @Module({
   imports: [UploadModule, DesignSystemModule],
   controllers: [...authenticatedController],
@@ -39,6 +57,23 @@ const authenticatedController = [PublicIntegrationsController, PublicCarouselsCo
     CarouselProjectService,
     GenerationJobService,
     AiGenerateService,
+    CreativeEngineService,
+    CreativeWorkflowService,
+    CreativeProviderService,
+    CreativeCreditService,
+    CreditAccountingService,
+    PricingCatalogService,
+    CreativeWebhookService,
+    CreativeModerationService,
+    CreativeMediaToolService,
+    CreativeOutputValidationService,
+    CreativeMetricsService,
+    CreativeExportService,
+    CreativeEvaluationService,
+    CreativePublishService,
+    CreativeOutputStorageService,
+    CreativeSceneGraphService,
+    CreativeFeatureFlagGuard,
   ],
   get exports() {
     return [...this.imports, ...this.providers];

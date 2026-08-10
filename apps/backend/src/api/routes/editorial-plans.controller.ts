@@ -21,13 +21,19 @@ export class EditorialPlansController {
   }
 
   @Get('/brand/:brandId')
-  async getPlansByBrand(@Param('brandId') brandId: string) {
-    return this.editorialPlanService.getPlansByBrand(brandId);
+  async getPlansByBrand(
+    @GetOrgFromRequest() org: Organization,
+    @Param('brandId') brandId: string
+  ) {
+    return this.editorialPlanService.getPlansByBrand(brandId, org.id);
   }
 
   @Get('/:id')
-  async getPlan(@Param('id') id: string) {
-    return this.editorialPlanService.getPlan(id);
+  async getPlan(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.editorialPlanService.getPlan(id, org.id);
   }
 
   @Post('/')
@@ -56,48 +62,67 @@ export class EditorialPlansController {
 
   @Patch('/:id')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async updatePlan(@Param('id') id: string, @Body() body: Record<string, unknown>) {
-    return this.editorialPlanService.updatePlan(id, body);
+  async updatePlan(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.editorialPlanService.updatePlan(id, org.id, body);
   }
 
   @Delete('/:id')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async deletePlan(@Param('id') id: string) {
-    return this.editorialPlanService.deletePlan(id);
+  async deletePlan(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.editorialPlanService.deletePlan(id, org.id);
   }
 
   @Post('/:id/generate-calendar')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async generateCalendar(
+    @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
     @Body() body: { days?: number }
   ) {
-    return this.editorialPlanService.generateCalendar(id, body.days || 30);
+    return this.editorialPlanService.generateCalendar(id, org.id, body.days || 30);
   }
 
   @Get('/:id/slots')
-  async getSlots(@Param('id') id: string) {
-    return this.editorialPlanService.getSlots(id);
+  async getSlots(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.editorialPlanService.getSlots(id, org.id);
   }
 
   @Patch('/slots/:slotId')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async updateSlot(@Param('slotId') slotId: string, @Body() body: Record<string, unknown>) {
-    return this.editorialPlanService.updateSlot(slotId, body);
+  async updateSlot(
+    @GetOrgFromRequest() org: Organization,
+    @Param('slotId') slotId: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.editorialPlanService.updateSlot(slotId, org.id, body);
   }
 
   @Post('/:id/run-generation')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async runGeneration(@Param('id') id: string) {
-    return this.editorialPlanService.runGeneration(id);
+  async runGeneration(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.editorialPlanService.runGeneration(id, org.id);
   }
 
   @Post('/:id/toggle-auto')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async toggleAutoGeneration(
+    @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
     @Body() body: { autoGenerate: boolean }
   ) {
-    return this.editorialPlanService.toggleAutoGeneration(id, body.autoGenerate);
+    return this.editorialPlanService.toggleAutoGeneration(id, org.id, body.autoGenerate);
   }
 }

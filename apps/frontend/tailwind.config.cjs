@@ -6,6 +6,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: [
+          'var(--cf-font-body)',
           'var(--font-cf-sans)',
           'Inter',
           'system-ui',
@@ -14,6 +15,7 @@ module.exports = {
           'sans-serif',
         ],
         serif: [
+          'var(--cf-font-display)',
           'var(--font-cf-serif)',
           'Fraunces',
           'Georgia',

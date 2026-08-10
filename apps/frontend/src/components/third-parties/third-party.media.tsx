@@ -161,10 +161,13 @@ export const ThirdPartyMedia: FC<{
   const modals = useModals();
 
   const thirdParties = useCallback(async () => {
-    return (await (await fetch('/third-party')).json()).filter(
+    const response = await fetch('/third-party');
+    if (!response.ok) return [];
+    const payload = await response.json().catch(() => []);
+    return (Array.isArray(payload) ? payload : []).filter(
       (f: any) => f.position === 'media'
     );
-  }, []);
+  }, [fetch]);
 
   const { data, isLoading, mutate } = useSWR('third-party', thirdParties, {
     revalidateOnFocus: false,
@@ -175,7 +178,7 @@ export const ThirdPartyMedia: FC<{
     refreshWhenOffline: false,
   });
 
-  if (isLoading || !data.length) {
+  if (isLoading || !Array.isArray(data) || !data.length) {
     return null;
   }
 

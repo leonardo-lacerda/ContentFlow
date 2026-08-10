@@ -27,9 +27,10 @@ import { Sets } from '@gitroom/frontend/components/sets/sets';
 import { SignaturesComponent } from '@gitroom/frontend/components/settings/signatures.component';
 import { Autopost } from '@gitroom/frontend/components/autopost/autopost';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
-import { SVGLine } from '@gitroom/frontend/components/launches/launches.component';
 import { GlobalSettings } from '@gitroom/frontend/components/settings/global.settings';
 import { ApprovedAppsComponent } from '@gitroom/frontend/components/approved-apps/approved-apps.component';
+import { TeamsComponent } from '@gitroom/frontend/components/settings/teams.component';
+import { Webhooks } from '@gitroom/frontend/components/webhooks/webhooks';
 export const SettingsPopup: FC<{
   getRef?: Ref<any>;
 }> = (props) => {
@@ -87,7 +88,7 @@ export const SettingsPopup: FC<{
     const arr = [
       {
         tab: 'global_settings',
-        label: t('global_settings', 'Perfil'),
+        label: t('settings_preferences', 'Preferências'),
       },
     ];
     if (user?.tier?.current !== 'FREE') {
@@ -101,26 +102,25 @@ export const SettingsPopup: FC<{
   }, []);
 
   return (
-    <>
-      <div className="bg-newBgColorInner p-[20px] flex flex-col transition-all w-[260px]">
+    <div className="cf-settings flex min-h-0 min-w-0 flex-1 overflow-hidden">
+      <div className="cf-settings__nav flex min-h-0 w-[260px] shrink-0 flex-col overflow-y-auto p-4 md:p-5">
         <div className="flex flex-1 flex-col gap-[15px]">
           {list.map(({ tab: tabKey, label }) => (
             <div
               key={tabKey}
               className={clsx(
-                'cursor-pointer flex items-center gap-[12px] group/profile hover:bg-boxHover rounded-e-[8px]',
-                tabKey === tab && 'bg-boxHover'
+                'cf-settings__nav-item group/profile flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2.5',
+                tabKey === tab && 'cf-settings__nav-item--active'
               )}
               onClick={() => setTab(tabKey)}
             >
-              <div
+              <span
                 className={clsx(
-                  'h-full w-[4px] rounded-s-[3px] opacity-0 group-hover/profile:opacity-100 transition-opacity',
+                  'cf-settings__nav-indicator opacity-0 transition-opacity group-hover/profile:opacity-100',
                   tabKey === tab && 'opacity-100'
                 )}
-              >
-                <SVGLine />
-              </div>
+                aria-hidden="true"
+              />
               {label}
             </div>
           ))}
@@ -133,7 +133,7 @@ export const SettingsPopup: FC<{
           )}
         </div>
       </div>
-      <div className="bg-newBgColorInner flex-1 flex-col flex p-[20px] gap-[12px]">
+      <div className="cf-settings__content flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-4 md:p-6">
         <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(submit)}>
             {!!getRef && (
@@ -141,7 +141,7 @@ export const SettingsPopup: FC<{
             )}
             <div
               className={clsx(
-                'w-full mx-auto gap-[24px] flex flex-col relative',
+                'cf-settings__content-inner relative mx-auto flex w-full max-w-[980px] flex-col gap-6',
                 !getRef && 'rounded-[4px]'
               )}
             >
@@ -198,7 +198,7 @@ export const SettingsPopup: FC<{
           </form>
         </FormProvider>
       </div>
-    </>
+    </div>
   );
 };
 export const SettingsComponent = () => {

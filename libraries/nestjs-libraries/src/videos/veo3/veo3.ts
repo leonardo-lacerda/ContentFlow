@@ -3,9 +3,9 @@ import {
   Video,
   VideoAbstract,
 } from '@gitroom/nestjs-libraries/videos/video.interface';
-import { timer } from '@gitroom/helpers/utils/timer';
 import { ArrayMaxSize, IsArray, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { KieApiClient } from '@gitroom/nestjs-libraries/creative-engine/providers/kie/kie-api.client';
 
 class Image {
   @IsString()
@@ -37,54 +37,22 @@ class Veo3Params {
 })
 export class Veo3 extends VideoAbstract<Veo3Params> {
   override dto = Veo3Params;
+
+  constructor(private readonly kie: KieApiClient) {
+    super();
+  }
+
   async process(
     output: 'vertical' | 'horizontal',
     customParams: Veo3Params
   ): Promise<URL> {
-    const value = await (
-      await fetch('https://api.kie.ai/api/v1/veo/generate', {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.KIEAI_API_KEY}`,
-        },
-        method: 'POST',
-        body: JSON.stringify({
-          prompt: customParams.prompt,
-          imageUrls: customParams?.images?.map((p) => p.path) || [],
-          model: 'veo3_fast',
-          aspectRatio: output === 'horizontal' ? '16:9' : '9:16',
-        }),
-      })
-    ).json();
-
-    if (value.code !== 200 && value.code !== 201) {
-      throw new Error(`Failed to generate video`);
-    }
-
-    const taskId = value.data.taskId;
-    let videoUrl = [];
-    while (videoUrl.length === 0) {
-      console.log('waiting for video to be ready');
-      const data = await (
-        await fetch(
-          'https://api.kie.ai/api/v1/veo/record-info?taskId=' + taskId,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${process.env.KIEAI_API_KEY}`,
-            },
-          }
-        )
-      ).json();
-
-      if (data.code !== 200 && data.code !== 400) {
-        throw new Error(`Failed to get video info`);
-      }
-
-      videoUrl = data?.data?.response?.resultUrls || [];
-      await timer(10000);
-    }
-
-    return videoUrl[0];
+    const result = await this.kie.generateVeo({
+      prompt: customParams.prompt,
+      imageUrls: customParams?.images?.map((p) => p.path) || [],
+      model: process.env.CREATIVE_KIE_VIDEO_MODEL || 'veo3_fast',
+      aspectRatio: output === 'horizontal' ? '16:9' : '9:16',
+    });
+    if (!result.url) throw new Error('Kie Veo returned no video URL');
+    return result.url;
   }
 }

@@ -68,7 +68,7 @@ export class TwitchProvider extends SocialAbstract implements SocialProvider {
 
     return {
       url,
-      codeVerifier: makeId(10),
+      codeVerifier: makeId(48),
       state,
     };
   }

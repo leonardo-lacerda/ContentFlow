@@ -30,6 +30,9 @@ export class PlanLimitsController {
       'editorial_plan',
       'image_generation',
       'video_generation',
+      'ad_kit',
+      'email_campaign',
+      'video_script',
     ];
 
     const usage: Record<string, { current: number; limit: number; unlimited: boolean }> = {};

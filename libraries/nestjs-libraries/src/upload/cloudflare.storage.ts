@@ -24,7 +24,19 @@ const ALLOWED_MIME_TYPES = new Set<string>([
   'audio/mp4',
   'audio/wav',
   'audio/ogg',
+  'application/x-subrip',
+  'text/vtt',
+  'text/plain',
+  'application/json',
+  'application/zip',
 ]);
+const CLOUDFLARE_TEXT_EXTENSIONS: Record<string, string> = {
+  'application/x-subrip': 'srt',
+  'text/vtt': 'vtt',
+  'text/plain': 'txt',
+  'application/json': 'json',
+  'application/zip': 'zip',
+};
 
 class CloudflareStorage implements IUploadProvider {
   private _client: S3Client;
@@ -110,12 +122,15 @@ class CloudflareStorage implements IUploadProvider {
   async uploadFile(file: Express.Multer.File): Promise<any> {
     try {
       const detected = await fromBuffer(file.buffer);
-      if (!detected || !ALLOWED_MIME_TYPES.has(detected.mime)) {
+      if (!detected && !CLOUDFLARE_TEXT_EXTENSIONS[file.mimetype]) {
+        throw new Error('Unsupported file type.');
+      }
+      if (detected && !ALLOWED_MIME_TYPES.has(detected.mime) && !CLOUDFLARE_TEXT_EXTENSIONS[file.mimetype]) {
         throw new Error('Unsupported file type.');
       }
       const id = makeId(10);
-      const extension = detected.ext;
-      const safeContentType = detected.mime;
+      const extension = detected?.ext || CLOUDFLARE_TEXT_EXTENSIONS[file.mimetype];
+      const safeContentType = detected?.mime || file.mimetype;
 
       // Create the PutObjectCommand to upload the file to Cloudflare R2
       const command = new PutObjectCommand({

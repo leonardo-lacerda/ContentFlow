@@ -88,9 +88,9 @@ export function BrandReviewStep({ ctx }: { ctx: UnifiedOnboardingContext }) {
         objections: ctx.dna?.audience?.objections || [],
       };
       const offer = ctx.dna?.offer || {
-        products: [],
-        services: [],
-        uniqueSellingPoints: [],
+        products: [] as string[],
+        services: [] as string[],
+        uniqueSellingPoints: [] as string[],
       };
       const visual = {
         ...(ctx.dna?.visual || {}),

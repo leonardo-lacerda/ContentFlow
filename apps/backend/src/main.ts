@@ -19,13 +19,20 @@ import { AppModule } from './app.module';
 import { SubscriptionExceptionFilter } from '@gitroom/backend/services/auth/permissions/subscription.exception';
 import { HttpExceptionFilter } from '@gitroom/nestjs-libraries/services/exception.filter';
 import { ConfigurationChecker } from '@gitroom/helpers/configuration/configuration.checker';
-import { startMcp } from '@gitroom/nestjs-libraries/chat/start.mcp';
 
 async function start() {
+  const allowedCorsOrigins = [
+    process.env.FRONTEND_URL,
+    ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:6274'] : []),
+    ...(process.env.MAIN_URL ? [process.env.MAIN_URL] : []),
+  ].filter((origin): origin is string => Boolean(origin));
+
   const app = await NestFactory.create(AppModule, {
     rawBody: true,
     cors: {
-      ...(!process.env.NOT_SECURED ? { credentials: true } : {}),
+      // The frontend always uses credentials: include, including local mode
+      // where auth is also mirrored through the non-secure auth header.
+      credentials: true,
       allowedHeaders: [
         'Content-Type',
         'Authorization',
@@ -41,15 +48,20 @@ async function start() {
         'x-copilotkit-runtime-client-gql-version',
         ...(process.env.NOT_SECURED ? ['auth', 'showorg', 'impersonate'] : []),
       ],
-      origin: [
-        process.env.FRONTEND_URL,
-        ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:6274'] : []),
-        ...(process.env.MAIN_URL ? [process.env.MAIN_URL] : []),
-      ],
+      origin: (origin, callback) => {
+        if (!origin || allowedCorsOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(new Error(`Origin not allowed by CORS: ${origin}`));
+      },
     },
   });
 
-  await startMcp(app);
+  if (process.env.DISABLE_MCP !== 'true') {
+    const { startMcp } = await import('@gitroom/nestjs-libraries/chat/start.mcp');
+    await startMcp(app);
+  }
 
   app.useGlobalPipes(
     new ValidationPipe({

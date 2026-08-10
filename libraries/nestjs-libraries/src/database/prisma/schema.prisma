@@ -9,52 +9,81 @@ datasource db {
 }
 
 model Organization {
-  id                     String               @id @default(uuid())
-  name                   String
-  description            String?
-  apiKey                 String?
-  paymentId              String?
-  streakSince            DateTime?
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
-  allowTrial             Boolean              @default(false)
-  isTrailing             Boolean              @default(false)
-  shortlink              ShortLinkPreference  @default(ASK)
-  onboardingCompletedAt  DateTime?
-  onboardingProgress     Json?
-  autoPost            AutoPost[]
-  Comments            Comments[]
-  credits             Credits[]
-  customers           Customer[]
-  errors              Errors[]
-  github              GitHub[]
-  Integration         Integration[]
-  media               Media[]
-  buyerOrganization   MessagesGroup[]
-  notifications       Notifications[]
-  plugs               Plugs[]
-  post                Post[]               @relation("organization")
-  submittedPost       Post[]               @relation("submittedForOrg")
-  sets                Sets[]
-  signatures          Signatures[]
-  subscription        Subscription?
-  tags                Tags[]
-  thirdParty          ThirdParty[]
-  usedCodes           UsedCodes[]
-  users               UserOrganization[]
-  webhooks            Webhooks[]
-  oauthApp            OAuthApp[]
-  oauthAuthorizations OAuthAuthorization[]
-  brandProfiles       BrandProfile[]
-  contentIdeas        ContentIdea[]
-  carouselProjects    CarouselProject[]
-  generationJobs      GenerationJob[]
-  generationCosts     GenerationCost[]
-  adCreatives         AdCreative[]
-  emailCampaigns      EmailCampaign[]
-  shortVideoProjects  ShortVideoProject[]
-  affiliates          Affiliate[]
-  CarouselDraft       CarouselDraft[]
+  id                    String                        @id @default(uuid())
+  name                  String
+  description           String?
+  apiKey                String?
+  paymentId             String?
+  streakSince           DateTime?
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  allowTrial            Boolean                       @default(false)
+  isTrailing            Boolean                       @default(false)
+  shortlink             ShortLinkPreference           @default(ASK)
+  onboardingCompletedAt DateTime?
+  onboardingProgress    Json?
+  autoPost              AutoPost[]
+  Comments              Comments[]
+  credits               Credits[]
+  customers             Customer[]
+  errors                Errors[]
+  github                GitHub[]
+  Integration           Integration[]
+  media                 Media[]
+  buyerOrganization     MessagesGroup[]
+  notifications         Notifications[]
+  plugs                 Plugs[]
+  post                  Post[]                        @relation("organization")
+  submittedPost         Post[]                        @relation("submittedForOrg")
+  sets                  Sets[]
+  signatures            Signatures[]
+  subscription          Subscription?
+  tags                  Tags[]
+  thirdParty            ThirdParty[]
+  usedCodes             UsedCodes[]
+  users                 UserOrganization[]
+  webhooks              Webhooks[]
+  oauthApp              OAuthApp[]
+  oauthAuthorizations   OAuthAuthorization[]
+  brandProfiles         BrandProfile[]
+  contentIdeas          ContentIdea[]
+  carouselProjects      CarouselProject[]
+  generationJobs        GenerationJob[]
+  generationCosts       GenerationCost[]
+  adCreatives           AdCreative[]
+  emailCampaigns        EmailCampaign[]
+  shortVideoProjects    ShortVideoProject[]
+  creativeProjects      CreativeProject[]
+  creativeAssets        CreativeAsset[]
+  creativeProducts      CreativeProduct[]
+  creativeActors        CreativeActor[]
+  creativeVoices        CreativeVoice[]
+  creativeRights        CreativeRightsGrant[]
+  creativeScripts       CreativeScript[]
+  creativeScenes        CreativeScene[]
+  creativeVariants      CreativeVariant[]
+  creativePublications  CreativePublication[]
+  creativeJobs          CreativeJob[]
+  creativeWorkflows     CreativeWorkflow[]
+  creativeWorkflowRuns  CreativeWorkflowRun[]
+  creativeCredits       CreativeCreditLedgerEntry[]
+  creativeProvenance    CreativeProvenance[]
+  creativeWebhooks      CreativeWebhookSubscription[]
+  creativeMetrics       CreativeMetricEvent[]
+  billingSubscription   BillingSubscription?
+  billingInvoices       BillingInvoice[]
+  billingWebhookEvents  BillingWebhookEvent[]
+  creditAccount         CreditAccount?
+  creditLots            CreditLot[]
+  creditTransactions    CreditTransaction[]
+  creditReservations    CreditReservation[]
+  providerCostRecords   ProviderCostRecord[]
+  financialAdjustments  FinancialAdjustment[]
+  affiliates            Affiliate[]
+  CarouselDraft         CarouselDraft[]
+  creativeReviews       CreativeReview[]
+  studioArtifacts       StudioArtifact[]
+  studioAttachments     StudioAttachment[]
 
   @@index([apiKey])
   @@index([streakSince])
@@ -1014,24 +1043,24 @@ model BrandProfile {
 }
 
 model BrandDnaSnapshot {
-  id             String       @id @default(uuid())
-  brandProfileId String
-  version        Int
-  sourceType     String
-  sourceUrl      String?
-  summary        Json
-  voice          Json
-  audience       Json
-  offer          Json
-  visual         Json
-  constraints    Json
+  id                String       @id @default(uuid())
+  brandProfileId    String
+  version           Int
+  sourceType        String
+  sourceUrl         String?
+  summary           Json
+  voice             Json
+  audience          Json
+  offer             Json
+  visual            Json
+  constraints       Json
   messaging         Json?
   contentGuidelines Json?
-  confidence     Json?
-  promptVersion  String
-  model          String
-  createdAt      DateTime     @default(now())
-  brandProfile   BrandProfile @relation(fields: [brandProfileId], references: [id])
+  confidence        Json?
+  promptVersion     String
+  model             String
+  createdAt         DateTime     @default(now())
+  brandProfile      BrandProfile @relation(fields: [brandProfileId], references: [id])
 
   @@index([brandProfileId])
   @@index([brandProfileId, version])
@@ -1536,14 +1565,688 @@ model ShortVideoProject {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization    Organization    @relation(fields: [organizationId], references: [id])
-  brandProfile    BrandProfile    @relation(fields: [brandProfileId], references: [id])
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  brandProfile    BrandProfile     @relation(fields: [brandProfileId], references: [id])
   carouselProject CarouselProject? @relation(fields: [carouselProjectId], references: [id])
-  contentIdea     ContentIdea?    @relation(fields: [contentIdeaId], references: [id])
+  contentIdea     ContentIdea?     @relation(fields: [contentIdeaId], references: [id])
 
   @@index([organizationId])
   @@index([brandProfileId])
   @@index([carouselProjectId])
+  @@index([status])
+}
+
+// ===== Creative Engine =====
+
+enum CreativeProjectStatus {
+  DRAFT
+  BRIEF_READY
+  SCRIPT_READY
+  GENERATING
+  REVIEW
+  READY
+  FAILED
+  ARCHIVED
+}
+
+enum CreativeAssetType {
+  PRODUCT
+  ACTOR
+  VOICE
+  LOGO
+  SCREENSHOT
+  VIDEO
+  AUDIO
+  IMAGE
+  BROLL
+  OTHER
+}
+
+enum CreativeAssetStatus {
+  UPLOADING
+  SCANNING
+  READY
+  REJECTED
+  ARCHIVED
+}
+
+enum CreativeRightsStatus {
+  UNKNOWN
+  PENDING
+  APPROVED
+  REVOKED
+  EXPIRED
+}
+
+enum CreativeJobStatus {
+  QUEUED
+  RESERVED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  RETRYABLE
+  CANCELLED
+  REFUNDED
+}
+
+enum CreativeWorkflowStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum CreativeWorkflowRunStatus {
+  QUEUED
+  RUNNING
+  PARTIAL
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model CreativeProject {
+  id             String                      @id @default(uuid())
+  organizationId String
+  brandProfileId String?
+  name           String
+  objective      String?
+  status         CreativeProjectStatus       @default(DRAFT)
+  aspectRatio    String                      @default("9:16")
+  maxDurationSec Int                         @default(60)
+  metadata       Json?
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+  deletedAt      DateTime?
+  organization   Organization                @relation(fields: [organizationId], references: [id])
+  assets         CreativeAsset[]
+  products       CreativeProduct[]
+  actors         CreativeActor[]
+  scripts        CreativeScript[]
+  variants       CreativeVariant[]
+  publications   CreativePublication[]
+  reviews        CreativeReview[]
+  jobs           CreativeJob[]
+  workflows      CreativeWorkflow[]
+  workflowRuns   CreativeWorkflowRun[]
+  credits        CreativeCreditLedgerEntry[]
+  provenance     CreativeProvenance[]
+  metrics        CreativeMetricEvent[]
+
+  @@index([organizationId])
+  @@index([brandProfileId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CreativeAsset {
+  id             String               @id @default(uuid())
+  organizationId String
+  projectId      String?
+  mediaId        String?
+  type           CreativeAssetType
+  status         CreativeAssetStatus  @default(UPLOADING)
+  rightsStatus   CreativeRightsStatus @default(UNKNOWN)
+  name           String
+  url            String?
+  thumbnailUrl   String?
+  mimeType       String?
+  fileSize       Int?
+  metadata       Json?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  deletedAt      DateTime?
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  project        CreativeProject?     @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([type])
+  @@index([status])
+  @@index([rightsStatus])
+  @@index([deletedAt])
+}
+
+model CreativeProduct {
+  id             String           @id @default(uuid())
+  organizationId String
+  projectId      String?
+  name           String
+  description    String?
+  sku            String?
+  assetIds       String[]         @default([])
+  metadata       Json?
+  status         String           @default("ACTIVE")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deletedAt      DateTime?
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  project        CreativeProject? @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model CreativeActor {
+  id             String               @id @default(uuid())
+  organizationId String
+  projectId      String?
+  name           String
+  provider       String?
+  externalId     String?
+  category       String?
+  imageUrl       String?
+  previewUrl     String?
+  tags           String[]             @default([])
+  rightsStatus   CreativeRightsStatus @default(PENDING)
+  metadata       Json?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  deletedAt      DateTime?
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  project        CreativeProject?     @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([rightsStatus])
+  @@index([category])
+  @@index([deletedAt])
+}
+
+model CreativeVoice {
+  id             String               @id @default(uuid())
+  organizationId String
+  name           String
+  provider       String?
+  externalId     String?
+  language       String               @default("pt-BR")
+  gender         String?
+  previewUrl     String?
+  rightsStatus   CreativeRightsStatus @default(PENDING)
+  metadata       Json?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  deletedAt      DateTime?
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([language])
+  @@index([rightsStatus])
+  @@index([deletedAt])
+}
+
+model CreativeRightsGrant {
+  id               String               @id @default(uuid())
+  organizationId   String
+  resourceType     String
+  resourceId       String
+  status           CreativeRightsStatus @default(PENDING)
+  consentReference String?
+  scope            Json?
+  expiresAt        DateTime?
+  revokedAt        DateTime?
+  metadata         Json?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  organization     Organization         @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([resourceType, resourceId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model CreativeScript {
+  id               String          @id @default(uuid())
+  organizationId   String
+  projectId        String
+  version          Int             @default(1)
+  name             String
+  language         String          @default("pt-BR")
+  source           String          @default("AI")
+  content          Json
+  totalDurationSec Float?
+  status           String          @default("DRAFT")
+  metadata         Json?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  organization     Organization    @relation(fields: [organizationId], references: [id])
+  project          CreativeProject @relation(fields: [projectId], references: [id])
+  scenes           CreativeScene[]
+
+  @@unique([projectId, version])
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([status])
+}
+
+model CreativeScene {
+  id             String         @id @default(uuid())
+  organizationId String
+  scriptId       String
+  sceneIndex     Int
+  kind           String         @default("TALKING_ACTOR")
+  durationSec    Float?
+  scriptText     String?
+  visualPrompt   String?
+  brollPrompt    String?
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  script         CreativeScript @relation(fields: [scriptId], references: [id])
+
+  @@unique([scriptId, sceneIndex])
+  @@index([organizationId])
+  @@index([scriptId])
+}
+
+model CreativeVariant {
+  id             String                @id @default(uuid())
+  organizationId String
+  projectId      String
+  scriptId       String?
+  actorId        String?
+  voiceId        String?
+  language       String                @default("pt-BR")
+  format         String                @default("9:16")
+  status         String                @default("DRAFT")
+  videoUrl       String?
+  thumbnailUrl   String?
+  captionsUrl    String?
+  output         Json?
+  metadata       Json?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  project        CreativeProject       @relation(fields: [projectId], references: [id])
+  publications   CreativePublication[]
+  reviews        CreativeReview[]
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CreativePublication {
+  id             String          @id @default(uuid())
+  organizationId String
+  projectId      String
+  variantId      String
+  integrationId  String
+  type           String
+  scheduledAt    DateTime
+  idempotencyKey String          @unique
+  postIds        String[]        @default([])
+  status         String          @default("RUNNING")
+  error          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  project        CreativeProject @relation(fields: [projectId], references: [id])
+  variant        CreativeVariant @relation(fields: [variantId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([projectId])
+  @@index([variantId])
+  @@index([status])
+}
+
+model CreativeJob {
+  id             String               @id @default(uuid())
+  organizationId String
+  projectId      String?
+  variantId      String?
+  type           String
+  status         CreativeJobStatus    @default(QUEUED)
+  provider       String?
+  model          String?
+  input          Json
+  output         Json?
+  error          String?
+  progress       Int                  @default(0)
+  costEstimate   Int?
+  costActual     Int?
+  idempotencyKey String               @unique
+  attempts       Int                  @default(0)
+  createdAt      DateTime             @default(now())
+  startedAt      DateTime?
+  completedAt    DateTime?
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  project        CreativeProject?     @relation(fields: [projectId], references: [id])
+  attemptRecords CreativeJobAttempt[]
+  reviews        CreativeReview[]
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model CreativeJobAttempt {
+  id          String      @id @default(uuid())
+  jobId       String
+  attempt     Int
+  status      String      @default("RUNNING")
+  provider    String?
+  model       String?
+  error       String?
+  output      Json?
+  startedAt   DateTime    @default(now())
+  completedAt DateTime?
+  metadata    Json?
+  job         CreativeJob @relation(fields: [jobId], references: [id])
+
+  @@unique([jobId, attempt])
+  @@index([jobId])
+  @@index([status])
+}
+
+model CreativeReview {
+  id              String           @id @default(uuid())
+  organizationId  String
+  jobId           String
+  projectId       String?
+  variantId       String?
+  approved        Boolean
+  score           Int?
+  productFidelity Int?
+  lipSync         Int?
+  captionAccuracy Int?
+  notes           String?
+  createdAt       DateTime         @default(now())
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  job             CreativeJob      @relation(fields: [jobId], references: [id])
+  variant         CreativeVariant? @relation(fields: [variantId], references: [id])
+  project         CreativeProject? @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([jobId])
+  @@index([projectId])
+  @@index([variantId])
+  @@index([approved])
+}
+
+model CreativeWorkflow {
+  id             String                 @id @default(uuid())
+  organizationId String
+  projectId      String?
+  name           String
+  version        Int                    @default(1)
+  maxCredits     Int?
+  status         CreativeWorkflowStatus @default(DRAFT)
+  definition     Json
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  deletedAt      DateTime?
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  project        CreativeProject?       @relation(fields: [projectId], references: [id])
+  nodes          CreativeWorkflowNode[]
+  edges          CreativeWorkflowEdge[]
+  runs           CreativeWorkflowRun[]
+
+  @@unique([organizationId, name, version])
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([status])
+}
+
+model CreativeWorkflowNode {
+  id           String           @id @default(uuid())
+  workflowId   String
+  nodeKey      String
+  type         String
+  config       Json
+  inputSchema  Json?
+  outputSchema Json?
+  position     Json?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  workflow     CreativeWorkflow @relation(fields: [workflowId], references: [id])
+
+  @@unique([workflowId, nodeKey])
+  @@index([workflowId])
+  @@index([type])
+}
+
+model CreativeWorkflowEdge {
+  id         String           @id @default(uuid())
+  workflowId String
+  sourceNode String
+  targetNode String
+  createdAt  DateTime         @default(now())
+  workflow   CreativeWorkflow @relation(fields: [workflowId], references: [id])
+
+  @@unique([workflowId, sourceNode, targetNode])
+  @@index([workflowId])
+}
+
+model CreativeWorkflowRun {
+  id             String                    @id @default(uuid())
+  organizationId String
+  workflowId     String
+  projectId      String?
+  idempotencyKey String                    @unique
+  inputHash      String?
+  status         CreativeWorkflowRunStatus @default(QUEUED)
+  input          Json
+  output         Json?
+  error          String?
+  estimatedCost  Int?
+  actualCost     Int?
+  createdAt      DateTime                  @default(now())
+  startedAt      DateTime?
+  completedAt    DateTime?
+  organization   Organization              @relation(fields: [organizationId], references: [id])
+  workflow       CreativeWorkflow          @relation(fields: [workflowId], references: [id])
+  project        CreativeProject?          @relation(fields: [projectId], references: [id])
+  items          CreativeWorkflowRunItem[]
+
+  @@index([organizationId])
+  @@index([workflowId])
+  @@index([projectId])
+  @@index([status])
+}
+
+model CreativeWorkflowRunItem {
+  id           String              @id @default(uuid())
+  runId        String
+  nodeKey      String
+  variantId    String?
+  status       CreativeJobStatus   @default(QUEUED)
+  provider     String?
+  model        String?
+  costEstimate Int?
+  costActual   Int?
+  output       Json?
+  error        String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  run          CreativeWorkflowRun @relation(fields: [runId], references: [id])
+
+  @@unique([runId, nodeKey, variantId])
+  @@index([runId])
+  @@index([status])
+}
+
+model CreativeCreditLedgerEntry {
+  id             String           @id @default(uuid())
+  organizationId String
+  projectId      String?
+  jobId          String?
+  workflowRunId  String?
+  type           String
+  status         String           @default("POSTED")
+  credits        Int
+  idempotencyKey String           @unique
+  metadata       Json?
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  project        CreativeProject? @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([jobId])
+  @@index([workflowRunId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CreativeProvenance {
+  id             String           @id @default(uuid())
+  organizationId String
+  projectId      String?
+  variantId      String?
+  operation      String
+  provider       String?
+  model          String?
+  inputHash      String
+  data           Json
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  project        CreativeProject? @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([variantId])
+  @@index([inputHash])
+}
+
+model CreativeWebhookSubscription {
+  id             String                    @id @default(uuid())
+  organizationId String
+  url            String
+  events         String[]                  @default([])
+  secret         String
+  active         Boolean                   @default(true)
+  failureCount   Int                       @default(0)
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  organization   Organization              @relation(fields: [organizationId], references: [id])
+  deliveries     CreativeWebhookDelivery[]
+
+  @@index([organizationId])
+  @@index([active])
+}
+
+model CreativeWebhookDelivery {
+  id             String                      @id @default(uuid())
+  subscriptionId String
+  event          String
+  payload        Json
+  status         String                      @default("PENDING")
+  responseStatus Int?
+  attempts       Int                         @default(0)
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+  subscription   CreativeWebhookSubscription @relation(fields: [subscriptionId], references: [id])
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CreativeMetricEvent {
+  id             String           @id @default(uuid())
+  organizationId String
+  projectId      String?
+  jobId          String?
+  workflowRunId  String?
+  event          String
+  provider       String?
+  model          String?
+  value          Float?
+  metadata       Json?
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  project        CreativeProject? @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, event])
+  @@index([provider, model])
+  @@index([projectId])
+  @@index([jobId])
+  @@index([workflowRunId])
+}
+
+// ===== Chat Studio: artefatos, versões, eventos e anexos =====
+
+model StudioArtifact {
+  id              String                  @id @default(uuid())
+  organizationId  String
+  threadId        String?
+  type            String
+  title           String
+  status          String                  @default("DRAFT")
+  currentVersion  Int                     @default(1)
+  content         Json
+  source          String?
+  brandProfileId  String?
+  metadata        Json?
+  approvedAt      DateTime?
+  archivedAt      DateTime?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  organization    Organization            @relation(fields: [organizationId], references: [id])
+  versions        StudioArtifactVersion[]
+  events          StudioArtifactEvent[]
+  attachments     StudioAttachment[]
+
+  @@index([organizationId, updatedAt])
+  @@index([organizationId, threadId])
+  @@index([organizationId, type, status])
+  @@index([brandProfileId])
+}
+
+model StudioArtifactVersion {
+  id             String         @id @default(uuid())
+  artifactId     String
+  version        Int
+  content        Json
+  changeSummary  String?
+  createdBy      String?
+  createdAt      DateTime       @default(now())
+  artifact       StudioArtifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+
+  @@unique([artifactId, version])
+  @@index([artifactId, createdAt])
+}
+
+model StudioArtifactEvent {
+  id          String         @id @default(uuid())
+  artifactId  String
+  event       String
+  payload     Json?
+  createdAt   DateTime       @default(now())
+  artifact    StudioArtifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+
+  @@index([artifactId, createdAt])
+  @@index([event])
+}
+
+model StudioAttachment {
+  id             String         @id @default(uuid())
+  organizationId String
+  artifactId     String?
+  threadId       String?
+  kind           String          @default("FILE")
+  filename       String
+  mimeType       String?
+  size           Int?
+  storageUrl     String
+  status         String          @default("READY")
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+  deletedAt      DateTime?
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  artifact       StudioArtifact? @relation(fields: [artifactId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, threadId])
+  @@index([artifactId])
   @@index([status])
 }
 
@@ -1759,4 +2462,265 @@ model CarouselDraft {
   @@index([organizationId])
   @@index([status])
   @@index([updatedAt])
+}
+
+// Billing and credit accounting v2. These models are additive so legacy
+// subscription/credits records can be migrated gradually.
+model BillingPlan {
+  id             String                @id @default(cuid())
+  code           String                @unique
+  name           String
+  priceCents     Int
+  monthlyCredits Int
+  active         Boolean               @default(true)
+  metadata       Json?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  prices         BillingPrice[]
+  subscriptions  BillingSubscription[]
+
+  @@index([active])
+}
+
+model BillingPrice {
+  id             String       @id @default(cuid())
+  planId         String?
+  code           String       @unique
+  kind           String       @default("PLAN")
+  provider       String       @default("STRIPE")
+  stripePriceId  String?      @unique
+  amountCents    Int
+  credits        Int
+  validityDays   Int?
+  active         Boolean      @default(true)
+  validFrom      DateTime     @default(now())
+  validUntil     DateTime?
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  plan           BillingPlan? @relation(fields: [planId], references: [id])
+
+  @@index([kind, active])
+  @@index([planId])
+  @@index([validFrom, validUntil])
+}
+
+model BillingSubscription {
+  id                     String       @id @default(cuid())
+  organizationId         String       @unique
+  planId                 String
+  provider               String       @default("STRIPE")
+  providerCustomerId     String?
+  providerSubscriptionId String?      @unique
+  status                 String       @default("ACTIVE")
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean      @default(false)
+  pendingPlanCode        String?
+  failedAt               DateTime?
+  metadata               Json?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  organization           Organization @relation(fields: [organizationId], references: [id])
+  plan                   BillingPlan  @relation(fields: [planId], references: [id])
+
+  @@index([status])
+  @@index([providerCustomerId])
+  @@index([providerSubscriptionId])
+  @@index([currentPeriodEnd])
+}
+
+model BillingInvoice {
+  id               String       @id @default(cuid())
+  organizationId   String
+  provider         String       @default("STRIPE")
+  providerInvoiceId String      @unique
+  providerPaymentId String?
+  type             String       @default("SUBSCRIPTION")
+  status           String       @default("PENDING")
+  amountCents      Int
+  currency         String       @default("brl")
+  priceCode        String?
+  creditsGranted   Int          @default(0)
+  periodStart      DateTime?
+  periodEnd        DateTime?
+  paidAt           DateTime?
+  metadata         Json?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([status])
+}
+
+model BillingWebhookEvent {
+  id             String        @id @default(cuid())
+  provider       String        @default("STRIPE")
+  eventId        String        @unique
+  eventType      String
+  status         String        @default("RECEIVED")
+  organizationId String?
+  payload        Json
+  error          String?
+  receivedAt     DateTime      @default(now())
+  processedAt    DateTime?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([status])
+  @@index([eventType])
+  @@index([organizationId])
+}
+
+model CreditAccount {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  status         String       @default("ACTIVE")
+  debtCredits    Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model CreditLot {
+  id               String              @id @default(cuid())
+  organizationId   String
+  source           String
+  sourceReference  String?
+  totalCredits     Int
+  remainingCredits Int
+  expiresAt        DateTime?
+  invoiceId        String?
+  periodStart      DateTime?
+  periodEnd        DateTime?
+  status           String              @default("AVAILABLE")
+  metadata         Json?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  organization     Organization        @relation(fields: [organizationId], references: [id])
+  transactions     CreditTransaction[]
+  allocations      CreditAllocation[]
+
+  @@index([organizationId, status, expiresAt])
+  @@index([invoiceId])
+}
+
+model CreditReservation {
+  id               String              @id @default(cuid())
+  organizationId   String
+  quoteId          String?
+  idempotencyKey   String              @unique
+  requestedCredits Int
+  settledCredits   Int                 @default(0)
+  status           String              @default("RESERVED")
+  jobId            String?
+  workflowRunId    String?
+  expiresAt        DateTime?
+  metadata         Json?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  organization     Organization        @relation(fields: [organizationId], references: [id])
+  allocations      CreditAllocation[]
+
+  @@index([organizationId, status])
+  @@index([jobId])
+  @@index([workflowRunId])
+  @@index([expiresAt])
+}
+
+model CreditAllocation {
+  id            String            @id @default(cuid())
+  reservationId String
+  lotId         String
+  credits       Int
+  createdAt     DateTime          @default(now())
+  reservation   CreditReservation @relation(fields: [reservationId], references: [id])
+  lot           CreditLot          @relation(fields: [lotId], references: [id])
+
+  @@unique([reservationId, lotId])
+  @@index([lotId])
+}
+
+model CreditTransaction {
+  id               String        @id @default(cuid())
+  organizationId   String
+  lotId            String?
+  reservationId    String?
+  type             String
+  credits          Int
+  operation        String?
+  provider         String?
+  model            String?
+  estimatedCostUsd Decimal?      @db.Decimal(12, 6)
+  actualCostUsd    Decimal?      @db.Decimal(12, 6)
+  costBrlCents     Int?
+  idempotencyKey   String        @unique
+  metadata         Json?
+  createdAt        DateTime      @default(now())
+  organization     Organization  @relation(fields: [organizationId], references: [id])
+  lot              CreditLot?    @relation(fields: [lotId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([lotId])
+  @@index([reservationId])
+  @@index([type])
+}
+
+model ProviderCostRecord {
+  id                String        @id @default(cuid())
+  organizationId    String?
+  provider          String
+  model             String
+  operation         String
+  providerRequestId String?
+  estimatedCostUsd  Decimal?      @db.Decimal(12, 6)
+  actualCostUsd     Decimal?      @db.Decimal(12, 6)
+  costBrlCents      Int?
+  creditsCharged    Int?
+  input             Json?
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  organization      Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([provider, model, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([providerRequestId])
+}
+
+model FinancialAdjustment {
+  id             String       @id @default(cuid())
+  organizationId String
+  type           String
+  credits        Int?
+  amountCents    Int?
+  reason         String
+  createdBy      String?
+  reference      String?
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([type])
+}
+
+model PricingVersion {
+  id                String    @id @default(cuid())
+  code              String    @unique
+  operation         String
+  provider          String
+  model             String
+  unit              String
+  baseCredits       Int
+  providerCostUsd   Decimal?  @db.Decimal(12, 6)
+  minCredits        Int       @default(1)
+  active            Boolean   @default(true)
+  validFrom         DateTime  @default(now())
+  validUntil        DateTime?
+  parameters        Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([operation, provider, model, active])
+  @@index([validFrom, validUntil])
 }

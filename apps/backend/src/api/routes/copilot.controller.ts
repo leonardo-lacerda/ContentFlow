@@ -14,6 +14,7 @@ import {
   copilotRuntimeNodeHttpEndpoint,
   copilotRuntimeNextJSAppRouterEndpoint,
 } from '@copilotkit/runtime';
+import OpenAI from 'openai';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { Organization } from '@prisma/client';
 import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/subscription.service';
@@ -23,35 +24,94 @@ import { Request, Response } from 'express';
 import { RequestContext } from '@mastra/core/di';
 import { CheckPolicies } from '@gitroom/backend/services/auth/permissions/permissions.ability';
 import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
+import { StudioArtifactService } from '@gitroom/nestjs-libraries/chat/studio/studio-artifact.service';
+import { CreditAccountingService } from '@gitroom/nestjs-libraries/services/credit-accounting.service';
+import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
 
 export type ChannelsContext = {
   integrations: string;
   organization: string;
   ui: string;
+  studioAttachments: string;
 };
+
+type PrimaryAiConfig = {
+  provider: 'kie' | 'openai';
+  apiKey: string;
+  baseURL?: string;
+  model: string;
+};
+
+function primaryAiConfig(): PrimaryAiConfig | null {
+  const provider = (process.env.AI_PRIMARY_PROVIDER || 'kie').toLowerCase();
+  if (provider === 'kie') {
+    const apiKey = process.env.KIEAI_API_KEY || '';
+    if (!apiKey) return null;
+    return {
+      provider: 'kie',
+      apiKey,
+      baseURL:
+        process.env.KIEAI_CHAT_BASE_URL ||
+        `${(process.env.CREATIVE_KIE_BASE_URL || 'https://api.kie.ai').replace(/\/$/, '')}/${process.env.KIEAI_CHAT_MODEL || 'gpt-5-2'}/v1`,
+      model: process.env.KIEAI_CHAT_MODEL || 'gpt-5-2',
+    };
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY || '';
+  if (!apiKey) return null;
+  return {
+    provider: 'openai',
+    apiKey,
+    model: process.env.OPENAI_CHAT_MODEL || 'gpt-4.1',
+  };
+}
+
+function primaryAiAdapter() {
+  const config = primaryAiConfig();
+  if (!config) return null;
+  const openai = new OpenAI({
+    apiKey: config.apiKey,
+    ...(config.baseURL ? { baseURL: config.baseURL } : {}),
+  });
+  return new OpenAIAdapter({ openai: openai as any, model: config.model });
+}
 
 @Controller('/copilot')
 export class CopilotController {
   constructor(
     private _subscriptionService: SubscriptionService,
-    private _mastraService: MastraService
+    private _mastraService: MastraService,
+    private _studioArtifacts: StudioArtifactService,
+    private _credits: CreditAccountingService,
+    private _pricingCatalog: PricingCatalogService,
   ) {}
+
+  @Get('/status')
+  status() {
+    const config = primaryAiConfig();
+    return {
+      aiConfigured: Boolean(config),
+      chatAvailable: Boolean(config),
+      provider: config?.provider || null,
+      model: config?.model || null,
+    };
+  }
+
   @Post('/chat')
   chatAgent(@Req() req: Request, @Res() res: Response) {
-    if (
-      process.env.OPENAI_API_KEY === undefined ||
-      process.env.OPENAI_API_KEY === ''
-    ) {
-      Logger.warn('OpenAI API key not set, chat functionality will not work');
-      return;
+    const serviceAdapter = primaryAiAdapter();
+    if (!serviceAdapter) {
+      Logger.warn('Primary AI provider is not configured, chat functionality will not work');
+      return res.status(503).json({
+        code: 'AI_PROVIDER_NOT_CONFIGURED',
+        message: 'O provedor de IA ainda nao foi configurado no backend.',
+      });
     }
 
     const copilotRuntimeHandler = copilotRuntimeNodeHttpEndpoint({
       endpoint: '/copilot/chat',
       runtime: new CopilotRuntime(),
-      serviceAdapter: new OpenAIAdapter({
-        model: 'gpt-4.1',
-      }),
+      serviceAdapter,
     });
 
     return copilotRuntimeHandler(req, res);
@@ -64,12 +124,13 @@ export class CopilotController {
     @Res() res: Response,
     @GetOrgFromRequest() organization: Organization
   ) {
-    if (
-      process.env.OPENAI_API_KEY === undefined ||
-      process.env.OPENAI_API_KEY === ''
-    ) {
-      Logger.warn('OpenAI API key not set, chat functionality will not work');
-      return;
+    const serviceAdapter = primaryAiAdapter();
+    if (!serviceAdapter) {
+      Logger.warn('Primary AI provider is not configured, chat functionality will not work');
+      return res.status(503).json({
+        code: 'AI_PROVIDER_NOT_CONFIGURED',
+        message: 'O provedor de IA ainda nao foi configurado no backend.',
+      });
     }
     const mastra = await this._mastraService.mastra();
     const requestContext = new RequestContext<ChannelsContext>();
@@ -80,6 +141,43 @@ export class CopilotController {
 
     requestContext.set('organization', JSON.stringify(organization));
     requestContext.set('ui', 'true');
+    const threadId =
+      req.body?.threadId || req.body?.thread?.id || req.body?.variables?.threadId;
+    if (threadId) {
+      const attachments = await this._studioArtifacts.listAttachments(
+        organization.id,
+        threadId,
+      );
+      requestContext.set(
+        'studioAttachments',
+        JSON.stringify(
+          attachments.map((attachment: any) => ({
+            id: attachment.id,
+            filename: attachment.filename,
+            kind: attachment.kind,
+            mimeType: attachment.mimeType,
+            storageUrl: attachment.storageUrl,
+            status: attachment.status,
+            metadata: attachment.metadata,
+          })),
+        ),
+      );
+    }
+    const quote = await this._pricingCatalog.quote({ operation: 'chat-ideas', capability: 'script' });
+    const reservation = await this._credits.reserve(organization.id, quote.credits, {
+      quoteId: quote.quoteId,
+      idempotencyKey: String(req.headers['idempotency-key'] || `chat:${organization.id}:${req.body?.threadId || 'new'}:${Date.now()}`),
+      operation: 'chat-ideas',
+      provider: quote.provider,
+      model: quote.model,
+    });
+    res.once('finish', () => {
+      const failed = res.statusCode >= 400;
+      const action = failed
+        ? this._credits.refund(reservation.id, `chat-http-${res.statusCode}`)
+        : this._credits.settle(reservation.id, quote.credits);
+      void action.catch((error) => Logger.error(`Failed to settle chat credits: ${String(error)}`));
+    });
 
     const agents = MastraAgent.getLocalAgents({
       resourceId: organization.id,
@@ -95,9 +193,7 @@ export class CopilotController {
       endpoint: '/copilot/agent',
       runtime,
       // properties: req.body.variables.properties,
-      serviceAdapter: new OpenAIAdapter({
-        model: 'gpt-4.1',
-      }),
+      serviceAdapter,
     });
 
     return copilotRuntimeHandler.handleRequest(req, res);
@@ -132,6 +228,74 @@ export class CopilotController {
     }
   }
 
+  @Get('/:thread/context')
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
+  async getThreadContext(
+    @GetOrgFromRequest() organization: Organization,
+    @Param('thread') threadId: string
+  ): Promise<any> {
+    const mastra = await this._mastraService.mastra();
+    const memory = await mastra.getAgent('contentflow').getMemory();
+    const thread = await memory.getThreadById({ threadId });
+    if (!thread || thread.resourceId !== organization.id) {
+      return { thread: null, metadata: {} };
+    }
+    return {
+      thread: {
+        id: thread.id,
+        title: thread.title,
+        resourceId: thread.resourceId,
+        createdAt: thread.createdAt,
+        updatedAt: thread.updatedAt,
+      },
+      metadata: this.parseThreadMetadata(thread.metadata),
+    };
+  }
+
+  @Post('/:thread/archive')
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
+  async archiveThread(
+    @GetOrgFromRequest() organization: Organization,
+    @Param('thread') threadId: string
+  ): Promise<any> {
+    const mastra = await this._mastraService.mastra();
+    const memory = await mastra.getAgent('contentflow').getMemory();
+    const thread = await memory.getThreadById({ threadId });
+    if (!thread || thread.resourceId !== organization.id) {
+      return { archived: false };
+    }
+    const metadata = this.parseThreadMetadata(thread.metadata);
+    metadata.archivedAt = new Date().toISOString();
+    await (memory as any).updateThread({
+      id: thread.id,
+      title: thread.title,
+      metadata,
+    });
+    return { archived: true, threadId };
+  }
+
+  @Post('/:thread/restore')
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
+  async restoreThread(
+    @GetOrgFromRequest() organization: Organization,
+    @Param('thread') threadId: string
+  ): Promise<any> {
+    const mastra = await this._mastraService.mastra();
+    const memory = await mastra.getAgent('contentflow').getMemory();
+    const thread = await memory.getThreadById({ threadId });
+    if (!thread || thread.resourceId !== organization.id) {
+      return { restored: false };
+    }
+    const metadata = this.parseThreadMetadata(thread.metadata);
+    delete metadata.archivedAt;
+    await (memory as any).updateThread({
+      id: thread.id,
+      title: thread.title,
+      metadata,
+    });
+    return { restored: true, threadId };
+  }
+
   @Get('/list')
   @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async getList(@GetOrgFromRequest() organization: Organization) {
@@ -145,10 +309,22 @@ export class CopilotController {
     });
 
     return {
-      threads: list.threads.map((p) => ({
+      threads: list.threads.filter((p) => !this.parseThreadMetadata(p.metadata).archivedAt).map((p) => ({
         id: p.id,
         title: p.title,
       })),
     };
+  }
+
+  private parseThreadMetadata(metadata: unknown): Record<string, any> {
+    if (!metadata) return {};
+    if (typeof metadata === 'object') return metadata as Record<string, any>;
+    if (typeof metadata !== 'string') return {};
+    try {
+      const parsed = JSON.parse(metadata);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
   }
 }

@@ -25,7 +25,7 @@ export const MobileIntegration: FC = () => {
       isMobile={true}
       invite={false}
       update={() => {}}
-      {...integrations}
+      {...(integrations as any)}
     />
   );
 };

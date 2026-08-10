@@ -1,6 +1,7 @@
 import { Injectable, NestMiddleware, HttpStatus } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { ioRedis } from '@gitroom/nestjs-libraries/redis/redis.service';
+import { createHash } from 'crypto';
 
 /**
  * Idempotency middleware for public API.
@@ -13,7 +14,7 @@ export class IdempotencyMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
     // Only apply to mutating methods
-    if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       return next();
     }
 
@@ -31,7 +32,12 @@ export class IdempotencyMiddleware implements NestMiddleware {
       });
     }
 
-    const cacheKey = `idempotency:${idempotencyKey}`;
+    const organizationId = String((req as any).org?.id || 'anonymous');
+    const routeKey = `${req.method}:${req.baseUrl || ''}${req.path}`;
+    const fingerprint = createHash('sha256')
+      .update(JSON.stringify({ routeKey, body: req.body || null }))
+      .digest('hex');
+    const cacheKey = `idempotency:${organizationId}:${routeKey}:${idempotencyKey}`;
 
     try {
       // Check if we've seen this key before
@@ -39,6 +45,11 @@ export class IdempotencyMiddleware implements NestMiddleware {
 
       if (cached) {
         const parsed = JSON.parse(cached);
+        if (parsed.fingerprint && parsed.fingerprint !== fingerprint) {
+          return res.status(HttpStatus.CONFLICT).json({
+            msg: 'Idempotency-Key was already used with a different request',
+          });
+        }
         // Return the cached response
         return res.status(parsed.status).json(parsed.body);
       }
@@ -57,7 +68,7 @@ export class IdempotencyMiddleware implements NestMiddleware {
           ioRedis
             .set(
               cacheKey,
-              JSON.stringify({ status: responseStatus, body: responseBody }),
+              JSON.stringify({ status: responseStatus, body: responseBody, fingerprint }),
               'EX',
               this.TTL_SECONDS,
             )

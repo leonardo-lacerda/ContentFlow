@@ -16,8 +16,9 @@ const MetricComponent = dynamic(
 export const GlobalSettings = () => {
   const t = useT();
   return (
-    <div className="flex flex-col">
-      <h3 className="text-[20px]">{t('global_settings', 'Global Settings')}</h3>
+    <div className="cf-settings-section flex flex-col">
+      <div className="cf-settings-eyebrow">{t('settings_preferences', 'Preferências')}</div>
+      <h3 className="cf-settings-title">{t('global_settings', 'Configurações gerais')}</h3>
       <MetricComponent />
       <EmailNotificationsComponent />
       <ShortlinkPreferenceComponent />

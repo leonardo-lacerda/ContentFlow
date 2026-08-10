@@ -36,7 +36,7 @@ const nextConfig = {
 
     if (isServer) {
       class CopyJsdomCssPlugin {
-        apply(compiler) {
+        apply(/** @type {any} */ compiler) {
           compiler.hooks.afterEmit.tap('CopyJsdomCssPlugin', () => {
             const candidates = [
               path.join(process.cwd(), 'node_modules/isomorphic-dompurify/node_modules/jsdom/lib/browser/default-stylesheet.css'),

@@ -1,4 +1,5 @@
 import { OpenaiService } from '@gitroom/nestjs-libraries/openai/openai.service';
+import { Optional } from '@nestjs/common';
 import {
   ExposeVideoFunction,
   URL,
@@ -16,6 +17,7 @@ import pLimit from 'p-limit';
 import { FalService } from '@gitroom/nestjs-libraries/openai/fal.service';
 import { IsString } from 'class-validator';
 import { JSONSchema } from 'class-validator-jsonschema';
+import { KieCreativeProvider } from '@gitroom/nestjs-libraries/creative-engine/providers/kie/kie-creative.provider';
 const limit = pLimit(2);
 
 const transloadit = new Transloadit({
@@ -51,18 +53,19 @@ class ImagesSlidesParams {
   dto: ImagesSlidesParams,
   trial: true,
   available:
-    !!process.env.ELEVENSLABS_API_KEY &&
+    (!!process.env.ELEVENSLABS_API_KEY || !!process.env.ELEVENLABS_API_KEY || !!process.env.KIEAI_API_KEY) &&
     !!process.env.TRANSLOADIT_AUTH &&
     !!process.env.TRANSLOADIT_SECRET &&
     !!process.env.OPENAI_API_KEY &&
-    !!process.env.FAL_KEY,
+    (!!process.env.FAL_KEY || !!process.env.KIEAI_API_KEY),
 })
 export class ImagesSlides extends VideoAbstract<ImagesSlidesParams> {
   override dto = ImagesSlidesParams;
   private storage = UploadFactory.createStorage();
   constructor(
     private _openaiService: OpenaiService,
-    private _falService: FalService
+    private _falService: FalService,
+    @Optional() private _kieProvider?: KieCreativeProvider,
   ) {
     super();
   }
@@ -81,11 +84,7 @@ export class ImagesSlides extends VideoAbstract<ImagesSlidesParams> {
           new Promise(async (res) => {
             res({
               len: 0,
-              url: await this._falService.generateImageFromText(
-                'ideogram/v2',
-                current.imagePrompt,
-                output === 'vertical'
-              ),
+              url: await this.generateSlideImage(current.imagePrompt, output === 'vertical'),
             });
           })
         );
@@ -94,22 +93,7 @@ export class ImagesSlides extends VideoAbstract<ImagesSlidesParams> {
           new Promise(async (res) => {
             const buffer = Buffer.from(
               await (
-                await limit(() =>
-                  fetch(
-                    `https://api.elevenlabs.io/v1/text-to-speech/${customParams.voice}?output_format=mp3_44100_128`,
-                    {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'xi-api-key': process.env.ELEVENSLABS_API_KEY || '',
-                      },
-                      body: JSON.stringify({
-                        text: current.voiceText,
-                        model_id: 'eleven_multilingual_v2',
-                      }),
-                    }
-                  )
-                )
+                await limit(() => this.generateSlideAudio(current.voiceText, customParams.voice))
               ).arrayBuffer()
             );
 
@@ -240,6 +224,46 @@ export class ImagesSlides extends VideoAbstract<ImagesSlidesParams> {
     return results.subtitled[0].url;
   }
 
+  private async generateSlideImage(prompt: string, vertical: boolean) {
+    if (this._kieProvider?.capabilities().includes('image-generation')) {
+      const result = await this._kieProvider.generate('image-generation', {
+        prompt,
+        aspectRatio: vertical ? '9:16' : '16:9',
+      });
+      if (!result.url) throw new Error('Kie image generation returned no URL');
+      return result.url;
+    }
+    return this._falService.generateImageFromText('ideogram/v2', prompt, vertical);
+  }
+
+  private async generateSlideAudio(text: string, voiceId: string) {
+    if (this._kieProvider?.capabilities().includes('text-to-speech')) {
+      const result = await this._kieProvider.generate('text-to-speech', {
+        prompt: text,
+        script: text,
+        voice: { externalId: voiceId },
+        language: 'pt-BR',
+      });
+      const url = result.audioUrl || result.url;
+      if (!url) throw new Error('Kie TTS returned no audio URL');
+      return fetch(url);
+    }
+    return fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': process.env.ELEVENLABS_API_KEY || process.env.ELEVENSLABS_API_KEY || '',
+        },
+        body: JSON.stringify({
+          text,
+          model_id: process.env.CREATIVE_TTS_MODEL || 'eleven_multilingual_v2',
+        }),
+      },
+    );
+  }
+
   @ExposeVideoFunction()
   async loadVoices(data: any) {
     const { voices } = await (
@@ -249,7 +273,7 @@ export class ImagesSlides extends VideoAbstract<ImagesSlidesParams> {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'xi-api-key': process.env.ELEVENSLABS_API_KEY || '',
+        'xi-api-key': process.env.ELEVENLABS_API_KEY || process.env.ELEVENSLABS_API_KEY || '',
           },
         }
       )

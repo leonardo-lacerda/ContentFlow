@@ -4,6 +4,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { AffiliateService } from '@gitroom/nestjs-libraries/database/prisma/affiliates/affiliate.service';
+import { Request } from 'express';
 
 @ApiTags('Affiliates')
 @UseGuards(V1SurfaceGuard)

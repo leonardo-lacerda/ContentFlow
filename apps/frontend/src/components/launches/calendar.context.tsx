@@ -27,6 +27,11 @@ import { expandPostsList, expandPosts } from '@gitroom/helpers/utils/posts.list.
 extend(isoWeek);
 extend(weekOfYear);
 
+type CalendarPost = Post & {
+  integration: Integration;
+  tags: { tag: Tags }[];
+};
+
 export const CalendarContext = createContext({
   startDate: newDayjs().startOf('isoWeek').format('YYYY-MM-DD'),
   endDate: newDayjs().endOf('isoWeek').format('YYYY-MM-DD'),
@@ -136,7 +141,7 @@ const CalendarWeekProviderInner: FC<{
   integrations: Integrations[];
 }> = ({ children, integrations }) => {
   const fetch = useFetch();
-  const [internalData, setInternalData] = useState<Post[]>([]);
+  const [internalData, setInternalData] = useState<CalendarPost[]>([]);
   const [trendings] = useState<string[]>([]);
   const searchParams = useSearchParams();
   const [displaySaved, setDisplaySaved] = useCookie('calendar-display', 'week');
@@ -293,11 +298,11 @@ const CalendarWeekProviderInner: FC<{
   const changeDate = useCallback(
     (id: string, date: dayjs.Dayjs) => {
       setInternalData((d) =>
-        d.map((post: Post) => {
+        d.map((post) => {
           if (post.id === id) {
             return {
               ...post,
-              publishDate: date.utc().format('YYYY-MM-DDTHH:mm:ss'),
+              publishDate: date.utc().toDate(),
             };
           }
           return post;

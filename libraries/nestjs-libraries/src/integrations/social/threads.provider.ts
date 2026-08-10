@@ -77,7 +77,7 @@ export class ThreadsProvider extends SocialAbstract implements SocialProvider {
   }
 
   async generateAuthUrl() {
-    const state = makeId(6);
+    const state = makeId(32);
     return {
       url:
         'https://www.threads.net/oauth/authorize' +
@@ -91,7 +91,7 @@ export class ThreadsProvider extends SocialAbstract implements SocialProvider {
         )}` +
         `&state=${state}` +
         `&scope=${encodeURIComponent(this.scopes.join(','))}`,
-      codeVerifier: makeId(10),
+      codeVerifier: makeId(48),
       state,
     };
   }

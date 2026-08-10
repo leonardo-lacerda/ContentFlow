@@ -183,6 +183,7 @@ export class ShortVideoService {
       maxCostUsd?: number;
     }
   ) {
+    await this.planLimitsService.enforceLimit(orgId, 'video_generation');
     const project = await this.shortVideoRepository.findById(projectId, orgId);
     if (!project) throw new NotFoundException('Short video project not found');
     if (!project.script) throw new BadRequestException('Script not generated yet');

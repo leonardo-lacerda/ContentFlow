@@ -12,7 +12,7 @@ interface ConversionTrackerProps {
  * Tracks page views and CTA clicks for SEO conversion measurement.
  * Sends events to PostHog/Plausible if available.
  */
-export function ConversionTracker({ source, medium = 'seo', campaign }: ConversionTrackerProps) {
+export function ConversionTracker({ source, medium = 'seo', campaign }: ConversionTrackerProps): null {
   useEffect(() => {
     // Track page view
     trackEvent('page_view', { source, medium, campaign });

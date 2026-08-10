@@ -43,7 +43,7 @@ export class SlackProvider extends SocialAbstract implements SocialProvider {
     };
   }
   async generateAuthUrl() {
-    const state = makeId(6);
+    const state = makeId(32);
 
     return {
       url: `https://slack.com/oauth/v2/authorize?client_id=${
@@ -55,7 +55,7 @@ export class SlackProvider extends SocialAbstract implements SocialProvider {
             : ''
         }${process?.env?.FRONTEND_URL}/integrations/social/slack`
       )}&scope=channels:read,chat:write,users:read,groups:read,channels:join,chat:write.customize&state=${state}`,
-      codeVerifier: makeId(10),
+      codeVerifier: makeId(48),
       state,
     };
   }

@@ -60,17 +60,17 @@ export class EmailCampaignGenerateService {
     additionalContext?: string;
   }): Promise<any> {
     await this.planLimitsService.enforceLimit(orgId, 'email_campaign');
-    const brand = await this.brandProfileService.getBrand(dto.brandProfileId);
+    const brand = await this.brandProfileService.getBrand(dto.brandProfileId, orgId);
     if (!brand || brand.organizationId !== orgId) throw new Error('Brand not found');
 
     const dna = await this.brandProfileService.getLatestDnaSnapshot(dto.brandProfileId);
 
     let sourceContent: { title: string; content: string; caption?: string } = { title: '', content: '' };
     if (dto.contentIdeaId) {
-      const idea = await this.contentIdeaService.getIdea(dto.contentIdeaId);
+      const idea = await this.contentIdeaService.getIdea(dto.contentIdeaId, orgId);
       if (idea) sourceContent = { title: idea.title, content: `${idea.hook} - ${idea.angle}` };
     } else if (dto.carouselProjectId) {
-      const project = await this.carouselProjectService.getProject(dto.carouselProjectId);
+      const project = await this.carouselProjectService.getProject(dto.carouselProjectId, orgId);
       if (project) sourceContent = { title: project.title, content: project.caption || '', caption: project.caption || undefined };
     }
 
@@ -196,7 +196,7 @@ Generate the email with subject, preheader, content blocks, and CTA. Return JSON
     carouselProjectId?: string;
   }): Promise<any[]> {
     await this.planLimitsService.enforceLimit(orgId, 'email_campaign');
-    const brand = await this.brandProfileService.getBrand(dto.brandProfileId);
+    const brand = await this.brandProfileService.getBrand(dto.brandProfileId, orgId);
     if (!brand || brand.organizationId !== orgId) throw new Error('Brand not found');
 
     const dna = await this.brandProfileService.getLatestDnaSnapshot(dto.brandProfileId);

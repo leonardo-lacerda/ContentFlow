@@ -99,6 +99,31 @@ import { CircuitBreakerService } from '@gitroom/nestjs-libraries/ai-generate/cir
 import { CarouselDraftsController } from './routes/carousel-drafts.controller';
 import { CarouselDraftService } from '@gitroom/nestjs-libraries/database/prisma/carousel-drafts/carousel-draft.service';
 import { CarouselDraftRepository } from '@gitroom/nestjs-libraries/database/prisma/carousel-drafts/carousel-draft.repository';
+import { CreativeController } from '@gitroom/backend/api/routes/creative.controller';
+import { CreativeWorkflowsController } from '@gitroom/backend/api/routes/creative-workflows.controller';
+import { CreativeEngineService } from '@gitroom/nestjs-libraries/creative-engine/creative-engine.service';
+import { CreativeProviderService } from '@gitroom/nestjs-libraries/creative-engine/creative-provider.service';
+import { CreativeCreditService } from '@gitroom/nestjs-libraries/creative-engine/creative-credit.service';
+import { CreativeWorkflowService } from '@gitroom/nestjs-libraries/creative-engine/creative-workflow.service';
+import { CreativeWebhookService } from '@gitroom/nestjs-libraries/creative-engine/creative-webhook.service';
+import { CreativeRightsService } from '@gitroom/nestjs-libraries/creative-engine/creative-rights.service';
+import { CreativeModerationService } from '@gitroom/nestjs-libraries/creative-engine/creative-moderation.service';
+import { CreativeMediaToolService } from '@gitroom/nestjs-libraries/creative-engine/creative-media-tool.service';
+import { CreativeOutputValidationService } from '@gitroom/nestjs-libraries/creative-engine/creative-output-validation.service';
+import { CreativeMetricsService } from '@gitroom/nestjs-libraries/creative-engine/creative-metrics.service';
+import { CreativeExportService } from '@gitroom/nestjs-libraries/creative-engine/creative-export.service';
+import { CreativeEvaluationService } from '@gitroom/nestjs-libraries/creative-engine/creative-evaluation.service';
+import { CreativePublishService } from '@gitroom/nestjs-libraries/creative-engine/creative-publish.service';
+import { CreativeOutputStorageService } from '@gitroom/nestjs-libraries/creative-engine/creative-output-storage.service';
+import { CreativeSceneGraphService } from '@gitroom/nestjs-libraries/creative-engine/creative-scene-graph.service';
+import { CreativeFeatureFlagGuard } from '@gitroom/nestjs-libraries/creative-engine/creative-feature-flag.guard';
+import { CreativeKieController } from '@gitroom/backend/api/routes/creative-kie.controller';
+import { StudioController } from '@gitroom/backend/api/routes/studio.controller';
+import { StudioArtifactService } from '@gitroom/nestjs-libraries/chat/studio/studio-artifact.service';
+import { CreditAccountingService } from '@gitroom/nestjs-libraries/services/credit-accounting.service';
+import { BillingAccountingService } from '@gitroom/nestjs-libraries/services/billing-accounting.service';
+import { BillingStripeService } from '@gitroom/nestjs-libraries/services/billing-stripe.service';
+import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
 
 const authenticatedController = [
   UsersController,
@@ -138,6 +163,9 @@ const authenticatedController = [
   WebhooksController,
   ArticleImportController,
   CarouselDraftsController,
+  CreativeController,
+  CreativeWorkflowsController,
+  StudioController,
 ];
 @Module({
   imports: [UploadModule, DesignSystemModule],
@@ -149,6 +177,7 @@ const authenticatedController = [
     MonitorController,
     EnterpriseController,
     NoAuthIntegrationsController,
+    CreativeKieController,
     OAuthController,
     ...authenticatedController,
   ],
@@ -207,6 +236,27 @@ const authenticatedController = [
   CircuitBreakerService,
   CarouselDraftService,
   CarouselDraftRepository,
+  CreativeEngineService,
+  CreativeProviderService,
+  CreativeCreditService,
+  CreditAccountingService,
+  BillingAccountingService,
+  BillingStripeService,
+  PricingCatalogService,
+  CreativeWorkflowService,
+  CreativeWebhookService,
+  CreativeRightsService,
+  CreativeModerationService,
+  CreativeMediaToolService,
+  CreativeOutputValidationService,
+  CreativeMetricsService,
+  CreativeExportService,
+  CreativeEvaluationService,
+  CreativePublishService,
+  CreativeOutputStorageService,
+  CreativeSceneGraphService,
+    CreativeFeatureFlagGuard,
+    StudioArtifactService,
   ],
   get exports() {
     return [...this.imports, ...this.providers];

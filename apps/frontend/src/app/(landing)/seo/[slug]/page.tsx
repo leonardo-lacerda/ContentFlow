@@ -143,7 +143,7 @@ export default async function SeoPage({ params }: PageProps) {
         <h2 className="text-xl font-semibold">Artigos relacionados</h2>
         <ul className="space-y-1">
           {Object.entries(CLUSTERS)
-            .filter(([key]) => key !== params.slug)
+            .filter(([key]) => key !== slug)
             .slice(0, 3)
             .map(([key, c]) => (
               <li key={key}>

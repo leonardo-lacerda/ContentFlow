@@ -156,23 +156,46 @@ export class PlanLimitsService {
         });
 
       case 'image_generation':
-        return this._prisma.generationJob.count({
-          where: {
-            organizationId,
-            type: 'IMAGE_GENERATION',
-            createdAt: { gte: startOfMonth },
-          },
-        });
+        {
+          const [legacy, creative] = await Promise.all([
+            this._prisma.generationJob.count({
+              where: {
+                organizationId,
+                type: 'IMAGE_GENERATION',
+                createdAt: { gte: startOfMonth },
+              },
+            }),
+            this._prisma.creativeJob.count({
+              where: {
+                organizationId,
+                type: 'image-generation',
+                createdAt: { gte: startOfMonth },
+              },
+            }),
+          ]);
+          return legacy + creative;
+        }
 
       case 'video_generation':
       case 'video_script':
-        return this._prisma.generationJob.count({
-          where: {
-            organizationId,
-            type: { in: ['VIDEO_GENERATION', 'VIDEO_SCRIPT'] },
-            createdAt: { gte: startOfMonth },
-          },
-        });
+        {
+          const legacy = await this._prisma.generationJob.count({
+            where: {
+              organizationId,
+              type: { in: ['VIDEO_GENERATION', 'VIDEO_SCRIPT'] },
+              createdAt: { gte: startOfMonth },
+            },
+          });
+          if (type === 'video_script') return legacy;
+          const creative = await this._prisma.creativeJob.count({
+            where: {
+              organizationId,
+              type: { in: ['video-generation', 'b-roll'] },
+              createdAt: { gte: startOfMonth },
+            },
+          });
+          return legacy + creative;
+        }
 
       case 'ad_kit':
         return this._prisma.adCreative.count({

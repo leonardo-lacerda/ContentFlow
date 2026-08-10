@@ -13,8 +13,7 @@ export const SectionCard: FC<{
   return (
     <div
       className={clsx(
-        'bg-newBgColorInner border border-newTableBorder rounded-[14px] p-[16px]',
-        'shadow-cfSm hover:shadow-cf transition-shadow duration-200',
+        'cf-section-card p-[16px] transition-shadow duration-200',
         className
       )}
     >

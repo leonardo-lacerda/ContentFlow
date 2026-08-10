@@ -58,33 +58,33 @@ const ShortlinkPreferenceComponent = () => {
       });
 
       mutate({ shortlink: newValue });
-      toaster.show(t('settings_updated', 'Settings updated'), 'success');
+      toaster.show(t('settings_updated', 'Configurações atualizadas'), 'success');
     },
     [fetch, mutate, toaster, t]
   );
 
   if (isLoading) {
     return (
-      <div className="my-[16px] mt-[16px] bg-sixth border-fifth border rounded-[4px] p-[24px]">
-        <div className="animate-pulse">{t('loading', 'Loading...')}</div>
+      <div className="cf-settings-card my-4">
+        <div className="animate-pulse">{t('loading', 'Carregando...')}</div>
       </div>
     );
   }
 
   return (
-    <div className="my-[16px] mt-[16px] bg-sixth border-fifth border rounded-[4px] p-[24px] flex flex-col gap-[24px]">
+    <div className="cf-settings-card my-4 flex flex-col gap-5">
       <div className="mt-[4px]">
-        {t('shortlink_settings', 'Shortlink Settings')}
+        {t('shortlink_settings', 'Configurações de links curtos')}
       </div>
       <div className="flex items-center justify-between gap-[24px]">
         <div className="flex flex-col flex-1">
           <div className="text-[14px]">
-            {t('shortlink_preference', 'Shortlink Preference')}
+            {t('shortlink_preference', 'Preferência de link curto')}
           </div>
           <div className="text-[12px] text-customColor18">
             {t(
               'shortlink_preference_description',
-              'Control how URLs in your posts are handled. Shortlinks provide click statistics.'
+              'Defina como as URLs das publicações serão tratadas. Links curtos oferecem estatísticas de cliques.'
             )}
           </div>
         </div>
@@ -98,13 +98,13 @@ const ShortlinkPreferenceComponent = () => {
             onChange={handleChange}
           >
             <option value="ASK">
-              {t('shortlink_ask', 'Ask every time')}
+              {t('shortlink_ask', 'Perguntar sempre')}
             </option>
             <option value="YES">
-              {t('shortlink_yes', 'Always shortlink')}
+              {t('shortlink_yes', 'Sempre usar link curto')}
             </option>
             <option value="NO">
-              {t('shortlink_no', 'Never shortlink')}
+              {t('shortlink_no', 'Nunca usar link curto')}
             </option>
           </Select>
         </div>

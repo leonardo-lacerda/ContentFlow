@@ -38,7 +38,7 @@ export class MastodonCustomProvider extends MastodonProvider {
     refresh?: string,
     external?: ClientInformation
   ) {
-    const state = makeId(6);
+    const state = makeId(32);
     const url = this.generateUrlDynamic(
       external?.instanceUrl!,
       state,
@@ -49,7 +49,7 @@ export class MastodonCustomProvider extends MastodonProvider {
 
     return {
       url,
-      codeVerifier: makeId(10),
+      codeVerifier: makeId(48),
       state,
     };
   }

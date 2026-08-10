@@ -22,8 +22,11 @@ export class GenerationJobController {
   }
 
   @Get('/:id')
-  async getJob(@Param('id') id: string) {
-    return this.generationJobService.getJob(id);
+  async getJob(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.generationJobService.getJob(id, org.id);
   }
 
   @Post('/')
@@ -44,8 +47,11 @@ export class GenerationJobController {
 
   @Patch('/:id/cancel')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async cancelJob(@Param('id') id: string) {
-    return this.generationJobService.cancelJob(id);
+  async cancelJob(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.generationJobService.cancelJob(id, org.id);
   }
 
   @Get('/active/count')

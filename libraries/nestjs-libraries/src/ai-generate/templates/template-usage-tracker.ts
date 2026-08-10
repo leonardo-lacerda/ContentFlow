@@ -175,7 +175,7 @@ export function getTemplateUsageStats(
         ? Math.round(
             slideCounts.reduce((a, b) => a + b, 0) / slideCounts.length
           )
-        : template.recommendedSlideCount,
+        : template.recommendedSlideCount.default,
     editorialPassRate:
       editorialEvents.length > 0
         ? Number(
@@ -200,7 +200,7 @@ export function getAllTemplateUsageStats(): TemplateUsageStats[] {
         label: t.label,
         totalUses: 0,
         uniqueOrgs: 0,
-        avgSlideCount: t.recommendedSlideCount,
+        avgSlideCount: t.recommendedSlideCount.default,
         editorialPassRate: 1,
         lastUsedAt: null,
         platformBreakdown: {},

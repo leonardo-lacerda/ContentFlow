@@ -13,7 +13,7 @@ export const PageHeader: FC<{
   return (
     <div
       className={clsx(
-        'flex flex-col shrink-0 border-b border-newTableBorder bg-newBgColorInner',
+        'cf-page-header flex flex-col shrink-0',
         className
       )}
     >

@@ -11,6 +11,7 @@ import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/b
 import { ContentIdeaService } from '@gitroom/nestjs-libraries/database/prisma/content-ideas/content-idea.service';
 import { CarouselProjectService } from '@gitroom/nestjs-libraries/database/prisma/carousel-projects/carousel-project.service';
 import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.service';
+import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import { GenerateSocialPostsDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/generate-social-posts.dto';
 
 const openai = new OpenAI({
@@ -58,12 +59,15 @@ export class SocialPostGenerateService {
     private contentIdeaService: ContentIdeaService,
     private carouselProjectService: CarouselProjectService,
     private generationJobService: GenerationJobService,
+    private planLimitsService: PlanLimitsService,
   ) {}
 
   async generateSocialPosts(
     orgId: string,
     dto: GenerateSocialPostsDto,
   ): Promise<SocialPostBatch> {
+    await this.planLimitsService.enforceLimit(orgId, 'content_idea');
+
     // 1. Validate that at least one input source is provided
     if (!dto.topic && !dto.contentIdeaId && !dto.carouselProjectId) {
       throw new BadRequestException(
@@ -189,11 +193,11 @@ export class SocialPostGenerateService {
     }
   }
 
-  async getPostsByContentIdea(ideaId: string) {
+  async getPostsByContentIdea(ideaId: string): Promise<any[]> {
     return [];
   }
 
-  async getPostsByCarouselProject(carouselId: string) {
+  async getPostsByCarouselProject(carouselId: string): Promise<any[]> {
     return [];
   }
 

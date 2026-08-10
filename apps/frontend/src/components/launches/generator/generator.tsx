@@ -129,7 +129,14 @@ const FirstStep: FC = (props) => {
         return;
       }
       const reader = response.body.getReader();
-      const load = await generateStep(reader);
+      const load = (await generateStep(reader)) as {
+        hook: string;
+        date: string;
+        content: Array<{
+          content: string;
+          image?: { id: string; path: string };
+        }>;
+      };
       const messages = load.content.map((p: any, index: number) => {
         if (index === 0) {
           return {

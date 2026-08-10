@@ -461,7 +461,13 @@ export function getEditorialIssues(
 
     // --- Template-specific editorial checks ---
     if (backendTemplate?.editorialChecks?.length) {
-      for (const check of backendTemplate.editorialChecks) {
+      for (const check of backendTemplate.editorialChecks as Array<{
+        id: string;
+        description: string;
+        severity: string;
+        message: string;
+        pattern?: string;
+      }>) {
         const desc = (check.description || '').toLowerCase();
         const msg = check.message || check.description;
 

@@ -49,10 +49,10 @@ export class FarcasterProvider
   }
 
   async generateAuthUrl() {
-    const state = makeId(17);
+    const state = makeId(32);
     return {
       url: `${process.env.NEYNAR_CLIENT_ID}||${state}` || '',
-      codeVerifier: makeId(10),
+      codeVerifier: makeId(48),
       state,
     };
   }

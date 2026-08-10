@@ -159,7 +159,7 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
   }
 
   async generateAuthUrl() {
-    const state = makeId(7);
+    const state = makeId(32);
     const { client } = clientAndYoutube();
     return {
       url: client.generateAuthUrl({
@@ -169,7 +169,7 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
         redirect_uri: `${process.env.FRONTEND_URL}/integrations/social/youtube`,
         scope: this.scopes.slice(0),
       }),
-      codeVerifier: makeId(11),
+      codeVerifier: makeId(48),
       state,
     };
   }

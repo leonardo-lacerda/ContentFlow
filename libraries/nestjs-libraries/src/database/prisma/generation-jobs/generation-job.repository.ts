@@ -17,8 +17,11 @@ export class GenerationJobRepository {
     return this.prisma.generationJob.findFirst({ where: { id, organizationId: orgId } });
   }
 
-  findByIdempotencyKey(key: string) {
-    return this.prisma.generationJob.findUnique({ where: { idempotencyKey: key } });
+  findByIdempotencyKey(key: string, orgId: string) {
+    // Scoped by org so a guessed key cannot surface another tenant's job.
+    return this.prisma.generationJob.findFirst({
+      where: { idempotencyKey: key, organizationId: orgId },
+    });
   }
 
   create(data: {
@@ -32,6 +35,7 @@ export class GenerationJobRepository {
     promptVersion?: string;
     schemaVersion?: string;
     costEstimate?: number;
+    progress?: any;
   }) {
     return this.prisma.generationJob.create({ data });
   }

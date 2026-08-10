@@ -10,6 +10,7 @@ import type {
 } from '../types/design-system.types';
 
 type JsonBag = Record<string, unknown>;
+type DesignMotif = { id: string; name?: string; tags?: string[] };
 
 @Injectable()
 export class DesignSystemCatalogService implements OnModuleInit {
@@ -20,7 +21,7 @@ export class DesignSystemCatalogService implements OnModuleInit {
   private directions: DesignDirection[] = [];
   private templates: DesignTemplateMeta[] = [];
   private sizes: DesignSize[] = [];
-  private motifs: Array<{ id: string; name?: string; tags?: string[] }> = [];
+  private motifs: DesignMotif[] = [];
   private loaded = false;
 
   onModuleInit() {
@@ -41,9 +42,9 @@ export class DesignSystemCatalogService implements OnModuleInit {
     this.sizes = this.readArray<DesignSize>('sizes.json', 'sizes');
     const motifsRaw = this.readJson('motifs.json');
     this.motifs = Array.isArray(motifsRaw?.motifs)
-      ? (motifsRaw.motifs as typeof this.motifs)
+      ? (motifsRaw.motifs as DesignMotif[])
       : Array.isArray(motifsRaw)
-        ? (motifsRaw as typeof this.motifs)
+        ? (motifsRaw as DesignMotif[])
         : [];
     this.loaded = true;
     this.logger.log(

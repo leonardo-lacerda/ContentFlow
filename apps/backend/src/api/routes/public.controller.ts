@@ -20,9 +20,6 @@ import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { getCookieUrlFromDomain } from '@gitroom/helpers/subdomain/subdomain.management';
 import { AgentGraphInsertService } from '@gitroom/nestjs-libraries/agent/agent.graph.insert.service';
 import { Nowpayments } from '@gitroom/nestjs-libraries/crypto/nowpayments';
-import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/subscription.service';
-import { AuthService } from '@gitroom/helpers/auth/auth.service';
-import { pricing } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/pricing';
 import { timingSafeEqual } from 'crypto';
 import { Readable, pipeline } from 'stream';
 import { promisify } from 'util';
@@ -39,8 +36,7 @@ export class PublicController {
     private _trackService: TrackService,
     private _agentGraphInsertService: AgentGraphInsertService,
     private _postsService: PostsService,
-    private _nowpayments: Nowpayments,
-    private _subscriptionService: SubscriptionService
+    private _nowpayments: Nowpayments
   ) {}
   @Post('/agent')
   async createAgent(@Body() body: { text: string; apiKey: string }) {
@@ -131,32 +127,6 @@ export class PublicController {
     res.status(200).json({
       track: uniqueId,
     });
-  }
-
-  @Post('/modify-subscription')
-  async modifySubscription(@Body('params') params: string) {
-    try {
-      const load = AuthService.verifyJWT(params) as {
-        orgId: string;
-        billing: 'FREE' | 'STANDARD' | 'TEAM' | 'PRO' | 'ULTIMATE';
-      };
-
-      if (!load || !load.orgId || !load.billing || !pricing[load.billing]) {
-        return { success: false };
-      }
-
-      const totalChannels = pricing[load.billing].channel || 0;
-
-      await this._subscriptionService.modifySubscriptionByOrg(
-        load.orgId,
-        totalChannels,
-        load.billing
-      );
-
-      return { success: true };
-    } catch (err) {
-      return { success: false };
-    }
   }
 
   @Post('/crypto/:path')

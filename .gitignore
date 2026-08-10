@@ -62,8 +62,11 @@ i18n.cache
 
 # Local machine/runtime artifacts
 .docker-config-local/
+.local-uploads/
 postiz-app/
 
 .claude/worktrees/
 studio/
+!libraries/nestjs-libraries/src/chat/studio/
+!libraries/nestjs-libraries/src/chat/studio/**
 Cole/

@@ -21,7 +21,19 @@ const LOCAL_STORAGE_ALLOWED_MIME = new Set<string>([
   'audio/mp4',
   'audio/wav',
   'audio/ogg',
+  'application/x-subrip',
+  'text/vtt',
+  'text/plain',
+  'application/json',
+  'application/zip',
 ]);
+const LOCAL_STORAGE_TEXT_EXTENSIONS: Record<string, string> = {
+  'application/x-subrip': 'srt',
+  'text/vtt': 'vtt',
+  'text/plain': 'txt',
+  'application/json': 'json',
+  'application/zip': 'zip',
+};
 export class LocalStorage implements IUploadProvider {
   constructor(private uploadDirectory: string) {}
 
@@ -65,11 +77,14 @@ export class LocalStorage implements IUploadProvider {
   async uploadFile(file: Express.Multer.File): Promise<any> {
     try {
       const detected = await fromBuffer(file.buffer);
-      if (!detected || !LOCAL_STORAGE_ALLOWED_MIME.has(detected.mime)) {
+      if (!detected && !LOCAL_STORAGE_TEXT_EXTENSIONS[file.mimetype]) {
         throw new Error('Unsupported file type.');
       }
-      const safeExt = `.${detected.ext}`;
-      const safeMime = detected.mime;
+      if (detected && !LOCAL_STORAGE_ALLOWED_MIME.has(detected.mime) && !LOCAL_STORAGE_TEXT_EXTENSIONS[file.mimetype]) {
+        throw new Error('Unsupported file type.');
+      }
+      const safeExt = `.${detected?.ext || LOCAL_STORAGE_TEXT_EXTENSIONS[file.mimetype]}`;
+      const safeMime = detected?.mime || file.mimetype;
 
       const now = new Date();
       const year = now.getFullYear();

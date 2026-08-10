@@ -35,6 +35,7 @@ export class ThirdPartyController {
     return this._thirdPartyManager.getAllThirdParties();
   }
 
+  @Get()
   @Get('/')
   async getSavedThirdParty(@GetOrgFromRequest() organization: Organization) {
     return Promise.all(

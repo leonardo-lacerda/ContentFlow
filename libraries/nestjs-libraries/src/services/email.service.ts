@@ -41,9 +41,20 @@ export class EmailService {
     addTo: 'top' | 'bottom',
     replyTo?: string
   ) {
-    return this._temporalService.client
-      .getRawClient()
-      ?.workflow.signalWithStart('sendEmailWorkflow', {
+    // Local development can intentionally run without an email provider and
+    // without Temporal. Registration must still complete in that mode.
+    if (!this.hasProvider()) {
+      console.log(`Email skipped: no email provider configured for ${to}`);
+      return;
+    }
+
+    const rawClient = this._temporalService?.client?.getRawClient?.();
+    if (!rawClient) {
+      console.warn(`Email skipped: Temporal client is unavailable for ${to}`);
+      return;
+    }
+
+    return rawClient.workflow.signalWithStart('sendEmailWorkflow', {
         taskQueue: 'main',
         workflowId: 'send_email',
         signal: 'sendEmail',
