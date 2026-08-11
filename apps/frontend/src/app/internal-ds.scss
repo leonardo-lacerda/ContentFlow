@@ -776,8 +776,17 @@ body.light .cf-studio [class*='bg-cyan-'] {
 
 .cf-studio__assistant-message {
   display: flex;
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
   flex-direction: column;
   animation: cf-studio-message-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cf-studio__assistant-message > .copilotKitMessage {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
 }
 
 .cf-studio__assistant-message[data-loading='true'] {
@@ -1539,7 +1548,9 @@ body.light .cf-studio__refinement-note {
 }
 
 .cf-content-artifact {
-  width: min(100% - 24px, 980px);
+  width: calc(100% - 24px);
+  max-width: 1080px;
+  align-self: stretch;
   margin: 12px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--cf-border, #ffffff1f) 85%, transparent);

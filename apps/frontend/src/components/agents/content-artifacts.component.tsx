@@ -99,23 +99,13 @@ function useArtifactResponder(
   onAction?: (value: Record<string, unknown>) => void | Promise<void>
 ) {
   return async (value: Record<string, unknown>) => {
-    // `onAction` (an explicit [--content-action--] message) comes first even
-    // when `respond` exists. Resolving the tool call with `respond` returns the
-    // payload as a silent tool result, and the model then reliably fails to
-    // chain the next step: a generate-images click resolved that way produced
-    // no creativeEngineTool call and no job at all. The message carries the
-    // instruction the system prompt is written against, and that is the path
-    // that actually drives the flow forward. `respond` still closes the call
-    // afterwards so the pending tool invocation does not dangle.
+    // The explicit [--content-action--] message is the only continuation path
+    // for Studio artifacts. Resolving the same click with `respond` as well
+    // creates a second model turn, which can render the same artifact again or
+    // start a duplicate copy workflow. `respond` remains available for the
+    // legacy render-and-wait path when no action dispatcher is mounted.
     if (onAction) {
       await onAction(value);
-      if (respond) {
-        try {
-          await respond({ ...value, handledByAction: true });
-        } catch {
-          // The call may already be resolved; the action message is what counts.
-        }
-      }
       return;
     }
     if (respond) {

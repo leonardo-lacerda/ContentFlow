@@ -79,6 +79,30 @@ const liveSendMessage: {
   current: ((text: string) => Promise<unknown>) | null;
 } = { current: null };
 
+// CopilotKit may replay a tool render while a streamed response is settling.
+// Keep the same structured artifact from being mounted several times in one
+// thread, while allowing a genuinely changed carousel/copy to replace it.
+const renderedPresentationArtifacts = new Map<string, number>();
+const PRESENTATION_DEDUPE_WINDOW_MS = 10 * 60 * 1000;
+
+const isRepeatedPresentation = (key: string) => {
+  const now = Date.now();
+  const renderedAt = renderedPresentationArtifacts.get(key);
+  if (renderedAt && now - renderedAt < PRESENTATION_DEDUPE_WINDOW_MS) return true;
+  renderedPresentationArtifacts.set(key, now);
+  return false;
+};
+
+const presentationFingerprint = (threadId: string, payload: Record<string, any>) =>
+  `${threadId}:${JSON.stringify({
+    operation: payload.operation || (payload.ideas?.length ? 'ideas' : 'carousel'),
+    title: payload.title,
+    platform: payload.platform,
+    aspectRatio: payload.aspectRatio,
+    ideas: payload.ideas,
+    slides: payload.slides,
+  })}`;
+
 const dispatchArtifactAction = async (value: Record<string, unknown>) => {
   if (!liveArtifactAction.current) return;
   await liveArtifactAction.current(value);
@@ -93,12 +117,17 @@ const dispatchArtifactAction = async (value: Record<string, unknown>) => {
  */
 const StudioChat: FC = () => {
   const t = useT();
+  const params = useParams<{ id: string }>();
   const [chatError, setChatError] = useState(false);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const actionStatusTimer = useRef<number | null>(null);
+  const actionInFlight = useRef<string | null>(null);
   const sendArtifactAction = useCallback(
     async (value: Record<string, unknown>) => {
       const action = String(value.action || 'continue');
+      const actionKey = JSON.stringify({ action, payload: value });
+      if (actionInFlight.current === actionKey) return;
+      actionInFlight.current = actionKey;
       if (actionStatusTimer.current) {
         window.clearTimeout(actionStatusTimer.current);
       }
@@ -121,6 +150,7 @@ const StudioChat: FC = () => {
         actionStatusTimer.current = window.setTimeout(() => {
           setActionStatus(null);
           actionStatusTimer.current = null;
+          if (actionInFlight.current === actionKey) actionInFlight.current = null;
         }, 45000);
       }
     },
@@ -216,88 +246,10 @@ const StudioChat: FC = () => {
     ),
   });
 
-  useCopilotAction({
-    name: 'showContentIdeas',
-    description:
-      'Render the requested number of ready-to-use content ideas, from 1 to 10. If the user asks for more than 10, render 10. Never replace this action with a plain numbered text list. Each idea must include a concrete title, hook, angle, format, platform and CTA so the user can act on it immediately.',
-    parameters: [
-      {
-        name: 'title',
-        type: 'string',
-        description: 'Short title for the idea set.',
-        required: true,
-      },
-      {
-        name: 'ideas',
-        type: 'object[]',
-        description: 'Ready-to-use ideas. Respect 1 to 10; cap requests above 10 at 10; default to 10 when no count was requested.',
-        required: true,
-        attributes: [
-          { name: 'id', type: 'string', required: false },
-          { name: 'title', type: 'string', required: true },
-          { name: 'hook', type: 'string', required: true },
-          { name: 'audiencePain', type: 'string', required: false },
-          { name: 'angle', type: 'string', required: true },
-          { name: 'format', type: 'string', required: true },
-          { name: 'platform', type: 'string', required: true },
-          { name: 'objective', type: 'string', required: false },
-          { name: 'suggestedCta', type: 'string', required: true },
-          { name: 'suggestedCaption', type: 'string', required: false },
-        ],
-      },
-    ],
-    // Kept for compatibility with older conversations. The canonical visual
-    // artifact is rendered from contentPresentationTool below; drawing here
-    // as well is what previously produced duplicate cards.
-    available: 'frontend',
-    render: () => <></>,
-  });
-
-  useCopilotAction({
-    name: 'showCarouselPreview',
-    description:
-      'Render the carousel as a visual horizontal preview inside the chat. Always use this after planning a carousel; a plain slide-by-slide text outline is not enough. Include final copy and visual direction for every slide.',
-    parameters: [
-      { name: 'title', type: 'string', required: true },
-      { name: 'platform', type: 'string', required: true },
-      { name: 'aspectRatio', type: 'string', required: true },
-      { name: 'caption', type: 'string', required: false },
-      { name: 'hashtags', type: 'string[]', required: false },
-      {
-        name: 'designSpec',
-        type: 'object',
-        description: 'Optional visual design recommendation used by the editor and generation prompt.',
-        required: false,
-      },
-      {
-        name: 'slides',
-        type: 'object[]',
-        required: true,
-        attributes: [
-          { name: 'id', type: 'string', required: false },
-          { name: 'index', type: 'number', required: true },
-          { name: 'role', type: 'string', required: false },
-          { name: 'headline', type: 'string', required: true },
-          { name: 'body', type: 'string', required: false },
-          { name: 'highlight', type: 'string', required: false },
-          { name: 'cta', type: 'string', required: false },
-          { name: 'visualDirection', type: 'string', required: true },
-          { name: 'layout', type: 'string', required: true },
-          { name: 'imagePrompt', type: 'string', required: true },
-          { name: 'imageUrl', type: 'string', required: false },
-          { name: 'status', type: 'string', required: false },
-        ],
-      },
-    ],
-    // Kept for compatibility with older conversations. The canonical visual
-    // artifact is rendered from contentPresentationTool below.
-    available: 'frontend',
-    render: () => <></>,
-  });
-
-  // contentPresentationTool is the single canonical artifact renderer. The
-  // dedicated showContentIdeas/showCarouselPreview actions above remain as
-  // compatibility aliases but do not render, preventing duplicate cards.
+  // contentPresentationTool is the only structured artifact action exposed to
+  // the model. The old showContentIdeas/showCarouselPreview aliases were
+  // retained as no-op actions before, but their presence let the provider
+  // choose two rendering paths for the same result.
   useCopilotAction({
     name: 'contentPresentationTool',
     available: 'frontend',
@@ -314,9 +266,13 @@ const StudioChat: FC = () => {
         payload.operation ||
         (payload.ideas?.length ? 'ideas' : payload.slides?.length ? 'carousel' : '');
       if (operation === 'ideas' && payload.ideas?.length) {
+        const key = presentationFingerprint(params.id || 'new', payload);
+        if (isRepeatedPresentation(key)) return <></>;
         return <ContentIdeasCard args={payload} onAction={dispatchArtifactAction} />;
       }
       if (operation === 'carousel' && payload.slides?.length) {
+        const key = presentationFingerprint(params.id || 'new', payload);
+        if (isRepeatedPresentation(key)) return <></>;
         return <CarouselPreviewCard args={payload} onAction={dispatchArtifactAction} />;
       }
       return <></>;
