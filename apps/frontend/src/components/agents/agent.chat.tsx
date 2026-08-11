@@ -118,7 +118,7 @@ const dispatchArtifactAction = async (value: Record<string, unknown>) => {
 const StudioChat: FC = () => {
   const t = useT();
   const params = useParams<{ id: string }>();
-  const [chatError, setChatError] = useState(false);
+  const [chatError, setChatError] = useState<'provider' | 'credits' | null>(null);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const actionStatusTimer = useRef<number | null>(null);
   const actionInFlight = useRef<string | null>(null);
@@ -141,7 +141,7 @@ const StudioChat: FC = () => {
         );
       } catch (error) {
         console.error('[AgentChat] action request failed', error);
-        setChatError(true);
+        setChatError('provider');
         throw error;
       } finally {
         // Keep the state visible while the agent chains the next tool. A short
@@ -292,9 +292,22 @@ const StudioChat: FC = () => {
         {chatError && (
           <div className="absolute inset-x-3 top-3 z-20 flex items-center justify-between gap-3 rounded-xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-xs leading-5 text-amber-100">
             <span>
-              O chat nao conseguiu conectar ao provedor de IA. Verifique a configuracao do backend e tente novamente.
+              {chatError === 'credits'
+                ? 'Você está sem créditos para continuar. Consulte seu saldo e escolha um plano para voltar a criar.'
+                : 'O chat nao conseguiu conectar ao provedor de IA. Verifique a configuracao do backend e tente novamente.'}
             </span>
             <div className="flex shrink-0 gap-2">
+              {chatError === 'credits' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = '/billing';
+                  }}
+                  className="rounded-lg bg-amber-100/15 px-2 py-1 font-semibold text-amber-100"
+                >
+                  Ver créditos
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => window.location.reload()}
@@ -304,7 +317,7 @@ const StudioChat: FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setChatError(false)}
+                onClick={() => setChatError(null)}
                 className="rounded-lg border border-amber-100/20 px-2 py-1 text-amber-100/80"
               >
                 Fechar
@@ -345,7 +358,10 @@ You can also use me as an MCP Server, check Settings >> Public API
                <StudioAssistantMessage {...messageProps} onAction={dispatchArtifactAction} />
              )}
             Input={NewInput}
-            onError={() => setChatError(true)}
+            onError={(errorEvent) => {
+              const status = errorEvent.context.response?.status;
+              setChatError(status === 402 ? 'credits' : 'provider');
+            }}
           />
         </div>
       </div>
