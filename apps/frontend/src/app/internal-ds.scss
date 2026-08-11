@@ -1747,11 +1747,25 @@ body.light .cf-studio__refinement-note {
   color: var(--cf-text, #f5f7f8);
 }
 
+.cf-carousel-preview__workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 320px);
+  align-items: start;
+  gap: 12px;
+  padding: 0 14px 4px;
+}
+
+.cf-carousel-preview__workspace:not(.is-editing) {
+  display: block;
+  padding: 0;
+}
+
 .cf-carousel-preview__rail {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 18px 20px 12px;
+  min-width: 0;
+  padding: 18px 6px 12px;
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
 }
@@ -1787,12 +1801,81 @@ body.light .cf-studio__refinement-note {
   object-fit: cover;
 }
 
+.cf-carousel-slide__image-preview {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.cf-carousel-slide__image-preview > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cf-carousel-slide__live-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(180deg, rgb(0 0 0 / 18%), transparent 28%, rgb(0 0 0 / 64%));
+  text-shadow: 0 1px 3px rgb(0 0 0 / 38%);
+  animation: cf-carousel-live-overlay-in 180ms ease-out both;
+}
+
+.cf-carousel-slide__live-overlay h4 {
+  max-height: 45%;
+  margin: 8px 0;
+  overflow: hidden;
+  font-size: clamp(17px, 2.1vw, 25px);
+  line-height: 1.1;
+}
+
+.cf-carousel-slide__live-overlay p {
+  max-height: 25%;
+  margin: 0 0 10px;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.cf-carousel-slide__live-overlay em {
+  display: inline-block;
+  width: fit-content;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  text-shadow: none;
+}
+
+.cf-carousel-slide__live-label {
+  align-self: flex-start;
+  padding: 4px 7px;
+  border: 1px solid rgb(255 255 255 / 36%);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 46%);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+@keyframes cf-carousel-live-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .cf-carousel-slide__canvas {
   display: flex;
   height: 100%;
   flex-direction: column;
   justify-content: space-between;
-  padding: 18px;
+  padding: 22px;
   background: linear-gradient(145deg, #25363a, #141719 62%, #3f5128);
 }
 
@@ -1802,14 +1885,14 @@ body.light .cf-studio__refinement-note {
 
 .cf-carousel-slide__index {
   align-self: flex-end;
-  color: color-mix(in srgb, var(--cf-text, #fff) 65%, transparent);
+  color: inherit;
   font-size: 11px;
   font-weight: 800;
 }
 
 .cf-carousel-slide__canvas h4 {
   margin: 7px 0;
-  color: #fff;
+  color: inherit;
   font-size: clamp(18px, 2.1vw, 25px);
   line-height: 1.1;
 }
@@ -1818,7 +1901,7 @@ body.light .cf-studio__refinement-note {
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
-  color: rgb(255 255 255 / 76%);
+  color: inherit;
   font-size: 11px;
   line-height: 1.45;
   -webkit-box-orient: vertical;
@@ -1961,7 +2044,7 @@ body.light .cf-studio__refinement-note {
   position: absolute;
   top: 14px;
   left: 16px;
-  color: currentColor;
+  color: inherit;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: .08em;
@@ -1972,7 +2055,9 @@ body.light .cf-studio__refinement-note {
 .cf-carousel-design-editor {
   display: grid;
   gap: 12px;
-  margin: 0 20px 10px;
+  max-height: min(72vh, 680px);
+  margin: 0 0 10px;
+  overflow-y: auto;
   padding: 15px;
   border: 1px solid color-mix(in srgb, var(--cf-accent, #bfff38) 35%, var(--cf-border, #ffffff1f));
   border-radius: 15px;
@@ -1986,6 +2071,7 @@ body.light .cf-studio__refinement-note {
   display: flex;
   align-items: center;
   gap: 9px;
+  flex-wrap: wrap;
 }
 
 .cf-carousel-design-editor__heading {
@@ -2062,6 +2148,10 @@ body.light .cf-studio__refinement-note {
   font-size: 10px;
   font-weight: 500;
   text-transform: none;
+}
+
+.cf-design-color-field {
+  min-width: 105px;
 }
 
 .cf-design-color-field input[type='color'] {
@@ -2183,12 +2273,13 @@ body.light .cf-studio__refinement-note {
   .cf-content-ideas__grid { grid-template-columns: 1fr; max-height: 58vh; }
   .cf-content-artifact { width: calc(100% - 16px); margin: 8px; border-radius: 16px; }
   .cf-content-artifact__header { padding: 15px; }
+  .cf-carousel-preview__workspace { display: block; padding: 0; }
   .cf-carousel-preview__rail { padding-right: 15px; padding-left: 15px; }
   .cf-carousel-slide { width: 190px; }
   .cf-carousel-copy-editor { margin-right: 15px; margin-left: 15px; }
   .cf-carousel-copy-editor__actions { align-items: stretch; flex-direction: column; }
   .cf-carousel-copy-editor__actions button { width: 100%; }
-  .cf-carousel-design-editor { margin-right: 15px; margin-left: 15px; }
+  .cf-carousel-design-editor { max-height: none; margin-right: 8px; margin-left: 8px; }
   .cf-design-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cf-content-artifact__footer { align-items: stretch; flex-direction: column-reverse; padding-right: 15px; padding-left: 15px; }
   .cf-content-artifact__footer button { width: 100%; }

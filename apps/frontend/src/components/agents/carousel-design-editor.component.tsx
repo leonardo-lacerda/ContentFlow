@@ -34,6 +34,7 @@ export type DesignSpec = {
   layout: {
     templateId: string;
     density: 'airy' | 'balanced' | 'dense';
+    safePadding: 'compact' | 'balanced' | 'airy';
   };
   background: {
     type: 'solid' | 'gradient' | 'image' | 'texture';
@@ -79,7 +80,7 @@ export const createDefaultDesign = (aspectRatio = '4:5'): DesignSpec => ({
   sizeId: aspectRatio === '1:1' ? 'ig-square' : 'ig-portrait',
   palette: PALETTES[0],
   typography: { ...FONTS[0], scale: 'balanced', alignment: 'left' },
-  layout: { templateId: 'carousel-cover', density: 'balanced' },
+  layout: { templateId: 'carousel-cover', density: 'balanced', safePadding: 'balanced' },
   background: { type: 'gradient', value: PALETTES[0].gradient, opacity: 1 },
   elements: DEFAULT_ELEMENTS,
   renderMode: 'hybrid',
@@ -191,11 +192,30 @@ export function CarouselDesignEditor({ design, activeSlide, activeIndex, scope, 
         </div>
       </fieldset>
 
+      <div className="cf-carousel-design-editor__row">
+        <label>Escala do texto
+          <select value={activeDesign.typography.scale} onChange={(event) => patchScoped({ typography: { ...activeDesign.typography, scale: event.target.value as DesignSpec['typography']['scale'] } })} disabled={disabled}>
+            <option value="compact">Compacta</option><option value="balanced">Equilibrada</option><option value="expressive">Expressiva</option>
+          </select>
+        </label>
+        <label>Alinhamento
+          <select value={activeDesign.typography.alignment} onChange={(event) => patchScoped({ typography: { ...activeDesign.typography, alignment: event.target.value as DesignSpec['typography']['alignment'] } })} disabled={disabled}>
+            <option value="left">Esquerda</option><option value="center">Centro</option><option value="right">Direita</option>
+          </select>
+        </label>
+      </div>
+
       <fieldset>
         <legend>Cores personalizadas</legend>
         <div className="cf-carousel-design-editor__row">
           <label className="cf-design-color-field">Fundo
             <span><input type="color" value={activeDesign.palette.background} onChange={(event) => patchScoped({ palette: { ...activeDesign.palette, background: event.target.value }, background: { ...activeDesign.background, type: 'solid', value: event.target.value } })} disabled={disabled} />{activeDesign.palette.background}</span>
+          </label>
+          <label className="cf-design-color-field">Texto principal
+            <span><input type="color" value={activeDesign.palette.text} onChange={(event) => patchScoped({ palette: { ...activeDesign.palette, text: event.target.value } })} disabled={disabled} />{activeDesign.palette.text}</span>
+          </label>
+          <label className="cf-design-color-field">Texto secundário
+            <span><input type="color" value={activeDesign.palette.muted} onChange={(event) => patchScoped({ palette: { ...activeDesign.palette, muted: event.target.value } })} disabled={disabled} />{activeDesign.palette.muted}</span>
           </label>
           <label className="cf-design-color-field">Destaque
             <span><input type="color" value={activeDesign.palette.accent} onChange={(event) => patchScoped({ palette: { ...activeDesign.palette, accent: event.target.value } })} disabled={disabled} />{activeDesign.palette.accent}</span>
@@ -215,6 +235,12 @@ export function CarouselDesignEditor({ design, activeSlide, activeIndex, scope, 
           </select>
         </label>
       </div>
+
+      <label>Margem interna
+        <select value={activeDesign.layout.safePadding} onChange={(event) => patchScoped({ layout: { ...activeDesign.layout, safePadding: event.target.value as DesignSpec['layout']['safePadding'] } })} disabled={disabled}>
+          <option value="compact">Compacta</option><option value="balanced">Confortável</option><option value="airy">Ampla</option>
+        </select>
+      </label>
 
       <fieldset>
         <legend>Elementos</legend>

@@ -67,6 +67,7 @@ export type DesignSpec = {
   layout: {
     templateId: string;
     density: 'airy' | 'balanced' | 'dense';
+    safePadding: 'compact' | 'balanced' | 'airy';
   };
   background: {
     type: 'solid' | 'gradient' | 'image' | 'texture';
@@ -206,7 +207,7 @@ const createDefaultDesign = (aspectRatio = '4:5'): DesignSpec => ({
     scale: 'balanced',
     alignment: 'left',
   },
-  layout: { templateId: 'carousel-cover', density: 'balanced' },
+  layout: { templateId: 'carousel-cover', density: 'balanced', safePadding: 'balanced' },
   background: { type: 'gradient', value: PALETTES[0].gradient, opacity: 1 },
   elements: DEFAULT_ELEMENTS,
   renderMode: 'hybrid',
@@ -248,6 +249,28 @@ const designBackground = (design: DesignSpec) => {
   if (design.background.type === 'texture') return `repeating-linear-gradient(135deg, ${design.palette.background}, ${design.palette.background} 12px, ${design.palette.surface} 13px)`;
   return design.palette.gradient;
 };
+
+const readableTextOn = (color: string) => {
+  const hex = color.replace('#', '').trim();
+  const normalized = hex.length === 3 ? hex.split('').map((value) => value + value).join('') : hex;
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) return '#111510';
+  const channels = [0, 2, 4].map((offset) => parseInt(normalized.slice(offset, offset + 2), 16) / 255);
+  const luminance = channels.map((channel) => channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4)
+    .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+  return luminance > 0.54 ? '#111510' : '#FFFFFF';
+};
+
+const safePaddingValue = (value: DesignSpec['layout']['safePadding']) => ({
+  compact: '16px',
+  balanced: '22px',
+  airy: '28px',
+}[value] || '22px');
+
+const typographyScaleValue = (value: DesignSpec['typography']['scale']) => ({
+  compact: 0.9,
+  balanced: 1,
+  expressive: 1.14,
+}[value] || 1);
 
 export function ContentIdeasCard({ args, status, respond, onAction }: ActionProps & { args: Record<string, any> }) {
   const ideas = useMemo<ContentIdea[]>(
@@ -371,6 +394,7 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
   const [scope, setScope] = useState<DesignScope>('all');
   const [submitting, setSubmitting] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [designDirty, setDesignDirty] = useState(false);
   // Reusing the same Creative Engine project across "generate images" clicks
   // (instead of the backend creating a new one every time) is what lets the
   // server's content-hash idempotency actually kick in: that hash includes
@@ -409,9 +433,18 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
         return sameContent ? { ...incoming, imageUrl: previous.imageUrl, image: previous.image, status: previous.status } : incoming;
       });
     });
-    setDesign(normalizeDesign(args.designSpec, args.aspectRatio || '4:5'));
     setActive((current) => Math.min(current, Math.max(slides.length - 1, 0)));
-  }, [args.designSpec, args.slides, args.aspectRatio, slides]);
+  }, [args.slides, slides]);
+
+  const incomingDesignKey = useMemo(
+    () => JSON.stringify({ aspectRatio: args.aspectRatio || '4:5', designSpec: args.designSpec || null }),
+    [args.aspectRatio, args.designSpec]
+  );
+
+  useEffect(() => {
+    setDesign(normalizeDesign(args.designSpec, args.aspectRatio || '4:5'));
+    setDesignDirty(false);
+  }, [incomingDesignKey]);
 
   const updateActiveSlide = (field: 'headline' | 'body' | 'cta', value: string) => {
     setDraftSlides((current) => current.map((slide, index) => (index === active ? { ...slide, [field]: value } : slide)));
@@ -422,6 +455,7 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
   const draftCarousel = { ...args, slides: draftSlides, designSpec: design };
 
   const updateDesign = (patch: Partial<DesignSpec>) => {
+    setDesignDirty(true);
     setDesign((current) => {
       if (scope === 'all' || !activeSlide) return mergeDesign(current, patch);
       const key = activeSlide.id || String(activeSlide.index ?? active + 1);
@@ -469,6 +503,11 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
       aspectRatio: slideDesign.aspectRatio,
     });
   };
+
+  const pendingRegenerationCount = draftSlides.filter((slide, index) => {
+    const hasImage = Boolean(slide.imageUrl || slide.image?.url);
+    return hasImage && generatedFingerprints[slideKey(slide, index)] !== slideFingerprint(slide, index);
+  }).length;
 
   // Calls the Creative Engine directly instead of routing through the chat
   // agent. The browser already holds everything the generation needs (the
@@ -575,6 +614,8 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
         setGenerationError('Algumas imagens falharam. Revise os slides marcados e tente novamente.');
       } else if (!anySucceeded) {
         setGenerationError('A geração foi iniciada, mas o servidor ainda não disponibilizou as imagens. Tente novamente em instantes.');
+      } else {
+        setDesignDirty(false);
       }
     } catch (error) {
       setGenerationError(error instanceof Error ? error.message : 'Nao foi possivel gerar as imagens.');
@@ -599,15 +640,19 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
         </div>
       </header>
 
-      <div className="cf-carousel-preview__rail" role="list" aria-label="Slides do carrossel">
-        {draftSlides.map((slide, index) => {
+      <div className={`cf-carousel-preview__workspace ${designOpen ? 'is-editing' : ''}`}>
+        <div className="cf-carousel-preview__rail" role="list" aria-label="Slides do carrossel">
+          {draftSlides.map((slide, index) => {
           const image = toDataUrl(slide.imageUrl || slide.image?.url || slide.image?.b64_json);
           const slideDesign = effectiveDesign(design, slide, index);
+          const safePadding = safePaddingValue(slideDesign.layout.safePadding);
+          const textScale = typographyScaleValue(slideDesign.typography.scale);
           const canvasStyle: CSSProperties = {
             background: designBackground(slideDesign),
             color: slideDesign.palette.text,
             fontFamily: slideDesign.typography.bodyFont,
             textAlign: slideDesign.typography.alignment,
+            padding: safePadding,
           };
           const slideStyle: CSSProperties = {
             aspectRatio: slideDesign.aspectRatio.replace(':', ' / '),
@@ -622,23 +667,52 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
               onClick={() => setActive(index)}
             >
               {image ? (
-                <img src={image} alt={slide.headline} />
+                <div className="cf-carousel-slide__image-preview">
+                  <img src={image} alt={slide.headline} />
+                  {designDirty && (
+                    <div className="cf-carousel-slide__live-overlay" style={{ color: slideDesign.palette.text, textAlign: slideDesign.typography.alignment, fontFamily: slideDesign.typography.bodyFont, padding: safePadding }}>
+                      <span className="cf-carousel-slide__live-label">Prévia da edição</span>
+                      <div>
+                        <h4 style={{ color: slideDesign.palette.text, fontFamily: slideDesign.typography.headingFont, fontSize: `clamp(${16 * textScale}px, 2.1vw, ${25 * textScale}px)` }}>{slide.headline}</h4>
+                        {slide.body && <p style={{ color: slideDesign.palette.muted, fontSize: `${11 * textScale}px` }}>{slide.body}</p>}
+                        {slide.cta && <em style={{ background: slideDesign.palette.accent, color: readableTextOn(slideDesign.palette.accent) }}>{slide.cta}</em>}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className={`cf-carousel-slide__canvas cf-carousel-slide__canvas--${slide.layout || 'text-card'}`} style={canvasStyle}>
-                  {slideDesign.elements.some((element) => element.id === 'logo' && element.visible) && <span className="cf-carousel-slide__brand">ContentFlow</span>}
-                  <span className="cf-carousel-slide__index">{String(slide.index || index + 1).padStart(2, '0')}</span>
+                  {slideDesign.elements.some((element) => element.id === 'logo' && element.visible) && <span className="cf-carousel-slide__brand" style={{ color: slideDesign.palette.muted }}>ContentFlow</span>}
+                  <span className="cf-carousel-slide__index" style={{ color: slideDesign.palette.muted }}>{String(slide.index || index + 1).padStart(2, '0')}</span>
                   <div>
                     {slide.highlight && <strong style={{ color: slideDesign.palette.accent }}>{slide.highlight}</strong>}
-                    <h4 style={{ fontFamily: slideDesign.typography.headingFont }}>{slide.headline}</h4>
-                    {slide.body && <p>{slide.body}</p>}
+                    <h4 style={{ color: slideDesign.palette.text, fontFamily: slideDesign.typography.headingFont, fontSize: `clamp(${16 * textScale}px, 2.1vw, ${25 * textScale}px)` }}>{slide.headline}</h4>
+                    {slide.body && <p style={{ color: slideDesign.palette.muted, fontFamily: slideDesign.typography.bodyFont, fontSize: `${11 * textScale}px` }}>{slide.body}</p>}
                   </div>
-                  {slide.cta && <em style={{ background: slideDesign.palette.accent, color: slideDesign.palette.background }}>{slide.cta}</em>}
+                  {slide.cta && <em style={{ background: slideDesign.palette.accent, color: readableTextOn(slideDesign.palette.accent) }}>{slide.cta}</em>}
                 </div>
               )}
               <span className="cf-carousel-slide__badge">{index + 1}/{draftSlides.length}</span>
             </button>
           );
-        })}
+          })}
+        </div>
+
+        {activeSlide && designOpen && (
+          <CarouselDesignEditor
+            design={design}
+            activeSlide={activeSlide}
+            activeIndex={active}
+            scope={scope}
+            disabled={isBusy}
+            onScopeChange={setScope}
+            onChange={updateDesign}
+            onReset={() => {
+              setDesignDirty(true);
+              setDesign(createDefaultDesign(args.aspectRatio || '4:5'));
+            }}
+          />
+        )}
       </div>
 
       {activeSlide && (
@@ -648,21 +722,8 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
               <strong>Slide {active + 1}: {activeSlide.role || 'conteúdo'}</strong>
               <p>{activeSlide.visualDirection || activeSlide.imagePrompt || 'Direção visual pronta para gerar.'}</p>
             </div>
-            <span>{activeSlide.status || 'copy em revisão'}</span>
+            <span>{pendingRegenerationCount > 0 ? `${pendingRegenerationCount} slide(s) precisam ser regenerado(s)` : activeSlide.status || 'copy em revisão'}</span>
           </div>
-
-          {designOpen && (
-            <CarouselDesignEditor
-              design={design}
-              activeSlide={activeSlide}
-              activeIndex={active}
-              scope={scope}
-              disabled={isBusy}
-              onScopeChange={setScope}
-              onChange={updateDesign}
-              onReset={() => setDesign(createDefaultDesign(args.aspectRatio || '4:5'))}
-            />
-          )}
 
           <div className="cf-carousel-copy-editor" aria-label="Editar copy do slide">
             <div className="cf-carousel-copy-editor__heading">
@@ -711,7 +772,7 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
             {generationError ? (
               <small className="cf-carousel-copy-editor__error" role="alert">{generationError}</small>
             ) : (
-              <small>As imagens só serão solicitadas depois da aprovação da copy e do design.</small>
+              <small>{pendingRegenerationCount > 0 ? 'As alterações de design estão prontas para regeneração.' : 'As imagens só serão solicitadas depois da aprovação da copy e do design.'}</small>
             )}
           </div>
         </>
