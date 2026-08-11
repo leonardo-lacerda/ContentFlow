@@ -22,7 +22,7 @@ type CreationOptions = {
 
 type CreationOptionsCardProps = {
   args: Record<string, any>;
-  status: string;
+  status?: string;
   respond?: (value: any) => void;
 };
 
@@ -193,7 +193,11 @@ export function CreationOptionsCard({
   };
 
   return (
-    <section className="cf-creation-options" aria-label="Opções da criação">
+    <section
+      className={`cf-creation-options ${isExecuting ? 'is-submitting' : ''}`}
+      aria-label="Opções da criação"
+      aria-busy={isExecuting ? 'true' : 'false'}
+    >
       <div className="cf-creation-options__header">
         <div>
           <span className="cf-creation-options__eyebrow">

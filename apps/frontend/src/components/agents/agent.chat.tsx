@@ -95,10 +95,13 @@ const StudioChat: FC = () => {
   const t = useT();
   const [chatError, setChatError] = useState(false);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const actionStatusTimer = useRef<number | null>(null);
   const sendArtifactAction = useCallback(
     async (value: Record<string, unknown>) => {
       const action = String(value.action || 'continue');
-      const startedAt = Date.now();
+      if (actionStatusTimer.current) {
+        window.clearTimeout(actionStatusTimer.current);
+      }
       setActionStatus(action);
       try {
         if (!liveSendMessage.current) {
@@ -112,11 +115,21 @@ const StudioChat: FC = () => {
         setChatError(true);
         throw error;
       } finally {
-        window.setTimeout(() => setActionStatus(null), Math.max(0, 1200 - (Date.now() - startedAt)));
+        // Keep the state visible while the agent chains the next tool. A short
+        // 1s flash looked like a dead click; the timeout is only a safety net
+        // for provider/network failures and is cleared by the next action.
+        actionStatusTimer.current = window.setTimeout(() => {
+          setActionStatus(null);
+          actionStatusTimer.current = null;
+        }, 45000);
       }
     },
     []
   );
+
+  useEffect(() => () => {
+    if (actionStatusTimer.current) window.clearTimeout(actionStatusTimer.current);
+  }, []);
 
   useEffect(() => {
     liveArtifactAction.current = sendArtifactAction;
@@ -289,31 +302,14 @@ const StudioChat: FC = () => {
     ),
   });
 
-  // The agent reliably calls the server-side contentPresentationTool, but it
-  // does not always follow up with the matching frontend action. Mirror the
-  // tool's payload as the same interactive card so an artifact always reaches
-  // the user. `available: 'frontend'` keeps this out of the tool list sent to
-  // the model (the render is still registered by name), so it cannot be
-  // called as a second, duplicate tool.
+  // This is intentionally a no-op UI registration. The structured server
+  // tool is kept for the agent protocol, while the matching frontend action
+  // owns the interactive artifact. Rendering the payload here as well would
+  // duplicate the ideas/carousel card (and give the user two click targets).
   useCopilotAction({
     name: 'contentPresentationTool',
     available: 'frontend',
-    render: ({ args, status }) => {
-      const payload = (args || {}) as Record<string, any>;
-      // Args stream in token by token; wait until the tool call is settled so
-      // we never show a half-built card.
-      if (status === 'inProgress') return <></>;
-      const operation =
-        payload.operation ||
-        (payload.ideas?.length ? 'ideas' : payload.slides?.length ? 'carousel' : '');
-      if (operation === 'ideas' && payload.ideas?.length) {
-        return <ContentIdeasCard args={payload} onAction={dispatchArtifactAction} />;
-      }
-      if (operation === 'carousel' && payload.slides?.length) {
-        return <CarouselPreviewCard args={payload} onAction={dispatchArtifactAction} />;
-      }
-      return <></>;
-    },
+    render: () => <></>,
   });
 
   return (
@@ -975,12 +971,6 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
       data-loading={props.isLoading ? 'true' : 'false'}
     >
       <DefaultAssistantMessage {...displayProps} />
-      {!props.isLoading && presentedArtifact?.parsed?.operation === 'ideas' && (
-        <ContentIdeasCard args={presentedArtifact.parsed} onAction={props.onAction} />
-      )}
-      {!props.isLoading && presentedArtifact?.parsed?.operation === 'carousel' && (
-        <CarouselPreviewCard args={presentedArtifact.parsed} onAction={props.onAction} />
-      )}
       {hasCreativeArtifact && (
         <div className="cf-studio__refinement-note">
           Este resultado pode ser refinado pela conversa. Quando estiver pronto,
@@ -1298,7 +1288,7 @@ ${selectedOptions}
           if (hasIdeaIntent(text)) {
             const ideaCount = requestedIdeaCount(text);
             return submitToAgent(
-              `${text}\n\n[--contentflow-intent--]\nREQUESTED_IDEA_COUNT: ${ideaCount}\nThis is a structured ideas request. Return exactly ${ideaCount} ideas. The allowed range is 1 to 10; requests above 10 are capped at 10. You MUST call contentPresentationTool with operation=ideas and then showContentIdeas with the same ${ideaCount} structured ideas. Make every idea concrete and ready to use, with a specific hook, angle, format, platform and CTA. Do not return a plain list, markdown outline, JSON dump or ask the user to think of the topic again.\n[--contentflow-intent--]`
+              `${text}\n\n[--contentflow-intent--]\nREQUESTED_IDEA_COUNT: ${ideaCount}\nThis is a structured ideas request. Return exactly ${ideaCount} ideas. The allowed range is 1 to 10; requests above 10 are capped at 10. You MUST call only showContentIdeas with the same ${ideaCount} structured ideas. Make every idea concrete and ready to use, with a specific hook, angle, format, platform and CTA. Do not return a plain list, markdown outline, JSON dump or ask the user to think of the topic again.\n[--contentflow-intent--]`
             );
           }
           const creationType = detectCreationType(text);

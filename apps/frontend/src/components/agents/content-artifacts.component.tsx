@@ -261,6 +261,11 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
   // user has picked an idea and the follow-up request is on its way.
   const isBusy = !isAwaitingUser(status) || pendingAction !== null || configuringIdea !== null;
   const sendAction = useArtifactResponder(respond, onAction);
+  useEffect(() => {
+    if (!pendingAction) return;
+    const timeout = window.setTimeout(() => setPendingAction(null), 45000);
+    return () => window.clearTimeout(timeout);
+  }, [pendingAction]);
   const optionsArgs = useMemo(
     () => configuringIdea ? {
       creationType: 'carousel',
@@ -276,7 +281,11 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
   );
 
   return (
-    <section className="cf-content-artifact cf-content-ideas" aria-label="Ideias prontas">
+    <section
+      className={`cf-content-artifact cf-content-ideas ${pendingAction ? 'is-processing' : ''}`}
+      aria-label="Ideias prontas"
+      aria-busy={pendingAction ? 'true' : 'false'}
+    >
       <header className="cf-content-artifact__header">
         <div>
           <span className="cf-content-artifact__eyebrow">Ideias prontas para usar</span>
@@ -322,7 +331,6 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
       {configuringIdea && optionsArgs && (
         <CreationOptionsCard
           args={optionsArgs}
-          status="executing"
           respond={async (value) => {
             setConfiguringIdea(null);
             if (!value?.confirmed) return;
