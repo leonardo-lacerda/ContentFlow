@@ -83,8 +83,14 @@ function primaryAiAdapter() {
     client.beta = client.beta || {};
     client.beta.chat = client.beta.chat || {};
     client.beta.chat.completions = client.beta.chat.completions || {};
-    client.beta.chat.completions.stream = (request: Record<string, unknown>) =>
-      openai.chat.completions.create(request as any);
+    client.beta.chat.completions.stream = (request: Record<string, unknown>) => ({
+      async *[Symbol.asyncIterator]() {
+        const stream = await openai.chat.completions.create(request as any);
+        for await (const chunk of stream as any) {
+          yield chunk;
+        }
+      },
+    });
   }
 
   return new OpenAIAdapter({ openai: openai as any, model: config.model });
