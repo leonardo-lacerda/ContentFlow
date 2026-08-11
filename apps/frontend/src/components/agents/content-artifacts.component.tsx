@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { useCopilotChat } from '@copilotkit/react-core';
-import { Role, TextMessage } from '@copilotkit/runtime-client-gql';
+import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { CarouselDesignEditor, type DesignScope } from './carousel-design-editor.component';
 
 export type ContentIdea = {
@@ -89,24 +88,39 @@ function useArtifactResponder(
   respond?: (value: Record<string, unknown>) => void | Promise<void>,
   onAction?: (value: Record<string, unknown>) => void | Promise<void>
 ) {
-  const { appendMessage } = useCopilotChat();
   return async (value: Record<string, unknown>) => {
+    // `onAction` (an explicit [--content-action--] message) comes first even
+    // when `respond` exists. Resolving the tool call with `respond` returns the
+    // payload as a silent tool result, and the model then reliably fails to
+    // chain the next step: a generate-images click resolved that way produced
+    // no creativeEngineTool call and no job at all. The message carries the
+    // instruction the system prompt is written against, and that is the path
+    // that actually drives the flow forward. `respond` still closes the call
+    // afterwards so the pending tool invocation does not dangle.
     if (onAction) {
       await onAction(value);
+      if (respond) {
+        try {
+          await respond({ ...value, handledByAction: true });
+        } catch {
+          // The call may already be resolved; the action message is what counts.
+        }
+      }
       return;
     }
     if (respond) {
       await respond(value);
-      return;
     }
-    await appendMessage(
-      new TextMessage({
-        role: Role.User,
-        content: `[--content-action--]\nACTION: ${String(value.action || 'continue')}. Execute this button action now and return the next Studio artifact, not a generic explanation.\nPAYLOAD: ${JSON.stringify(value)}\n[--content-action--]`,
-      })
-    );
   };
 }
+
+/**
+ * CopilotKit drives `status` through inProgress -> executing -> complete, where
+ * "executing" is the window in which the tool call is waiting for the user's
+ * answer (it is the only status that carries `respond`). Cards rendered from
+ * raw assistant text get no status at all and are always interactive.
+ */
+const isAwaitingUser = (status?: string) => status === undefined || status === 'executing';
 
 const toDataUrl = (value?: string) => value || '';
 
@@ -233,9 +247,9 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<'carousel' | 'image' | null>(null);
-  // A completed artifact is interactive. Only lock its actions while the
-  // follow-up request is actually running.
-  const isBusy = status === 'executing';
+  // Lock the actions while the args are still streaming in, and again once the
+  // user has picked an idea and the follow-up request is on its way.
+  const isBusy = !isAwaitingUser(status) || pendingAction !== null;
   const sendAction = useArtifactResponder(respond, onAction);
 
   return (
@@ -320,11 +334,46 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
   const [design, setDesign] = useState<DesignSpec>(() => normalizeDesign(args.designSpec, args.aspectRatio || '4:5'));
   const [designOpen, setDesignOpen] = useState(false);
   const [scope, setScope] = useState<DesignScope>('all');
-  const isBusy = status === 'executing';
+  const [submitting, setSubmitting] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  // Reusing the same Creative Engine project across "generate images" clicks
+  // (instead of the backend creating a new one every time) is what lets the
+  // server's content-hash idempotency actually kick in: that hash includes
+  // projectId, so a fresh project on every click made an unmodified slide
+  // look "new" and billed it again.
+  const [projectId, setProjectId] = useState<string | undefined>(args.projectId);
+  // What prompt/copy/design each slide was last generated from. A slide whose
+  // fingerprint still matches its current inputs is skipped from the request
+  // entirely — editing one slide out of five should not re-send the other four.
+  const [generatedFingerprints, setGeneratedFingerprints] = useState<Record<string, string>>({});
+  const isBusy = !isAwaitingUser(status) || submitting;
   const sendAction = useArtifactResponder(respond, onAction);
+  const apiFetch = useFetch();
 
   useEffect(() => {
-    setDraftSlides(slides);
+    // CopilotKit re-invokes this render on any background chat activity (new
+    // messages, thread polling), each time with a structurally-equal but
+    // referentially-new `args.slides`. Overwriting draftSlides unconditionally
+    // discarded locally-generated imageUrl/status on the very next unrelated
+    // re-render — a "gerar imagens" click could succeed and then vanish from
+    // the screen seconds later with no error. Carry over imageUrl/status by
+    // slide id whenever the slide's actual content (what was sent to the
+    // provider) is unchanged; only a real content change resets it.
+    setDraftSlides((current) => {
+      if (!current.length) return slides;
+      const previousByKey = new Map(current.map((slide, index) => [slide.id || String(slide.index ?? index), slide]));
+      return slides.map((incoming, index) => {
+        const key = incoming.id || String(incoming.index ?? index);
+        const previous = previousByKey.get(key);
+        if (!previous) return incoming;
+        const sameContent =
+          previous.headline === incoming.headline &&
+          previous.body === incoming.body &&
+          previous.cta === incoming.cta &&
+          previous.imagePrompt === incoming.imagePrompt;
+        return sameContent ? { ...incoming, imageUrl: previous.imageUrl, image: previous.image, status: previous.status } : incoming;
+      });
+    });
     setDesign(normalizeDesign(args.designSpec, args.aspectRatio || '4:5'));
     setActive((current) => Math.min(current, Math.max(slides.length - 1, 0)));
   }, [args.designSpec, args.slides, args.aspectRatio, slides]);
@@ -352,6 +401,107 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
         },
       };
     });
+  };
+
+  const slideKey = (slide: CarouselPreviewSlide, index: number) => slide.id || String(slide.index ?? index);
+
+  // Mirrors (loosely) what the server hashes for its own idempotency: prompt,
+  // effective per-slide design, and aspect ratio. Doesn't need to match the
+  // server byte-for-byte — it only has to change when the server's would.
+  const slideFingerprint = (slide: CarouselPreviewSlide, index: number) => {
+    const slideDesign = effectiveDesign(design, slide, index);
+    return JSON.stringify({
+      prompt: slide.imagePrompt || slide.visualDirection || slide.headline,
+      headline: slide.headline,
+      body: slide.body,
+      cta: slide.cta,
+      paletteId: slideDesign.palette.paletteId,
+      fontPairId: slideDesign.typography.fontPairId,
+      templateId: slideDesign.layout.templateId,
+      background: slideDesign.background,
+      aspectRatio: slideDesign.aspectRatio,
+    });
+  };
+
+  // Calls the Creative Engine directly instead of routing through the chat
+  // agent. The browser already holds everything the generation needs (the
+  // approved slides, the design spec, each slide's imagePrompt); the agent
+  // reliably failed to chain generate-images into a real creativeEngineTool
+  // call on its own, so it added a point of failure without adding anything
+  // the model actually needed to decide.
+  const generateCarouselImages = async () => {
+    setGenerationError(null);
+    const toGenerate = draftSlides.filter((slide, index) => {
+      const key = slideKey(slide, index);
+      const hasImage = Boolean(slide.imageUrl || slide.image?.url);
+      return !hasImage || generatedFingerprints[key] !== slideFingerprint(slide, index);
+    });
+    if (!toGenerate.length) {
+      setGenerationError(null);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const response = await apiFetch('/creative/carousel/generate-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          name: args.title || 'ContentFlow carousel',
+          aspectRatio: design.aspectRatio,
+          designSpec: design,
+          confirmed: true,
+          slides: toGenerate.map((slide) => {
+            const index = draftSlides.indexOf(slide);
+            return {
+              id: slide.id,
+              index: slide.index ?? index,
+              headline: slide.headline,
+              body: slide.body,
+              cta: slide.cta,
+              imagePrompt: slide.imagePrompt || slide.visualDirection || slide.headline,
+              aspectRatio: design.aspectRatio,
+            };
+          }),
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Falha ao gerar as imagens (HTTP ${response.status})`);
+      }
+      const data: {
+        projectId?: string;
+        jobs?: Array<{ slideId?: string; slideIndex: number; job?: { status?: string; output?: { url?: string } }; error?: string }>;
+      } = await response.json();
+      if (data.projectId) setProjectId(data.projectId);
+      const jobsBySlide = new Map((data.jobs || []).map((entry) => [entry.slideId || String(entry.slideIndex), entry]));
+      let anyFailed = false;
+      const newFingerprints: Record<string, string> = {};
+      setDraftSlides((current) =>
+        current.map((slide, index) => {
+          const key = slideKey(slide, index);
+          const entry = jobsBySlide.get(key);
+          if (!entry) return slide;
+          if (entry.error || entry.job?.status === 'FAILED') {
+            anyFailed = true;
+            return { ...slide, status: `Falha ao gerar: ${entry.error || 'erro do provedor'}` };
+          }
+          const url = entry.job?.output?.url;
+          if (entry.job?.status === 'SUCCEEDED' && url) {
+            newFingerprints[key] = slideFingerprint(slide, index);
+            return { ...slide, imageUrl: url, status: 'imagem gerada' };
+          }
+          return slide;
+        })
+      );
+      setGeneratedFingerprints((current) => ({ ...current, ...newFingerprints }));
+      if (anyFailed) {
+        setGenerationError('Algumas imagens falharam. Revise os slides marcados e tente novamente.');
+      }
+    } catch (error) {
+      setGenerationError(error instanceof Error ? error.message : 'Nao foi possivel gerar as imagens.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -456,14 +606,34 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
               <input value={activeSlide.cta || ''} onChange={(event) => updateActiveSlide('cta', event.target.value)} disabled={isBusy} placeholder="Ex.: Salve este post" />
             </label>
             <div className="cf-carousel-copy-editor__actions">
-              <button type="button" className="is-secondary" disabled={isBusy} onClick={() => sendAction({ action: 'approve-carousel-copy', confirmed: true, copyApproved: true, designApproved: false, carousel: draftCarousel })}>
+              <button
+                type="button"
+                className="is-secondary"
+                disabled={isBusy}
+                onClick={() => {
+                  setSubmitting(true);
+                  void sendAction({ action: 'approve-carousel-copy', confirmed: true, copyApproved: true, designApproved: false, carousel: draftCarousel }).catch(() => {
+                    setSubmitting(false);
+                  });
+                }}
+              >
                 Salvar copy e revisar
               </button>
-              <button type="button" disabled={isBusy} onClick={() => sendAction({ action: 'generate-images', confirmed: true, copyApproved: true, designApproved: true, designSpec: design, carousel: draftCarousel })}>
-                Aprovar copy e gerar imagens <span aria-hidden="true">→</span>
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() => {
+                  void generateCarouselImages();
+                }}
+              >
+                {submitting ? 'Gerando imagens…' : (<>Aprovar copy e gerar imagens <span aria-hidden="true">→</span></>)}
               </button>
             </div>
-            <small>As imagens só serão solicitadas depois da aprovação da copy e do design.</small>
+            {generationError ? (
+              <small className="cf-carousel-copy-editor__error" role="alert">{generationError}</small>
+            ) : (
+              <small>As imagens só serão solicitadas depois da aprovação da copy e do design.</small>
+            )}
           </div>
         </>
       )}

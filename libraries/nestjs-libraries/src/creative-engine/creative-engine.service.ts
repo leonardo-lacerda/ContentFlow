@@ -38,6 +38,7 @@ import { deleteCreativeLocalUpload } from './creative-local-media';
 import { resolveCreativeLocalUploadPath } from './creative-local-media';
 import { isSafePublicHttpsUrl } from '@gitroom/nestjs-libraries/dtos/webhooks/webhook.url.validator';
 import { CreativeOutputStorageService } from './creative-output-storage.service';
+import { compileDesignPrompt } from './creative-design-prompt.util';
 import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
 
@@ -913,6 +914,70 @@ export class CreativeEngineService {
     });
   }
 
+  /**
+   * Single source of truth for turning an approved carousel into real slide
+   * images: used by both the chat tool and the Studio's "generate images"
+   * button. The button path exists because the agent reliably fails to chain
+   * this call on its own after a renderAndWaitForResponse click — the
+   * browser already holds every input this needs (slides, designSpec,
+   * imagePrompt per slide), so there is nothing for the model to add here.
+   */
+  async generateCarouselImages(organizationId: string, input: {
+    projectId?: string;
+    name?: string;
+    brief?: string;
+    prompt?: string;
+    aspectRatio?: string;
+    designSpec?: Record<string, unknown>;
+    idempotencyKey?: string;
+    slides: Array<{
+      id?: string;
+      index?: number;
+      headline?: string;
+      body?: string;
+      cta?: string;
+      imagePrompt: string;
+      aspectRatio?: string;
+    }>;
+  }) {
+    if (!input.slides?.length) {
+      throw new BadRequestException('slides are required for carousel image generation');
+    }
+    const project = input.projectId
+      ? { id: input.projectId }
+      : await this.createProject(organizationId, {
+          name: input.name || 'ContentFlow carousel creation',
+          objective: input.brief || input.prompt || 'Carousel image generation',
+          aspectRatio: input.aspectRatio,
+        });
+    const jobs: Array<{ slideId?: string; slideIndex: number; job?: unknown; error?: string }> = [];
+    for (const [i, slide] of input.slides.entries()) {
+      const slideIndex = slide.index ?? i;
+      try {
+        // Omitting idempotencyKey (rather than defaulting to a fixed string)
+        // lets executeCreativeJob fall through to its own content hash of
+        // {organizationId, projectId, prompt, aspectRatio, assetName}: an
+        // unmodified slide regenerated against the same project — the common
+        // case of "I only edited slide 3, why did all 5 bill again" —
+        // resolves to the same hash and returns the cached job for free.
+        // Editing the copy/design changes the compiled prompt, which changes
+        // the hash, which correctly forces a fresh generation.
+        const job = await this.generateImage(organizationId, project.id, {
+          prompt: compileDesignPrompt(slide.imagePrompt, input.designSpec, slide),
+          name: `${input.name || 'Carousel'} slide ${slideIndex + 1}`,
+          aspectRatio: slide.aspectRatio || input.aspectRatio,
+          idempotencyKey: input.idempotencyKey ? `${input.idempotencyKey}:${slide.id || slideIndex + 1}` : undefined,
+        });
+        jobs.push({ slideId: slide.id, slideIndex, job });
+      } catch (error) {
+        // One slide failing a content-moderation or provider check should not
+        // discard the images already generated for the rest of the carousel.
+        jobs.push({ slideId: slide.id, slideIndex, error: this.errorMessage(error) });
+      }
+    }
+    return { projectId: project.id, jobs, slides: input.slides };
+  }
+
   async generateVoicePreview(organizationId: string, projectId: string, input: {
     voiceId: string;
     text: string;
@@ -1462,21 +1527,43 @@ export class CreativeEngineService {
       ? scopeCreativeIdempotencyKey(organizationId, input.idempotencyKey)
       : `creative-output:${createHash('sha256').update(JSON.stringify({ organizationId, projectId, input })).digest('hex')}`;
     const existing = await this.prisma.creativeJob.findUnique({ where: { idempotencyKey } });
-    if (existing) return this.getJob(existing.id, organizationId);
+    // A FAILED job's reservation was already refunded in executeJob's catch
+    // block, so reusing it wastes nothing — but returning it here would also
+    // mean a retry could never succeed, since identical content always hashes
+    // to the same key. Reset it in place and retry instead (its
+    // CreativeJobAttempt rows reference it by id, so delete-and-recreate
+    // would violate that foreign key; update-in-place sidesteps that).
+    if (existing && existing.status !== CreativeJobStatus.FAILED) {
+      return this.getJob(existing.id, organizationId);
+    }
     await this.credits.assertConcurrencyQuota(organizationId);
-    const job = await this.prisma.creativeJob.create({
-      data: {
-        organizationId,
-        projectId,
-        type: input.capability,
-        status: CreativeJobStatus.QUEUED,
-        provider: quote.provider,
-        model: quote.model,
-        input: { ...input.input, capability: input.capability } as Prisma.InputJsonValue,
-        costEstimate: quote.estimatedCredits,
-        idempotencyKey,
-      },
-    });
+    const job = existing
+      ? await this.prisma.creativeJob.update({
+          where: { id: existing.id },
+          data: {
+            status: CreativeJobStatus.QUEUED,
+            error: null,
+            output: Prisma.JsonNull,
+            provider: quote.provider,
+            model: quote.model,
+            input: { ...input.input, capability: input.capability } as Prisma.InputJsonValue,
+            costEstimate: quote.estimatedCredits,
+            completedAt: null,
+          },
+        })
+      : await this.prisma.creativeJob.create({
+          data: {
+            organizationId,
+            projectId,
+            type: input.capability,
+            status: CreativeJobStatus.QUEUED,
+            provider: quote.provider,
+            model: quote.model,
+            input: { ...input.input, capability: input.capability } as Prisma.InputJsonValue,
+            costEstimate: quote.estimatedCredits,
+            idempotencyKey,
+          },
+        });
     try {
       const reservation = await this.credits.reserve(organizationId, quote.estimatedCredits, {
         projectId,

@@ -17,12 +17,22 @@ export class BillingAccountingService {
   ) {}
 
   async ensureCatalog() {
+    // Concurrent callers race to seed the same rows; a row already existing is
+    // the desired end state, so the loser's unique violation is not an error.
     for (const plan of BILLING_CATALOG_PLANS) {
-      const dbPlan = await this.prisma.billingPlan.upsert({
-        where: { code: plan.code },
-        update: {},
-        create: plan,
-      });
+      const dbPlan =
+        (await this.prisma.billingPlan
+          .upsert({
+            where: { code: plan.code },
+            update: {},
+            create: plan,
+          })
+          .catch((error: any) => {
+            if (error?.code !== 'P2002') throw error;
+            return null;
+          })) ||
+        (await this.prisma.billingPlan.findUnique({ where: { code: plan.code } }));
+      if (!dbPlan) continue;
       await this.prisma.billingPrice.upsert({
         where: { code: `${plan.code}_MONTHLY` },
         update: {},
@@ -34,6 +44,8 @@ export class BillingAccountingService {
           credits: plan.monthlyCredits,
           active: true,
         },
+      }).catch((error: any) => {
+        if (error?.code !== 'P2002') throw error;
       });
     }
     for (const topup of BILLING_CATALOG_TOPUPS) {
@@ -48,6 +60,8 @@ export class BillingAccountingService {
           validityDays: topup.validityDays,
           active: true,
         },
+      }).catch((error: any) => {
+        if (error?.code !== 'P2002') throw error;
       });
     }
   }

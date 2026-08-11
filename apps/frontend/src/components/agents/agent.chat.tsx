@@ -54,30 +54,59 @@ import {
   type ContentIdea,
 } from '@gitroom/frontend/components/agents/content-artifacts.component';
 
-const AgentChatContent: FC = () => {
-  const { backendUrl } = useVariables();
-  const params = useParams<{ id: string }>();
-  const { properties: contextProperties } = useContext(PropertiesContext);
-  const properties = Array.isArray(contextProperties) ? contextProperties : [];
+/**
+ * CopilotKit caches an action's `render` the first time it is registered and
+ * keeps that closure for the life of the chat. Under StrictMode/HMR the
+ * component instance that produced the closure can be replaced, and the
+ * captured `appendMessage`/`setState` then belong to a dead instance: the
+ * artifact buttons call them and nothing happens. Routing every click through
+ * this live handle means a cached render always reaches the mounted instance.
+ */
+const liveArtifactAction: {
+  current: ((value: Record<string, unknown>) => Promise<void>) | null;
+} = { current: null };
+
+/**
+ * The chat input's `onSend` is the only send path that actually reaches the
+ * agent here. `useCopilotChat().appendMessage` is the pre-AG-UI API (deprecated
+ * in favour of `sendMessage`, which this build gates behind a CopilotKit Cloud
+ * publicApiKey): the message it appends never lands in the AG-UI message list,
+ * so the run goes out with the *previous* user message and the agent just
+ * repeats the last step. Artifact buttons reuse the input's channel instead, so
+ * a button click travels exactly like a typed message.
+ */
+const liveSendMessage: {
+  current: ((text: string) => Promise<unknown>) | null;
+} = { current: null };
+
+const dispatchArtifactAction = async (value: Record<string, unknown>) => {
+  if (!liveArtifactAction.current) return;
+  await liveArtifactAction.current(value);
+};
+
+/**
+ * Everything that talks to CopilotKit lives here rather than in
+ * AgentChatContent. `useCopilotAction` and `useCopilotChat` register against
+ * the nearest CopilotKit provider, so calling them in the component that
+ * *renders* <CopilotKit> puts them outside it: the Studio actions would never
+ * be sent to the agent and the model could not render any artifact card.
+ */
+const StudioChat: FC = () => {
   const t = useT();
   const [chatError, setChatError] = useState(false);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
-  const { appendMessage, runChatCompletion } = useCopilotChat();
   const sendArtifactAction = useCallback(
     async (value: Record<string, unknown>) => {
       const action = String(value.action || 'continue');
       const startedAt = Date.now();
       setActionStatus(action);
       try {
-        await appendMessage(
-          new TextMessage({
-            role: Role.User,
-            content: `[--content-action--]\nACTION: ${action}. Execute this button action now and return the next Studio artifact, not a generic explanation.\nPAYLOAD: ${JSON.stringify(value)}\n[--content-action--]`,
-          }),
-          { followUp: false }
+        if (!liveSendMessage.current) {
+          throw new Error('Chat input is not ready to send the artifact action');
+        }
+        await liveSendMessage.current(
+          `[--content-action--]\nACTION: ${action}. Execute this button action now and return the next Studio artifact, not a generic explanation.\nPAYLOAD: ${JSON.stringify(value)}\n[--content-action--]`
         );
-        await new Promise((resolve) => window.setTimeout(resolve, 0));
-        await runChatCompletion();
       } catch (error) {
         console.error('[AgentChat] action request failed', error);
         setChatError(true);
@@ -86,8 +115,17 @@ const AgentChatContent: FC = () => {
         window.setTimeout(() => setActionStatus(null), Math.max(0, 1200 - (Date.now() - startedAt)));
       }
     },
-    [appendMessage, runChatCompletion]
+    []
   );
+
+  useEffect(() => {
+    liveArtifactAction.current = sendArtifactAction;
+    return () => {
+      if (liveArtifactAction.current === sendArtifactAction) {
+        liveArtifactAction.current = null;
+      }
+    };
+  }, [sendArtifactAction]);
 
   useCopilotAction({
     name: 'showCreationOptions',
@@ -200,7 +238,7 @@ const AgentChatContent: FC = () => {
         args={args as Record<string, any>}
         status={status}
         respond={respond}
-        onAction={sendArtifactAction}
+        onAction={dispatchArtifactAction}
       />
     ),
   });
@@ -246,24 +284,39 @@ const AgentChatContent: FC = () => {
         args={args as Record<string, any>}
         status={status}
         respond={respond}
-        onAction={sendArtifactAction}
+        onAction={dispatchArtifactAction}
       />
     ),
   });
 
+  // The agent reliably calls the server-side contentPresentationTool, but it
+  // does not always follow up with the matching frontend action. Mirror the
+  // tool's payload as the same interactive card so an artifact always reaches
+  // the user. `available: 'frontend'` keeps this out of the tool list sent to
+  // the model (the render is still registered by name), so it cannot be
+  // called as a second, duplicate tool.
+  useCopilotAction({
+    name: 'contentPresentationTool',
+    available: 'frontend',
+    render: ({ args, status }) => {
+      const payload = (args || {}) as Record<string, any>;
+      // Args stream in token by token; wait until the tool call is settled so
+      // we never show a half-built card.
+      if (status === 'inProgress') return <></>;
+      const operation =
+        payload.operation ||
+        (payload.ideas?.length ? 'ideas' : payload.slides?.length ? 'carousel' : '');
+      if (operation === 'ideas' && payload.ideas?.length) {
+        return <ContentIdeasCard args={payload} onAction={dispatchArtifactAction} />;
+      }
+      if (operation === 'carousel' && payload.slides?.length) {
+        return <CarouselPreviewCard args={payload} onAction={dispatchArtifactAction} />;
+      }
+      return <></>;
+    },
+  });
+
   return (
-    <CopilotKit
-      {...(params.id === 'new' ? {} : { threadId: params.id })}
-      credentials="include"
-      runtimeUrl={backendUrl + '/copilot/agent'}
-      showDevConsole={false}
-      agent="contentflow"
-      properties={{
-        integrations: properties,
-      }}
-    >
-      <Hooks />
-      <LoadMessages id={params.id} />
       <div
         style={
           {
@@ -326,13 +379,36 @@ You can also use me as an MCP Server, check Settings >> Public API
             }}
             UserMessage={Message}
              AssistantMessage={(messageProps) => (
-               <StudioAssistantMessage {...messageProps} onAction={sendArtifactAction} />
+               <StudioAssistantMessage {...messageProps} onAction={dispatchArtifactAction} />
              )}
             Input={NewInput}
             onError={() => setChatError(true)}
           />
         </div>
       </div>
+  );
+};
+
+const AgentChatContent: FC = () => {
+  const { backendUrl } = useVariables();
+  const params = useParams<{ id: string }>();
+  const { properties: contextProperties } = useContext(PropertiesContext);
+  const properties = Array.isArray(contextProperties) ? contextProperties : [];
+
+  return (
+    <CopilotKit
+      {...(params.id === 'new' ? {} : { threadId: params.id })}
+      credentials="include"
+      runtimeUrl={backendUrl + '/copilot/agent'}
+      showDevConsole={false}
+      agent="contentflow"
+      properties={{
+        integrations: properties,
+      }}
+    >
+      <Hooks />
+      <LoadMessages id={params.id} />
+      <StudioChat />
     </CopilotKit>
   );
 };
@@ -1033,6 +1109,15 @@ const suggestedPlatformFromPrompt = (text: string) => {
 };
 
 const NewInput: FC<InputProps> = (props) => {
+  // Expose the input's send channel so artifact buttons can reuse it.
+  const onSend = props.onSend;
+  useEffect(() => {
+    liveSendMessage.current = (text: string) => Promise.resolve(onSend(text));
+    return () => {
+      liveSendMessage.current = null;
+    };
+  }, [onSend]);
+
   const [media, setMedia] = useState([] as { path: string; id: string }[]);
   const [value, setValue] = useState('');
   const [pendingCreation, setPendingCreation] = useState<Record<string, any> | null>(null);

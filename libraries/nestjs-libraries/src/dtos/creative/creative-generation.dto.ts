@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, Max, Min, ValidateNested } from 'class-validator';
 
 const CAPABILITIES = [
   'image-generation',
@@ -87,6 +87,75 @@ export class CreativeGenerateImageDto {
 
   @IsOptional()
   productAssetIds?: string[];
+}
+
+export class CreativeCarouselSlideDto {
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  index?: number;
+
+  @IsOptional()
+  @IsString()
+  headline?: string;
+
+  @IsOptional()
+  @IsString()
+  body?: string;
+
+  @IsOptional()
+  @IsString()
+  cta?: string;
+
+  @IsString()
+  imagePrompt!: string;
+
+  @IsOptional()
+  @IsIn(['9:16', '1:1', '16:9', '4:5'])
+  aspectRatio?: string;
+}
+
+export class CreativeGenerateCarouselDto {
+  @IsOptional()
+  @IsString()
+  projectId?: string;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  brief?: string;
+
+  @IsOptional()
+  @IsIn(['9:16', '1:1', '16:9', '4:5'])
+  aspectRatio?: string;
+
+  @IsOptional()
+  @IsObject()
+  designSpec?: Record<string, unknown>;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreativeCarouselSlideDto)
+  slides!: CreativeCarouselSlideDto[];
+
+  @IsOptional()
+  @IsString()
+  idempotencyKey?: string;
+
+  // The click that reaches this endpoint already carries the user's explicit
+  // approval (this is the follow-up to the copy/design approval step); the
+  // flag mirrors the "confirmed=true" gate the rest of the credit-consuming
+  // Creative Engine operations use, so a stray/duplicate request is rejected
+  // instead of silently spending credits.
+  @IsBoolean()
+  confirmed!: boolean;
 }
 
 export class CreativeVariantMatrixDto {

@@ -23,6 +23,24 @@ const aliasRoots = {
   '@gitroom/backend': path.join(distRoot, 'apps/backend/src'),
 };
 
+// Same aliases, but pointing at the sources. Whether `@gitroom/x/y` is a module
+// or a directory with an index has to be decided from the source tree: the dist
+// tree is still being written, so a package compiled before its dependency
+// would resolve every directory import to a non-existent `<dir>.js`.
+const aliasSourceRoots = {
+  '@gitroom/nestjs-libraries': path.join(root, 'libraries/nestjs-libraries/src'),
+  '@gitroom/helpers': path.join(root, 'libraries/helpers/src'),
+  '@gitroom/backend': path.join(root, 'apps/backend/src'),
+};
+
+const isSourceFile = (base) =>
+  ['.ts', '.tsx'].some((ext) => fs.existsSync(base + ext));
+
+const hasSourceIndex = (dir) =>
+  fs.existsSync(dir) &&
+  fs.statSync(dir).isDirectory() &&
+  ['index.ts', 'index.tsx'].some((name) => fs.existsSync(path.join(dir, name)));
+
 function walk(dir, acc = []) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, ent.name);
@@ -45,13 +63,17 @@ function rewriteRequires(code, fileOut) {
       for (const [a, rootDir] of Object.entries(aliasRoots)) {
         if (req === a || req.startsWith(a + '/')) {
           const rest = req === a ? '' : req.slice(a.length + 1);
-          let target = rest
-            ? path.join(rootDir, ...rest.split('/'))
+          const segments = rest ? rest.split('/') : [];
+          const target = segments.length
+            ? path.join(rootDir, ...segments)
             : rootDir;
+          const sourceTarget = segments.length
+            ? path.join(aliasSourceRoots[a], ...segments)
+            : aliasSourceRoots[a];
+          // Bare alias and directory imports resolve to the directory's index.
           let cand = target + '.js';
-          if (!fs.existsSync(cand)) {
-            const idx = path.join(target, 'index.js');
-            if (fs.existsSync(idx)) cand = idx;
+          if (!isSourceFile(sourceTarget) && hasSourceIndex(sourceTarget)) {
+            cand = path.join(target, 'index.js');
           }
           let rel = path
             .relative(path.dirname(fileOut), cand)

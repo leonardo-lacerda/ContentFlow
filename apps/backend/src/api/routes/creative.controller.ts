@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -26,6 +27,7 @@ import {
   UpdateCreativeProjectDto,
   CreateCreativeScriptDto,
   CreativeGenerateImageDto,
+  CreativeGenerateCarouselDto,
   CreativeQuoteDto,
   CreativeGenerateVariantDto,
   CreativeToolQuoteDto,
@@ -267,6 +269,21 @@ export class CreativeController {
   @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   generateImage(@GetOrgFromRequest() org: Organization, @Param('id') id: string, @Body() body: CreativeGenerateImageDto) {
     return this.creative.generateImage(org.id, id, body);
+  }
+
+  // Deliberately not scoped under /projects/:id — the Studio's "generate
+  // images" button fires before a project necessarily exists (a chat-created
+  // carousel has no project until this call makes one). Bypasses the chat
+  // agent entirely: the browser already holds every input (slides,
+  // designSpec, per-slide imagePrompt) the agent would otherwise have had to
+  // relay, and relaying through the model was the actual point of failure.
+  @Post('/carousel/generate-images')
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
+  generateCarouselImages(@GetOrgFromRequest() org: Organization, @Body() body: CreativeGenerateCarouselDto) {
+    if (!body.confirmed) {
+      throw new BadRequestException('confirmed=true is required to generate carousel images');
+    }
+    return this.creative.generateCarouselImages(org.id, body);
   }
 
   @Post('/projects/:id/voices/preview')

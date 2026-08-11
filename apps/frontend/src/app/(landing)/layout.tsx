@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 
 export const metadata = {
-  title: 'ContentFlow — Sua operação de conteúdo no piloto automático',
+  title: 'ContentFlow — Crie carrosséis, imagens e vídeos UGC pelo chat',
   description:
-    'O ContentFlow aprende seu posicionamento, gera ideias no seu nicho, monta carrosséis com a sua identidade e agenda nas 5 redes. Você aprova em 10 min; a máquina roda o resto.',
+    'Converse com a IA para criar ideias, copy, carrosséis, imagens e vídeos UGC. Revise, edite o design e publique com a sua identidade.',
 };
 
 export default function LandingLayout({ children }: { children: ReactNode }) {
@@ -23,6 +23,7 @@ export default function LandingLayout({ children }: { children: ReactNode }) {
         rel="stylesheet"
       />
       <link rel="stylesheet" href="/landing-styles.css" />
+      <link rel="stylesheet" href="/landing-current.css" />
       <div className="landing-root">{children}</div>
     </>
   );

@@ -11,6 +11,7 @@ import { CreativeWorkflowService } from '@gitroom/nestjs-libraries/creative-engi
 import type { CreativeMediaTool } from '@gitroom/nestjs-libraries/creative-engine/creative-media-tool.service';
 import { AgentToolInterface } from '@gitroom/nestjs-libraries/chat/agent.tool.interface';
 import { checkAuth } from '@gitroom/nestjs-libraries/chat/auth.context';
+import { compileDesignPrompt } from '@gitroom/nestjs-libraries/creative-engine/creative-design-prompt.util';
 
 const capabilities = [
   'image-generation',
@@ -132,56 +133,6 @@ type CreativeToolInput = {
     aspectRatio?: string;
   }>;
 };
-
-function mergeDesignRecord(base: Record<string, unknown>, override: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...base,
-    ...override,
-    palette: { ...(base.palette as Record<string, unknown> | undefined), ...(override.palette as Record<string, unknown> | undefined) },
-    typography: { ...(base.typography as Record<string, unknown> | undefined), ...(override.typography as Record<string, unknown> | undefined) },
-    layout: { ...(base.layout as Record<string, unknown> | undefined), ...(override.layout as Record<string, unknown> | undefined) },
-    background: { ...(base.background as Record<string, unknown> | undefined), ...(override.background as Record<string, unknown> | undefined) },
-  } as Record<string, unknown>;
-}
-
-function compileDesignPrompt(
-  prompt: string,
-  designSpec?: Record<string, unknown>,
-  slide?: { id?: string; index?: number; headline?: string; body?: string; cta?: string },
-) {
-  if (!designSpec) return prompt;
-  const overrides = (designSpec.slideOverrides as Record<string, unknown> | undefined) || {};
-  const key = slide?.id || String(slide?.index || '');
-  const override = key && overrides[key] && typeof overrides[key] === 'object'
-    ? overrides[key] as Record<string, unknown>
-    : undefined;
-  const resolved = override ? mergeDesignRecord(designSpec, override) : designSpec;
-  const palette = (resolved.palette || {}) as Record<string, unknown>;
-  const typography = (resolved.typography || {}) as Record<string, unknown>;
-  const layout = (resolved.layout || {}) as Record<string, unknown>;
-  const background = (resolved.background || {}) as Record<string, unknown>;
-  const elements = Array.isArray(resolved.elements)
-    ? resolved.elements
-        .map((item) => item && typeof item === 'object' ? item as Record<string, unknown> : null)
-        .filter((item) => item?.visible !== false)
-        .map((item) => String(item?.type || item?.id))
-        .join(', ')
-    : 'none';
-  const approvedCopy = [slide?.headline, slide?.body, slide?.cta].filter(Boolean).join(' | ');
-  return [
-    prompt,
-    '',
-    '[APPROVED DESIGN SPEC — FOLLOW EXACTLY]',
-    `Platform: ${String(resolved.platform || 'social media')}; aspect ratio: ${String(resolved.aspectRatio || '4:5')}; size: ${String(resolved.sizeId || 'default')}.`,
-    `Palette: ${String(palette.name || palette.paletteId || 'custom')}; background ${String(palette.background || '')}; surface ${String(palette.surface || '')}; text ${String(palette.text || '')}; accent ${String(palette.accent || '')}; secondary accent ${String(palette.accent2 || '')}.`,
-    `Typography: heading ${String(typography.headingFont || 'sans-serif')}; body ${String(typography.bodyFont || 'sans-serif')}; scale ${String(typography.scale || 'balanced')}; alignment ${String(typography.alignment || 'left')}.`,
-    `Layout: ${String(layout.templateId || 'carousel-cover')}; density ${String(layout.density || 'balanced')}.`,
-    `Background: ${String(background.type || 'gradient')}${background.value ? ` (${String(background.value)})` : ''}; render mode ${String(resolved.renderMode || 'hybrid')}.`,
-    `Visible elements: ${elements}. Do not add visible elements that are not listed.`,
-    approvedCopy ? `Approved copy for this slide, preserve verbatim: ${approvedCopy}` : '',
-    'Keep all visual choices consistent with this specification. Do not replace the palette, fonts, layout or visible elements with defaults.',
-  ].filter(Boolean).join('\n');
-}
 
 @Injectable()
 export class CreativeEngineTool implements AgentToolInterface {
@@ -419,28 +370,20 @@ export class CreativeEngineTool implements AgentToolInterface {
             if (inputData.designApproved !== true) {
               throw new Error('designApproved=true is required before generating carousel images');
             }
-            const project = inputData.projectId
-              ? { id: inputData.projectId }
-              : await service.createProject(organization.id, {
-                  name: inputData.name || 'ContentFlow carousel creation',
-                  objective: inputData.brief || inputData.prompt || 'Carousel image generation',
-                  aspectRatio: inputData.aspectRatio,
-                });
-            const jobs = [];
-            for (const slide of inputData.slides) {
-              jobs.push(await service.generateImage(organization.id, project.id, {
-                prompt: compileDesignPrompt(slide.imagePrompt, inputData.designSpec, slide),
-                name: `${inputData.name || 'Carousel'} slide ${slide.index || jobs.length + 1}`,
-                aspectRatio: slide.aspectRatio || inputData.aspectRatio,
-                idempotencyKey: `${inputData.idempotencyKey || 'chat-carousel'}:${slide.id || slide.index || jobs.length + 1}`,
-              }));
-            }
+            const generated = await service.generateCarouselImages(organization.id, {
+              projectId: inputData.projectId,
+              name: inputData.name,
+              brief: inputData.brief,
+              prompt: inputData.prompt,
+              aspectRatio: inputData.aspectRatio,
+              designSpec: inputData.designSpec,
+              idempotencyKey: inputData.idempotencyKey,
+              slides: inputData.slides,
+            });
             return {
               result: {
                 type: 'CAROUSEL_IMAGES_GENERATED',
-                projectId: project.id,
-                jobs,
-                slides: inputData.slides,
+                ...generated,
               },
             };
           }

@@ -1,0 +1,19 @@
+.cf-current{background:var(--paper2);border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.cf-flow{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin:-18px auto 48px;max-width:980px}
+.cf-flow span{display:inline-flex;align-items:center;gap:9px;padding:10px 14px;background:var(--card);border:var(--bd);border-radius:999px;box-shadow:var(--hard-s);font:800 .82rem var(--body)}
+.cf-flow b{font:700 .7rem var(--mono);color:var(--blue)}
+.cf-flow i{font:700 1.3rem var(--mono);font-style:normal}
+.cf-current-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.cf-current-card{display:flex;flex-direction:column;min-height:270px;padding:24px;background:var(--card);border:var(--bd);border-radius:16px;box-shadow:var(--hard);transition:transform .2s,box-shadow .2s}
+.cf-current-card:hover{transform:translate(-3px,-3px);box-shadow:7px 7px 0 var(--ink)}
+.cf-card-icon{display:grid;place-items:center;width:42px;height:42px;margin-bottom:19px;background:var(--lime);border:var(--bd);border-radius:11px;font-size:1.2rem;box-shadow:var(--hard-s)}
+.cf-card-icon.cf-blue{background:var(--blue-t);color:var(--blue)}
+.cf-card-icon.cf-coral{background:var(--coral-t);color:var(--coral)}
+.cf-card-icon.cf-green{background:var(--green-t);color:var(--green)}
+.cf-card-icon.cf-yellow{background:var(--yellow-t);color:#8b6400}
+.cf-card-kicker{margin-bottom:7px;color:var(--blue);font:700 .68rem var(--mono);letter-spacing:.11em;text-transform:uppercase}
+.cf-current-card h3{margin-bottom:9px;font:400 1.55rem/1.05 var(--disp);text-transform:uppercase;letter-spacing:.3px}
+.cf-current-card>p:not(.cf-card-kicker){color:var(--ink-soft);font-size:.95rem;line-height:1.55}
+.cf-card-example{display:inline-flex;align-items:center;margin-top:auto;padding-top:18px;color:var(--ink);font:700 .72rem var(--mono);line-height:1.45}
+@media (max-width:900px){.cf-current-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cf-flow{justify-content:flex-start}}
+@media (max-width:620px){.cf-current-grid{grid-template-columns:1fr}.cf-flow{gap:10px;margin-bottom:34px}.cf-flow i{display:none}.cf-flow span{width:100%;justify-content:flex-start}.cf-current-card{min-height:0}}

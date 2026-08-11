@@ -39,10 +39,15 @@ export class CreditAccountingService {
   constructor(private readonly prisma: PrismaService) {}
 
   async ensureAccount(organizationId: string) {
+    // Concurrent requests for the same org race here: both see "not found" and
+    // both try to create. The row existing is the desired end state, so a
+    // unique violation from the loser is not an error.
     await this.prisma.creditAccount.upsert({
       where: { organizationId },
       update: {},
       create: { organizationId },
+    }).catch((error: any) => {
+      if (error?.code !== 'P2002') throw error;
     });
 
     const bootstrapKey = `credit-v2:bootstrap:${organizationId}`;
@@ -290,6 +295,16 @@ export class CreditAccountingService {
           return reservation;
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       } catch (error: any) {
+        if (error?.code === 'P2002') {
+          // The pre-flight idempotency check above runs outside this
+          // transaction, so a concurrent request for the same key (or a retry
+          // whose first attempt did commit) can get here. The key is what makes
+          // the reservation unique, so reusing the winner's row is correct.
+          const concurrent = await this.prisma.creditReservation.findUnique({
+            where: { idempotencyKey: input.idempotencyKey },
+          });
+          if (concurrent) return concurrent;
+        }
         if (error?.code !== 'P2034' || attempt === 3) throw error;
         this.logger.warn(`Retrying credit reservation after serialization conflict (${attempt}/3)`);
       }

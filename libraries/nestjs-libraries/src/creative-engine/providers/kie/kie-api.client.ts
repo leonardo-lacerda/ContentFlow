@@ -143,11 +143,32 @@ export class KieApiClient {
   private parseTaskResult(taskId: string, response: JsonRecord): KieTaskResult {
     const root = response?.data ?? response;
     const status = this.findStatus(root) || this.findStatus(response) || 'queued';
-    const url = this.findUrl(root, ['video', 'image', 'output', 'result', 'url']);
-    const audioUrl = this.findUrl(root, ['audio', 'audioUrl', 'audio_url', 'sound']);
-    const thumbnailUrl = this.findUrl(root, ['thumbnail', 'thumbnailUrl', 'cover', 'coverUrl']);
-    const translatedText = this.findText(root);
+    // /api/v1/jobs/recordInfo (the "market" createTask family — nano-banana,
+    // seedance, kling, etc.) reports its output as `resultJson`, a
+    // JSON-*encoded string* like '{"resultUrls":["https://..."]}', not a
+    // nested object. findUrl only ever recurses into objects/arrays, so
+    // without parsing this first every successful job on this endpoint read
+    // as "completed without an output" — the provider had already returned
+    // the asset and billed for it, and the app discarded it.
+    const searchRoot = this.withParsedResultJson(root);
+    const url = this.findUrl(searchRoot, ['video', 'image', 'output', 'result', 'url']);
+    const audioUrl = this.findUrl(searchRoot, ['audio', 'audioUrl', 'audio_url', 'sound']);
+    const thumbnailUrl = this.findUrl(searchRoot, ['thumbnail', 'thumbnailUrl', 'cover', 'coverUrl']);
+    const translatedText = this.findText(searchRoot);
     return { taskId, status, url, audioUrl, thumbnailUrl, translatedText, raw: response };
+  }
+
+  private withParsedResultJson(root: unknown): JsonRecord {
+    if (!root || typeof root !== 'object') return (root as JsonRecord) || {};
+    const object = root as JsonRecord;
+    const raw = object.resultJson;
+    if (typeof raw !== 'string' || !raw.trim()) return object;
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? { ...object, ...parsed } : object;
+    } catch {
+      return object;
+    }
   }
 
   private findStatus(value: unknown): string | undefined {

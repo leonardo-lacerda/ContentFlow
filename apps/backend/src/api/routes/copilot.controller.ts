@@ -163,21 +163,41 @@ export class CopilotController {
         ),
       );
     }
-    const quote = await this._pricingCatalog.quote({ operation: 'chat-ideas', capability: 'script' });
-    const reservation = await this._credits.reserve(organization.id, quote.credits, {
-      quoteId: quote.quoteId,
-      idempotencyKey: String(req.headers['idempotency-key'] || `chat:${organization.id}:${req.body?.threadId || 'new'}:${Date.now()}`),
-      operation: 'chat-ideas',
-      provider: quote.provider,
-      model: quote.model,
-    });
-    res.once('finish', () => {
-      const failed = res.statusCode >= 400;
-      const action = failed
-        ? this._credits.refund(reservation.id, `chat-http-${res.statusCode}`)
-        : this._credits.settle(reservation.id, quote.credits);
-      void action.catch((error) => Logger.error(`Failed to settle chat credits: ${String(error)}`));
-    });
+    // CopilotKit drives several GraphQL operations through this one endpoint:
+    // `availableAgents` and `loadAgentState` are cheap metadata queries that run
+    // on every page load, and only the `generateCopilotResponse` mutation calls
+    // the model. Charging all of them billed ~3x per interaction and could
+    // exhaust an org's credits without a single generation.
+    if (req?.body?.operationName === 'generateCopilotResponse') {
+      const quote = await this._pricingCatalog.quote({ operation: 'chat-ideas', capability: 'script' });
+      const reservation = await this._credits.reserve(organization.id, quote.credits, {
+        quoteId: quote.quoteId,
+        idempotencyKey: String(req.headers['idempotency-key'] || `chat:${organization.id}:${req.body?.threadId || 'new'}:${Date.now()}`),
+        operation: 'chat-ideas',
+        provider: quote.provider,
+        model: quote.model,
+      });
+      // 'finish' only fires when the response completes normally. Chat responses
+      // are streamed, so a client abort or a dropped connection emits 'close'
+      // instead — without it the reservation is never released and the org
+      // silently loses those credits for good.
+      let creditsFinalized = false;
+      const finalizeCredits = () => {
+        if (creditsFinalized) return;
+        creditsFinalized = true;
+        const aborted = !res.writableEnded;
+        const failed = aborted || res.statusCode >= 400;
+        const action = failed
+          ? this._credits.refund(
+              reservation.id,
+              aborted ? 'chat-aborted' : `chat-http-${res.statusCode}`
+            )
+          : this._credits.settle(reservation.id, quote.credits);
+        void action.catch((error) => Logger.error(`Failed to settle chat credits: ${String(error)}`));
+      };
+      res.once('finish', finalizeCredits);
+      res.once('close', finalizeCredits);
+    }
 
     const agents = MastraAgent.getLocalAgents({
       resourceId: organization.id,

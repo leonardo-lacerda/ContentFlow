@@ -31,10 +31,14 @@ export class PricingCatalogService {
 
   async ensureCatalog() {
     for (const [code, provider, model, unit, baseCredits, providerCostUsd] of DEFAULT_PRICES) {
+      // Concurrent callers race to seed the same code; the row existing is the
+      // desired end state, so the loser's unique violation is not an error.
       await this.prisma.pricingVersion.upsert({
         where: { code },
         update: {},
         create: { code, operation: code.split('-')[0], provider, model, unit, baseCredits, providerCostUsd, minCredits: baseCredits },
+      }).catch((error: any) => {
+        if (error?.code !== 'P2002') throw error;
       });
     }
   }

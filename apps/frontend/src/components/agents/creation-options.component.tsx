@@ -153,12 +153,16 @@ export function CreationOptionsCard({
   const type = (args.creationType || 'image') as CreationType;
   const initialOptions = useMemo(() => getInitialOptions(type, args), [type, args]);
   const [options, setOptions] = useState<CreationOptions>(initialOptions);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setOptions(initialOptions);
   }, [initialOptions]);
 
-  const isExecuting = status === 'executing';
+  // "executing" is the status CopilotKit uses while this card is waiting for
+  // the user's click (that's when `respond` is handed to it) — it is not a
+  // "busy" signal. Lock the buttons once the user already submitted instead.
+  const isExecuting = submitting;
   const title = args.title || `Vamos configurar seu ${typeLabels[type]}`;
   const brief = args.brief || 'Escolha só o essencial. Você poderá refinar o resultado conversando depois.';
   const ratios = type === 'video' ? videoRatios : imageRatios;
@@ -171,12 +175,18 @@ export function CreationOptionsCard({
   };
 
   const confirm = () => {
+    setSubmitting(true);
     respond?.({
       confirmed: true,
       creationType: type,
       options,
       brief: args.brief || '',
     });
+  };
+
+  const cancel = () => {
+    setSubmitting(true);
+    respond?.({ confirmed: false, cancelled: true });
   };
 
   return (
@@ -250,8 +260,8 @@ export function CreationOptionsCard({
           <button
             type="button"
             className="cf-creation-options__cancel"
-            onClick={() => respond?.({ confirmed: false, cancelled: true })}
-            disabled={isExecuting}
+            onClick={cancel}
+            disabled={isExecuting || !respond}
           >
             Voltar ao chat
           </button>
