@@ -246,14 +246,11 @@ const StudioChat: FC = () => {
         ],
       },
     ],
-    renderAndWaitForResponse: ({ args, status, respond }) => (
-      <ContentIdeasCard
-        args={args as Record<string, any>}
-        status={status}
-        respond={respond}
-        onAction={dispatchArtifactAction}
-      />
-    ),
+    // Kept for compatibility with older conversations. The canonical visual
+    // artifact is rendered from contentPresentationTool below; drawing here
+    // as well is what previously produced duplicate cards.
+    available: 'frontend',
+    render: () => <></>,
   });
 
   useCopilotAction({
@@ -292,24 +289,38 @@ const StudioChat: FC = () => {
         ],
       },
     ],
-    renderAndWaitForResponse: ({ args, status, respond }) => (
-      <CarouselPreviewCard
-        args={args as Record<string, any>}
-        status={status}
-        respond={respond}
-        onAction={dispatchArtifactAction}
-      />
-    ),
+    // Kept for compatibility with older conversations. The canonical visual
+    // artifact is rendered from contentPresentationTool below.
+    available: 'frontend',
+    render: () => <></>,
   });
 
-  // This is intentionally a no-op UI registration. The structured server
-  // tool is kept for the agent protocol, while the matching frontend action
-  // owns the interactive artifact. Rendering the payload here as well would
-  // duplicate the ideas/carousel card (and give the user two click targets).
+  // contentPresentationTool is the single canonical artifact renderer. The
+  // dedicated showContentIdeas/showCarouselPreview actions above remain as
+  // compatibility aliases but do not render, preventing duplicate cards.
   useCopilotAction({
     name: 'contentPresentationTool',
     available: 'frontend',
-    render: () => <></>,
+    render: ({ args, status }) => {
+      const rawPayload = (args || {}) as Record<string, any>;
+      const firstResult = rawPayload.result as Record<string, any> | undefined;
+      const payload = (
+        firstResult?.ideas || firstResult?.slides
+          ? firstResult
+          : firstResult?.result || rawPayload
+      ) as Record<string, any>;
+      if (status === 'inProgress') return <></>;
+      const operation =
+        payload.operation ||
+        (payload.ideas?.length ? 'ideas' : payload.slides?.length ? 'carousel' : '');
+      if (operation === 'ideas' && payload.ideas?.length) {
+        return <ContentIdeasCard args={payload} onAction={dispatchArtifactAction} />;
+      }
+      if (operation === 'carousel' && payload.slides?.length) {
+        return <CarouselPreviewCard args={payload} onAction={dispatchArtifactAction} />;
+      }
+      return <></>;
+    },
   });
 
   return (
@@ -1288,7 +1299,7 @@ ${selectedOptions}
           if (hasIdeaIntent(text)) {
             const ideaCount = requestedIdeaCount(text);
             return submitToAgent(
-              `${text}\n\n[--contentflow-intent--]\nREQUESTED_IDEA_COUNT: ${ideaCount}\nThis is a structured ideas request. Return exactly ${ideaCount} ideas. The allowed range is 1 to 10; requests above 10 are capped at 10. You MUST call only showContentIdeas with the same ${ideaCount} structured ideas. Make every idea concrete and ready to use, with a specific hook, angle, format, platform and CTA. Do not return a plain list, markdown outline, JSON dump or ask the user to think of the topic again.\n[--contentflow-intent--]`
+              `${text}\n\n[--contentflow-intent--]\nREQUESTED_IDEA_COUNT: ${ideaCount}\nThis is a structured ideas request. Return exactly ${ideaCount} ideas. The allowed range is 1 to 10; requests above 10 are capped at 10. You MUST call only contentPresentationTool with operation=ideas and the same ${ideaCount} structured ideas. Make every idea concrete and ready to use, with a specific hook, angle, format, platform and CTA. Do not return a plain list, markdown outline, JSON dump or ask the user to think of the topic again.\n[--contentflow-intent--]`
             );
           }
           const creationType = detectCreationType(text);
