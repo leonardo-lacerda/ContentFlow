@@ -73,6 +73,20 @@ function primaryAiAdapter() {
     apiKey: config.apiKey,
     ...(config.baseURL ? { baseURL: config.baseURL } : {}),
   });
+
+  if (config.provider === 'kie') {
+    // CopilotKit's OpenAIAdapter currently calls the beta streaming helper:
+    // `openai.beta.chat.completions.stream(...)`. Kie.ai implements the
+    // OpenAI-compatible Chat Completions API, but does not expose that beta
+    // helper. Bridge the adapter to the supported standard streaming method.
+    const client = openai as any;
+    client.beta = client.beta || {};
+    client.beta.chat = client.beta.chat || {};
+    client.beta.chat.completions = client.beta.chat.completions || {};
+    client.beta.chat.completions.stream = (request: Record<string, unknown>) =>
+      openai.chat.completions.create(request as any);
+  }
+
   return new OpenAIAdapter({ openai: openai as any, model: config.model });
 }
 
