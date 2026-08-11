@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { CarouselDesignEditor, type DesignScope } from './carousel-design-editor.component';
+import { CreationOptionsCard } from './creation-options.component';
 
 export type ContentIdea = {
   id?: string;
@@ -76,6 +77,14 @@ export type DesignSpec = {
   elements: DesignElement[];
   renderMode: 'native-overlay' | 'hybrid' | 'ai-composed';
   slideOverrides?: Record<string, Partial<DesignSpec>>;
+};
+
+type CreativeJobState = {
+  id?: string;
+  status?: string;
+  progress?: number;
+  output?: { url?: string };
+  error?: string;
 };
 
 type ActionProps = {
@@ -246,11 +255,25 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
     [args.ideas]
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<'carousel' | 'image' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'copy' | null>(null);
+  const [configuringIdea, setConfiguringIdea] = useState<{ id: string; idea: ContentIdea } | null>(null);
   // Lock the actions while the args are still streaming in, and again once the
   // user has picked an idea and the follow-up request is on its way.
-  const isBusy = !isAwaitingUser(status) || pendingAction !== null;
+  const isBusy = !isAwaitingUser(status) || pendingAction !== null || configuringIdea !== null;
   const sendAction = useArtifactResponder(respond, onAction);
+  const optionsArgs = useMemo(
+    () => configuringIdea ? {
+      creationType: 'carousel',
+      title: 'Defina a estrutura da sua copy',
+      brief: 'Escolha a plataforma, o formato, o tom, o estilo e a quantidade de slides. Depois eu gero a copy completa para você revisar.',
+      suggestedPlatform: configuringIdea.idea.platform,
+      suggestedAspectRatio: configuringIdea.idea.platform?.toLowerCase().includes('linkedin') ? '4:5' : '4:5',
+      suggestedTone: 'direto',
+      suggestedStyle: 'minimalista',
+      suggestedSlideCount: 7,
+    } : null,
+    [configuringIdea]
+  );
 
   return (
     <section className="cf-content-artifact cf-content-ideas" aria-label="Ideias prontas">
@@ -286,38 +309,42 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
                   disabled={isBusy}
                   onClick={() => {
                     setSelectedId(id);
-                    setPendingAction('carousel');
-                    void sendAction({ action: 'transform-carousel', selectedIdea: idea, selectedIdeaId: id }).catch(() => {
-                      setPendingAction(null);
-                    });
+                    setConfiguringIdea({ id, idea });
                   }}
                 >
-                  Transformar em carrossel
-                </button>
-                <button
-                  type="button"
-                  className="is-secondary"
-                  disabled={isBusy}
-                  onClick={() => {
-                    setSelectedId(id);
-                    setPendingAction('image');
-                    void sendAction({ action: 'generate-image', selectedIdea: idea, selectedIdeaId: id }).catch(() => {
-                      setPendingAction(null);
-                    });
-                  }}
-                >
-                  Criar imagem
+                  Gerar Copy
                 </button>
               </div>
             </article>
           );
         })}
       </div>
+      {configuringIdea && optionsArgs && (
+        <CreationOptionsCard
+          args={optionsArgs}
+          status="executing"
+          respond={async (value) => {
+            setConfiguringIdea(null);
+            if (!value?.confirmed) return;
+            setPendingAction('copy');
+            try {
+              await sendAction({
+                action: 'transform-carousel',
+                selectedIdea: configuringIdea.idea,
+                selectedIdeaId: configuringIdea.id,
+                creationType: 'carousel',
+                options: value.options,
+                confirmed: true,
+              });
+            } catch {
+              setPendingAction(null);
+            }
+          }}
+        />
+      )}
       {pendingAction && (
         <p className="cf-content-artifact__pending" role="status">
-          {pendingAction === 'carousel'
-            ? 'Preparando a copy completa e a estrutura dos slides…'
-            : 'Preparando as opções do seu visual…'}
+          Gerando a copy completa com as opções escolhidas…
         </p>
       )}
     </section>
@@ -405,6 +432,18 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
 
   const slideKey = (slide: CarouselPreviewSlide, index: number) => slide.id || String(slide.index ?? index);
 
+  const waitForCreativeJob = async (jobId: string): Promise<CreativeJobState> => {
+    const terminalStatuses = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'REFUNDED']);
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const response = await apiFetch(`/creative/jobs/${encodeURIComponent(jobId)}`);
+      if (!response.ok) throw new Error(`Não foi possível acompanhar a geração (HTTP ${response.status})`);
+      const job = (await response.json()) as CreativeJobState;
+      if (terminalStatuses.has(String(job.status || '').toUpperCase())) return job;
+      await new Promise((resolve) => window.setTimeout(resolve, 1500));
+    }
+    throw new Error('A geração demorou mais que o esperado. O job continua disponível em seus projetos.');
+  };
+
   // Mirrors (loosely) what the server hashes for its own idempotency: prompt,
   // effective per-slide design, and aspect ratio. Doesn't need to match the
   // server byte-for-byte — it only has to change when the server's would.
@@ -470,25 +509,55 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
       }
       const data: {
         projectId?: string;
-        jobs?: Array<{ slideId?: string; slideIndex: number; job?: { status?: string; output?: { url?: string } }; error?: string }>;
+        jobs?: Array<{ slideId?: string; slideIndex: number; job?: CreativeJobState; error?: string }>;
       } = await response.json();
       if (data.projectId) setProjectId(data.projectId);
-      const jobsBySlide = new Map((data.jobs || []).map((entry) => [entry.slideId || String(entry.slideIndex), entry]));
-      let anyFailed = false;
+      const entries = data.jobs || [];
+      const jobsBySlide = new Map(entries.map((entry) => [entry.slideId || String(entry.slideIndex), entry]));
+      setDraftSlides((current) =>
+        current.map((slide, index) => {
+          const entry = jobsBySlide.get(slideKey(slide, index));
+          if (!entry || entry.error || entry.job?.status === 'SUCCEEDED') return slide;
+          return { ...slide, status: 'renderizando…' };
+        })
+      );
+
+      const settledEntries = await Promise.all(
+        entries.map(async (entry) => {
+          if (!entry.job?.id || ['SUCCEEDED', 'FAILED', 'CANCELLED', 'REFUNDED'].includes(String(entry.job.status || '').toUpperCase())) {
+            return entry;
+          }
+          try {
+            return { ...entry, job: await waitForCreativeJob(entry.job.id) };
+          } catch (error) {
+            return { ...entry, error: error instanceof Error ? error.message : 'Falha ao acompanhar a geração' };
+          }
+        })
+      );
+
+      const anyFailed = settledEntries.some((entry) => Boolean(entry.error) || ['FAILED', 'CANCELLED', 'REFUNDED'].includes(String(entry.job?.status || '').toUpperCase()));
+      const anySucceeded = settledEntries.some((entry) => entry.job?.status === 'SUCCEEDED' && Boolean(entry.job.output?.url));
       const newFingerprints: Record<string, string> = {};
+      const settledBySlide = new Map(settledEntries.map((entry) => [entry.slideId || String(entry.slideIndex), entry]));
+      settledEntries.forEach((entry) => {
+        if (entry.job?.status !== 'SUCCEEDED' || !entry.job.output?.url) return;
+        const index = draftSlides.findIndex((slide, slideIndex) => slideKey(slide, slideIndex) === (entry.slideId || String(entry.slideIndex)));
+        if (index >= 0) newFingerprints[slideKey(draftSlides[index], index)] = slideFingerprint(draftSlides[index], index);
+      });
       setDraftSlides((current) =>
         current.map((slide, index) => {
           const key = slideKey(slide, index);
-          const entry = jobsBySlide.get(key);
+          const entry = settledBySlide.get(key);
           if (!entry) return slide;
           if (entry.error || entry.job?.status === 'FAILED') {
-            anyFailed = true;
             return { ...slide, status: `Falha ao gerar: ${entry.error || 'erro do provedor'}` };
           }
           const url = entry.job?.output?.url;
           if (entry.job?.status === 'SUCCEEDED' && url) {
-            newFingerprints[key] = slideFingerprint(slide, index);
             return { ...slide, imageUrl: url, status: 'imagem gerada' };
+          }
+          if (!entry.job?.id) {
+            return { ...slide, status: 'Falha ao gerar: o servidor não retornou um job' };
           }
           return slide;
         })
@@ -496,6 +565,8 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
       setGeneratedFingerprints((current) => ({ ...current, ...newFingerprints }));
       if (anyFailed) {
         setGenerationError('Algumas imagens falharam. Revise os slides marcados e tente novamente.');
+      } else if (!anySucceeded) {
+        setGenerationError('A geração foi iniciada, mas o servidor ainda não disponibilizou as imagens. Tente novamente em instantes.');
       }
     } catch (error) {
       setGenerationError(error instanceof Error ? error.message : 'Nao foi possivel gerar as imagens.');
@@ -591,7 +662,7 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
                 <strong>Copy do slide {active + 1}</strong>
                 <p>Revise o texto antes de aprovar a geração das imagens.</p>
               </div>
-              <span>Etapa 1 de 2</span>
+              <span>Etapa 2 de 2</span>
             </div>
             <label>
               Título
@@ -626,7 +697,7 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
                   void generateCarouselImages();
                 }}
               >
-                {submitting ? 'Gerando imagens…' : (<>Aprovar copy e gerar imagens <span aria-hidden="true">→</span></>)}
+                {submitting ? 'Gerando imagens…' : (<>Gerar imagens <span aria-hidden="true">→</span></>)}
               </button>
             </div>
             {generationError ? (

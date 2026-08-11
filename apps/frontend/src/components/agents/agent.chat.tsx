@@ -352,7 +352,7 @@ const StudioChat: FC = () => {
         {actionStatus && (
           <div className="cf-studio__action-status" role="status" aria-live="polite">
             {actionStatus === 'transform-carousel'
-              ? 'Preparando a copy completa e a prévia do carrossel…'
+              ? 'Gerando a copy completa com as opções escolhidas…'
               : actionStatus === 'generate-image'
                 ? 'Preparando as opções para criar a imagem…'
                 : 'Preparando o próximo passo…'}

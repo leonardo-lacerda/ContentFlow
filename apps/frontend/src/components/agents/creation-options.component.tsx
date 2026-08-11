@@ -67,6 +67,7 @@ const videoDurations: Choice[] = [
 ];
 
 const slideCounts: Choice[] = [
+  { value: '3', label: '3 slides' },
   { value: '5', label: '5 slides' },
   { value: '7', label: '7 slides' },
   { value: '10', label: '10 slides' },
@@ -163,8 +164,10 @@ export function CreationOptionsCard({
   // the user's click (that's when `respond` is handed to it) — it is not a
   // "busy" signal. Lock the buttons once the user already submitted instead.
   const isExecuting = submitting;
-  const title = args.title || `Vamos configurar seu ${typeLabels[type]}`;
-  const brief = args.brief || 'Escolha só o essencial. Você poderá refinar o resultado conversando depois.';
+  const title = args.title || (type === 'carousel' ? 'Vamos definir a estrutura da sua copy' : `Vamos configurar seu ${typeLabels[type]}`);
+  const brief = args.brief || (type === 'carousel'
+    ? 'Escolha a plataforma, o formato, o tom e a quantidade de slides. Depois eu gero a copy completa para você revisar.'
+    : 'Escolha só o essencial. Você poderá refinar o resultado conversando depois.');
   const ratios = type === 'video' ? videoRatios : imageRatios;
 
   const update = (key: keyof CreationOptions, value: string) => {
@@ -211,7 +214,7 @@ export function CreationOptionsCard({
         />
 
         <ChoiceGroup
-          label={type === 'text' ? 'Tom da mensagem' : 'Formato'}
+          label={type === 'text' ? 'Tom da mensagem' : 'Formato da imagem'}
           choices={type === 'text' ? textLengths : ratios}
           value={type === 'text' ? options.length || 'medio' : options.aspectRatio}
           onChange={(value) => update(type === 'text' ? 'length' : 'aspectRatio', value)}
@@ -226,7 +229,7 @@ export function CreationOptionsCard({
           />
         )}
 
-        {type === 'image' && (
+        {(type === 'image' || type === 'carousel') && (
           <ChoiceGroup
             label="Estilo visual"
             choices={visualStyles}
@@ -246,7 +249,7 @@ export function CreationOptionsCard({
 
         {type === 'carousel' && (
           <ChoiceGroup
-            label="Quantidade"
+            label="Quantidade de slides"
             choices={slideCounts}
             value={String(options.slideCount)}
             onChange={(value) => update('slideCount', value)}
@@ -271,7 +274,7 @@ export function CreationOptionsCard({
             onClick={confirm}
             disabled={isExecuting || !respond}
           >
-            {isExecuting ? 'Salvando escolhas…' : 'Continuar com essas opções'}
+            {isExecuting ? 'Preparando copy…' : type === 'carousel' ? 'Gerar Copy' : 'Continuar com essas opções'}
             <span aria-hidden="true">→</span>
           </button>
         </div>
