@@ -7,8 +7,15 @@ import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 type Plan = { code: string; name: string; priceCents: number; monthlyCredits: number };
 type Topup = { code: string; name: string; amountCents: number; credits: number; validityDays?: number };
 
-const money = (cents: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
+const numericValue = (value: unknown, fallback = 0) => {
+  const number = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(number) ? number : fallback;
+};
+
+const formatCredits = (value: unknown) => numericValue(value).toLocaleString('pt-BR');
+
+const money = (cents: unknown) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numericValue(cents) / 100);
 
 export function BillingV2Component() {
   const apiFetch = useFetch();
@@ -22,10 +29,30 @@ export function BillingV2Component() {
   const { data: account, mutate: mutateAccount } = useSWR('/billing/v2/account', load);
   const { data: invoices } = useSWR('/billing/v2/invoices', load);
 
-  const plans: Plan[] = catalog?.plans || [];
-  const topups: Topup[] = catalog?.topups || [];
+  const plans: Plan[] = Array.isArray(catalog?.plans)
+    ? catalog.plans.map((plan: Partial<Plan>) => ({
+        code: plan.code || 'PLAN',
+        name: plan.name || 'Plano ContentFlow',
+        priceCents: numericValue(plan.priceCents),
+        monthlyCredits: numericValue(plan.monthlyCredits),
+      }))
+    : [];
+  const topups: Topup[] = Array.isArray(catalog?.topups)
+    ? catalog.topups.map((topup: Partial<Topup>) => ({
+        code: topup.code || 'TOPUP',
+        name: topup.name || 'Créditos extras',
+        amountCents: numericValue(topup.amountCents),
+        credits: numericValue(topup.credits),
+        validityDays: numericValue(topup.validityDays, 90),
+      }))
+    : [];
   const currentPlan = account?.subscription?.plan?.code || 'FREE';
-  const balance = account?.credits?.balance || { balance: 0, total: 0, reserved: 0 };
+  const rawBalance = account?.credits?.balance;
+  const balance = {
+    balance: numericValue(rawBalance?.balance),
+    total: numericValue(rawBalance?.total),
+    reserved: numericValue(rawBalance?.reserved),
+  };
   const usagePercent = useMemo(() => {
     if (!balance.total) return 0;
     return Math.min(100, Math.round(((balance.total - balance.balance) / balance.total) * 100));
@@ -71,13 +98,13 @@ export function BillingV2Component() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#667085]">Seu saldo</p>
-            <p className="mt-1 text-3xl font-bold">{balance.balance.toLocaleString('pt-BR')} créditos</p>
+            <p className="mt-1 text-3xl font-bold">{formatCredits(balance.balance)} créditos</p>
             <p className="mt-1 text-sm text-[#667085]">Plano atual: <strong>{currentPlan}</strong>{account?.subscription?.currentPeriodEnd ? ` · renova em ${new Date(account.subscription.currentPeriodEnd).toLocaleDateString('pt-BR')}` : ''}</p>
           </div>
           <div className="min-w-[260px] flex-1 max-w-[420px]">
             <div className="mb-2 flex justify-between text-xs text-[#667085]"><span>Uso do lote atual</span><span>{usagePercent}%</span></div>
             <div className="h-3 overflow-hidden rounded-full bg-[#EEF1EA]"><div className="h-full rounded-full bg-[#B8EE35] transition-all" style={{ width: `${usagePercent}%` }} /></div>
-            <p className="mt-2 text-xs text-[#667085]">{balance.reserved.toLocaleString('pt-BR')} créditos reservados em gerações em andamento.</p>
+            <p className="mt-2 text-xs text-[#667085]">{formatCredits(balance.reserved)} créditos reservados em gerações em andamento.</p>
           </div>
         </div>
       </section>
@@ -91,7 +118,7 @@ export function BillingV2Component() {
             return <article key={plan.code} className={`flex flex-col rounded-2xl border p-5 ${isCurrent ? 'border-[#9BCF21] bg-[#F7FBEA]' : 'border-[#D4D9CC] bg-white'}`}>
               <div className="flex items-center justify-between"><h3 className="text-lg font-bold">{plan.name}</h3>{isCurrent && <span className="rounded-full bg-[#DDF7A3] px-2 py-1 text-xs font-semibold">Atual</span>}</div>
               <p className="mt-4 text-3xl font-bold">{money(plan.priceCents)}<span className="text-sm font-normal text-[#667085]">/mês</span></p>
-              <p className="mt-2 text-sm font-semibold">{plan.monthlyCredits.toLocaleString('pt-BR')} créditos mensais</p>
+              <p className="mt-2 text-sm font-semibold">{formatCredits(plan.monthlyCredits)} créditos mensais</p>
               <button disabled={isCurrent || action === plan.code} className="mt-6 rounded-xl bg-[#14171A] px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40" onClick={() => run(plan.code, async () => {
                 if (account?.subscription?.providerSubscriptionId && isUpgrade) return (await apiFetch('/billing/v2/change-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planCode: plan.code }) })).json();
                 return (await apiFetch('/billing/v2/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planCode: plan.code }) })).json();
@@ -104,7 +131,7 @@ export function BillingV2Component() {
       <section>
         <div className="mb-4"><h2 className="text-xl font-bold">Comprar créditos extras</h2><p className="text-sm text-[#667085]">Recargas avulsas, sem renovação automática, válidas por 90 dias.</p></div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {topups.map((topup) => <article key={topup.code} className="rounded-2xl border border-[#D4D9CC] bg-white p-5"><p className="font-bold">{topup.name}</p><p className="mt-2 text-2xl font-bold">{money(topup.amountCents)}</p><p className="mt-1 text-sm text-[#667085]">{topup.credits.toLocaleString('pt-BR')} créditos · 90 dias</p><button disabled={action === topup.code} className="mt-5 w-full rounded-xl border border-[#14171A] px-3 py-2 text-sm font-semibold" onClick={() => run(topup.code, async () => (await apiFetch('/billing/v2/topups/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceCode: topup.code }) })).json())}>{action === topup.code ? 'Processando…' : 'Comprar créditos'}</button></article>)}
+          {topups.map((topup) => <article key={topup.code} className="rounded-2xl border border-[#D4D9CC] bg-white p-5"><p className="font-bold">{topup.name}</p><p className="mt-2 text-2xl font-bold">{money(topup.amountCents)}</p><p className="mt-1 text-sm text-[#667085]">{formatCredits(topup.credits)} créditos · {topup.validityDays || 90} dias</p><button disabled={action === topup.code} className="mt-5 w-full rounded-xl border border-[#14171A] px-3 py-2 text-sm font-semibold" onClick={() => run(topup.code, async () => (await apiFetch('/billing/v2/topups/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceCode: topup.code }) })).json())}>{action === topup.code ? 'Processando…' : 'Comprar créditos'}</button></article>)}
         </div>
       </section>
 
@@ -115,4 +142,3 @@ export function BillingV2Component() {
     </div>
   );
 }
-
