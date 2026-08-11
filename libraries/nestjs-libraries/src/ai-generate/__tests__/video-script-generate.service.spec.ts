@@ -1,18 +1,15 @@
 import { VideoScriptGenerateService } from '../video-script-generate.service';
 
 // Use a shared mock object that jest.mock factory can access
-const mockOpenAIInstance = {
-  chat: {
-    completions: {
-      parse: jest.fn(),
-    },
-  },
-};
+var mockOpenAIInstance: any;
 
-jest.mock('openai', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation(() => mockOpenAIInstance),
-}));
+jest.mock('openai', () => {
+  mockOpenAIInstance = { chat: { completions: { parse: jest.fn() } } };
+  return {
+    __esModule: true,
+    default: jest.fn().mockImplementation(() => mockOpenAIInstance),
+  };
+});
 
 jest.mock('openai/helpers/zod', () => ({
   zodResponseFormat: jest.fn().mockReturnValue({}),
@@ -25,6 +22,10 @@ const mockBrandProfileService = {
 
 const mockCarouselProjectService = {
   getProject: jest.fn(),
+};
+
+const mockContentIdeaService = {
+  getIdea: jest.fn(),
 };
 
 const mockGenerationJobService = {
@@ -43,6 +44,7 @@ describe('VideoScriptGenerateService', () => {
     service = new VideoScriptGenerateService(
       mockBrandProfileService as any,
       mockCarouselProjectService as any,
+      mockContentIdeaService as any,
       mockGenerationJobService as any,
     );
 

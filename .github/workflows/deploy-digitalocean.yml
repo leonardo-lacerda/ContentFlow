@@ -1,19 +1,6 @@
 name: Deploy to DigitalOcean
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'apps/frontend/**'
-      - 'apps/backend/**'
-      - 'apps/orchestrator/**'
-      - 'libraries/**'
-      - 'Dockerfile.backend'
-      - 'Dockerfile.dev'
-      - 'docker-compose*.yaml'
-      - 'var/docker/**'
-      - '.github/workflows/deploy-digitalocean.yml'
   workflow_dispatch:
 
 concurrency:

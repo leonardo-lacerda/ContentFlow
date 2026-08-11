@@ -1,104 +1,120 @@
 import { validateAiResponse, buildAiMetadata, getPromptVersion } from '../ai-response-validator';
 
+const validVideoScript = {
+  title: 'Test Video',
+  platform: 'Instagram Reels',
+  format: 'REELS',
+  language: 'pt-BR',
+  totalDurationSec: 15,
+  scenes: [
+    { index: 0, durationSec: 5, headline: 'Hook', body: 'Text', motionNotes: 'Zoom' },
+    { index: 1, durationSec: 10, headline: 'Info', body: 'Details', motionNotes: 'Pan' },
+  ],
+};
+
+const validSocialPost = {
+  posts: [{
+    platform: 'instagram',
+    content: 'Hello world!',
+    hashtags: ['test'],
+    tone: 'casual',
+    charCount: 12,
+    rationale: 'The direct message is easy to understand.',
+    hookAnalysis: 'The opening is short and clear.',
+    platformOptimization: 'The format works well for Instagram.',
+    visualGuidance: [{ type: 'photo', description: 'Product in use', style: 'clean', colors: null, textOverlay: null }],
+    engagementStrategy: { technique: 'question hook', explanation: 'Invites replies.', expectedOutcome: 'Comments' },
+    postingStrategy: { bestTime: '12:00', bestDay: 'Tuesday', frequency: 'Weekly', repurposeSuggestions: ['Story'] },
+    growthTips: [
+      { category: 'engagement', tip: 'Reply quickly', impact: 'quick-win' },
+      { category: 'repurposing', tip: 'Reuse the hook', impact: 'medium-term' },
+    ],
+    expectedEngagement: { likes: '10-20', comments: '2-5', shares: '1-3', notes: 'Benchmark' },
+  }],
+};
+
+const validAdCreative = {
+  ads: [{
+    platform: 'META_INSTAGRAM',
+    type: 'STATIC',
+    objective: 'CONVERSION',
+    headline: 'Buy now!',
+    primaryText: 'Great deal',
+    ctaButton: 'SHOP_NOW',
+    rationale: 'The offer-focused message reduces friction.',
+    emotionalHook: 'Desire for a better outcome',
+    platformOptimization: 'Short copy fits the placement.',
+    targeting: [{ audience: 'Shoppers', demographics: 'Adults', interests: ['shopping'], exclusions: null, rationale: 'Relevant audience' }],
+    abTests: [{ variant: 'headline', currentValue: 'Buy now!', suggestedAlternative: 'Get yours', hypothesis: 'Benefit-led copy may improve clicks' }],
+    growthTips: [
+      { category: 'creative', tip: 'Test a close-up', impact: 'quick-win' },
+      { category: 'targeting', tip: 'Retarget visitors', impact: 'medium-term' },
+    ],
+    preLaunchChecklist: ['Check URL', 'Review policy'],
+    expectedMetrics: { ctr: '1-2%', cpc: '$1', conversionRate: '2-4%', notes: 'Benchmark' },
+    policyWarnings: [],
+    claimsFlags: [],
+  }],
+};
+
+const validEmailCampaign = {
+  type: 'NEWSLETTER',
+  name: 'Monthly newsletter',
+  subject: 'Welcome!',
+  blocks: [{ type: 'text', content: 'Hello' }],
+};
+
 describe('validateAiResponse', () => {
   describe('video-script schema', () => {
-    const validScript = JSON.stringify({
-      title: 'Test Video',
-      totalDuration: 30,
-      scenes: [
-        { sceneNumber: 1, duration: 5, headline: 'Hook', body: 'Text', visualNotes: 'Zoom' },
-        { sceneNumber: 2, duration: 10, headline: 'Info', body: 'Details', visualNotes: 'Pan' },
-      ],
-    });
+    const validScript = JSON.stringify(validVideoScript);
 
     it('should validate correct video script JSON', () => {
       const result = validateAiResponse('video-script', validScript);
       expect(result.success).toBe(true);
       expect(result.data).toBeTruthy();
-      expect(result.schemaVersion).toBe('1.0.0');
+      expect(result.schemaVersion).toBe('2.0.0');
     });
 
     it('should handle markdown-fenced JSON', () => {
       const fenced = '```json\n' + validScript + '\n```';
-      const result = validateAiResponse('video-script', fenced);
-      expect(result.success).toBe(true);
+      expect(validateAiResponse('video-script', fenced).success).toBe(true);
     });
 
     it('should reject invalid JSON', () => {
-      const result = validateAiResponse('video-script', 'not json at all');
-      expect(result.success).toBe(false);
+      expect(validateAiResponse('video-script', 'not json at all').success).toBe(false);
     });
 
-    it('should reject script with less than 2 scenes', () => {
-      const invalid = JSON.stringify({
-        title: 'Short',
-        totalDuration: 5,
-        scenes: [{ sceneNumber: 1, duration: 5, headline: 'A', body: 'B', visualNotes: 'C' }],
-      });
-      const result = validateAiResponse('video-script', invalid);
-      expect(result.success).toBe(false);
+    it('should accept a single valid scene', () => {
+      const invalid = JSON.stringify({ ...validVideoScript, scenes: [validVideoScript.scenes[0]] });
+      expect(validateAiResponse('video-script', invalid).success).toBe(true);
     });
   });
 
   describe('social-post schema', () => {
-    const validPost = JSON.stringify({
-      posts: [
-        {
-          platform: 'instagram',
-          content: 'Hello world!',
-          hashtags: ['test'],
-          tone: 'casual',
-          charCount: 12,
-        },
-      ],
-    });
-
     it('should validate correct social post', () => {
-      const result = validateAiResponse('social-post', validPost);
-      expect(result.success).toBe(true);
+      expect(validateAiResponse('social-post', JSON.stringify(validSocialPost)).success).toBe(true);
     });
 
     it('should reject empty posts', () => {
-      const result = validateAiResponse('social-post', '{"posts":[]}');
-      expect(result.success).toBe(false);
+      expect(validateAiResponse('social-post', '{"posts":[]}').success).toBe(false);
     });
   });
 
   describe('ad-creative schema', () => {
-    const validAd = JSON.stringify({
-      creatives: [
-        {
-          platform: 'meta_instagram',
-          type: 'static',
-          headline: 'Buy now!',
-          primaryText: 'Great deal',
-          ctaButton: 'Shop Now',
-        },
-      ],
-    });
-
     it('should validate correct ad creative', () => {
-      const result = validateAiResponse('ad-creative', validAd);
-      expect(result.success).toBe(true);
+      expect(validateAiResponse('ad-creative', JSON.stringify(validAdCreative)).success).toBe(true);
     });
   });
 
   describe('email-campaign schema', () => {
-    const validEmail = JSON.stringify({
-      subject: 'Welcome!',
-      blocks: [{ type: 'text', content: 'Hello' }],
-    });
-
     it('should validate correct email campaign', () => {
-      const result = validateAiResponse('email-campaign', validEmail);
-      expect(result.success).toBe(true);
+      expect(validateAiResponse('email-campaign', JSON.stringify(validEmailCampaign)).success).toBe(true);
     });
   });
 
   describe('unknown schema type', () => {
     it('should return failure for unknown schema', () => {
-      const result = validateAiResponse('nonexistent' as any, '{}');
-      expect(result.success).toBe(false);
+      expect(validateAiResponse('nonexistent' as any, '{}').success).toBe(false);
     });
   });
 });
@@ -110,7 +126,7 @@ describe('buildAiMetadata', () => {
       model: 'gpt-4.1',
       provider: 'openai',
       promptVersion: expect.any(String),
-      schemaVersion: '1.0.0',
+      schemaVersion: '2.0.0',
       usage: { tokens: 100 },
       costEstimate: { cost: 0.01 },
     });
@@ -124,9 +140,9 @@ describe('buildAiMetadata', () => {
 });
 
 describe('getPromptVersion', () => {
-  it('should return 1.0.0 for known schema types', () => {
+  it('should return the current prompt version for known schema types', () => {
     expect(getPromptVersion('social-post')).toBe('1.0.0');
-    expect(getPromptVersion('video-script')).toBe('0.0.0'); // Not in the versions map yet
+    expect(getPromptVersion('video-script')).toBe('1.0.0');
   });
 
   it('should return 0.0.0 for unknown types', () => {

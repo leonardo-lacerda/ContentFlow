@@ -668,6 +668,9 @@ importers:
       '@crxjs/vite-plugin':
         specifier: ^2.0.0-beta.32
         version: 2.3.0
+      '@microsoft/eslint-formatter-sarif':
+        specifier: 2.1.7
+        version: 2.1.7
       '@nestjs/schematics':
         specifier: ^10.0.1
         version: 10.2.3(chokidar@3.5.3)(typescript@5.5.4)
@@ -4466,6 +4469,9 @@ packages:
     resolution: {integrity: sha512-WnoxUT02qawZSvsoPSwe7YOqOk0APysIHugiD3dYdc/QNeoigN4PD8mmmtmZFKlv8/Z7eERub0BmPkWcJ1BI+w==}
     peerDependencies:
       react: 19.2.4
+
+  '@microsoft/eslint-formatter-sarif@2.1.7':
+    resolution: {integrity: sha512-gDNc2elHjX0eqk34HxxRxEwEL49SrvXImOoK1bZHq7IDYfuY1xY/CUx8/gOWgvwf6Qv2Yy3HirzjIvKXKH82vQ==}
 
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
@@ -13131,6 +13137,10 @@ packages:
   jsc-safe-url@0.2.4:
     resolution: {integrity: sha512-0wM3YBWtYePOjfyXQH5MWQ8H7sdk5EXSwZvmSLKk2RboVQ2Bu239jycHDz5J/8Blf3K0Qnoy2b6xD+z10MFB+Q==}
 
+  jschardet@3.1.4:
+    resolution: {integrity: sha512-/kmVISmrwVwtyYU40iQUOp3SUPk2dhNCMsZBQX0R1/jZ8maaXJ/oZIzUOiyOqcgtLnETFKYChbJ5iDC/eWmFHg==}
+    engines: {node: '>=0.1.90'}
+
   jsdom@20.0.3:
     resolution: {integrity: sha512-SYhBvTh89tTfCD/CRdSOm13mOBa42iTaTyfyEWBdKcGdPxPtLFBXuHR8XHb33YNYaP+lLbmSvBTsnoesCNJEsQ==}
     engines: {node: '>=14'}
@@ -17678,6 +17688,9 @@ packages:
   utf-8-validate@6.0.6:
     resolution: {integrity: sha512-q3l3P9UtEEiAHcsgsqTgf9PPjctrDWoIXW3NpOHFdRDbLvu4DLIcxHangJ4RLrWkBcKjmcs/6NkerI8T/rE4LA==}
     engines: {node: '>=6.14.2'}
+
+  utf8@3.0.0:
+    resolution: {integrity: sha512-E8VjFIQ/TyQgp+TZfS6l8yp/xWppSAHzidGiRrqe4bK4XP9pTRyKFgGJpO3SN7zdX4DeomTrwaseCHovfpFcqQ==}
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -22474,6 +22487,15 @@ snapshots:
       camelcase: 5.3.1
       ncp: 2.0.0
       react: 19.2.4
+
+  '@microsoft/eslint-formatter-sarif@2.1.7':
+    dependencies:
+      eslint: 8.57.0
+      jschardet: 3.1.4
+      lodash: 4.17.23
+      utf8: 3.0.0
+    transitivePeerDependencies:
+      - supports-color
 
   '@microsoft/tsdoc@0.15.1': {}
 
@@ -33758,6 +33780,8 @@ snapshots:
 
   jsc-safe-url@0.2.4: {}
 
+  jschardet@3.1.4: {}
+
   jsdom@20.0.3(bufferutil@4.1.0)(canvas@2.11.2)(utf-8-validate@5.0.10):
     dependencies:
       abab: 2.0.6
@@ -39291,6 +39315,8 @@ snapshots:
     dependencies:
       node-gyp-build: 4.8.4
     optional: true
+
+  utf8@3.0.0: {}
 
   util-deprecate@1.0.2: {}
 

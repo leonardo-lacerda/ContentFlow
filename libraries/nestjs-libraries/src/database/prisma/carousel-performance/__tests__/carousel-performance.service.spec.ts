@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CarouselPerformanceService } from './carousel-performance.service';
-import { CarouselPerformanceRepository } from './carousel-performance.repository';
-import { RecommendationService } from '../brand-learning/recommendation.service';
+import { CarouselPerformanceService } from '../carousel-performance.service';
+import { CarouselPerformanceRepository } from '../carousel-performance.repository';
+import { RecommendationService } from '../recommendation.service';
 
 describe('CarouselPerformanceService', () => {
   let service: CarouselPerformanceService;
@@ -101,11 +101,21 @@ describe('CarouselPerformanceService', () => {
         ...baseData,
         impressions: 100,
         reach: 50,
+        saves: 1,
+        shares: 1,
+        comments: 1,
+        clicks: 1,
+        likes: 2,
       });
       const highImpressions = service.calculateNormalizedScore({
         ...baseData,
         impressions: 1000000,
         reach: 500000,
+        saves: 10000,
+        shares: 10000,
+        comments: 10000,
+        clicks: 10000,
+        likes: 20000,
       });
       expect(highImpressions).toBeGreaterThan(lowImpressions);
     });

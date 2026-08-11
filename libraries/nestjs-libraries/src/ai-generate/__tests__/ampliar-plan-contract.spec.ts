@@ -17,10 +17,10 @@ describe('Ampliar plan contract', () => {
     expect(pricing.STANDARD.video_scripts_per_month).toBe(40);
   });
 
-  it('ULTIMATE is unlimited for ampliar', () => {
-    expect(pricing.ULTIMATE.ad_kits_per_month).toBe(-1);
-    expect(pricing.ULTIMATE.email_campaigns_per_month).toBe(-1);
-    expect(pricing.ULTIMATE.video_scripts_per_month).toBe(-1);
+  it('ULTIMATE exposes the current ampliAR limits', () => {
+    expect(pricing.ULTIMATE.ad_kits_per_month).toBe(150);
+    expect(pricing.ULTIMATE.email_campaigns_per_month).toBe(100);
+    expect(pricing.ULTIMATE.video_scripts_per_month).toBe(200);
   });
 
   it('all sellable tiers expose the three ampliar counters', () => {

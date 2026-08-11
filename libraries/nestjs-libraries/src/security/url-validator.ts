@@ -69,7 +69,9 @@ export class UrlValidator {
       }
 
       // 3. Validar hostname
-      const hostname = parsed.hostname.toLowerCase();
+      // URL.hostname keeps brackets around IPv6 literals in Node. Remove
+      // them before net.isIP so loopback/private IPv6 cannot bypass checks.
+      const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
 
       // Bloquear IPv6 mapeado
       if (hostname.startsWith('::ffff:')) {

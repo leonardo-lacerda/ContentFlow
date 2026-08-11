@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { GenerationCostService } from './generation-cost.service';
-import { GenerationCostRepository } from './generation-cost.repository';
+import { GenerationCostService } from '../generation-cost.service';
+import { GenerationCostRepository } from '../generation-cost.repository';
 
 describe('GenerationCostService', () => {
   let service: GenerationCostService;

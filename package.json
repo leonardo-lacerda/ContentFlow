@@ -43,7 +43,7 @@
     "docker-create": "./var/docker/docker-create.sh",
     "docker-redeploy": "node var/docker/redeploy.mjs",
     "postinstall": "pnpm run prisma-generate",
-    "test": "jest --coverage --detectOpenHandles --reporters=default --reporters=jest-junit"
+    "test": "jest --config apps/backend/jest.config.ts --coverage --detectOpenHandles --reporters=default --reporters=jest-junit"
   },
   "dependencies": {
     "@ag-ui/mastra": "^1.0.1",
@@ -172,8 +172,8 @@
     "evp_bytestokey": "^1.0.3",
     "facebook-nodejs-business-sdk": "^21.0.5",
     "fast-xml-parser": "^4.5.1",
-    "file-type": "^16.5.4",
     "fflate": "^0.8.2",
+    "file-type": "^16.5.4",
     "google-auth-library": "^9.11.0",
     "googleapis": "^137.1.0",
     "hot-reload-extension-vite": "^1.0.13",
@@ -204,8 +204,9 @@
     "nostr-tools": "^2.18.2",
     "openai": "^6.2.0",
     "p-limit": "^3.1.0",
-    "pdf-parse": "1.1.1",
     "parse5": "^6.0.1",
+    "pdf-parse": "1.1.1",
+    "playwright": "^1.52.0",
     "polotno": "^3.0.0-beta.25",
     "posthog-js": "^1.178.0",
     "react": "19.2.4",
@@ -260,11 +261,11 @@
     "yargs": "^17.7.2",
     "yup": "^1.4.0",
     "zod": "^3.25.76",
-    "zustand": "^5.0.5",
-    "playwright": "^1.52.0"
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.32",
+    "@microsoft/eslint-formatter-sarif": "2.1.7",
     "@nestjs/schematics": "^10.0.1",
     "@nestjs/testing": "^10.0.2",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.7",

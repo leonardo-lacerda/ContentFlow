@@ -1,13 +1,15 @@
 import { AdCreativeGenerateService } from '../ad-creative-generate.service';
+import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 
-const mockOpenAIInstance = {
-  chat: { completions: { parse: jest.fn() } },
-};
+var mockOpenAIInstance: any;
 
-jest.mock('openai', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation(() => mockOpenAIInstance),
-}));
+jest.mock('openai', () => {
+  mockOpenAIInstance = { chat: { completions: { parse: jest.fn() } } };
+  return {
+    __esModule: true,
+    default: jest.fn().mockImplementation(() => mockOpenAIInstance),
+  };
+});
 
 jest.mock('openai/helpers/zod', () => ({
   zodResponseFormat: jest.fn().mockReturnValue({}),
@@ -42,6 +44,10 @@ const mockPrismaService = {
   },
 };
 
+const mockPlanLimitsService = {
+  enforceLimit: jest.fn(),
+};
+
 describe('AdCreativeGenerateService', () => {
   let service: AdCreativeGenerateService;
 
@@ -54,6 +60,7 @@ describe('AdCreativeGenerateService', () => {
       mockCarouselProjectService as any,
       mockGenerationJobService as any,
       mockPrismaService as any,
+      mockPlanLimitsService as any,
     );
 
     mockGenerationJobService.createJob.mockResolvedValue({ id: 'job-1' });
@@ -186,6 +193,17 @@ describe('AdCreativeGenerateService', () => {
           headline: 'Buy Now',
           primaryText: 'Great deal',
           ctaButton: 'SHOP_NOW',
+          rationale: 'The offer-focused message reduces friction.',
+          emotionalHook: 'Desire for a better outcome',
+          platformOptimization: 'Short copy fits the placement.',
+          targeting: [{ audience: 'Shoppers', demographics: 'Adults', interests: ['shopping'], exclusions: null, rationale: 'Relevant audience' }],
+          abTests: [{ variant: 'headline', currentValue: 'Buy Now', suggestedAlternative: 'Get yours', hypothesis: 'Benefit-led copy may improve clicks' }],
+          growthTips: [
+            { category: 'creative', tip: 'Test a close-up', impact: 'quick-win' },
+            { category: 'targeting', tip: 'Retarget visitors', impact: 'medium-term' },
+          ],
+          preLaunchChecklist: ['Check URL', 'Review policy'],
+          expectedMetrics: { ctr: '1-2%', cpc: '$1', conversionRate: '2-4%', notes: 'Benchmark' },
           policyWarnings: [],
           claimsFlags: [],
         },

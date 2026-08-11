@@ -1,15 +1,6 @@
 name: Deploy Frontend to Vercel
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'apps/frontend/**'
-      - 'libraries/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - '.github/workflows/deploy-vercel.yml'
   workflow_dispatch:
 
 concurrency:

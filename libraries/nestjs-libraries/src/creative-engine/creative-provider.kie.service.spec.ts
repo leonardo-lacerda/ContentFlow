@@ -16,7 +16,7 @@ describe('CreativeProviderService with Kie', () => {
 
     expect(service.quote('video-generation', { prompt: 'test', durationSec: 5 })).toEqual(expect.objectContaining({
       provider: 'kie',
-      model: 'veo3_fast',
+      model: 'seedance-2.5',
     }));
     expect(service.listCapabilities()).toEqual(expect.arrayContaining([
       { provider: 'kie', capability: 'image-generation' },

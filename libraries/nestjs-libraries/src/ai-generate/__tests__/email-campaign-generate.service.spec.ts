@@ -1,13 +1,16 @@
 import { EmailCampaignGenerateService } from '../email-campaign-generate.service';
+import { EmailCampaignService } from '@gitroom/nestjs-libraries/database/prisma/email-campaigns/email-campaign.service';
+import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 
-const mockOpenAIInstance = {
-  chat: { completions: { parse: jest.fn() } },
-};
+var mockOpenAIInstance: any;
 
-jest.mock('openai', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation(() => mockOpenAIInstance),
-}));
+jest.mock('openai', () => {
+  mockOpenAIInstance = { chat: { completions: { parse: jest.fn() } } };
+  return {
+    __esModule: true,
+    default: jest.fn().mockImplementation(() => mockOpenAIInstance),
+  };
+});
 
 jest.mock('openai/helpers/zod', () => ({
   zodResponseFormat: jest.fn().mockReturnValue({}),
@@ -33,6 +36,9 @@ const mockGenerationJobService = {
   failJob: jest.fn(),
 };
 
+const mockEmailCampaignService = {};
+const mockPlanLimitsService = { enforceLimit: jest.fn() };
+
 describe('EmailCampaignGenerateService', () => {
   let service: EmailCampaignGenerateService;
 
@@ -44,6 +50,8 @@ describe('EmailCampaignGenerateService', () => {
       mockContentIdeaService as any,
       mockCarouselProjectService as any,
       mockGenerationJobService as any,
+      mockEmailCampaignService as any,
+      mockPlanLimitsService as any,
     );
 
     mockGenerationJobService.createJob.mockResolvedValue({ id: 'job-1' });
@@ -125,7 +133,7 @@ describe('EmailCampaignGenerateService', () => {
       name: 'Newsletter',
     }).catch(() => {});
 
-    expect(mockContentIdeaService.getIdea).toHaveBeenCalledWith('idea-1');
+    expect(mockContentIdeaService.getIdea).toHaveBeenCalledWith('idea-1', 'org-1');
   });
 
   it('should use carousel project when provided', async () => {
@@ -145,7 +153,7 @@ describe('EmailCampaignGenerateService', () => {
       name: 'Newsletter',
     }).catch(() => {});
 
-    expect(mockCarouselProjectService.getProject).toHaveBeenCalledWith('proj-1');
+    expect(mockCarouselProjectService.getProject).toHaveBeenCalledWith('proj-1', 'org-1');
   });
 
   it('should fail job on error', async () => {
@@ -166,7 +174,7 @@ describe('EmailCampaignGenerateService', () => {
     it('should render heading blocks', () => {
       const html = service.renderHtml({
         subject: 'Test',
-        blocks: [{ type: 'heading', text: 'Hello', level: 1 }],
+        blocks: [{ type: 'heading', content: 'Hello', level: 'h1' }],
       });
       expect(html).toContain('<h1');
       expect(html).toContain('Hello');
@@ -205,7 +213,7 @@ describe('EmailCampaignGenerateService', () => {
         subject: 'Test',
         blocks: [{ type: 'divider' }],
       });
-      expect(html).toContain('<hr');
+      expect(html).toContain('border-top:1px solid');
     });
 
     it('should render spacer blocks', () => {
