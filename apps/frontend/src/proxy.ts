@@ -148,7 +148,11 @@ export async function proxy(request: NextRequest) {
   }
 
   // If the url is /auth and the cookie exists, redirect to /
-  if (nextUrl.pathname.startsWith('/auth') && authCookie) {
+  if (
+    nextUrl.pathname.startsWith('/auth') &&
+    authCookie &&
+    nextUrl.pathname !== '/auth/login'
+  ) {
     return NextResponse.redirect(new URL(`/${url}`, nextUrl.href));
   }
   if (nextUrl.pathname.startsWith('/auth') && !authCookie) {

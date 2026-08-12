@@ -13,6 +13,23 @@ import { OauthProvider } from '@gitroom/frontend/components/auth/providers/oauth
 import { GoogleProvider } from '@gitroom/frontend/components/auth/providers/google.provider';
 import { useVariables } from '@gitroom/react/helpers/variable.context';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
+import { useSearchParams } from 'next/navigation';
+
+function getSafeReturnUrl(value: string | null) {
+  if (!value || typeof window === 'undefined') return null;
+  try {
+    const target = new URL(value, window.location.origin);
+    if (target.origin !== window.location.origin) return null;
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return null;
+  }
+}
+
+function persistAuthCookie(token: string) {
+  document.cookie = `auth=${encodeURIComponent(token)}; Max-Age=31536000; Path=/; SameSite=Lax`;
+}
+
 type Inputs = {
   email: string;
   password: string;
@@ -24,6 +41,7 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const [notActivated, setNotActivated] = useState(false);
   const { isGeneral, genericOauth } = useVariables();
+  const searchParams = useSearchParams();
   const resolver = useMemo(() => {
     return classValidatorResolver(LoginUserDto);
   }, []);
@@ -45,6 +63,18 @@ export function Login() {
         provider: 'LOCAL',
       }),
     });
+    if (login.ok) {
+      const responseAuth = login.headers.get('auth');
+      if (responseAuth) persistAuthCookie(responseAuth);
+
+      const returnUrl =
+        getSafeReturnUrl(searchParams.get('returnUrl')) ||
+        getSafeReturnUrl(localStorage.getItem('returnUrl')) ||
+        '/';
+      localStorage.removeItem('returnUrl');
+      window.location.replace(returnUrl);
+      return;
+    }
     if (login.status === 400) {
       const errorMessage = await login.text();
       if (errorMessage === 'User is not activated') {

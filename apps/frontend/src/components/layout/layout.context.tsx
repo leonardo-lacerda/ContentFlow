@@ -61,7 +61,12 @@ function LayoutContextInner(params: { children: ReactNode }) {
       const reloadOrOnboarding =
         response?.headers?.get('reload') ||
         response?.headers?.get('onboarding');
+      // Login performs its own safe, explicit navigation after persisting the
+      // auth token and consuming returnUrl. Avoid racing that flow with the
+      // generic reload handler below.
+      const isLoginRequest = url === '/auth/login';
       if (reloadOrOnboarding) {
+        if (isLoginRequest) return true;
         const getAndClear = returnUrl.getAndClear();
         if (getAndClear) {
           window.location.href = getAndClear;
