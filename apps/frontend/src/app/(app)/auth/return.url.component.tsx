@@ -6,8 +6,16 @@ const ReturnUrlComponent: FC = () => {
   const params = useSearchParams();
   const url = params.get('returnUrl');
   useEffect(() => {
-    if (url?.indexOf?.('http')! > -1) {
-      localStorage.setItem('returnUrl', url!);
+    if (!url) return;
+    try {
+      const targetUrl = new URL(url, window.location.origin);
+      if (targetUrl.origin !== window.location.origin) return;
+      localStorage.setItem(
+        'returnUrl',
+        `${targetUrl.pathname}${targetUrl.search}`
+      );
+    } catch {
+      // Ignore malformed return URLs and keep the normal post-login flow.
     }
   }, [url]);
   return null;

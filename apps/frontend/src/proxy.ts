@@ -76,9 +76,12 @@ export async function proxy(request: NextRequest) {
     if (returnUrl) {
       try {
         const targetUrl = new URL(returnUrl, nextUrl.href);
-        if (targetUrl.origin === nextUrl.origin) {
-          loginUrl.searchParams.set('returnUrl', targetUrl.href);
-        }
+        // Keep only the local path. The app may run behind a reverse proxy,
+        // where nextUrl.origin can be the internal frontend origin.
+        loginUrl.searchParams.set(
+          'returnUrl',
+          `${targetUrl.pathname}${targetUrl.search}`
+        );
       } catch {
         // Ignore malformed return URLs and continue to the regular login page.
       }
@@ -120,7 +123,10 @@ export async function proxy(request: NextRequest) {
   // lands back in the admin area.
   if (isAdminPath && !authCookie) {
     const loginUrl = new URL('/auth/login', nextUrl.href);
-    loginUrl.searchParams.set('returnUrl', nextUrl.href);
+    loginUrl.searchParams.set(
+      'returnUrl',
+      `${nextUrl.pathname}${nextUrl.search}`
+    );
     return NextResponse.redirect(loginUrl);
   }
 
