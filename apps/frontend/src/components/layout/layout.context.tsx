@@ -83,6 +83,25 @@ function LayoutContextInner(params: { children: ReactNode }) {
       }
 
       if (response.status === 401 || response?.headers?.get('logout')) {
+        const isAdminRoute =
+          typeof window !== 'undefined' &&
+          window.location.pathname.startsWith('/admin');
+        if (isAdminRoute) {
+          const returnUrl = encodeURIComponent(window.location.href);
+          if (!isSecured) {
+            // In local/non-secure mode the auth cookie is readable by the
+            // browser, so clear it before returning to the login screen.
+            setCookie('auth', '', -10);
+            setCookie('showorg', '', -10);
+            setCookie('impersonate', '', -10);
+            window.location.href = `/auth/login?returnUrl=${returnUrl}`;
+          } else {
+            // In production the cookie is httpOnly; let the server clear it
+            // and preserve the admin destination through the logout flow.
+            window.location.href = `/auth/logout?returnUrl=${returnUrl}`;
+          }
+          return true;
+        }
         if (!isSecured) {
           // Cookies nao-seguros: o JS consegue limpar e voltar para a landing.
           setCookie('auth', '', -10);

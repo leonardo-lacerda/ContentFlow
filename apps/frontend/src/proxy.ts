@@ -71,8 +71,20 @@ export async function proxy(request: NextRequest) {
 
   // If the URL is logout, delete the cookie and redirect to login
   if (nextUrl.href.indexOf('/auth/logout') > -1) {
+    const loginUrl = new URL('/auth/login', nextUrl.href);
+    const returnUrl = nextUrl.searchParams.get('returnUrl');
+    if (returnUrl) {
+      try {
+        const targetUrl = new URL(returnUrl, nextUrl.href);
+        if (targetUrl.origin === nextUrl.origin) {
+          loginUrl.searchParams.set('returnUrl', targetUrl.href);
+        }
+      } catch {
+        // Ignore malformed return URLs and continue to the regular login page.
+      }
+    }
     const response = NextResponse.redirect(
-      new URL('/auth/login', nextUrl.href)
+      loginUrl
     );
     response.cookies.set('auth', '', {
       path: '/',
@@ -98,6 +110,20 @@ export async function proxy(request: NextRequest) {
 
   const org = nextUrl.searchParams.get('org');
   const url = new URL(nextUrl).search;
+  const isAdminPath =
+    nextUrl.pathname === '/admin' || nextUrl.pathname.startsWith('/admin/');
+
+  // Admin has a dedicated entry point. Sending an unauthenticated visitor to
+  // `/auth` opens the public registration screen, which looks like the
+  // landing page and loses the route the visitor originally requested. Keep
+  // the destination in the existing return-url flow so a successful login
+  // lands back in the admin area.
+  if (isAdminPath && !authCookie) {
+    const loginUrl = new URL('/auth/login', nextUrl.href);
+    loginUrl.searchParams.set('returnUrl', nextUrl.href);
+    return NextResponse.redirect(loginUrl);
+  }
+
   if (!nextUrl.pathname.startsWith('/auth') && !authCookie) {
     const providers = ['google', 'settings'];
     const findIndex = providers.find((p) => nextUrl.href.indexOf(p) > -1);
