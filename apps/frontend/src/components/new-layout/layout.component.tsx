@@ -28,7 +28,6 @@ import { ContinueProvider } from '@gitroom/frontend/components/layout/continue.p
 import { ContextWrapper } from '@gitroom/frontend/components/layout/user.context';
 import { CopilotKit } from '@copilotkit/react-core';
 import { MantineWrapper } from '@gitroom/react/helpers/mantine.wrapper';
-import { Impersonate } from '@gitroom/frontend/components/layout/impersonate';
 import { AnnouncementBanner } from '@gitroom/frontend/components/layout/announcement.banner';
 import { Title } from '@gitroom/frontend/components/layout/title';
 import { TopMenu } from '@gitroom/frontend/components/layout/top.menu';
@@ -110,7 +109,6 @@ export const LayoutComponent = memo(({ children }: { children: ReactNode }) => {
             <NewSubscription />
             <ContinueProvider />
             <div className="cf-app-shell box-border flex h-[100dvh] max-h-[100dvh] min-h-0 w-full min-w-0 overflow-hidden p-[12px] font-sans">
-              <div>{user?.admin ? <Impersonate /> : <div />}</div>
               {/* ContentFlow v1: FREE tem acesso ao loop (limites no backend). Sem paywall full-screen. */}
               <OnboardingGate>
                 <>

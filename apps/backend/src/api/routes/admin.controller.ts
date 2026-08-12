@@ -1,35 +1,25 @@
-import {
-  Controller,
-  Get,
-  HttpException,
-  Query,
-} from '@nestjs/common';
-import { GetUserFromRequest } from '@gitroom/nestjs-libraries/user/user.from.request';
-import { User } from '@prisma/client';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ErrorsService } from '@gitroom/nestjs-libraries/database/prisma/errors/errors.service';
+import { AdminSessionGuard } from '@gitroom/backend/services/auth/admin/admin-session.guard';
+import { AdminPermissionGuard } from '@gitroom/backend/services/auth/admin/admin-permission.guard';
+import { AdminPermission } from '@gitroom/backend/services/auth/admin/admin-permission.decorator';
 
 @ApiTags('Admin')
 @Controller('/admin')
+@UseGuards(AdminSessionGuard, AdminPermissionGuard)
 export class AdminController {
   constructor(private _errorsService: ErrorsService) {}
 
-  private assertSuperAdmin(user: User) {
-    if (!user?.isSuperAdmin) {
-      throw new HttpException('Unauthorized', 400);
-    }
-  }
-
   @Get('/errors')
+  @AdminPermission('system.errors.read', { resourceType: 'Errors' })
   async listErrors(
-    @GetUserFromRequest() user: User,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('platform') platform?: string,
     @Query('email') email?: string,
     @Query('unknownFirst') unknownFirst?: string
   ) {
-    this.assertSuperAdmin(user);
     return this._errorsService.listErrors({
       page: page ? parseInt(page, 10) : 0,
       limit: limit ? parseInt(limit, 10) : 20,
@@ -40,8 +30,8 @@ export class AdminController {
   }
 
   @Get('/errors/platforms')
-  async listPlatforms(@GetUserFromRequest() user: User) {
-    this.assertSuperAdmin(user);
+  @AdminPermission('system.errors.read', { resourceType: 'Errors' })
+  async listPlatforms() {
     return this._errorsService.listPlatforms();
   }
 }

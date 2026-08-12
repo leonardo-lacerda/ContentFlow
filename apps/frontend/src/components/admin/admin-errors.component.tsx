@@ -3,7 +3,7 @@
 import React, { FC, useCallback, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import copy from 'copy-to-clipboard';
-import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
+import { useAdminFetch } from '@gitroom/frontend/components/admin/admin-api.hooks';
 import { useUser } from '@gitroom/frontend/components/layout/user.context';
 import { useToaster } from '@gitroom/react/toaster/toaster';
 import { useModals } from '@gitroom/frontend/components/layout/new-modal';
@@ -136,7 +136,7 @@ const ErrorDetailsModal: FC<{ row: ErrorRow }> = ({ row }) => {
 };
 
 const usePlatformsList = () => {
-  const fetch = useFetch();
+  const fetch = useAdminFetch();
   return useSWR<string[]>('/admin/errors/platforms', async (url: string) => {
     const res = await fetch(url);
     if (!res.ok) return [];
@@ -151,7 +151,7 @@ const useErrorsList = (params: {
   email: string;
   unknownFirst: boolean;
 }) => {
-  const fetch = useFetch();
+  const fetch = useAdminFetch();
   const query = new URLSearchParams({
     page: String(params.page),
     limit: String(params.limit),

@@ -148,57 +148,6 @@ export class BillingController {
     return this._billingStripe.createPortal(org.id);
   }
 
-  @Get('/v2/admin/summary')
-  billingAdminSummaryV2(@GetUserFromRequest() user: User) {
-    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
-    return this._billingAccounting.adminSummary();
-  }
-
-  @Get('/v2/admin/pricing')
-  async billingAdminPricingV2(@GetUserFromRequest() user: User) {
-    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
-    return this._pricingCatalog.list();
-  }
-
-  @Post('/v2/admin/adjust-credits')
-  billingAdminAdjustCreditsV2(
-    @GetUserFromRequest() user: User,
-    @Body() body: { organizationId: string; credits: number; reason: string; reference?: string }
-  ) {
-    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
-    return this._billingAccounting.adjustCredits(body.organizationId, body.credits, body.reason, user.id, body.reference);
-  }
-
-  @Post('/v2/admin/plans/:code')
-  billingAdminUpdatePlanV2(
-    @GetUserFromRequest() user: User,
-    @Param('code') code: string,
-    @Body() body: { name?: string; priceCents?: number; monthlyCredits?: number; active?: boolean }
-  ) {
-    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
-    return this._billingAccounting.updatePlan(code, { ...body, updatedBy: user.id });
-  }
-
-  @Post('/v2/admin/topups/:code')
-  billingAdminUpdateTopupV2(
-    @GetUserFromRequest() user: User,
-    @Param('code') code: string,
-    @Body() body: { amountCents?: number; credits?: number; validityDays?: number; active?: boolean }
-  ) {
-    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
-    return this._billingAccounting.updateTopup(code, { ...body, updatedBy: user.id });
-  }
-
-  @Post('/v2/admin/pricing/:code')
-  billingAdminUpdatePricingV2(
-    @GetUserFromRequest() user: User,
-    @Param('code') code: string,
-    @Body() body: { baseCredits?: number; minCredits?: number; providerCostUsd?: number; active?: boolean }
-  ) {
-    if (!user.isSuperAdmin) throw new HttpException('Unauthorized', 403);
-    return this._pricingCatalog.update(code, { ...body, updatedBy: user.id });
-  }
-
   @Get('/check/:id')
   async checkId(
     @GetOrgFromRequest() org: Organization,
@@ -336,60 +285,6 @@ export class BillingController {
     @Body() body: { code: string }
   ) {
     return this._stripeService.lifetimeDeal(org.id, body.code);
-  }
-
-  @Get('/charges')
-  async getCharges(
-    @GetUserFromRequest() user: User,
-    @GetOrgFromRequest() org: Organization
-  ) {
-    if (!user.isSuperAdmin) {
-      throw new HttpException('Unauthorized', 400);
-    }
-
-    return this._stripeService.getCharges(org.id);
-  }
-
-  @Post('/refund-charges')
-  async refundCharges(
-    @GetUserFromRequest() user: User,
-    @GetOrgFromRequest() org: Organization,
-    @Body() body: { chargeIds: string[] }
-  ) {
-    if (!user.isSuperAdmin) {
-      throw new HttpException('Unauthorized', 400);
-    }
-
-    return this._stripeService.refundCharges(org.id, body.chargeIds);
-  }
-
-  @Post('/cancel-subscription')
-  async cancelSubscription(
-    @GetUserFromRequest() user: User,
-    @GetOrgFromRequest() org: Organization
-  ) {
-    if (!user.isSuperAdmin) {
-      throw new HttpException('Unauthorized', 400);
-    }
-
-    return this._stripeService.cancelSubscription(org.id);
-  }
-
-  @Post('/add-subscription')
-  async addSubscription(
-    @Body() body: { subscription: string },
-    @GetUserFromRequest() user: User,
-    @GetOrgFromRequest() org: Organization
-  ) {
-    if (!user.isSuperAdmin) {
-      throw new Error('Unauthorized');
-    }
-
-    await this._subscriptionService.addSubscription(
-      org.id,
-      user.id,
-      body.subscription
-    );
   }
 
   // ContentFlow v1: crypto checkout fora do ICP

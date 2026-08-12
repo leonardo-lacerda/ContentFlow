@@ -4,7 +4,6 @@ import {
   Get,
   HttpException,
   Post,
-  Query,
   Req,
   Res,
 } from '@nestjs/common';
@@ -96,45 +95,6 @@ export class UsersController {
   @Get('/personal')
   async getPersonalInformation(@GetUserFromRequest() user: User) {
     return this._userService.getPersonal(user.id);
-  }
-
-  @Get('/impersonate')
-  async getImpersonate(
-    @GetUserFromRequest() user: User,
-    @Query('name') name: string
-  ) {
-    if (!user.isSuperAdmin) {
-      throw new HttpException('Unauthorized', 400);
-    }
-
-    return this._userService.getImpersonateUser(name);
-  }
-
-  @Post('/impersonate')
-  async setImpersonate(
-    @GetUserFromRequest() user: User,
-    @Body('id') id: string,
-    @Res({ passthrough: true }) response: Response
-  ) {
-    if (!user.isSuperAdmin) {
-      throw new HttpException('Unauthorized', 400);
-    }
-
-    response.cookie('impersonate', id, {
-      domain: getCookieUrlFromDomain(process.env.FRONTEND_URL!),
-      ...(!process.env.NOT_SECURED
-        ? {
-            secure: true,
-            httpOnly: true,
-            sameSite: 'none',
-          }
-        : {}),
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
-    });
-
-    if (process.env.NOT_SECURED) {
-      response.header('impersonate', id);
-    }
   }
 
   @Post('/personal')

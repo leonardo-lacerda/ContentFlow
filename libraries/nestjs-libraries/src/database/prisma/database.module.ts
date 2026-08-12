@@ -64,6 +64,16 @@ import { CarouselDraftService } from '@gitroom/nestjs-libraries/database/prisma/
 import { CarouselDraftRepository } from '@gitroom/nestjs-libraries/database/prisma/carousel-drafts/carousel-draft.repository';
 import { TemporalService } from 'nestjs-temporal-core';
 import { CreditAccountingService } from '@gitroom/nestjs-libraries/services/credit-accounting.service';
+import { AdminUserRepository } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-user.repository';
+import { AdminUserService } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-user.service';
+import { AdminSessionRepository } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-session.repository';
+import { AdminSessionService } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-session.service';
+import { AdminAuditRepository } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-audit.repository';
+import { AdminAuditService } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-audit.service';
+import { TotpService } from '@gitroom/nestjs-libraries/security/totp.service';
+import { AdminRefreshTokenRepository } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-refresh-token.repository';
+import { AdminRefreshTokenService } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-refresh-token.service';
+import { AdminAlertService } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-alert.service';
 
 // Quando o Temporal esta desabilitado (DISABLE_TEMPORAL=true), o modulo global
 // do Temporal nao e carregado e o TemporalService deixa de existir no container
@@ -156,6 +166,16 @@ const temporalStubProvider = temporalDisabled
     CreditAccountingService,
     CarouselDraftService,
     CarouselDraftRepository,
+    AdminUserRepository,
+    AdminUserService,
+    AdminSessionRepository,
+    AdminSessionService,
+    AdminAuditRepository,
+    AdminAuditService,
+    TotpService,
+    AdminRefreshTokenRepository,
+    AdminRefreshTokenService,
+    AdminAlertService,
     ...temporalStubProvider,
   ],
   get exports() {

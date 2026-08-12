@@ -3,9 +3,19 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
+import { useToaster } from '@gitroom/react/toaster/toaster';
 
 type Plan = { code: string; name: string; priceCents: number; monthlyCredits: number };
 type Topup = { code: string; name: string; amountCents: number; credits: number; validityDays?: number };
+type PricingItem = {
+  code: string;
+  operation: string;
+  provider: string;
+  model: string;
+  unit: string;
+  baseCredits: number;
+  minCredits: number;
+};
 
 const numericValue = (value: unknown, fallback = 0) => {
   const number = typeof value === 'number' ? value : Number(value);
@@ -17,8 +27,46 @@ const formatCredits = (value: unknown) => numericValue(value).toLocaleString('pt
 const money = (cents: unknown) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numericValue(cents) / 100);
 
+const pricingLabel = (item: PricingItem) => {
+  const labels: Record<string, string> = {
+    'chat-ideas': 'Ideias no chat',
+    'carousel-copy': 'Copy de carrossel',
+    script: 'Roteiro',
+    'image-basic': 'Imagem padrão',
+    'image-2k': 'Imagem em 2K',
+    'image-4k': 'Imagem em 4K',
+    'seedance-2.5-480p-10': 'Vídeo Seedance · 480p · 10s',
+    'seedance-2.5-720p-10': 'Vídeo Seedance · 720p · 10s',
+    'seedance-2.5-720p-input-10': 'Vídeo Seedance com mídia · 720p · 10s',
+    'seedance-2.5-720p-30': 'Vídeo Seedance · 720p · 30s',
+    'seedance-2.5-720p-input-30': 'Vídeo Seedance com mídia · 720p · 30s',
+    'kling3-10': 'Vídeo Kling · 10s',
+    'veo3.1-1080p': 'Vídeo Veo · 1080p',
+    'veo3.1-4k': 'Vídeo Veo · 4K',
+    'talking-actor-15': 'Avatar falando · 15s',
+    'tts-30': 'Voz IA · 30s',
+    translation: 'Tradução',
+    captions: 'Legendas',
+  };
+  return labels[item.code] || item.operation;
+};
+
+const pricingGroup = (item: PricingItem) => {
+  if (item.code.startsWith('image')) return 'Imagens';
+  if (item.code.includes('seedance') || item.code.includes('kling') || item.code.includes('veo') || item.code.includes('actor')) return 'Vídeos';
+  if (item.code === 'tts-30') return 'Áudio';
+  return 'Conteúdo e edição';
+};
+
+const parseJsonOrThrow = async (response: Response) => {
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(body?.message || 'Não foi possível concluir a operação.');
+  return body;
+};
+
 export function BillingV2Component() {
   const apiFetch = useFetch();
+  const toaster = useToaster();
   const [action, setAction] = useState<string | null>(null);
   const load = useCallback(async (path: string) => {
     const response = await apiFetch(path);
@@ -28,6 +76,7 @@ export function BillingV2Component() {
   const { data: catalog, error: catalogError, isLoading: catalogLoading } = useSWR('/billing/v2/plans', load);
   const { data: account, mutate: mutateAccount } = useSWR('/billing/v2/account', load);
   const { data: invoices } = useSWR('/billing/v2/invoices', load);
+  const { data: pricingCatalog } = useSWR('/billing/v2/pricing', load);
 
   const plans: Plan[] = Array.isArray(catalog?.plans)
     ? catalog.plans.map((plan: Partial<Plan>) => ({
@@ -46,6 +95,17 @@ export function BillingV2Component() {
         validityDays: numericValue(topup.validityDays, 90),
       }))
     : [];
+  const pricingItems: PricingItem[] = Array.isArray(pricingCatalog)
+    ? pricingCatalog.map((item: Partial<PricingItem>) => ({
+        code: item.code || 'operation',
+        operation: item.operation || 'Operação',
+        provider: item.provider || 'ContentFlow',
+        model: item.model || 'padrão',
+        unit: item.unit || 'solicitação',
+        baseCredits: numericValue(item.baseCredits),
+        minCredits: numericValue(item.minCredits, numericValue(item.baseCredits)),
+      }))
+    : [];
   const currentPlan = account?.subscription?.plan?.code || 'FREE';
   const rawBalance = account?.credits?.balance;
   const balance = {
@@ -57,6 +117,15 @@ export function BillingV2Component() {
     if (!balance.total) return 0;
     return Math.min(100, Math.round(((balance.total - balance.balance) / balance.total) * 100));
   }, [balance]);
+  const currentPlanCredits = plans.find((plan) => plan.code === currentPlan)?.monthlyCredits || balance.total;
+  const exampleCosts = [
+    { label: 'Ideias no chat', code: 'chat-ideas', fallback: 10 },
+    { label: 'Imagem padrão', code: 'image-basic', fallback: 25 },
+    { label: 'Vídeo Seedance 480p · 10s', code: 'seedance-2.5-480p-10', fallback: 900 },
+  ].map((example) => ({
+    ...example,
+    credits: pricingItems.find((item) => item.code === example.code)?.baseCredits || example.fallback,
+  }));
 
   const run = async (key: string, operation: () => Promise<Response | { url?: string }>) => {
     setAction(key);
@@ -64,6 +133,8 @@ export function BillingV2Component() {
       const result: any = await operation();
       if (result?.url) window.location.assign(result.url);
       await mutateAccount();
+    } catch (error: any) {
+      toaster.show(error?.message || 'Não foi possível concluir a operação.', 'warning');
     } finally {
       setAction(null);
     }
@@ -82,12 +153,12 @@ export function BillingV2Component() {
         </div>
         <div className="flex gap-2">
           {account?.subscription?.providerCustomerId && (
-            <button className="rounded-xl border border-[#D4D9CC] bg-white px-4 py-2 text-sm" onClick={() => run('portal', async () => (await apiFetch('/billing/v2/portal')).json())}>
+            <button className="rounded-xl border border-[#D4D9CC] bg-white px-4 py-2 text-sm" onClick={() => run('portal', async () => parseJsonOrThrow(await apiFetch('/billing/v2/portal')))}>
               Gerenciar pagamento
             </button>
           )}
           {account?.subscription?.providerSubscriptionId && !account.subscription.cancelAtPeriodEnd && (
-            <button className="rounded-xl border border-[#E5B7B7] bg-white px-4 py-2 text-sm text-[#A33A3A]" onClick={() => run('cancel', () => apiFetch('/billing/v2/cancel', { method: 'POST' }))}>
+            <button className="rounded-xl border border-[#E5B7B7] bg-white px-4 py-2 text-sm text-[#A33A3A]" onClick={() => run('cancel', async () => parseJsonOrThrow(await apiFetch('/billing/v2/cancel', { method: 'POST' })))}>
               {action === 'cancel' ? 'Cancelando…' : 'Cancelar renovação'}
             </button>
           )}
@@ -109,6 +180,54 @@ export function BillingV2Component() {
         </div>
       </section>
 
+      <section className="rounded-2xl border border-[#D4D9CC] bg-[#F7FBEA] p-5 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#829047]">Entenda seu saldo</p>
+            <h2 className="mt-1 text-2xl font-bold">O que você consegue criar?</h2>
+            <p className="mt-1 max-w-2xl text-sm text-[#667085]">Cada criação usa uma quantidade diferente de créditos. Estes exemplos ajudam você a planejar antes de gerar.</p>
+          </div>
+          <span className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-[#536020]">{formatCredits(currentPlanCredits)} créditos no ciclo</span>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+          {exampleCosts.map((example) => (
+            <div key={example.code} className="rounded-xl border border-[#D4D9CC] bg-white p-4">
+              <p className="text-sm font-semibold">{example.label}</p>
+              <p className="mt-2 text-2xl font-bold">{formatCredits(example.credits)} <span className="text-xs font-normal text-[#667085]">créditos</span></p>
+              <p className="mt-1 text-xs text-[#667085]">aproximadamente {Math.floor(currentPlanCredits / example.credits)} por ciclo</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-[#D4D9CC] bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold">Tabela de consumo</h2>
+            <p className="mt-1 text-sm text-[#667085]">Valores estimados por criação. O valor final aparece na cotação antes de iniciar.</p>
+          </div>
+          <span className="text-xs text-[#667085]">Os créditos não são tokens de IA</span>
+        </div>
+        <div className="mt-4 overflow-hidden rounded-xl border border-[#EEF1EA]">
+          {(['Conteúdo e edição', 'Imagens', 'Vídeos', 'Áudio'] as const).map((group) => {
+            const items = pricingItems.filter((item) => pricingGroup(item) === group);
+            if (!items.length) return null;
+            return (
+              <div key={group}>
+                <div className="bg-[#F7F8F4] px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-[#667085]">{group}</div>
+                {items.map((item) => (
+                  <div key={item.code} className="flex flex-wrap items-center justify-between gap-3 border-t border-[#EEF1EA] px-4 py-3 text-sm">
+                    <div className="min-w-0"><p className="font-semibold">{pricingLabel(item)}</p><p className="text-xs text-[#667085]">{item.model} · {item.unit}</p></div>
+                    <p className="whitespace-nowrap font-bold text-[#536020]">a partir de {formatCredits(Math.max(item.baseCredits, item.minCredits))} créditos</p>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+          {!pricingItems.length && <p className="px-4 py-5 text-sm text-[#667085]">A tabela de consumo será carregada quando o catálogo estiver disponível.</p>}
+        </div>
+      </section>
+
       <section>
         <div className="mb-4"><h2 className="text-xl font-bold">Escolha seu plano</h2><p className="text-sm text-[#667085]">Cobrança mensal. Créditos não utilizados expiram ao fim do ciclo.</p></div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -120,8 +239,8 @@ export function BillingV2Component() {
               <p className="mt-4 text-3xl font-bold">{money(plan.priceCents)}<span className="text-sm font-normal text-[#667085]">/mês</span></p>
               <p className="mt-2 text-sm font-semibold">{formatCredits(plan.monthlyCredits)} créditos mensais</p>
               <button disabled={isCurrent || action === plan.code} className="mt-6 rounded-xl bg-[#14171A] px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40" onClick={() => run(plan.code, async () => {
-                if (account?.subscription?.providerSubscriptionId && isUpgrade) return (await apiFetch('/billing/v2/change-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planCode: plan.code }) })).json();
-                return (await apiFetch('/billing/v2/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planCode: plan.code }) })).json();
+                if (account?.subscription?.providerSubscriptionId && isUpgrade) return parseJsonOrThrow(await apiFetch('/billing/v2/change-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planCode: plan.code }) }));
+                return parseJsonOrThrow(await apiFetch('/billing/v2/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planCode: plan.code }) }));
               })}>{action === plan.code ? 'Processando…' : isCurrent ? 'Plano atual' : account?.subscription?.providerSubscriptionId && !isUpgrade ? 'Agendar downgrade' : 'Assinar plano'}</button>
             </article>;
           })}
@@ -131,7 +250,7 @@ export function BillingV2Component() {
       <section>
         <div className="mb-4"><h2 className="text-xl font-bold">Comprar créditos extras</h2><p className="text-sm text-[#667085]">Recargas avulsas, sem renovação automática, válidas por 90 dias.</p></div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {topups.map((topup) => <article key={topup.code} className="rounded-2xl border border-[#D4D9CC] bg-white p-5"><p className="font-bold">{topup.name}</p><p className="mt-2 text-2xl font-bold">{money(topup.amountCents)}</p><p className="mt-1 text-sm text-[#667085]">{formatCredits(topup.credits)} créditos · {topup.validityDays || 90} dias</p><button disabled={action === topup.code} className="mt-5 w-full rounded-xl border border-[#14171A] px-3 py-2 text-sm font-semibold" onClick={() => run(topup.code, async () => (await apiFetch('/billing/v2/topups/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceCode: topup.code }) })).json())}>{action === topup.code ? 'Processando…' : 'Comprar créditos'}</button></article>)}
+          {topups.map((topup) => <article key={topup.code} className="rounded-2xl border border-[#D4D9CC] bg-white p-5"><p className="font-bold">{topup.name}</p><p className="mt-2 text-2xl font-bold">{money(topup.amountCents)}</p><p className="mt-1 text-sm text-[#667085]">{formatCredits(topup.credits)} créditos · {topup.validityDays || 90} dias</p><button disabled={action === topup.code} className="mt-5 w-full rounded-xl border border-[#14171A] px-3 py-2 text-sm font-semibold" onClick={() => run(topup.code, async () => parseJsonOrThrow(await apiFetch('/billing/v2/topups/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceCode: topup.code }) })))}>{action === topup.code ? 'Processando…' : 'Comprar créditos'}</button></article>)}
         </div>
       </section>
 

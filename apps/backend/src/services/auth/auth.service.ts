@@ -86,6 +86,10 @@ export class AuthService {
         throw new Error('Invalid user name or password');
       }
 
+      if (user.passwordResetRequired) {
+        throw new Error('Password reset required');
+      }
+
       if (!user.activated) {
         throw new Error('User is not activated');
       }
@@ -315,6 +319,6 @@ export class AuthService {
     if (user.password) {
       delete user.password;
     }
-    return AuthChecker.signJWT(user);
+    return AuthChecker.signJWT({ ...user, authSessionVersion: user.authSessionVersion });
   }
 }

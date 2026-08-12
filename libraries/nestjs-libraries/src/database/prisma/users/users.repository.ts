@@ -92,6 +92,7 @@ export class UsersRepository {
       },
       data: {
         password: AuthService.hashPassword(password),
+        passwordResetRequired: false,
       },
     });
   }

@@ -44,6 +44,8 @@
     "docker-redeploy": "node var/docker/redeploy.mjs",
     "postinstall": "pnpm run prisma-generate",
     "test": "jest --config apps/backend/jest.config.ts --coverage --detectOpenHandles --reporters=default --reporters=jest-junit"
+    ,"admin:load": "node scripts/admin-load-test.mjs"
+    ,"admin:audit:verify": "node scripts/verify-admin-audit-immutability.mjs"
   },
   "dependencies": {
     "@ag-ui/mastra": "^1.0.1",

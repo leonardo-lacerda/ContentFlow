@@ -124,6 +124,16 @@ import { CreditAccountingService } from '@gitroom/nestjs-libraries/services/cred
 import { BillingAccountingService } from '@gitroom/nestjs-libraries/services/billing-accounting.service';
 import { BillingStripeService } from '@gitroom/nestjs-libraries/services/billing-stripe.service';
 import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
+import { AdminSecurityController } from '@gitroom/backend/api/routes/admin/admin-security.controller';
+import { AdminAuditController } from '@gitroom/backend/api/routes/admin/admin-audit.controller';
+import { AdminAuthService } from '@gitroom/backend/services/auth/admin/admin-auth.service';
+import { AdminSessionGuard } from '@gitroom/backend/services/auth/admin/admin-session.guard';
+import { AdminPermissionGuard } from '@gitroom/backend/services/auth/admin/admin-permission.guard';
+import { AdminDomainService } from '@gitroom/backend/api/routes/admin/admin-domain.service';
+import { AdminUsersController, AdminOrganizationsController } from '@gitroom/backend/api/routes/admin/admin-users-organizations.controller';
+import { AdminBillingController, AdminCreditsController, AdminAiController } from '@gitroom/backend/api/routes/admin/admin-billing-ai.controller';
+import { AdminContentController, AdminIntegrationsController, AdminSystemController } from '@gitroom/backend/api/routes/admin/admin-content-integrations-system.controller';
+import { AdminAnalyticsController, AdminSecurityOperationsController } from '@gitroom/backend/api/routes/admin/admin-analytics-security.controller';
 
 const authenticatedController = [
   UsersController,
@@ -166,6 +176,18 @@ const authenticatedController = [
   CreativeController,
   CreativeWorkflowsController,
   StudioController,
+  AdminSecurityController,
+  AdminAuditController,
+  AdminUsersController,
+  AdminOrganizationsController,
+  AdminBillingController,
+  AdminCreditsController,
+  AdminAiController,
+  AdminContentController,
+  AdminIntegrationsController,
+  AdminSystemController,
+  AdminAnalyticsController,
+  AdminSecurityOperationsController,
 ];
 @Module({
   imports: [UploadModule, DesignSystemModule],
@@ -257,6 +279,10 @@ const authenticatedController = [
   CreativeSceneGraphService,
     CreativeFeatureFlagGuard,
     StudioArtifactService,
+    AdminAuthService,
+    AdminSessionGuard,
+    AdminPermissionGuard,
+    AdminDomainService,
   ],
   get exports() {
     return [...this.imports, ...this.providers];
