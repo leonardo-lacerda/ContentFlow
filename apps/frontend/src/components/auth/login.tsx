@@ -27,7 +27,9 @@ function getSafeReturnUrl(value: string | null) {
 }
 
 function persistAuthCookie(token: string) {
-  document.cookie = `auth=${encodeURIComponent(token)}; Max-Age=31536000; Path=/; SameSite=Lax`;
+  // JWTs contain dots and are already valid cookie values. Do not URL-encode
+  // them: customFetch forwards the cookie value as the auth header.
+  document.cookie = `auth=${token}; Max-Age=31536000; Path=/; SameSite=Lax`;
 }
 
 type Inputs = {
