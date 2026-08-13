@@ -92,19 +92,13 @@ function LayoutContextInner(params: { children: ReactNode }) {
           typeof window !== 'undefined' &&
           window.location.pathname.startsWith('/admin');
         if (isAdminRoute) {
-          const returnUrl = encodeURIComponent(window.location.href);
-          if (!isSecured) {
-            // In local/non-secure mode the auth cookie is readable by the
-            // browser, so clear it before returning to the login screen.
-            setCookie('auth', '', -10);
-            setCookie('showorg', '', -10);
-            setCookie('impersonate', '', -10);
-            window.location.href = `/auth/login?returnUrl=${returnUrl}`;
-          } else {
-            // In production the cookie is httpOnly; let the server clear it
-            // and preserve the admin destination through the logout flow.
-            window.location.href = `/auth/logout?returnUrl=${returnUrl}`;
-          }
+          // The admin surface has a second, intentionally separate session
+          // (`admin_auth`) on top of the regular user session. Its first
+          // request to `/admin/auth/sessions` is expected to return 401 until
+          // the user completes MFA. Let the admin hooks consume that response
+          // so they can render the enrollment/verification step instead of
+          // treating it as an expired regular login and redirecting back to
+          // `/auth/login`.
           return true;
         }
         if (!isSecured) {
