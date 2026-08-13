@@ -74,6 +74,8 @@ import { TotpService } from '@gitroom/nestjs-libraries/security/totp.service';
 import { AdminRefreshTokenRepository } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-refresh-token.repository';
 import { AdminRefreshTokenService } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-refresh-token.service';
 import { AdminAlertService } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-alert.service';
+import { BillingEntitlementsService } from '@gitroom/nestjs-libraries/services/billing-entitlements.service';
+import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
 
 // Quando o Temporal esta desabilitado (DISABLE_TEMPORAL=true), o modulo global
 // do Temporal nao e carregado e o TemporalService deixa de existir no container
@@ -164,6 +166,8 @@ const temporalStubProvider = temporalDisabled
     GenerationCostService,
     GenerationCostRepository,
     CreditAccountingService,
+    BillingEntitlementsService,
+    PricingCatalogService,
     CarouselDraftService,
     CarouselDraftRepository,
     AdminUserRepository,

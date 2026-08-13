@@ -6,7 +6,12 @@ import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { normalizeBillingBalance } from '@gitroom/helpers/utils/billing-balance';
 import { useToaster } from '@gitroom/react/toaster/toaster';
 
-type Plan = { code: string; name: string; priceCents: number; monthlyCredits: number };
+type PlanAccess = {
+  features?: string[];
+  models?: string[];
+  capacities?: { brands?: number; channels?: number; members?: number };
+};
+type Plan = { code: string; name: string; priceCents: number; monthlyCredits: number; access?: PlanAccess };
 type Topup = { code: string; name: string; amountCents: number; credits: number; validityDays?: number };
 type PricingItem = {
   code: string;
@@ -24,6 +29,23 @@ const numericValue = (value: unknown, fallback = 0) => {
 };
 
 const formatCredits = (value: unknown) => numericValue(value).toLocaleString('pt-BR');
+
+const featureLabels: Record<string, string> = {
+  'content-ideas': 'Ideias e textos com IA',
+  'brand-dna': 'Brand DNA',
+  'carousel-copy': 'Copy e carrosseis',
+  'image-generation': 'Geracao de imagens',
+  'video-generation': 'Geracao de videos',
+  'advanced-design': 'Editor de design avancado',
+  'bulk-generation': 'Geracao em lote',
+  analytics: 'Analytics avancado',
+  'approval-workflows': 'Fluxos de aprovacao',
+  'client-workspaces': 'Espacos de clientes',
+  'public-api': 'API publica',
+  webhooks: 'Webhooks',
+  'white-label': 'White-label',
+  'priority-queue': 'Fila prioritaria',
+};
 
 const money = (cents: unknown) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numericValue(cents) / 100);
@@ -85,6 +107,7 @@ export function BillingV2Component() {
         name: plan.name || 'Plano ContentFlow',
         priceCents: numericValue(plan.priceCents),
         monthlyCredits: numericValue(plan.monthlyCredits),
+        access: plan.access,
       }))
     : [];
   const topups: Topup[] = Array.isArray(catalog?.topups)
@@ -107,7 +130,7 @@ export function BillingV2Component() {
         minCredits: numericValue(item.minCredits, numericValue(item.baseCredits)),
       }))
     : [];
-  const currentPlan = account?.subscription?.plan?.code || 'FREE';
+  const currentPlan = account?.access?.plan || account?.subscription?.plan?.code || 'FREE';
   const normalizedBalance = normalizeBillingBalance(account);
   const balance = normalizedBalance || { balance: 0, total: 0, reserved: 0, debt: 0 };
   const usagePercent = useMemo(() => {
@@ -238,10 +261,16 @@ export function BillingV2Component() {
           {plans.map((plan) => {
             const isCurrent = plan.code === currentPlan;
             const isUpgrade = (account?.subscription?.plan?.priceCents || 0) < plan.priceCents;
+            const highlightedFeatures = (plan.access?.features || []).filter((feature) => featureLabels[feature]).slice(0, 6);
+            const capacities = plan.access?.capacities || {};
             return <article key={plan.code} className={`flex flex-col rounded-2xl border p-5 ${isCurrent ? 'border-[#9BCF21] bg-[#F7FBEA]' : 'border-[#D4D9CC] bg-white'}`}>
               <div className="flex items-center justify-between"><h3 className="text-lg font-bold">{plan.name}</h3>{isCurrent && <span className="rounded-full bg-[#DDF7A3] px-2 py-1 text-xs font-semibold">Atual</span>}</div>
               <p className="mt-4 text-3xl font-bold">{money(plan.priceCents)}<span className="text-sm font-normal text-[#667085]">/mês</span></p>
               <p className="mt-2 text-sm font-semibold">{formatCredits(plan.monthlyCredits)} créditos mensais</p>
+              <ul className="mt-4 flex flex-col gap-2 text-sm text-[#475467]">
+                {highlightedFeatures.map((feature) => <li key={feature}>✓ {featureLabels[feature]}</li>)}
+                <li>✓ {formatCredits(capacities.brands)} marcas · {formatCredits(capacities.channels)} canais · {formatCredits(capacities.members)} membros</li>
+              </ul>
               <button disabled={isCurrent || action === plan.code} className="mt-6 rounded-xl bg-[#14171A] px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40" onClick={() => run(plan.code, async () => {
                 if (account?.subscription?.providerSubscriptionId && isUpgrade) return parseJsonOrThrow(await apiFetch('/billing/v2/change-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planCode: plan.code }) }));
                 return parseJsonOrThrow(await apiFetch('/billing/v2/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planCode: plan.code }) }));

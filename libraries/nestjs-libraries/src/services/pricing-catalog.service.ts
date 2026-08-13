@@ -7,6 +7,10 @@ import { CreativeCapability, CreativeProviderInput, CreativeProviderQuote } from
 const DEFAULT_PRICES = [
   ['chat-ideas', 'contentflow', 'text-default', 'request', 10, 0],
   ['carousel-copy', 'contentflow', 'text-default', 'request', 20, 0],
+  ['brand-dna', 'contentflow', 'text-default', 'request', 20, 0],
+  ['editorial-plan', 'contentflow', 'text-default', 'request', 30, 0],
+  ['ad-kit', 'contentflow', 'text-default', 'request', 40, 0],
+  ['email-campaign', 'contentflow', 'text-default', 'request', 30, 0],
   ['script', 'contentflow', 'text-default', 'request', 25, 0],
   ['image-basic', 'kie', 'gpt-image-1', 'image', 25, 0.03],
   ['image-2k', 'kie', 'gpt-image-1', 'image', 50, 0.06],

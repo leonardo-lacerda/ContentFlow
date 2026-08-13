@@ -6,13 +6,20 @@ import { OrganizationService } from '@gitroom/nestjs-libraries/database/prisma/o
 import { Organization } from '@prisma/client';
 import dayjs from 'dayjs';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
+import { CreditAccountingService } from '@gitroom/nestjs-libraries/services/credit-accounting.service';
+import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
+import { BillingEntitlementsService } from '@gitroom/nestjs-libraries/services/billing-entitlements.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class SubscriptionService {
   constructor(
     private readonly _subscriptionRepository: SubscriptionRepository,
     private readonly _integrationService: IntegrationService,
-    private readonly _organizationService: OrganizationService
+    private readonly _organizationService: OrganizationService,
+    private readonly credits: CreditAccountingService,
+    private readonly pricingCatalog: PricingCatalogService,
+    private readonly entitlements: BillingEntitlementsService,
   ) {}
 
   getSubscriptionByOrganizationId(organizationId: string) {
@@ -21,12 +28,30 @@ export class SubscriptionService {
     );
   }
 
-  useCredit<T>(
+  async useCredit<T>(
     organization: Organization,
     type = 'ai_images',
     func: () => Promise<T>
   ): Promise<T> {
-    return this._subscriptionRepository.useCredit(organization, type, func);
+    const isVideo = type === 'ai_videos';
+    await this.entitlements.assertFeature(organization.id, isVideo ? 'video-generation' : 'image-generation');
+    const quote = await this.pricingCatalog.quote({ operation: isVideo ? 'seedance-2.5-480p-10' : 'image-basic' });
+    const reservation = await this.credits.reserve(organization.id, quote.credits, {
+      quoteId: quote.quoteId,
+      idempotencyKey: `legacy-generation:${organization.id}:${type}:${randomUUID()}`,
+      operation: quote.operation,
+      provider: quote.provider,
+      model: quote.model,
+      metadata: { compatibilityPath: true },
+    });
+    try {
+      const result = await func();
+      await this.credits.settle(reservation.id, quote.credits);
+      return result;
+    } catch (error) {
+      await this.credits.refund(reservation.id, 'legacy-generation-failed');
+      throw error;
+    }
   }
 
   getCode(code: string) {
@@ -217,34 +242,11 @@ export class SubscriptionService {
   }
 
   async checkCredits(organization: Organization, checkType = 'ai_images') {
-    // @ts-ignore
-    const type = organization?.subscription?.subscriptionTier || 'FREE';
-
-    if (type === 'FREE') {
-      return { credits: 0 };
-    }
-
-    // @ts-ignore
-    let date = dayjs(organization.subscription.createdAt);
-    while (date.isBefore(dayjs())) {
-      date = date.add(1, 'month');
-    }
-
-    const checkFromMonth = date.subtract(1, 'month');
-    const imageGenerationCount =
-      checkType === 'ai_images'
-        ? pricing[type].image_generation_count
-        : pricing[type].generate_videos;
-
-    const totalUse = await this._subscriptionRepository.getCreditsFrom(
-      organization.id,
-      checkFromMonth,
-      checkType
-    );
-
-    return {
-      credits: imageGenerationCount - totalUse,
-    };
+    const feature = checkType === 'ai_videos' ? 'video-generation' : 'image-generation';
+    const access = await this.entitlements.resolveAccess(organization.id);
+    if (!access.features.includes(feature)) return { credits: 0, available: 0, featureIncluded: false };
+    const balance = await this.credits.getBalance(organization.id);
+    return { credits: balance.balance, available: balance.balance, reserved: balance.reserved, featureIncluded: true };
   }
 
   async lifeTime(orgId: string, identifier: string, subscription: any) {

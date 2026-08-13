@@ -269,6 +269,7 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<'copy' | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [configuringIdea, setConfiguringIdea] = useState<{ id: string; idea: ContentIdea } | null>(null);
   // Lock the actions while the args are still streaming in, and again once the
   // user has picked an idea and the follow-up request is on its way.
@@ -347,6 +348,7 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
           respond={async (value) => {
             setConfiguringIdea(null);
             if (!value?.confirmed) return;
+            setActionError(null);
             setPendingAction('copy');
             try {
               await sendAction({
@@ -359,6 +361,9 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
               });
             } catch {
               setPendingAction(null);
+              setActionError(
+                'Não consegui iniciar a geração da copy agora. Tente novamente em instantes.'
+              );
             }
           }}
         />
@@ -366,6 +371,11 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
       {pendingAction && (
         <p className="cf-content-artifact__pending" role="status">
           Gerando a copy completa com as opções escolhidas…
+        </p>
+      )}
+      {actionError && (
+        <p className="cf-content-artifact__error" role="alert">
+          {actionError}
         </p>
       )}
     </section>
@@ -542,7 +552,16 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
         }),
       });
       if (!response.ok) {
-        throw new Error(`Falha ao gerar as imagens (HTTP ${response.status})`);
+        const body = await response.json().catch(() => null);
+        if (response.status === 403 || body?.code === 'FEATURE_NOT_INCLUDED') {
+          throw new Error(
+            body?.message ||
+              'A geração de imagens não está incluída no seu plano atual. Faça upgrade para gerar imagens.'
+          );
+        }
+        throw new Error(
+          body?.message || `Falha ao gerar as imagens (HTTP ${response.status})`
+        );
       }
       const data: {
         projectId?: string;
@@ -600,7 +619,23 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
         })
       );
       setGeneratedFingerprints((current) => ({ ...current, ...newFingerprints }));
-      if (anyFailed) {
+      // A plan/permission block fails every slide with the same message and
+      // retrying won't help — point the user at billing instead of "try again".
+      const planBlocked =
+        anyFailed &&
+        !anySucceeded &&
+        settledEntries.every(
+          (entry) =>
+            !entry.error ||
+            /plano|inclu[ií]d|feature_not_included|upgrade/i.test(entry.error)
+        ) &&
+        settledEntries.some((entry) => /plano|inclu[ií]d|feature_not_included|upgrade/i.test(entry.error || ''));
+      if (planBlocked) {
+        const planMessage = settledEntries.find((entry) => entry.error)?.error;
+        setGenerationError(
+          planMessage || 'A geração de imagens não está incluída no seu plano atual.'
+        );
+      } else if (anyFailed) {
         setGenerationError('Algumas imagens falharam. Revise os slides marcados e tente novamente.');
       } else if (!anySucceeded) {
         setGenerationError('A geração foi iniciada, mas o servidor ainda não disponibilizou as imagens. Tente novamente em instantes.');

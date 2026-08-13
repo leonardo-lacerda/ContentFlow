@@ -278,7 +278,8 @@ export class BillingStripeService {
     const customerId = invoice.customer as string;
     let current = await this.prisma.billingSubscription.findFirst({ where: { providerCustomerId: customerId }, include: { plan: true } });
     const line = invoice.lines.data[0];
-    const price = line?.price?.id ? await this.accounting.getPriceByStripeId(line.price.id) : null;
+    const stripePriceId = (line as any)?.price?.id as string | undefined;
+    const price = stripePriceId ? await this.accounting.getPriceByStripeId(stripePriceId) : null;
     if (!current && typeof (invoice as any).subscription === 'string') {
       const remoteSubscription = await stripe.subscriptions.retrieve((invoice as any).subscription);
       const metadata = remoteSubscription.metadata || {};
@@ -358,7 +359,8 @@ export class BillingStripeService {
   }
 
   private async handleChargeRefunded(charge: Stripe.Charge) {
-    const invoiceId = typeof charge.invoice === 'string' ? charge.invoice : undefined;
+    const rawInvoice = (charge as any).invoice;
+    const invoiceId = typeof rawInvoice === 'string' ? rawInvoice : undefined;
     if (invoiceId) await this.prisma.billingInvoice.updateMany({ where: { providerInvoiceId: invoiceId }, data: { status: 'REFUNDED' } });
   }
 

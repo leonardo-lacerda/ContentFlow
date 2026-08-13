@@ -11,6 +11,7 @@ import { CompanyProfileDto } from '@gitroom/nestjs-libraries/dtos/settings/compa
 import { CompanyProfileSummaryDto } from '@gitroom/nestjs-libraries/dtos/settings/company-profile-summary.dto';
 import { ExtractContentService } from '@gitroom/nestjs-libraries/openai/extract.content.service';
 import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
+import { BillingEntitlementsService } from '@gitroom/nestjs-libraries/services/billing-entitlements.service';
 
 const COMPANY_PROFILE_TYPE = 'company_profile_v1';
 const COMPANY_PROFILE_COLLECTION_TYPE = 'company_profiles_v2';
@@ -375,7 +376,8 @@ export class OrganizationService {
     private _organizationRepository: OrganizationRepository,
     private _notificationsService: NotificationService,
     private _extractContentService: ExtractContentService,
-    private brandProfileService: BrandProfileService
+    private brandProfileService: BrandProfileService,
+    private readonly entitlements: BillingEntitlementsService,
   ) {}
 
   private emptyCompany(org?: { name?: string | null } | null): CompanyProfile {
@@ -545,6 +547,8 @@ export class OrganizationService {
   getOrgByCustomerId(customerId: string) { return this._organizationRepository.getOrgByCustomerId(customerId); }
 
   async inviteTeamMember(orgId: string, body: AddTeamMemberDto) {
+    const team = await this._organizationRepository.getTeam(orgId);
+    await this.entitlements.assertCapacity(orgId, 'members', team?.users.length || 0);
     const timeLimit = dayjs().add(1, 'hour').format('YYYY-MM-DD HH:mm:ss');
     const id = makeId(5);
     const url = process.env.FRONTEND_URL + `/?org=${AuthService.signJWT({ ...body, orgId, timeLimit, id })}`;

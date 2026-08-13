@@ -25,6 +25,7 @@ import utc from 'dayjs/plugin/utc';
 import { AutopostRepository } from '@gitroom/nestjs-libraries/database/prisma/autopost/autopost.repository';
 import { RefreshIntegrationService } from '@gitroom/nestjs-libraries/integrations/refresh.integration.service';
 import { TemporalService } from 'nestjs-temporal-core';
+import { BillingEntitlementsService } from '@gitroom/nestjs-libraries/services/billing-entitlements.service';
 
 dayjs.extend(utc);
 
@@ -38,7 +39,8 @@ export class IntegrationService {
     private _notificationService: NotificationService,
     @Inject(forwardRef(() => RefreshIntegrationService))
     private _refreshIntegrationService: RefreshIntegrationService,
-    private _temporalService: TemporalService
+    private _temporalService: TemporalService,
+    private readonly entitlements: BillingEntitlementsService,
   ) {}
 
   async changeActiveCron(orgId: string) {
@@ -110,6 +112,13 @@ export class IntegrationService {
     timezone?: number,
     customInstanceDetails?: string
   ) {
+    const integrations = await this._integrationRepository.getIntegrationsList(org);
+    const alreadyConnected = integrations.some((integration) =>
+      integration.internalId === internalId && integration.providerIdentifier === provider
+    );
+    if (!alreadyConnected) {
+      await this.entitlements.assertCapacity(org, 'channels', integrations.length);
+    }
     const uploadedPicture = picture
       ? picture?.indexOf('imagedelivery.net') > -1
         ? picture

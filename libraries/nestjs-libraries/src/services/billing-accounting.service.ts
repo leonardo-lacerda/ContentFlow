@@ -7,6 +7,7 @@ import {
   BILLING_CATALOG_PLANS,
   BILLING_CATALOG_TOPUPS,
   BillingPlanCode,
+  getBillingCatalogPlan,
 } from './billing-catalog';
 
 @Injectable()
@@ -20,12 +21,16 @@ export class BillingAccountingService {
     // Concurrent callers race to seed the same rows; a row already existing is
     // the desired end state, so the loser's unique violation is not an error.
     for (const plan of BILLING_CATALOG_PLANS) {
+      const { access, ...storedPlan } = plan;
       const dbPlan =
         (await this.prisma.billingPlan
           .upsert({
             where: { code: plan.code },
             update: {},
-            create: plan,
+            create: {
+              ...storedPlan,
+              metadata: JSON.parse(JSON.stringify({ accessVersion: 1, access })) as Prisma.InputJsonValue,
+            },
           })
           .catch((error: any) => {
             if (error?.code !== 'P2002') throw error;
@@ -68,7 +73,8 @@ export class BillingAccountingService {
 
   async listPlans() {
     await this.ensureCatalog();
-    return this.prisma.billingPlan.findMany({ where: { active: true }, orderBy: { priceCents: 'asc' }, include: { prices: { where: { active: true } } } });
+    const plans = await this.prisma.billingPlan.findMany({ where: { active: true }, orderBy: { priceCents: 'asc' }, include: { prices: { where: { active: true } } } });
+    return plans.map((plan) => ({ ...plan, access: getBillingCatalogPlan(plan.code).access }));
   }
 
   async listTopups() {
@@ -128,7 +134,35 @@ export class BillingAccountingService {
   }
 
   async getSubscription(organizationId: string) {
-    return this.prisma.billingSubscription.findUnique({ where: { organizationId }, include: { plan: true } });
+    await this.ensureCatalog();
+    const existing = await this.prisma.billingSubscription.findUnique({ where: { organizationId }, include: { plan: true } });
+    if (existing) return existing;
+    const legacy = await this.prisma.subscription.findUnique({
+      where: { organizationId },
+      select: { subscriptionTier: true, deletedAt: true },
+    });
+    const legacyMap: Record<string, BillingPlanCode> = {
+      FREE: 'FREE', STANDARD: 'CREATOR', PRO: 'PRO', TEAM: 'STUDIO', ULTIMATE: 'AGENCY',
+    };
+    const planCode = legacy && !legacy.deletedAt ? legacyMap[legacy.subscriptionTier] || 'FREE' : 'FREE';
+    const selectedPlan = await this.getPlan(planCode);
+    const now = new Date();
+    return this.prisma.billingSubscription.upsert({
+      where: { organizationId },
+      update: {},
+      create: {
+        organizationId,
+        planId: selectedPlan.id,
+        provider: legacy && !legacy.deletedAt ? 'MIGRATION' : 'INTERNAL',
+        status: 'ACTIVE',
+        currentPeriodStart: now,
+        currentPeriodEnd: addDays(now, 31),
+        metadata: legacy && !legacy.deletedAt
+          ? { migratedFrom: legacy.subscriptionTier, migratedAt: now.toISOString() }
+          : { bootstrap: true },
+      },
+      include: { plan: true },
+    });
   }
 
   async getInvoices(organizationId: string) {
@@ -141,6 +175,10 @@ export class BillingAccountingService {
 
   async getBalance(organizationId: string) {
     return this.credits.getBalance(organizationId);
+  }
+
+  async ensureAccount(organizationId: string) {
+    return this.credits.ensureAccount(organizationId);
   }
 
   async getLedger(organizationId: string, limit = 100) {

@@ -23,6 +23,17 @@ describe('billing catalog', () => {
     expect(BILLING_CATALOG_TOPUPS.every((topup) => topup.validityDays === 90)).toBe(true);
   });
 
+  it('uses plans for access and credits instead of generation quotas', () => {
+    const free = BILLING_CATALOG_PLANS.find((plan) => plan.code === 'FREE')!;
+    const starter = BILLING_CATALOG_PLANS.find((plan) => plan.code === 'STARTER')!;
+    const pro = BILLING_CATALOG_PLANS.find((plan) => plan.code === 'PRO')!;
+    expect(free.access.features).toContain('image-generation');
+    expect(free.access.features).not.toContain('video-generation');
+    expect(starter.access.models).toContain('seedance-2.5-480p');
+    expect(pro.access.models).toContain('seedance-2.5-720p');
+    expect(free.access.capacities).toEqual({ brands: 3, channels: 1, members: 1 });
+  });
+
   it('returns the end of the current UTC month', () => {
     const end = billingPeriodEnd(new Date('2026-08-10T12:00:00.000Z'));
     expect(end.toISOString()).toBe('2026-08-31T23:59:59.999Z');

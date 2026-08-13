@@ -55,6 +55,11 @@ import {
 } from '@gitroom/frontend/components/agents/content-artifacts.component';
 import { extractSummaryIdeasArtifact } from '@gitroom/frontend/components/agents/idea-summary-parser';
 import { ContentPresentationAction } from '@gitroom/frontend/components/agents/content-presentation-action';
+import {
+  artifactSignature,
+  claimArtifactCard,
+  resetArtifactCardOwners,
+} from '@gitroom/frontend/components/agents/content-presentation-payload';
 
 /**
  * CopilotKit caches an action's `render` the first time it is registered and
@@ -116,10 +121,15 @@ const classifyChatError = (errorEvent: any): 'provider' | 'credits' => {
  */
 const StudioChat: FC = () => {
   const t = useT();
+  const { isLoading } = useCopilotChat();
   const [chatError, setChatError] = useState<'provider' | 'credits' | null>(null);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const actionStatusTimer = useRef<number | null>(null);
   const actionInFlight = useRef<string | null>(null);
+  // Tracks whether the agent run for the current action actually started, so we
+  // only clear the status banner once that run *finishes* — not on the brief
+  // window before isLoading flips to true.
+  const actionRunSawLoading = useRef(false);
   const sendArtifactAction = useCallback(
     async (value: Record<string, unknown>) => {
       const action = String(value.action || 'continue');
@@ -129,6 +139,8 @@ const StudioChat: FC = () => {
       if (actionStatusTimer.current) {
         window.clearTimeout(actionStatusTimer.current);
       }
+      actionRunSawLoading.current = false;
+      setChatError(null);
       setActionStatus(action);
       try {
         if (!liveSendMessage.current) {
@@ -139,21 +151,48 @@ const StudioChat: FC = () => {
         );
       } catch (error) {
         console.error('[AgentChat] action request failed', error);
+        setActionStatus(null);
+        if (actionInFlight.current === actionKey) actionInFlight.current = null;
         setChatError('provider');
         throw error;
       } finally {
-        // Keep the state visible while the agent chains the next tool. A short
-        // 1s flash looked like a dead click; the timeout is only a safety net
-        // for provider/network failures and is cleared by the next action.
+        // Backstop only: if the run state never resolves (dropped connection,
+        // provider hang), clear the banner and surface a retriable error rather
+        // than leaving the user staring at a spinner forever.
         actionStatusTimer.current = window.setTimeout(() => {
-          setActionStatus(null);
+          if (actionInFlight.current === actionKey) {
+            actionInFlight.current = null;
+            setActionStatus(null);
+            setChatError('provider');
+          }
           actionStatusTimer.current = null;
-          if (actionInFlight.current === actionKey) actionInFlight.current = null;
-        }, 45000);
+        }, 90000);
       }
     },
     []
   );
+
+  // Clear the action banner exactly when the agent run that the action started
+  // completes. This is what stops the "spinner appears then silently vanishes"
+  // behaviour: the banner now mirrors the real run instead of a blind timeout.
+  useEffect(() => {
+    if (!actionStatus) return;
+    if (isLoading) {
+      actionRunSawLoading.current = true;
+      return;
+    }
+    if (!actionRunSawLoading.current) return;
+    const timer = window.setTimeout(() => {
+      setActionStatus(null);
+      actionRunSawLoading.current = false;
+      actionInFlight.current = null;
+      if (actionStatusTimer.current) {
+        window.clearTimeout(actionStatusTimer.current);
+        actionStatusTimer.current = null;
+      }
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [isLoading, actionStatus]);
 
   useEffect(() => () => {
     if (actionStatusTimer.current) window.clearTimeout(actionStatusTimer.current);
@@ -925,6 +964,17 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
   const textFallbackArtifact = presentedArtifact && 'renderFromText' in presentedArtifact && presentedArtifact.renderFromText
     ? presentedArtifact.parsed
     : null;
+  // Only render the text-fallback card if no other path (the structured tool
+  // result, or an earlier message with identical content) already owns it.
+  // Keyed by message id so re-renders of this same message keep the card while
+  // duplicate messages/retries suppress it.
+  const fallbackSignature = textFallbackArtifact
+    ? artifactSignature(textFallbackArtifact.operation, textFallbackArtifact)
+    : '';
+  const canRenderFallback =
+    !props.isLoading &&
+    !!textFallbackArtifact &&
+    claimArtifactCard(fallbackSignature, props.message?.id || fallbackSignature);
   const hasCreativeArtifact =
     !props.isLoading &&
     /(ideia|carrossel|roteiro|storyboard|v[ií]deo|imagem|publica[cç][aã]o)/i.test(
@@ -944,10 +994,10 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
           diga “salve isso” ou peça uma variação.
         </div>
       )}
-      {textFallbackArtifact?.operation === 'ideas' && textFallbackArtifact.ideas?.length > 0 && (
+      {canRenderFallback && textFallbackArtifact?.operation === 'ideas' && textFallbackArtifact.ideas?.length > 0 && (
         <ContentIdeasCard args={textFallbackArtifact} onAction={props.onAction} />
       )}
-      {textFallbackArtifact?.operation === 'carousel' && textFallbackArtifact.slides?.length > 0 && (
+      {canRenderFallback && textFallbackArtifact?.operation === 'carousel' && textFallbackArtifact.slides?.length > 0 && (
         <CarouselPreviewCard args={textFallbackArtifact} onAction={props.onAction} />
       )}
     </div>
@@ -982,6 +1032,9 @@ const LoadMessages: FC<{ id: string }> = ({ id }) => {
   }, []);
 
   useEffect(() => {
+    // Clear the per-thread card ownership so switching conversations never
+    // suppresses a card that legitimately belongs to the newly opened thread.
+    resetArtifactCardOwners();
     if (id === 'new') {
       setMessages([]);
       return;

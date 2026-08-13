@@ -41,6 +41,8 @@ import { CreativeOutputStorageService } from './creative-output-storage.service'
 import { compileDesignPrompt } from './creative-design-prompt.util';
 import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
+import { BillingEntitlementsService } from '@gitroom/nestjs-libraries/services/billing-entitlements.service';
+import { BillingModelAccessCode } from '@gitroom/nestjs-libraries/services/billing-catalog';
 
 type JsonRecord = Record<string, any>;
 
@@ -72,6 +74,7 @@ export class CreativeEngineService {
     private readonly outputStorage: CreativeOutputStorageService,
     @Optional() private readonly planLimits?: PlanLimitsService,
     @Optional() private readonly pricingCatalog?: PricingCatalogService,
+    @Optional() private readonly entitlements?: BillingEntitlementsService,
   ) {}
 
   listCapabilities() {
@@ -1139,6 +1142,7 @@ export class CreativeEngineService {
     }
     const providerInput = await this.buildProviderInput(organizationId, projectId, input);
     const quote = this.providers.quote(capability, providerInput, input.provider);
+    await this.assertCreativeAccess(organizationId, capability, quote.model, providerInput);
     const fingerprint = createHash('sha256')
       .update(JSON.stringify({ organizationId, projectId, capability, input: providerInput }))
       .digest('hex');
@@ -1523,6 +1527,7 @@ export class CreativeEngineService {
     idempotencyKey?: string;
   }) {
     const quote = this.providers.quote(input.capability, input.input);
+    await this.assertCreativeAccess(organizationId, input.capability, quote.model, input.input);
     const idempotencyKey = input.idempotencyKey
       ? scopeCreativeIdempotencyKey(organizationId, input.idempotencyKey)
       : `creative-output:${createHash('sha256').update(JSON.stringify({ organizationId, projectId, input })).digest('hex')}`;
@@ -1601,6 +1606,30 @@ export class CreativeEngineService {
       await this.prisma.creativeJob.update({ where: { id: job.id }, data: { status: CreativeJobStatus.FAILED, error: this.errorMessage(error) } });
       throw error;
     }
+  }
+
+  private async assertCreativeAccess(
+    organizationId: string,
+    capability: CreativeCapability,
+    model: string,
+    input: CreativeProviderInput,
+  ) {
+    if (!this.entitlements) return;
+    const feature = ['video-generation', 'b-roll', 'talking-actor', 'lip-sync', 'actor-replacement'].includes(capability)
+      ? 'video-generation'
+      : capability === 'image-generation'
+        ? 'image-generation'
+        : 'content-ideas';
+    await this.entitlements.assertFeature(organizationId, feature);
+    const normalized = String(model || '').toLowerCase();
+    const resolution = String(input.metadata?.resolution || '').toLowerCase();
+    let modelAccess: BillingModelAccessCode = 'text-default';
+    if (capability === 'image-generation') modelAccess = resolution.includes('4k') ? 'image-4k' : resolution.includes('2k') ? 'image-2k' : 'image-basic';
+    else if (normalized.includes('seedance')) modelAccess = resolution === '480p' ? 'seedance-2.5-480p' : 'seedance-2.5-720p';
+    else if (normalized.includes('kling')) modelAccess = 'kling-3.0';
+    else if (normalized.includes('veo')) modelAccess = 'veo-3.1';
+    else if (['talking-actor', 'lip-sync', 'actor-replacement'].includes(capability)) modelAccess = 'avatar';
+    await this.entitlements.assertModel(organizationId, modelAccess);
   }
 
   private async buildProviderInput(organizationId: string, projectId: string, input: {

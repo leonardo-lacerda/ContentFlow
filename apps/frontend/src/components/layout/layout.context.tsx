@@ -132,15 +132,13 @@ function LayoutContextInner(params: { children: ReactNode }) {
       if (response.status === 402) {
         try {
           const body = await response.json();
-          const isPlanLimit = body.code === 'PLAN_LIMIT_EXCEEDED';
-          const message = isPlanLimit
-            ? `Limite do plano ${body.plan || ''} atingido.\n${body.type ? `Tipo: ${body.type}. ` : ''}Uso: ${body.current ?? '?'}/${body.limit ?? '?'}.\n${body.upgradeMessage || 'Faça upgrade para continuar.'}`
-            : body.message || 'Payment Required';
+          const insufficientCredits = body.code === 'INSUFFICIENT_CREDITS';
+          const message = body.message || 'Saldo de créditos insuficiente.';
           if (
             await deleteDialog(
               message,
-              isPlanLimit ? 'Fazer upgrade' : 'Ir para billing',
-              isPlanLimit ? 'Limite do plano' : 'Payment Required'
+              'Ver planos e créditos',
+              insufficientCredits ? 'Créditos insuficientes' : 'Cobrança'
             )
           ) {
             window.location.href = '/billing';

@@ -15,6 +15,7 @@ import { AuthService } from '@gitroom/helpers/auth/auth.service';
 import { BillingAccountingService } from '@gitroom/nestjs-libraries/services/billing-accounting.service';
 import { BillingStripeService } from '@gitroom/nestjs-libraries/services/billing-stripe.service';
 import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
+import { BillingEntitlementsService } from '@gitroom/nestjs-libraries/services/billing-entitlements.service';
 
 @ApiTags('Billing')
 @Controller('/billing')
@@ -29,7 +30,8 @@ export class BillingController {
     private _nowpayments: Nowpayments,
     private readonly _billingAccounting: BillingAccountingService,
     private readonly _billingStripe: BillingStripeService,
-    private readonly _pricingCatalog: PricingCatalogService
+    private readonly _pricingCatalog: PricingCatalogService,
+    private readonly _entitlements: BillingEntitlementsService,
   ) {}
 
   @Get('/plans')
@@ -79,9 +81,14 @@ export class BillingController {
 
   @Get('/v2/account')
   async billingAccountV2(@GetOrgFromRequest() org: Organization) {
+    const credits = await this._billingAccounting.getBalance(org.id);
     return {
       subscription: await this._billingAccounting.getSubscription(org.id),
-      credits: await this._billingAccounting.getBalance(org.id),
+      credits: {
+        ...credits,
+        available: credits.balance,
+      },
+      access: await this._entitlements.resolveAccess(org.id),
     };
   }
 

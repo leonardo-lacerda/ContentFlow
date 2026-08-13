@@ -3,24 +3,19 @@ import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { PlanLimitsService, GenerationType } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
-import { SubscriptionRepository } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/subscription.repository';
-import { pricing } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/pricing';
+import { BillingEntitlementsService } from '@gitroom/nestjs-libraries/services/billing-entitlements.service';
 
 @ApiTags('Plan Limits')
 @Controller('/plan-limits')
 export class PlanLimitsController {
   constructor(
     private readonly _planLimitsService: PlanLimitsService,
-    private readonly _subscriptionRepository: SubscriptionRepository,
+    private readonly _entitlements: BillingEntitlementsService,
   ) {}
 
   @Get('/usage')
   async getUsage(@GetOrgFromRequest() org: Organization) {
-    const subscription =
-      await this._subscriptionRepository.getSubscriptionByOrganizationId(org.id);
-
-    const tier = subscription?.subscriptionTier || 'FREE';
-    const planLimits = pricing[tier];
+    const access = await this._entitlements.resolveAccess(org.id);
 
     const types: GenerationType[] = [
       'carousel_generation',
@@ -47,7 +42,9 @@ export class PlanLimitsController {
     }
 
     return {
-      plan: tier,
+      plan: access.plan,
+      deprecated: true,
+      creditsControlGeneration: true,
       usage,
     };
   }

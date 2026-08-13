@@ -1751,6 +1751,19 @@ body.light .cf-studio__refinement-note {
   animation: cf-studio-status-dots 1.2s ease-in-out infinite;
 }
 
+.cf-content-artifact__error {
+  display: block;
+  margin: 0 14px 16px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, #ff5c5c 42%, var(--cf-border, #ffffff1f));
+  border-radius: 11px;
+  background: color-mix(in srgb, #ff5c5c 10%, var(--cf-surface, #171a1d));
+  color: color-mix(in srgb, var(--cf-text, #f5f7f8) 82%, #ff5c5c);
+  font-size: 11px;
+  line-height: 1.4;
+  animation: cf-studio-message-in 220ms ease-out both;
+}
+
 .cf-content-idea__actions button.is-secondary,
 .cf-content-artifact__footer button.is-secondary {
   border-color: color-mix(in srgb, var(--cf-border, #ffffff1f) 90%, transparent);

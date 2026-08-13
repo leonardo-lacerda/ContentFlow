@@ -189,7 +189,7 @@ export class CopilotController {
     // the model. Charging all of them billed ~3x per interaction and could
     // exhaust an org's credits without a single generation.
     if (req?.body?.operationName === 'generateCopilotResponse') {
-      const quote = await this._pricingCatalog.quote({ operation: 'chat-ideas', capability: 'script' });
+      const quote = await this._pricingCatalog.quote({ operation: 'chat-ideas' });
       const reservation = await this._credits.reserve(organization.id, quote.credits, {
         quoteId: quote.quoteId,
         idempotencyKey: String(req.headers['idempotency-key'] || `chat:${organization.id}:${req.body?.threadId || 'new'}:${Date.now()}`),

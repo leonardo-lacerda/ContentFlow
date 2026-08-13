@@ -92,8 +92,11 @@ export class CreditAccountingService {
     });
     if (subscription && subscription.plan.code !== 'FREE') return;
     if (!subscription) {
-      const legacyHistory = await this.prisma.creativeCreditLedgerEntry.count({ where: { organizationId } });
-      if (legacyHistory > 0) return;
+      const legacy = await this.prisma.subscription.findUnique({
+        where: { organizationId },
+        select: { subscriptionTier: true, deletedAt: true },
+      });
+      if (legacy && !legacy.deletedAt) return;
     }
 
     const now = new Date();
@@ -199,6 +202,7 @@ export class CreditAccountingService {
   async getBalance(organizationId: string) {
     await this.ensureAccount(organizationId);
     await this.expireLots(organizationId);
+    await this.reconcile(organizationId);
     const [lots, reservations] = await Promise.all([
       this.prisma.creditLot.aggregate({
         where: { organizationId, remainingCredits: { gt: 0 }, status: 'AVAILABLE' },
@@ -251,7 +255,12 @@ export class CreditAccountingService {
           });
           const spendable = lots.reduce((sum, lot) => sum + lot.remainingCredits - (heldByLot.get(lot.id) || 0), 0);
           if (spendable < requested) {
-            throw new HttpException(`Insufficient credits. Required: ${requested}; available: ${spendable}`, HttpStatus.PAYMENT_REQUIRED);
+            throw new HttpException({
+              code: 'INSUFFICIENT_CREDITS',
+              message: 'Saldo de creditos insuficiente para esta geracao.',
+              required: requested,
+              available: spendable,
+            }, HttpStatus.PAYMENT_REQUIRED);
           }
           const reservation = await tx.creditReservation.create({
             data: {
@@ -403,7 +412,12 @@ export class CreditAccountingService {
       this.prisma.creativeWorkflowRun.count({ where: { organizationId, status: { in: ['QUEUED', 'RUNNING', 'PARTIAL'] } } }),
     ]);
     if (jobs + workflows >= limit) {
-      throw new HttpException(`Creative concurrency quota exceeded. Limit: ${limit}; active: ${jobs + workflows}`, HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException({
+        code: 'CONCURRENCY_LIMIT',
+        message: 'Ha muitas geracoes em andamento. Aguarde uma delas terminar.',
+        limit,
+        active: jobs + workflows,
+      }, HttpStatus.TOO_MANY_REQUESTS);
     }
     return { limit, activeJobs: jobs, activeWorkflows: workflows };
   }
