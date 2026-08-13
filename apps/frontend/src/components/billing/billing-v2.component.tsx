@@ -3,6 +3,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
+import { normalizeBillingBalance } from '@gitroom/helpers/utils/billing-balance';
 import { useToaster } from '@gitroom/react/toaster/toaster';
 
 type Plan = { code: string; name: string; priceCents: number; monthlyCredits: number };
@@ -74,7 +75,7 @@ export function BillingV2Component() {
     return response.json();
   }, [apiFetch]);
   const { data: catalog, error: catalogError, isLoading: catalogLoading } = useSWR('/billing/v2/plans', load);
-  const { data: account, mutate: mutateAccount } = useSWR('/billing/v2/account', load);
+  const { data: account, error: accountError, isLoading: accountLoading, mutate: mutateAccount } = useSWR('/billing/v2/account', load);
   const { data: invoices } = useSWR('/billing/v2/invoices', load);
   const { data: pricingCatalog } = useSWR('/billing/v2/pricing', load);
 
@@ -107,15 +108,8 @@ export function BillingV2Component() {
       }))
     : [];
   const currentPlan = account?.subscription?.plan?.code || 'FREE';
-  // `/billing/v2/account` returns the balance object directly under `credits`.
-  // Treating `credits.balance` as another object made the UI read
-  // `undefined.balance` and display 0 even when the backend had credits.
-  const rawBalance = account?.credits;
-  const balance = {
-    balance: numericValue(rawBalance?.balance),
-    total: numericValue(rawBalance?.total),
-    reserved: numericValue(rawBalance?.reserved),
-  };
+  const normalizedBalance = normalizeBillingBalance(account);
+  const balance = normalizedBalance || { balance: 0, total: 0, reserved: 0, debt: 0 };
   const usagePercent = useMemo(() => {
     if (!balance.total) return 0;
     return Math.min(100, Math.round(((balance.total - balance.balance) / balance.total) * 100));
@@ -169,10 +163,17 @@ export function BillingV2Component() {
       </header>
 
       <section className="rounded-2xl border border-[#D4D9CC] bg-white p-5 shadow-sm">
+        {(accountError || (!accountLoading && !normalizedBalance)) && (
+          <div className="mb-4 rounded-xl border border-[#E5B7B7] bg-[#FFF4F4] px-4 py-3 text-sm text-[#8B2F2F]" role="alert">
+            Não foi possível confirmar seu saldo. Seus créditos não foram alterados; atualize a página ou tente novamente em instantes.
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#667085]">Seu saldo</p>
-            <p className="mt-1 text-3xl font-bold">{formatCredits(balance.balance)} créditos</p>
+            <p className="mt-1 text-3xl font-bold">
+              {accountLoading ? 'Carregando…' : normalizedBalance ? `${formatCredits(balance.balance)} créditos` : 'Saldo indisponível'}
+            </p>
             <p className="mt-1 text-sm text-[#667085]">Plano atual: <strong>{currentPlan}</strong>{account?.subscription?.currentPeriodEnd ? ` · renova em ${new Date(account.subscription.currentPeriodEnd).toLocaleDateString('pt-BR')}` : ''}</p>
           </div>
           <div className="min-w-[260px] flex-1 max-w-[420px]">
