@@ -53,6 +53,7 @@ import {
   ContentIdeasCard,
   type ContentIdea,
 } from '@gitroom/frontend/components/agents/content-artifacts.component';
+import { extractSummaryIdeasArtifact } from '@gitroom/frontend/components/agents/idea-summary-parser';
 
 /**
  * CopilotKit caches an action's `render` the first time it is registered and
@@ -922,7 +923,8 @@ const extractPresentedArtifact = (content: string) => {
       parsed: transport.parsed,
     };
   }
-  return extractStructuredPresentedArtifact(visibleContent);
+  const structured = extractStructuredPresentedArtifact(visibleContent);
+  return structured || extractSummaryIdeasArtifact(visibleContent);
 };
 
 const getAssistantContent = (value: unknown): string => {
@@ -961,6 +963,9 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
     ...props,
     message: { ...props.message, content: displayContent },
   } as AssistantMessageProps);
+  const textFallbackArtifact = presentedArtifact && 'renderFromText' in presentedArtifact && presentedArtifact.renderFromText
+    ? presentedArtifact.parsed
+    : null;
   const hasCreativeArtifact =
     !props.isLoading &&
     /(ideia|carrossel|roteiro|storyboard|v[ií]deo|imagem|publica[cç][aã]o)/i.test(
@@ -979,6 +984,12 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
           Este resultado pode ser refinado pela conversa. Quando estiver pronto,
           diga “salve isso” ou peça uma variação.
         </div>
+      )}
+      {textFallbackArtifact?.operation === 'ideas' && textFallbackArtifact.ideas?.length > 0 && (
+        <ContentIdeasCard args={textFallbackArtifact} onAction={props.onAction} />
+      )}
+      {textFallbackArtifact?.operation === 'carousel' && textFallbackArtifact.slides?.length > 0 && (
+        <CarouselPreviewCard args={textFallbackArtifact} onAction={props.onAction} />
       )}
     </div>
   );
