@@ -108,6 +108,27 @@ const dispatchArtifactAction = async (value: Record<string, unknown>) => {
   await liveArtifactAction.current(value);
 };
 
+const classifyChatError = (errorEvent: any): 'provider' | 'credits' => {
+  const status = errorEvent?.context?.response?.status;
+  const message = [
+    errorEvent?.error?.message,
+    errorEvent?.context?.error?.message,
+    errorEvent?.message,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (
+    status === 402 ||
+    /insufficient credits|sem créditos|credit balance|credit debt|payment required/.test(message)
+  ) {
+    return 'credits';
+  }
+
+  return 'provider';
+};
+
 /**
  * Everything that talks to CopilotKit lives here rather than in
  * AgentChatContent. `useCopilotAction` and `useCopilotChat` register against
@@ -359,8 +380,7 @@ You can also use me as an MCP Server, check Settings >> Public API
              )}
             Input={NewInput}
             onError={(errorEvent) => {
-              const status = errorEvent.context.response?.status;
-              setChatError(status === 402 ? 'credits' : 'provider');
+              setChatError(classifyChatError(errorEvent));
             }}
           />
         </div>
