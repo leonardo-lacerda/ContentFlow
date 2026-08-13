@@ -107,7 +107,10 @@ export function BillingV2Component() {
       }))
     : [];
   const currentPlan = account?.subscription?.plan?.code || 'FREE';
-  const rawBalance = account?.credits?.balance;
+  // `/billing/v2/account` returns the balance object directly under `credits`.
+  // Treating `credits.balance` as another object made the UI read
+  // `undefined.balance` and display 0 even when the backend had credits.
+  const rawBalance = account?.credits;
   const balance = {
     balance: numericValue(rawBalance?.balance),
     total: numericValue(rawBalance?.total),
