@@ -6,13 +6,12 @@ import dotenv from 'dotenv';
 import { validateRuntimeEnv } from '../../scripts/validate-runtime-env.mjs';
 
 const packageDirectory = dirname(fileURLToPath(import.meta.url));
-const configuredEnvFile = process.env.CONTENTFLOW_ENV_FILE;
 const candidates = [
-  configuredEnvFile,
+  process.env.CONTENTFLOW_ENV_FILE,
   '/opt/contentflow/.env',
   resolve(packageDirectory, '../../.env'),
   resolve(process.cwd(), '.env'),
-].filter((candidate) => Boolean(candidate));
+].filter(Boolean);
 
 const loadedFiles = [];
 for (const candidate of candidates) {
@@ -21,19 +20,17 @@ for (const candidate of candidates) {
   loadedFiles.push(candidate);
 }
 
-if (!loadedFiles.length) {
-  console.warn('[ContentFlow] nenhum arquivo .env foi encontrado; usando apenas variáveis do processo.');
-}
-
 const validation = validateRuntimeEnv({ production: true });
 if (!validation.ok) {
-  console.error('[ContentFlow] backend environment is invalid:');
+  console.error('[ContentFlow] frontend environment is invalid:');
   for (const issue of validation.issues) console.error(`- ${issue}`);
   process.exit(1);
 }
 
-const entrypoint = resolve(packageDirectory, 'dist/apps/backend/src/main.js');
-const child = spawn(process.execPath, ['--experimental-require-module', entrypoint], {
+console.log(`[ContentFlow] frontend environment loaded from ${loadedFiles.join(', ') || 'process environment'}`);
+
+const nextEntrypoint = resolve(packageDirectory, '../../node_modules/next/dist/bin/next');
+const child = spawn(process.execPath, [nextEntrypoint, 'start', '-p', process.env.PORT || '4200'], {
   cwd: packageDirectory,
   env: process.env,
   stdio: 'inherit',

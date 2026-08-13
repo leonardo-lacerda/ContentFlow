@@ -31,10 +31,22 @@ export class ConfigurationChecker {
     this.checkIsValidUrl('NEXT_PUBLIC_BACKEND_URL');
     this.checkIsValidUrl('BACKEND_INTERNAL_URL');
     this.checkNonEmpty('STORAGE_PROVIDER', 'Needed to setup storage.');
-    this.checkNonEmpty(
-      'OPENAI_API_KEY',
-      'Needed for AI content/image generation and the AI agents.'
-    );
+    const primaryProvider = (this.get('AI_PRIMARY_PROVIDER') || 'kie').toLowerCase();
+    if (primaryProvider === 'kie') {
+      this.checkNonEmpty(
+        'KIEAI_API_KEY',
+        'Needed for the configured Kie.ai chat and creative provider.'
+      );
+      if (!this.get('KIEAI_CHAT_BASE_URL') && !this.get('CREATIVE_KIE_BASE_URL')) {
+        this.issues.push('KIEAI_CHAT_BASE_URL or CREATIVE_KIE_BASE_URL not set.');
+      }
+      this.checkNonEmpty('KIEAI_CHAT_MODEL', 'Needed for the configured Kie.ai chat provider.');
+    } else {
+      this.checkNonEmpty(
+        'OPENAI_API_KEY',
+        'Needed for AI content/image generation and the AI agents.'
+      );
+    }
     const hasCakto = !!(this.cfg.CAKTO_STARTER_CHECKOUT_URL || this.cfg.CAKTO_PRO_CHECKOUT_URL || this.cfg.CAKTO_SCALE_CHECKOUT_URL);
     const hasStripe = !!this.cfg.STRIPE_SECRET_KEY;
     if (!hasCakto && !hasStripe) {

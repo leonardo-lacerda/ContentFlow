@@ -9,7 +9,7 @@
     "postbuild": "node ../../scripts/ensure-next-external-aliases.mjs",
     "build:sentry": "dotenv -e ../../.env -- next build",
     "postbuild:sentry": "node ../../scripts/ensure-next-external-aliases.mjs",
-    "start": "dotenv -e ../../.env -- next start -p 4200",
+    "start": "node ./start-production.mjs",
     "pm2": "pm2 start pnpm --name frontend -- start"
   },
   "dependencies": {

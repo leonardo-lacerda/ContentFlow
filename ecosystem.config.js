@@ -1,40 +1,26 @@
+const appDirectory = process.env.CONTENTFLOW_APP_DIR || process.cwd();
+
 module.exports = {
   apps: [
     {
       name: 'contentflow-backend',
       script: 'pnpm',
       args: 'start:prod:backend',
-      cwd: '/opt/contentflow',
+      cwd: appDirectory,
       env: {
         NODE_ENV: 'production',
-        DATABASE_URL: 'postgresql://contentflow-user:contentflow-password@localhost:5432/contentflow-db-local',
-        REDIS_URL: 'redis://localhost:6379',
-        JWT_SECRET: '0accd0dc0cee31e2a891cb68f9efa87adea7614b81f638de44e5fa1e8fc7d708',
-        MAIN_URL: 'http://216.238.121.214:4007',
-        FRONTEND_URL: 'http://216.238.121.214:4007',
-        NEXT_PUBLIC_BACKEND_URL: 'http://216.238.121.214:4007/api',
-        BACKEND_INTERNAL_URL: 'http://localhost:3000',
-        DISABLE_TEMPORAL: 'true',
-        IS_GENERAL: 'true',
-        STORAGE_PROVIDER: 'local',
-        UPLOAD_DIRECTORY: '/opt/contentflow/uploads',
-        API_LIMIT: '30',
       },
-      max_memory_restart: '200M',
+      max_memory_restart: '1G',
     },
     {
       name: 'contentflow-frontend',
       script: 'pnpm',
       args: 'start:prod:frontend',
-      cwd: '/opt/contentflow',
+      cwd: appDirectory,
       env: {
         NODE_ENV: 'production',
-        DATABASE_URL: 'postgresql://contentflow-user:contentflow-password@localhost:5432/contentflow-db-local',
-        REDIS_URL: 'redis://localhost:6379',
-        JWT_SECRET: '0accd0dc0cee31e2a891cb68f9efa87adea7614b81f638de44e5fa1e8fc7d708',
-        NEXT_PUBLIC_BACKEND_URL: 'http://216.238.121.214:4007/api',
       },
-      max_memory_restart: '200M',
+      max_memory_restart: '512M',
     },
   ],
 };
