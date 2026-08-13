@@ -30,10 +30,39 @@ if (!validation.ok) {
 console.log(`[ContentFlow] frontend environment loaded from ${loadedFiles.join(', ') || 'process environment'}`);
 
 const nextEntrypoint = resolve(packageDirectory, '../../node_modules/next/dist/bin/next');
-const child = spawn(process.execPath, [nextEntrypoint, 'start', '-p', process.env.FRONTEND_PORT || '4200'], {
+const port = process.env.FRONTEND_PORT || '4200';
+const child = spawn(process.execPath, [nextEntrypoint, 'start', '-p', port], {
   cwd: packageDirectory,
   env: process.env,
   stdio: 'inherit',
+});
+
+async function waitUntilReady() {
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) throw new Error(`Next exited before readiness with code ${child.exitCode}`);
+    try {
+      const responses = await Promise.all([
+        fetch(`http://127.0.0.1:${port}/auth/login`),
+        fetch(`http://127.0.0.1:${port}/p/__runtime_check__`),
+      ]);
+      if (responses.some((response) => response.status >= 500)) {
+        throw new Error('Next returned a server error during readiness check');
+      }
+      console.log(`[ContentFlow] frontend ready on port ${port}`);
+      return;
+    } catch (error) {
+      if (Date.now() >= deadline) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+  throw new Error('Frontend readiness check timed out');
+}
+
+waitUntilReady().catch((error) => {
+  console.error(`[ContentFlow] frontend readiness failed: ${error.message}`);
+  child.kill('SIGTERM');
+  process.exit(1);
 });
 
 const forwardSignal = (signal) => child.kill(signal);

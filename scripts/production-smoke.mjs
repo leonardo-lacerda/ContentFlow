@@ -5,6 +5,7 @@ const baseUrl = (argument ? argument.slice('--url='.length) : defaultBaseUrl).re
 const checks = [
   { path: '/', allowed: [200] },
   { path: '/auth/login', allowed: [200] },
+  { path: '/p/__runtime_check__', allowed: [200, 307, 308, 404] },
   { path: '/studio/new', allowed: [200, 307, 308] },
   { path: '/api/user/self', allowed: [200, 401, 403] },
 ];

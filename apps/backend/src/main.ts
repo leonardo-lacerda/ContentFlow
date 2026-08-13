@@ -96,6 +96,7 @@ async function start() {
     Logger.log(`🚀 Backend is running on: http://localhost:${port}`);
   } catch (e) {
     Logger.error(`Backend failed to start on port ${port}`, e);
+    process.exit(1);
   }
 }
 
