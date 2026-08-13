@@ -8,7 +8,7 @@ const packageDirectory = dirname(fileURLToPath(import.meta.url));
 const configuredEnvFile = process.env.CONTENTFLOW_ENV_FILE;
 const candidates = [
   configuredEnvFile,
-  process.env.NODE_ENV === 'production' ? '/opt/contentflow/.env' : undefined,
+  '/opt/contentflow/.env',
   resolve(packageDirectory, '../../.env'),
   resolve(process.cwd(), '.env'),
 ].filter((candidate) => Boolean(candidate));
