@@ -3,6 +3,7 @@ import { isAdminPermissionAllowed, isIpAllowed, isStepUpValid } from '@gitroom/n
 import { AdminPermissionGuard } from '@gitroom/backend/services/auth/admin/admin-permission.guard';
 import { AdminSessionGuard } from '@gitroom/backend/services/auth/admin/admin-session.guard';
 import { applyImpersonationIdentity } from '@gitroom/backend/services/auth/admin/admin-impersonation.policy';
+import { getAdminClientIp } from '@gitroom/backend/services/auth/admin/admin-request.utils';
 
 describe('admin security policy', () => {
   it('enforces the role x permission matrix and explicit overrides', () => {
@@ -30,6 +31,17 @@ describe('admin security policy', () => {
   it('rejects a missing or revoked admin session', async () => {
     const guard = new AdminSessionGuard({ validateToken: async (): Promise<null> => null } as any);
     await expect(guard.canActivate({ switchToHttp: () => ({ getRequest: () => ({ cookies: {} }) }) } as any)).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('uses the forwarded client IP when the API is behind a reverse proxy', () => {
+    const request = {
+      ip: '127.0.0.1',
+      headers: {
+        'x-forwarded-for': '45.172.112.163, 127.0.0.1',
+      },
+    } as any;
+
+    expect(getAdminClientIp(request)).toBe('45.172.112.163');
   });
 
   it('never carries platform-admin privilege into an impersonated identity', () => {

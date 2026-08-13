@@ -22,6 +22,7 @@ import {
 import { RESOURCE_CONFIG } from '@gitroom/backend/api/routes/admin/admin-domain.service';
 import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
 import { AdminAlertService } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-alert.service';
+import { getAdminClientIp } from '@gitroom/backend/services/auth/admin/admin-request.utils';
 
 // Deny-by-default: a handler under an Admin*Controller with no @AdminPermission
 // decorator is rejected outright rather than silently allowed. This is what
@@ -69,7 +70,7 @@ export class AdminPermissionGuard implements CanActivate {
       throw new AdminPermissionDeniedException(effectivePermission);
     }
 
-    const ip = request.ip || request.headers['x-forwarded-for']?.toString().split(',')[0].trim();
+    const ip = getAdminClientIp(request);
     if (!isIpAllowed(ip, adminUser.ipAllowlist || [])) {
       void this._alerts.emit({ type: 'ADMIN_IP_DENIED', severity: 'CRITICAL', title: 'Acesso administrativo fora da allowlist', message: `Acesso bloqueado para ${adminUser.user.email} a partir de ${ip || 'IP desconhecido'}`, adminUserId: adminUser.id });
       throw new AdminIpNotAllowedException();
