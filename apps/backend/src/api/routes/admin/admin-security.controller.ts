@@ -73,6 +73,16 @@ function setRefreshCookie(response: Response, token: string, expiresAt: Date) {
   });
 }
 
+function decryptMfaSecret(value: string): string {
+  try {
+    return AuthService.fixedDecryption(value);
+  } catch {
+    // Keep compatibility with the short window where pending secrets could
+    // have been stored without encryption.
+    return value;
+  }
+}
+
 // Step-up flow: a regular logged-in user with an AdminUser record proves
 // possession of their TOTP device here to obtain the short-lived, revocable
 // `admin_auth` session used by every other /admin/* route. See
@@ -140,7 +150,8 @@ export class AdminSecurityController {
     if (!adminUser || !adminUser.mfaSecret || adminUser.mfaEnabled) {
       throw new HttpException('No pending MFA enrollment', 400);
     }
-    if (!this._totpService.verifyToken(adminUser.mfaSecret, code)) {
+    const mfaSecret = decryptMfaSecret(adminUser.mfaSecret);
+    if (!this._totpService.verifyToken(mfaSecret, code)) {
       throw new HttpException('Invalid code', 400);
     }
 
@@ -415,15 +426,9 @@ export class AdminSecurityController {
     code: string
   ): Promise<boolean> {
     if (!code) return false;
-    let mfaSecret: string | null = null;
-    if (adminUser.mfaSecret) {
-      try {
-        mfaSecret = AuthService.fixedDecryption(adminUser.mfaSecret);
-      } catch {
-        // Compatibility with the short window where secrets were stored raw.
-        mfaSecret = adminUser.mfaSecret;
-      }
-    }
+    const mfaSecret = adminUser.mfaSecret
+      ? decryptMfaSecret(adminUser.mfaSecret)
+      : null;
     if (mfaSecret && this._totpService.verifyToken(mfaSecret, code)) {
       return true;
     }
