@@ -44,6 +44,33 @@ describe('admin security policy', () => {
     expect(getAdminClientIp(request)).toBe('45.172.112.163');
   });
 
+  it('validates an admin session with the forwarded client IP', async () => {
+    const validateToken = jest.fn().mockResolvedValue({
+      adminUser: { id: 'admin-1' },
+      sessionId: 'session-1',
+      jti: 'jti-1',
+      mfaVerifiedAt: new Date(),
+    });
+    const guard = new AdminSessionGuard({ validateToken } as any);
+    const request = {
+      ip: '127.0.0.1',
+      cookies: { admin_auth: 'session-token' },
+      headers: {
+        'x-forwarded-for': '45.172.112.163, 127.0.0.1',
+        'user-agent': 'admin-test-agent',
+      },
+    } as any;
+
+    await expect(guard.canActivate({
+      switchToHttp: () => ({ getRequest: () => request }),
+    } as any)).resolves.toBe(true);
+    expect(validateToken).toHaveBeenCalledWith(
+      'session-token',
+      '45.172.112.163',
+      'admin-test-agent'
+    );
+  });
+
   it('never carries platform-admin privilege into an impersonated identity', () => {
     const impersonated = applyImpersonationIdentity({ id: 'target', isSuperAdmin: true });
     expect(impersonated.isSuperAdmin).toBe(false);
