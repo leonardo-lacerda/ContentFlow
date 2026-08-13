@@ -8,7 +8,7 @@ O ContentFlow usa um provider `kie` compatível com o Creative Engine. A chave K
 KIEAI_API_KEY="..."
 CREATIVE_KIE_ENABLED="true"
 CREATIVE_KIE_BASE_URL="https://api.kie.ai"
-CREATIVE_KIE_IMAGE_MODEL="gpt-image-1"
+CREATIVE_KIE_IMAGE_MODEL="gpt-image/1.5-text-to-image"
 CREATIVE_KIE_VIDEO_MODEL="veo3_fast"
 CREATIVE_KIE_BROLL_MODEL="veo3_fast"
 CREATIVE_KIE_TTS_MODEL="elevenlabs/text-to-speech-multilingual-v2"
@@ -22,7 +22,7 @@ Deixe `CREATIVE_*_PROVIDER` vazio para seleção automática. Com uma chave Kie 
 
 | Capacidade | Modelo padrão | Endpoint lógico |
 |---|---|---|
-| Imagem | `gpt-image-1` | `jobs/createTask`, ou endpoint GPT Image configurável |
+| Imagem | `gpt-image/1.5-text-to-image` | `jobs/createTask`, ou endpoint GPT Image configurável |
 | Vídeo | `veo3_fast` | `veo/generate` |
 | B-roll | `veo3_fast` | `veo/generate` |
 | Voz | `elevenlabs/text-to-speech-multilingual-v2` | `jobs/createTask` |

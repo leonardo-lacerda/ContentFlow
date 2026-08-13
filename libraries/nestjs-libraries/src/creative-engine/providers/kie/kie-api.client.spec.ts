@@ -37,4 +37,55 @@ describe('KieApiClient', () => {
 
     expect(result).toEqual(expect.objectContaining({ taskId: 'tts-1', audioUrl: 'https://cdn.example/audio.mp3' }));
   });
+
+  it('maps the legacy GPT image model to the supported Kie text-to-image contract', async () => {
+    process.env.KIEAI_API_KEY = 'test-key';
+    process.env.CREATIVE_KIE_POLL_INTERVAL_MS = '250';
+    process.env.CREATIVE_KIE_MAX_POLL_ATTEMPTS = '1';
+    const fetchMock = jest.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({ ok: true, text: async () => JSON.stringify({ code: 200, data: { taskId: 'image-1' } }) } as Response)
+      .mockResolvedValueOnce({ ok: true, text: async () => JSON.stringify({ code: 200, data: { status: 'completed', resultUrls: ['https://cdn.example/image.png'] } }) } as Response);
+
+    await new KieApiClient().generateImage('gpt-image-1', {
+      prompt: 'carousel cover',
+      aspectRatio: '4:5',
+    });
+
+    const request = JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body));
+    expect(request).toEqual({
+      model: 'gpt-image/1.5-text-to-image',
+      input: {
+        prompt: 'carousel cover',
+        aspect_ratio: '4:5',
+        quality: 'medium',
+      },
+    });
+    expect(JSON.stringify(request)).not.toContain('response_format');
+  });
+
+  it('uses the Kie image-to-image contract when references are present', async () => {
+    process.env.KIEAI_API_KEY = 'test-key';
+    process.env.CREATIVE_KIE_POLL_INTERVAL_MS = '250';
+    process.env.CREATIVE_KIE_MAX_POLL_ATTEMPTS = '1';
+    const fetchMock = jest.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({ ok: true, text: async () => JSON.stringify({ code: 200, data: { taskId: 'image-2' } }) } as Response)
+      .mockResolvedValueOnce({ ok: true, text: async () => JSON.stringify({ code: 200, data: { status: 'completed', resultUrls: ['https://cdn.example/image-2.png'] } }) } as Response);
+
+    await new KieApiClient().generateImage('gpt-image/1.5-text-to-image', {
+      prompt: 'place the product on a table',
+      imageUrls: ['https://cdn.example/product.png'],
+      aspectRatio: '1:1',
+    });
+
+    const request = JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body));
+    expect(request).toEqual({
+      model: 'gpt-image/1.5-image-to-image',
+      input: {
+        prompt: 'place the product on a table',
+        input_urls: ['https://cdn.example/product.png'],
+        aspect_ratio: '1:1',
+        quality: 'medium',
+      },
+    });
+  });
 });

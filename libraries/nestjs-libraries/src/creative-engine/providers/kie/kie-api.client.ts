@@ -73,12 +73,23 @@ export class KieApiClient {
   async generateImage(model: string, input: { prompt: string; imageUrls?: string[]; aspectRatio?: string; size?: string }) {
     const endpoint = process.env.CREATIVE_KIE_IMAGE_ENDPOINT || '/api/v1/jobs/createTask';
     if (!endpoint.toLowerCase().includes('gpt4o-image')) {
-      return this.createMarketTask(model, {
-        prompt: input.prompt,
-        image_urls: input.imageUrls || [],
-        aspect_ratio: input.aspectRatio || '9:16',
-        size: input.size,
-      }, undefined, endpoint);
+      const imageUrls = (input.imageUrls || []).filter(Boolean);
+      const resolvedModel = this.resolveMarketImageModel(model, imageUrls.length > 0);
+      const isGptImage15 = resolvedModel.startsWith('gpt-image/1.5-');
+      const marketInput: JsonRecord = isGptImage15
+        ? {
+            prompt: input.prompt,
+            ...(imageUrls.length ? { input_urls: imageUrls } : {}),
+            aspect_ratio: input.aspectRatio || '9:16',
+            quality: process.env.CREATIVE_KIE_IMAGE_QUALITY || 'medium',
+          }
+        : {
+            prompt: input.prompt,
+            ...(imageUrls.length ? { image_urls: imageUrls } : {}),
+            aspect_ratio: input.aspectRatio || '9:16',
+            ...(input.size ? { size: input.size } : {}),
+          };
+      return this.createMarketTask(resolvedModel, marketInput, undefined, endpoint);
     }
     this.assertConfigured();
     const response = await this.request<JsonRecord>(endpoint, {
@@ -93,6 +104,22 @@ export class KieApiClient {
     const taskId = this.extractTaskId(response);
     if (!taskId) throw new Error(`Kie image model ${model} returned no taskId`);
     return this.waitForTask({ taskId, endpoint: 'image', model });
+  }
+
+  private resolveMarketImageModel(model: string, hasReferences: boolean) {
+    const normalized = String(model || '').trim().toLowerCase();
+    if (
+      !normalized ||
+      normalized === 'gpt-image-1' ||
+      normalized === 'gpt-image-1.5' ||
+      normalized === 'gpt-image/1.5-text-to-image' ||
+      normalized === 'gpt-image/1.5-image-to-image'
+    ) {
+      return hasReferences
+        ? 'gpt-image/1.5-image-to-image'
+        : 'gpt-image/1.5-text-to-image';
+    }
+    return model;
   }
 
   async getTask(taskId: string, endpoint: 'veo' | 'market' | 'image' = 'market') {

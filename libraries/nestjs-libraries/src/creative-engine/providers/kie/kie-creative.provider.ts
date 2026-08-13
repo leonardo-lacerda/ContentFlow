@@ -152,7 +152,7 @@ export class KieCreativeProvider implements CreativeProvider {
   }
 
   private modelFor(capability: CreativeCapability) {
-    if (capability === 'image-generation') return process.env.CREATIVE_KIE_IMAGE_MODEL || 'gpt-image-1';
+    if (capability === 'image-generation') return process.env.CREATIVE_KIE_IMAGE_MODEL || 'gpt-image/1.5-text-to-image';
     if (capability === 'video-generation') return process.env.CREATIVE_KIE_VIDEO_MODEL || 'veo3_fast';
     if (capability === 'b-roll') return process.env.CREATIVE_KIE_BROLL_MODEL || process.env.CREATIVE_KIE_VIDEO_MODEL || 'veo3_fast';
     if (capability === 'text-to-speech') return process.env.CREATIVE_KIE_TTS_MODEL || 'elevenlabs/text-to-speech-multilingual-v2';
