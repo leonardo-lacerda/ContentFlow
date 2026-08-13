@@ -8,7 +8,7 @@ const nextServerDir = path.join(rootDir, 'apps', 'frontend', '.next', 'server');
 const nodeModulesDir = path.join(rootDir, 'node_modules');
 
 const aliases = new Set();
-const aliasPattern = /(?:require|import)-in-the-middle-[a-z0-9_-]+/g;
+const requirePattern = /require\(["']([^"']+)["']\)/g;
 
 function collectFiles(directory) {
   if (!fs.existsSync(directory)) return;
@@ -17,7 +17,11 @@ function collectFiles(directory) {
     if (entry.isDirectory()) collectFiles(entryPath);
     else if (entry.isFile() && entry.name.endsWith('.js')) {
       const source = fs.readFileSync(entryPath, 'utf8');
-      for (const alias of source.matchAll(aliasPattern)) aliases.add(alias[0]);
+      for (const match of source.matchAll(requirePattern)) {
+        const moduleName = match[1];
+        const suffix = moduleName.match(/^(.*)-([a-z0-9]{8,})$/i);
+        if (suffix) aliases.add(moduleName);
+      }
     }
   }
 }
@@ -25,15 +29,11 @@ function collectFiles(directory) {
 collectFiles(nextServerDir);
 
 for (const alias of aliases) {
-  const basePackage = alias.startsWith('require-in-the-middle-')
-    ? 'require-in-the-middle'
-    : 'import-in-the-middle';
+  const basePackage = alias.replace(/-[a-z0-9]{8,}$/i, '');
   const target = path.join(nodeModulesDir, basePackage);
   const link = path.join(nodeModulesDir, alias);
 
-  if (!fs.existsSync(target)) {
-    throw new Error(`Cannot create ${alias}: package ${basePackage} is missing from node_modules`);
-  }
+  if (!fs.existsSync(target)) continue;
 
   if (fs.existsSync(link)) continue;
 

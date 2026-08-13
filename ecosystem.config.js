@@ -4,8 +4,8 @@ module.exports = {
   apps: [
     {
       name: 'contentflow-backend',
-      script: 'pnpm',
-      args: 'start:prod:backend',
+      script: 'node',
+      args: 'apps/backend/start-production.mjs',
       cwd: appDirectory,
       env: {
         NODE_ENV: 'production',
@@ -14,8 +14,8 @@ module.exports = {
     },
     {
       name: 'contentflow-frontend',
-      script: 'pnpm',
-      args: 'start:prod:frontend',
+      script: 'node',
+      args: 'apps/frontend/start-production.mjs',
       cwd: appDirectory,
       env: {
         NODE_ENV: 'production',

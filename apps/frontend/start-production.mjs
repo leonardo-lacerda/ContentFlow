@@ -30,7 +30,7 @@ if (!validation.ok) {
 console.log(`[ContentFlow] frontend environment loaded from ${loadedFiles.join(', ') || 'process environment'}`);
 
 const nextEntrypoint = resolve(packageDirectory, '../../node_modules/next/dist/bin/next');
-const child = spawn(process.execPath, [nextEntrypoint, 'start', '-p', process.env.PORT || '4200'], {
+const child = spawn(process.execPath, [nextEntrypoint, 'start', '-p', process.env.FRONTEND_PORT || '4200'], {
   cwd: packageDirectory,
   env: process.env,
   stdio: 'inherit',
