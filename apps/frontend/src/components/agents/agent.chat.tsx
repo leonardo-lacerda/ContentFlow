@@ -54,6 +54,7 @@ import {
   type ContentIdea,
 } from '@gitroom/frontend/components/agents/content-artifacts.component';
 import { extractSummaryIdeasArtifact } from '@gitroom/frontend/components/agents/idea-summary-parser';
+import { ContentPresentationAction } from '@gitroom/frontend/components/agents/content-presentation-action';
 
 /**
  * CopilotKit caches an action's `render` the first time it is registered and
@@ -79,30 +80,6 @@ const liveArtifactAction: {
 const liveSendMessage: {
   current: ((text: string) => Promise<unknown>) | null;
 } = { current: null };
-
-// CopilotKit may replay a tool render while a streamed response is settling.
-// Keep the same structured artifact from being mounted several times in one
-// thread, while allowing a genuinely changed carousel/copy to replace it.
-const renderedPresentationArtifacts = new Map<string, number>();
-const PRESENTATION_DEDUPE_WINDOW_MS = 10 * 60 * 1000;
-
-const isRepeatedPresentation = (key: string) => {
-  const now = Date.now();
-  const renderedAt = renderedPresentationArtifacts.get(key);
-  if (renderedAt && now - renderedAt < PRESENTATION_DEDUPE_WINDOW_MS) return true;
-  renderedPresentationArtifacts.set(key, now);
-  return false;
-};
-
-const presentationFingerprint = (threadId: string, payload: Record<string, any>) =>
-  `${threadId}:${JSON.stringify({
-    operation: payload.operation || (payload.ideas?.length ? 'ideas' : 'carousel'),
-    title: payload.title,
-    platform: payload.platform,
-    aspectRatio: payload.aspectRatio,
-    ideas: payload.ideas,
-    slides: payload.slides,
-  })}`;
 
 const dispatchArtifactAction = async (value: Record<string, unknown>) => {
   if (!liveArtifactAction.current) return;
@@ -139,7 +116,6 @@ const classifyChatError = (errorEvent: any): 'provider' | 'credits' => {
  */
 const StudioChat: FC = () => {
   const t = useT();
-  const params = useParams<{ id: string }>();
   const [chatError, setChatError] = useState<'provider' | 'credits' | null>(null);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const actionStatusTimer = useRef<number | null>(null);
@@ -275,30 +251,13 @@ const StudioChat: FC = () => {
   useCopilotAction({
     name: 'contentPresentationTool',
     available: 'frontend',
-    render: ({ args, status }) => {
-      const rawPayload = (args || {}) as Record<string, any>;
-      const firstResult = rawPayload.result as Record<string, any> | undefined;
-      const payload = (
-        firstResult?.ideas || firstResult?.slides
-          ? firstResult
-          : firstResult?.result || rawPayload
-      ) as Record<string, any>;
-      if (status === 'inProgress') return <></>;
-      const operation =
-        payload.operation ||
-        (payload.ideas?.length ? 'ideas' : payload.slides?.length ? 'carousel' : '');
-      if (operation === 'ideas' && payload.ideas?.length) {
-        const key = presentationFingerprint(params.id || 'new', payload);
-        if (isRepeatedPresentation(key)) return <></>;
-        return <ContentIdeasCard args={payload} onAction={dispatchArtifactAction} />;
-      }
-      if (operation === 'carousel' && payload.slides?.length) {
-        const key = presentationFingerprint(params.id || 'new', payload);
-        if (isRepeatedPresentation(key)) return <></>;
-        return <CarouselPreviewCard args={payload} onAction={dispatchArtifactAction} />;
-      }
-      return <></>;
-    },
+    render: ({ args, status }) => (
+      <ContentPresentationAction
+        args={args as Record<string, any>}
+        status={status}
+        onAction={dispatchArtifactAction}
+      />
+    ),
   });
 
   return (
