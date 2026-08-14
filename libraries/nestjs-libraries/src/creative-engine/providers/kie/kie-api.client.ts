@@ -31,6 +31,47 @@ export const normalizeKieGptImageAspectRatio = (value?: string) => {
   ).value;
 };
 
+// GPT Image 2 (Kie market model gpt-image-2-*) accepts a much wider set of
+// aspect ratios natively than 1.5 did, including 4:5 — the exact ratio the
+// Studio carousel design uses, which used to get lossily snapped to 2:3 under
+// the 1.5 client. Source: https://docs.kie.ai/market/gpt/gpt-image-2-text-to-image
+const KIE_GPT_IMAGE_2_ASPECT_RATIOS = [
+  { value: '1:1', ratio: 1 },
+  { value: '3:2', ratio: 3 / 2 },
+  { value: '2:3', ratio: 2 / 3 },
+  { value: '4:3', ratio: 4 / 3 },
+  { value: '3:4', ratio: 3 / 4 },
+  { value: '5:4', ratio: 5 / 4 },
+  { value: '4:5', ratio: 4 / 5 },
+  { value: '16:9', ratio: 16 / 9 },
+  { value: '9:16', ratio: 9 / 16 },
+  { value: '2:1', ratio: 2 },
+  { value: '1:2', ratio: 1 / 2 },
+  { value: '3:1', ratio: 3 },
+  { value: '1:3', ratio: 1 / 3 },
+  { value: '21:9', ratio: 21 / 9 },
+  { value: '9:21', ratio: 9 / 21 },
+] as const;
+
+export const normalizeKieGptImage2AspectRatio = (value?: string) => {
+  const normalized = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+  if (!normalized || normalized === 'auto') return 'auto';
+  if (normalized === 'square') return '1:1';
+
+  const match = normalized.match(/^(\d+(?:\.\d+)?)(?::|x)(\d+(?:\.\d+)?)$/);
+  if (!match) return 'auto';
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (!width || !height) return 'auto';
+  const ratio = width / height;
+
+  return KIE_GPT_IMAGE_2_ASPECT_RATIOS.reduce((closest, candidate) =>
+    Math.abs(candidate.ratio - ratio) < Math.abs(closest.ratio - ratio)
+      ? candidate
+      : closest
+  ).value;
+};
+
 @Injectable()
 export class KieApiClient {
   private readonly logger = new Logger(KieApiClient.name);
@@ -101,22 +142,27 @@ export class KieApiClient {
       const imageUrls = (input.imageUrls || []).filter(Boolean);
       const resolvedModel = this.resolveMarketImageModel(model, imageUrls.length > 0);
       const isGptImage15 = resolvedModel.startsWith('gpt-image/1.5-');
-      const aspectRatio = isGptImage15
-        ? normalizeKieGptImageAspectRatio(input.aspectRatio)
-        : input.aspectRatio || '9:16';
+      const isGptImage2 = resolvedModel.startsWith('gpt-image-2-');
       const marketInput: JsonRecord = isGptImage15
         ? {
             prompt: input.prompt,
             ...(imageUrls.length ? { input_urls: imageUrls } : {}),
-            aspect_ratio: aspectRatio,
+            aspect_ratio: normalizeKieGptImageAspectRatio(input.aspectRatio),
             quality: process.env.CREATIVE_KIE_IMAGE_QUALITY || 'medium',
           }
-        : {
-            prompt: input.prompt,
-            ...(imageUrls.length ? { image_urls: imageUrls } : {}),
-            aspect_ratio: aspectRatio,
-            ...(input.size ? { size: input.size } : {}),
-          };
+        : isGptImage2
+          ? {
+              prompt: input.prompt,
+              ...(imageUrls.length ? { input_urls: imageUrls } : {}),
+              aspect_ratio: normalizeKieGptImage2AspectRatio(input.aspectRatio),
+              ...(process.env.CREATIVE_KIE_IMAGE_RESOLUTION ? { resolution: process.env.CREATIVE_KIE_IMAGE_RESOLUTION } : {}),
+            }
+          : {
+              prompt: input.prompt,
+              ...(imageUrls.length ? { image_urls: imageUrls } : {}),
+              aspect_ratio: input.aspectRatio || '9:16',
+              ...(input.size ? { size: input.size } : {}),
+            };
       return this.createMarketTask(resolvedModel, marketInput, undefined, endpoint);
     }
     this.assertConfigured();
@@ -136,9 +182,8 @@ export class KieApiClient {
 
   private resolveMarketImageModel(model: string, hasReferences: boolean) {
     const normalized = String(model || '').trim().toLowerCase();
+    // Only an explicit "1.5" request still resolves to the 1.5 contract.
     if (
-      !normalized ||
-      normalized === 'gpt-image-1' ||
       normalized === 'gpt-image-1.5' ||
       normalized === 'gpt-image/1.5-text-to-image' ||
       normalized === 'gpt-image/1.5-image-to-image'
@@ -146,6 +191,18 @@ export class KieApiClient {
       return hasReferences
         ? 'gpt-image/1.5-image-to-image'
         : 'gpt-image/1.5-text-to-image';
+    }
+    // Empty/generic aliases default to GPT Image 2 — the current default.
+    if (
+      !normalized ||
+      normalized === 'gpt-image-1' ||
+      normalized === 'gpt-image-2' ||
+      normalized === 'gpt-image-2-text-to-image' ||
+      normalized === 'gpt-image-2-image-to-image'
+    ) {
+      return hasReferences
+        ? 'gpt-image-2-image-to-image'
+        : 'gpt-image-2-text-to-image';
     }
     return model;
   }
