@@ -426,9 +426,25 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
   // fingerprint still matches its current inputs is skipped from the request
   // entirely — editing one slide out of five should not re-send the other four.
   const [generatedFingerprints, setGeneratedFingerprints] = useState<Record<string, string>>({});
+  // Full-size preview opened when a generated slide image is clicked.
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  // Live count of how many slide images finished, so the user always sees
+  // progress advancing instead of a button that looks frozen.
+  const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
+  // Confirmation shown after the generated images are copied to the media library.
+  const [savedToMedia, setSavedToMedia] = useState(false);
   const isBusy = !isAwaitingUser(status) || submitting;
   const sendAction = useArtifactResponder(respond, onAction);
   const apiFetch = useFetch();
+
+  useEffect(() => {
+    if (!lightboxUrl) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLightboxUrl(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightboxUrl]);
 
   useEffect(() => {
     // CopilotKit re-invokes this render on any background chat activity (new
@@ -599,6 +615,12 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
       if (data.projectId) setProjectId(data.projectId);
       const entries = data.jobs || [];
       const jobsBySlide = new Map(entries.map((entry) => [entry.slideId || String(entry.slideIndex), entry]));
+      setSavedToMedia(false);
+      setGenProgress({ done: 0, total: entries.length });
+      const markOneDone = () =>
+        setGenProgress((current) =>
+          current ? { ...current, done: Math.min(current.total, current.done + 1) } : current
+        );
       setDraftSlides((current) =>
         current.map((slide, index) => {
           const entry = jobsBySlide.get(slideKey(slide, index));
@@ -607,14 +629,24 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
         })
       );
 
+      // Resolve each job independently and tick the progress counter as each
+      // one lands, so the user watches "3 de 7" climb instead of staring at a
+      // button that looks stuck until everything finishes at once.
       const settledEntries = await Promise.all(
         entries.map(async (entry) => {
-          if (!entry.job?.id || ['SUCCEEDED', 'FAILED', 'CANCELLED', 'REFUNDED'].includes(String(entry.job.status || '').toUpperCase())) {
+          const alreadyTerminal =
+            !entry.job?.id ||
+            ['SUCCEEDED', 'FAILED', 'CANCELLED', 'REFUNDED'].includes(String(entry.job.status || '').toUpperCase());
+          if (alreadyTerminal) {
+            markOneDone();
             return entry;
           }
           try {
-            return { ...entry, job: await waitForCreativeJob(entry.job.id) };
+            const settled = { ...entry, job: await waitForCreativeJob(entry.job.id) };
+            markOneDone();
+            return settled;
           } catch (error) {
+            markOneDone();
             return { ...entry, error: error instanceof Error ? error.message : 'Falha ao acompanhar a geração' };
           }
         })
@@ -671,10 +703,46 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
       } else {
         setDesignDirty(false);
       }
+      if (anySucceeded) {
+        void persistGeneratedImagesToMedia(settledEntries);
+      }
     } catch (error) {
       setGenerationError(error instanceof Error ? error.message : 'Nao foi possivel gerar as imagens.');
     } finally {
       setSubmitting(false);
+      setGenProgress(null);
+    }
+  };
+
+  // Copies the freshly generated slide images into the media library (/media),
+  // reusing the existing /media/carousel endpoint. Best-effort: the preview
+  // still shows the images even if this fails.
+  const persistGeneratedImagesToMedia = async (
+    settledEntries: Array<{ slideId?: string; slideIndex: number; job?: CreativeJobState; error?: string }>
+  ) => {
+    const images = settledEntries
+      .filter((entry) => entry.job?.status === 'SUCCEEDED' && Boolean(entry.job.output?.url))
+      .map((entry) => ({
+        index: Math.min(10, Math.max(1, (Number(entry.slideIndex) || 0) + 1)),
+        image: String(entry.job!.output!.url),
+      }));
+    if (!images.length) return;
+    try {
+      const response = await withTimeout(
+        apiFetch('/media/carousel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: (args.title || 'Carrossel do estúdio').slice(0, 160),
+            images,
+          }),
+        }),
+        60000,
+        'O salvamento das imagens na biblioteca'
+      );
+      if (response.ok) setSavedToMedia(true);
+    } catch {
+      // Non-fatal: the images remain visible in the preview regardless.
     }
   };
 
@@ -711,6 +779,7 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
           const slideStyle: CSSProperties = {
             aspectRatio: slideDesign.aspectRatio.replace(':', ' / '),
           };
+          const isRendering = String(slide.status || '').toLowerCase().includes('renderiz');
           return (
             <button
               type="button"
@@ -723,6 +792,25 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
               {image ? (
                 <div className="cf-carousel-slide__image-preview">
                   <img src={image} alt={slide.headline} />
+                  <span
+                    className="cf-carousel-slide__zoom"
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Abrir imagem em tamanho grande"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setLightboxUrl(image);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setLightboxUrl(image);
+                      }
+                    }}
+                  >
+                    ⤢
+                  </span>
                   {designDirty && (
                     <div className="cf-carousel-slide__live-overlay" style={{ color: slideDesign.palette.text, textAlign: slideDesign.typography.alignment, fontFamily: slideDesign.typography.bodyFont, padding: safePadding }}>
                       <span className="cf-carousel-slide__live-label">Prévia da edição</span>
@@ -744,6 +832,12 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
                     {slide.body && <p style={{ color: slideDesign.palette.muted, fontFamily: slideDesign.typography.bodyFont, fontSize: `${11 * textScale}px` }}>{slide.body}</p>}
                   </div>
                   {slide.cta && <em style={{ background: slideDesign.palette.accent, color: readableTextOn(slideDesign.palette.accent) }}>{slide.cta}</em>}
+                </div>
+              )}
+              {isRendering && (
+                <div className="cf-carousel-slide__rendering" aria-hidden="true">
+                  <span className="cf-carousel-slide__spinner" />
+                  <span>Gerando imagem…</span>
                 </div>
               )}
               <span className="cf-carousel-slide__badge">{index + 1}/{draftSlides.length}</span>
@@ -820,14 +914,43 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
                   void generateCarouselImages();
                 }}
               >
-                {submitting ? 'Gerando imagens…' : (<>Gerar imagens <span aria-hidden="true">→</span></>)}
+                {submitting
+                  ? genProgress
+                    ? `Gerando ${genProgress.done} de ${genProgress.total}…`
+                    : 'Gerando imagens…'
+                  : (<>Gerar imagens <span aria-hidden="true">→</span></>)}
               </button>
             </div>
+            {submitting && (
+              <div className="cf-carousel-gen-progress" role="status" aria-live="polite">
+                <div className="cf-carousel-gen-progress__bar">
+                  <div
+                    className="cf-carousel-gen-progress__fill"
+                    style={{
+                      width: genProgress && genProgress.total > 0
+                        ? `${Math.round((genProgress.done / genProgress.total) * 100)}%`
+                        : '15%',
+                    }}
+                    data-indeterminate={genProgress ? 'false' : 'true'}
+                  />
+                </div>
+                <span>
+                  {genProgress
+                    ? `${genProgress.done} de ${genProgress.total} imagens prontas — pode deixar aberto, estamos gerando…`
+                    : 'Enviando para geração…'}
+                </span>
+              </div>
+            )}
+            {!submitting && savedToMedia && (
+              <small className="cf-carousel-copy-editor__saved" role="status">
+                ✓ Imagens salvas na sua biblioteca de mídia (/media).
+              </small>
+            )}
             {generationError ? (
               <small className="cf-carousel-copy-editor__error" role="alert">{generationError}</small>
-            ) : (
+            ) : !submitting && !savedToMedia ? (
               <small>{pendingRegenerationCount > 0 ? 'As alterações de design estão prontas para regeneração.' : 'As imagens só serão solicitadas depois da aprovação da copy e do design.'}</small>
-            )}
+            ) : null}
           </div>
         </>
       )}
@@ -835,6 +958,30 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
       <footer className="cf-content-artifact__footer">
         <span>Você pode editar cada slide antes de gerar.</span>
       </footer>
+
+      {lightboxUrl && (
+        <div
+          className="cf-carousel-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Imagem ampliada"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            className="cf-carousel-lightbox__close"
+            aria-label="Fechar"
+            onClick={() => setLightboxUrl(null)}
+          >
+            ×
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="Imagem do slide ampliada"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      )}
     </section>
   );
 }
