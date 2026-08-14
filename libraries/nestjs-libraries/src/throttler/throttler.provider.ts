@@ -52,7 +52,7 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
         url.startsWith('/billing/v2/plans') ||
         url.startsWith('/billing/v2/pricing'))
     ) {
-      return true;
+      return this.enforceOrganizationBucket(request, 'billing-read', 120);
     }
 
     // Public posting API: throttle per-organization.
@@ -64,7 +64,7 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
     // catalog/health endpoints remain available for job progress and operations.
     const isCreativePath = url.startsWith('/creative') || url.startsWith('/public/v1/creative');
     if (isCreativePath && !['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      return true;
+      return this.enforceOrganizationBucket(request, 'creative-read', 120);
     }
 
     // Always throttle sensitive write endpoints (AI generation, billing).
@@ -77,7 +77,23 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
       return super.canActivate(context);
     }
 
-    // Other authenticated traffic: skip throttling
+    // Every authenticated organization request is rate limited. This is a
+    // technical abuse guard only; commercial generation limits are enforced by
+    // credits/entitlements, not by this bucket.
+    return this.enforceOrganizationBucket(request, 'authenticated', 120);
+  }
+
+  private async enforceOrganizationBucket(
+    request: Request,
+    scope: string,
+    limit: number,
+  ): Promise<boolean> {
+    const tracker = await this.getTracker(request as any);
+    const bucket = Math.floor(Date.now() / 60000);
+    const key = `throttle:org:${tracker}:${scope}:${bucket}`;
+    const count = await ioRedis.incr(key);
+    if (count === 1) await ioRedis.expire(key, 60);
+    if (count > limit) throw new ThrottlerException();
     return true;
   }
 

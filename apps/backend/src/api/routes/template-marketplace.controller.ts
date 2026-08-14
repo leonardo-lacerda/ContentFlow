@@ -14,6 +14,9 @@ import { ApiTags } from '@nestjs/swagger';
 import { Organization } from '@prisma/client';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { TemplateMarketplaceService } from '@gitroom/nestjs-libraries/database/prisma/templates/template-marketplace.service';
+import { AdminSessionGuard } from '@gitroom/backend/services/auth/admin/admin-session.guard';
+import { AdminPermissionGuard } from '@gitroom/backend/services/auth/admin/admin-permission.guard';
+import { AdminPermission } from '@gitroom/backend/services/auth/admin/admin-permission.decorator';
 
 @ApiTags('Template Marketplace')
 @UseGuards(V1SurfaceGuard)
@@ -80,6 +83,8 @@ export class TemplateMarketplaceController {
   }
 
   @Post('/templates/:id/review')
+  @UseGuards(AdminSessionGuard, AdminPermissionGuard)
+  @AdminPermission('content.moderate', { severity: 'WARNING', requireReason: true, resourceType: 'MarketplaceTemplate' })
   async reviewTemplate(
     @Param('id') id: string,
     @Body() body: { status: 'APPROVED' | 'REJECTED'; feedback?: string },
@@ -94,11 +99,15 @@ export class TemplateMarketplaceController {
   }
 
   @Get('/abuse-detection')
+  @UseGuards(AdminSessionGuard, AdminPermissionGuard)
+  @AdminPermission('content.moderate', { resourceType: 'MarketplaceTemplate' })
   async detectAbuse() {
     return this._marketplaceService.detectAbuse();
   }
 
   @Post('/templates/:id/suspend')
+  @UseGuards(AdminSessionGuard, AdminPermissionGuard)
+  @AdminPermission('content.moderate', { severity: 'CRITICAL', requireReason: true, resourceType: 'MarketplaceTemplate' })
   async suspendTemplate(
     @Param('id') id: string,
     @Body() body: { reason: string },

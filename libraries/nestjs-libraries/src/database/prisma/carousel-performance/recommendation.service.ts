@@ -60,11 +60,11 @@ export class RecommendationService {
       platformAgg,
       totalCount,
     ] = await Promise.all([
-      this.carouselPerformanceRepository.getTopPerformersByBrand(brandProfileId, 10),
-      this.carouselPerformanceRepository.getAggregatedByTemplateForBrand(brandProfileId) as Promise<any[]>,
-      this.carouselPerformanceRepository.getAggregatedByThemeForBrand(brandProfileId) as Promise<any[]>,
-      this.carouselPerformanceRepository.getAggregatedByPlatformForBrand(brandProfileId),
-      this.carouselPerformanceRepository.getCountByBrand(brandProfileId),
+      this.carouselPerformanceRepository.getTopPerformersByBrand(organizationId, brandProfileId, 10),
+      this.carouselPerformanceRepository.getAggregatedByTemplateForBrand(organizationId, brandProfileId) as Promise<any[]>,
+      this.carouselPerformanceRepository.getAggregatedByThemeForBrand(organizationId, brandProfileId) as Promise<any[]>,
+      this.carouselPerformanceRepository.getAggregatedByPlatformForBrand(organizationId, brandProfileId),
+      this.carouselPerformanceRepository.getCountByBrand(organizationId, brandProfileId),
     ]);
 
     const recommendations: Recommendation[] = [];

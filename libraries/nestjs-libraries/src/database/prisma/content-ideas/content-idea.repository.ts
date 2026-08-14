@@ -13,9 +13,10 @@ export class ContentIdeaRepository {
     });
   }
 
-  findByBrandProfile(brandProfileId: string, status?: ContentIdeaStatus) {
+  findByBrandProfile(orgId: string, brandProfileId: string, status?: ContentIdeaStatus) {
     return this.prisma.contentIdea.findMany({
       where: {
+        organizationId: orgId,
         brandProfileId,
         ...(status ? { status } : {}),
       },

@@ -70,6 +70,10 @@ export class BrandProfileRepository {
   }
 
   async selectBrand(orgId: string, brandId: string) {
+    const brand = await this.prisma.brandProfile.findFirst({
+      where: { id: brandId, organizationId: orgId, deletedAt: null },
+    });
+    if (!brand) throw new Error('Brand not found');
     await this.prisma.brandProfile.updateMany({
       where: { organizationId: orgId, selected: true, deletedAt: null },
       data: { selected: false },

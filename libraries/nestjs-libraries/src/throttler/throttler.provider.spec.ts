@@ -66,7 +66,7 @@ describe('ThrottlerBehindProxyGuard', () => {
       expect(superCanActivate).toHaveBeenCalledWith(context);
     });
 
-    it('skips throttling for authenticated dashboard traffic outside the public posting API', async () => {
+    it('rate limits authenticated dashboard traffic outside the public posting API', async () => {
       const context = buildContext({
         method: 'GET',
         url: '/posts',
@@ -77,7 +77,7 @@ describe('ThrottlerBehindProxyGuard', () => {
       expect(superCanActivate).not.toHaveBeenCalled();
     });
 
-    it('does not throttle authenticated billing reads used by the credit UI', async () => {
+    it('rate limits authenticated billing reads used by the credit UI', async () => {
       const context = buildContext({
         method: 'GET',
         url: '/billing/v2/account',

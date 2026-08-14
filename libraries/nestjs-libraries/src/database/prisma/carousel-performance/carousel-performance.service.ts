@@ -138,12 +138,13 @@ export class CarouselPerformanceService {
     );
   }
 
-  async getBrandPerformance(brandProfileId: string) {
-    return this.carouselPerformanceRepository.findByBrand(brandProfileId);
+  async getBrandPerformance(organizationId: string, brandProfileId: string) {
+    return this.carouselPerformanceRepository.findByBrand(organizationId, brandProfileId);
   }
 
-  async getProjectPerformance(carouselProjectId: string) {
+  async getProjectPerformance(organizationId: string, carouselProjectId: string) {
     return this.carouselPerformanceRepository.findByCarouselProject(
+      organizationId,
       carouselProjectId
     );
   }
@@ -165,6 +166,11 @@ export class CarouselPerformanceService {
     periodStart?: string;
     periodEnd?: string;
   }) {
+    await this.carouselPerformanceRepository.assertProjectOwnership(
+      data.organizationId,
+      data.carouselProjectId,
+      data.brandProfileId,
+    );
     const impressions = data.impressions ?? 0;
     const reach = data.reach ?? 0;
     const saves = data.saves ?? 0;
@@ -218,8 +224,9 @@ export class CarouselPerformanceService {
     );
   }
 
-  async getPerformanceTrend(brandProfileId: string, days: number) {
+  async getPerformanceTrend(organizationId: string, brandProfileId: string, days: number) {
     return this.carouselPerformanceRepository.getPerformanceTrend(
+      organizationId,
       brandProfileId,
       days
     );
@@ -258,10 +265,12 @@ export class CarouselPerformanceService {
     if (brandProfileId) {
       brandAggregated =
         await this.carouselPerformanceRepository.getAggregatedByBrand(
+          organizationId,
           brandProfileId
         );
       trend =
         await this.carouselPerformanceRepository.getPerformanceTrend(
+          organizationId,
           brandProfileId,
           30
         );

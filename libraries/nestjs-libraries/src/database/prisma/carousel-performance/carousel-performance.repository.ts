@@ -5,6 +5,18 @@ import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.
 export class CarouselPerformanceRepository {
   constructor(private prisma: PrismaService) {}
 
+  async assertProjectOwnership(
+    organizationId: string,
+    carouselProjectId: string,
+    brandProfileId: string,
+  ) {
+    const project = await this.prisma.carouselProject.findFirst({
+      where: { id: carouselProjectId, organizationId, brandProfileId },
+      select: { id: true },
+    });
+    if (!project) throw new Error('Carousel project not found or access denied');
+  }
+
   async findByOrganization(
     orgId: string,
     filters?: {
@@ -32,16 +44,16 @@ export class CarouselPerformanceRepository {
     });
   }
 
-  async findByBrand(brandProfileId: string) {
+  async findByBrand(organizationId: string, brandProfileId: string) {
     return this.prisma.carouselPerformance.findMany({
-      where: { brandProfileId },
+      where: { organizationId, brandProfileId },
       orderBy: { collectedAt: 'desc' },
     });
   }
 
-  async findByCarouselProject(carouselProjectId: string) {
+  async findByCarouselProject(organizationId: string, carouselProjectId: string) {
     return this.prisma.carouselPerformance.findMany({
-      where: { carouselProjectId },
+      where: { organizationId, carouselProjectId },
       orderBy: { collectedAt: 'desc' },
     });
   }
@@ -125,10 +137,10 @@ export class CarouselPerformanceRepository {
     });
   }
 
-  async getAggregatedByBrand(brandProfileId: string) {
+  async getAggregatedByBrand(organizationId: string, brandProfileId: string) {
     const results = await this.prisma.carouselPerformance.groupBy({
       by: ['brandProfileId'],
-      where: { brandProfileId },
+      where: { organizationId, brandProfileId },
       _avg: {
         engagementRate: true,
         reachRate: true,
@@ -210,7 +222,7 @@ export class CarouselPerformanceRepository {
     });
   }
 
-  async getPerformanceTrend(brandProfileId: string, days: number) {
+  async getPerformanceTrend(organizationId: string, brandProfileId: string, days: number) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
@@ -224,15 +236,16 @@ export class CarouselPerformanceRepository {
         COUNT(*)::int as "recordCount"
       FROM "CarouselPerformance" cp_perf
       WHERE cp_perf."brandProfileId" = ${brandProfileId}
+        AND cp_perf."organizationId" = ${organizationId}
         AND cp_perf."collectedAt" >= ${startDate}
       GROUP BY DATE(cp_perf."collectedAt")
       ORDER BY date ASC
     `;
   }
 
-  async getTopPerformersByBrand(brandProfileId: string, limit: number) {
+  async getTopPerformersByBrand(organizationId: string, brandProfileId: string, limit: number) {
     return this.prisma.carouselPerformance.findMany({
-      where: { brandProfileId },
+      where: { organizationId, brandProfileId },
       orderBy: { normalizedScore: 'desc' },
       take: limit,
       include: {
@@ -266,7 +279,7 @@ export class CarouselPerformanceRepository {
     `;
   }
 
-  async getAggregatedByThemeForBrand(brandProfileId: string) {
+  async getAggregatedByThemeForBrand(organizationId: string, brandProfileId: string) {
     return this.prisma.$queryRaw`
       SELECT
         cp.metadata->>'theme' as theme,
@@ -278,6 +291,7 @@ export class CarouselPerformanceRepository {
       FROM "CarouselPerformance" cp_perf
       JOIN "CarouselProject" cp ON cp.id = cp_perf."carouselProjectId"
       WHERE cp_perf."brandProfileId" = ${brandProfileId}
+        AND cp_perf."organizationId" = ${organizationId}
         AND cp.metadata->>'theme' IS NOT NULL
         AND cp.metadata->>'theme' != ''
       GROUP BY cp.metadata->>'theme'
@@ -285,7 +299,7 @@ export class CarouselPerformanceRepository {
     `;
   }
 
-  async getAggregatedByTemplateForBrand(brandProfileId: string) {
+  async getAggregatedByTemplateForBrand(organizationId: string, brandProfileId: string) {
     return this.prisma.$queryRaw`
       SELECT
         cp.metadata->>'template' as template,
@@ -297,6 +311,7 @@ export class CarouselPerformanceRepository {
       FROM "CarouselPerformance" cp_perf
       JOIN "CarouselProject" cp ON cp.id = cp_perf."carouselProjectId"
       WHERE cp_perf."brandProfileId" = ${brandProfileId}
+        AND cp_perf."organizationId" = ${organizationId}
         AND cp.metadata->>'template' IS NOT NULL
         AND cp.metadata->>'template' != ''
       GROUP BY cp.metadata->>'template'
@@ -304,10 +319,10 @@ export class CarouselPerformanceRepository {
     `;
   }
 
-  async getAggregatedByPlatformForBrand(brandProfileId: string) {
+  async getAggregatedByPlatformForBrand(organizationId: string, brandProfileId: string) {
     return this.prisma.carouselPerformance.groupBy({
       by: ['platform'],
-      where: { brandProfileId },
+      where: { organizationId, brandProfileId },
       _avg: {
         engagementRate: true,
         normalizedScore: true,
@@ -342,9 +357,9 @@ export class CarouselPerformanceRepository {
     });
   }
 
-  async getCountByBrand(brandProfileId: string): Promise<number> {
+  async getCountByBrand(organizationId: string, brandProfileId: string): Promise<number> {
     return this.prisma.carouselPerformance.count({
-      where: { brandProfileId },
+      where: { organizationId, brandProfileId },
     });
   }
 }

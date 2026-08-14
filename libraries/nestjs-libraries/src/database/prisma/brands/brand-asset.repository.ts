@@ -26,14 +26,22 @@ export class BrandAssetRepository {
     return this.prisma.brandAsset.create({ data });
   }
 
-  approve(id: string) {
+  async approve(id: string, brandProfileId: string) {
+    const existing = await this.prisma.brandAsset.findFirst({
+      where: { id, brandProfileId, deletedAt: null },
+    });
+    if (!existing) throw new Error('Brand asset not found');
     return this.prisma.brandAsset.update({
       where: { id },
       data: { approved: true },
     });
   }
 
-  softDelete(id: string) {
+  async softDelete(id: string, brandProfileId: string) {
+    const existing = await this.prisma.brandAsset.findFirst({
+      where: { id, brandProfileId, deletedAt: null },
+    });
+    if (!existing) throw new Error('Brand asset not found');
     return this.prisma.brandAsset.update({
       where: { id },
       data: { deletedAt: new Date() },

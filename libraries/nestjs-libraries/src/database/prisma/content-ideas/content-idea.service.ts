@@ -10,8 +10,8 @@ export class ContentIdeaService {
     return this.contentIdeaRepository.findByOrganization(orgId);
   }
 
-  async getIdeasByBrand(brandProfileId: string, status?: ContentIdeaStatus) {
-    return this.contentIdeaRepository.findByBrandProfile(brandProfileId, status);
+  async getIdeasByBrand(orgId: string, brandProfileId: string, status?: ContentIdeaStatus) {
+    return this.contentIdeaRepository.findByBrandProfile(orgId, brandProfileId, status);
   }
 
   async getIdea(id: string, orgId: string) {

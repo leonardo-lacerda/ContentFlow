@@ -6,9 +6,10 @@ import { BrandLearningStatus, BrandLearningType } from '@prisma/client';
 export class BrandLearningRepository {
   constructor(private prisma: PrismaService) {}
 
-  findByBrand(brandProfileId: string, status?: BrandLearningStatus) {
+  findByBrand(orgId: string, brandProfileId: string, status?: BrandLearningStatus) {
     return this.prisma.brandLearning.findMany({
       where: {
+        organizationId: orgId,
         brandProfileId,
         ...(status ? { status } : {}),
       },
@@ -23,8 +24,16 @@ export class BrandLearningRepository {
     });
   }
 
-  findById(id: string) {
-    return this.prisma.brandLearning.findUnique({ where: { id } });
+  findById(id: string, organizationId: string) {
+    return this.prisma.brandLearning.findFirst({ where: { id, organizationId } });
+  }
+
+  async assertBrandOwnership(brandProfileId: string, organizationId: string) {
+    const brand = await this.prisma.brandProfile.findFirst({
+      where: { id: brandProfileId, organizationId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!brand) throw new Error('Brand not found or access denied');
   }
 
   create(data: {
@@ -50,21 +59,27 @@ export class BrandLearningRepository {
     return this.prisma.brandLearning.update({ where: { id }, data });
   }
 
-  approve(id: string) {
+  async approve(id: string, organizationId: string) {
+    const existing = await this.findById(id, organizationId);
+    if (!existing) throw new Error('Brand learning not found');
     return this.prisma.brandLearning.update({
       where: { id },
       data: { status: BrandLearningStatus.APPROVED },
     });
   }
 
-  reject(id: string) {
+  async reject(id: string, organizationId: string) {
+    const existing = await this.findById(id, organizationId);
+    if (!existing) throw new Error('Brand learning not found');
     return this.prisma.brandLearning.update({
       where: { id },
       data: { status: BrandLearningStatus.REJECTED },
     });
   }
 
-  apply(id: string, version: number) {
+  async apply(id: string, organizationId: string, version: number) {
+    const existing = await this.findById(id, organizationId);
+    if (!existing) throw new Error('Brand learning not found');
     return this.prisma.brandLearning.update({
       where: { id },
       data: {
@@ -82,10 +97,10 @@ export class BrandLearningRepository {
     });
   }
 
-  countByStatus(brandProfileId: string) {
+  countByStatus(brandProfileId: string, organizationId: string) {
     return this.prisma.brandLearning.groupBy({
       by: ['status'],
-      where: { brandProfileId },
+      where: { brandProfileId, organizationId },
       _count: { status: true },
     });
   }

@@ -6,12 +6,12 @@ import { BrandLearningStatus, BrandLearningType } from '@prisma/client';
 export class BrandLearningService {
   constructor(private brandLearningRepository: BrandLearningRepository) {}
 
-  async getLearnings(brandProfileId: string, status?: BrandLearningStatus) {
-    return this.brandLearningRepository.findByBrand(brandProfileId, status);
+  async getLearnings(orgId: string, brandProfileId: string, status?: BrandLearningStatus) {
+    return this.brandLearningRepository.findByBrand(orgId, brandProfileId, status);
   }
 
-  async getLearning(id: string) {
-    return this.brandLearningRepository.findById(id);
+  async getLearning(orgId: string, id: string) {
+    return this.brandLearningRepository.findById(id, orgId);
   }
 
   async createLearning(data: {
@@ -24,29 +24,34 @@ export class BrandLearningService {
     confidence?: number;
     metadata?: any;
   }) {
+    await this.brandLearningRepository.assertBrandOwnership(
+      data.brandProfileId,
+      data.organizationId,
+    );
     return this.brandLearningRepository.create(data);
   }
 
-  async approveLearning(id: string) {
-    return this.brandLearningRepository.approve(id);
+  async approveLearning(orgId: string, id: string) {
+    return this.brandLearningRepository.approve(id, orgId);
   }
 
-  async rejectLearning(id: string) {
-    return this.brandLearningRepository.reject(id);
+  async rejectLearning(orgId: string, id: string) {
+    return this.brandLearningRepository.reject(id, orgId);
   }
 
-  async applyLearning(id: string, version: number) {
-    return this.brandLearningRepository.apply(id, version);
+  async applyLearning(orgId: string, id: string, version: number) {
+    return this.brandLearningRepository.apply(id, orgId, version);
   }
 
-  async getApprovedLearnings(brandProfileId: string) {
+  async getApprovedLearnings(orgId: string, brandProfileId: string) {
     return this.brandLearningRepository.findByBrand(
+      orgId,
       brandProfileId,
       BrandLearningStatus.APPROVED
     );
   }
 
-  async getLearningStats(brandProfileId: string) {
-    return this.brandLearningRepository.countByStatus(brandProfileId);
+  async getLearningStats(orgId: string, brandProfileId: string) {
+    return this.brandLearningRepository.countByStatus(brandProfileId, orgId);
   }
 }

@@ -15,15 +15,19 @@ export class BrandLearningController {
 
   @Get('/brand/:brandId')
   async getLearnings(
+    @GetOrgFromRequest() org: Organization,
     @Param('brandId') brandId: string,
     @Query() query: QueryBrandLearningDto
   ) {
-    return this.brandLearningService.getLearnings(brandId, query.status);
+    return this.brandLearningService.getLearnings(org.id, brandId, query.status);
   }
 
   @Get('/:id')
-  async getLearning(@Param('id') id: string) {
-    return this.brandLearningService.getLearning(id);
+  async getLearning(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.brandLearningService.getLearning(org.id, id);
   }
 
   @Post('/')
@@ -40,22 +44,29 @@ export class BrandLearningController {
 
   @Patch('/:id/approve')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async approveLearning(@Param('id') id: string) {
-    return this.brandLearningService.approveLearning(id);
+  async approveLearning(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.brandLearningService.approveLearning(org.id, id);
   }
 
   @Patch('/:id/reject')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
-  async rejectLearning(@Param('id') id: string) {
-    return this.brandLearningService.rejectLearning(id);
+  async rejectLearning(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    return this.brandLearningService.rejectLearning(org.id, id);
   }
 
   @Patch('/:id/apply')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async applyLearning(
+    @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
     @Body() body: { version: number }
   ) {
-    return this.brandLearningService.applyLearning(id, body.version);
+    return this.brandLearningService.applyLearning(org.id, id, body.version);
   }
 }

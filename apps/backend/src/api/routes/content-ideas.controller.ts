@@ -23,10 +23,11 @@ export class ContentIdeaController {
 
   @Get('/brand/:brandId')
   async getIdeasByBrand(
+    @GetOrgFromRequest() org: Organization,
     @Param('brandId') brandId: string,
     @Body() body?: { status?: string }
   ) {
-    return this.contentIdeaService.getIdeasByBrand(brandId, body?.status as any);
+    return this.contentIdeaService.getIdeasByBrand(org.id, brandId, body?.status as any);
   }
 
   @Get('/:id')

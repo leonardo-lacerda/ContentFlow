@@ -32,8 +32,11 @@ export class CarouselPerformanceController {
   }
 
   @Get('/brand/:brandId')
-  async getBrandPerformance(@Param('brandId') brandId: string) {
-    return this.carouselPerformanceService.getBrandPerformance(brandId);
+  async getBrandPerformance(
+    @GetOrgFromRequest() org: Organization,
+    @Param('brandId') brandId: string
+  ) {
+    return this.carouselPerformanceService.getBrandPerformance(org.id, brandId);
   }
 
   @Get('/dashboard')
@@ -45,8 +48,11 @@ export class CarouselPerformanceController {
   }
 
   @Get('/project/:projectId')
-  async getProjectPerformance(@Param('projectId') projectId: string) {
-    return this.carouselPerformanceService.getProjectPerformance(projectId);
+  async getProjectPerformance(
+    @GetOrgFromRequest() org: Organization,
+    @Param('projectId') projectId: string
+  ) {
+    return this.carouselPerformanceService.getProjectPerformance(org.id, projectId);
   }
 
   @Get('/top-performers')
@@ -60,11 +66,13 @@ export class CarouselPerformanceController {
 
   @Get('/trend/:brandId')
   async getPerformanceTrend(
+    @GetOrgFromRequest() org: Organization,
     @Param('brandId') brandId: string,
     @Query('days') days?: string
   ) {
     const trendDays = days ? parseInt(days, 10) : 30;
     return this.carouselPerformanceService.getPerformanceTrend(
+      org.id,
       brandId,
       trendDays
     );

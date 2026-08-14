@@ -92,7 +92,8 @@ export class BrandProfileService {
     return this.brandAssetRepository.findByBrandProfile(brandProfileId, type);
   }
 
-  async createAsset(brandProfileId: string, data: { type: string; mediaId?: string; sourceUrl?: string; metadata?: any }) {
+  async createAsset(orgId: string, brandProfileId: string, data: { type: string; mediaId?: string; sourceUrl?: string; metadata?: any }) {
+    await this.validateBrandOwnership(orgId, brandProfileId);
     return this.brandAssetRepository.create({ brandProfileId, ...data });
   }
 
@@ -176,12 +177,14 @@ export class BrandProfileService {
     });
   }
 
-  async approveAsset(assetId: string) {
-    return this.brandAssetRepository.approve(assetId);
+  async approveAsset(orgId: string, brandProfileId: string, assetId: string) {
+    await this.validateBrandOwnership(orgId, brandProfileId);
+    return this.brandAssetRepository.approve(assetId, brandProfileId);
   }
 
-  async deleteAsset(assetId: string) {
-    return this.brandAssetRepository.softDelete(assetId);
+  async deleteAsset(orgId: string, brandProfileId: string, assetId: string) {
+    await this.validateBrandOwnership(orgId, brandProfileId);
+    return this.brandAssetRepository.softDelete(assetId, brandProfileId);
   }
 
   async validateBrandOwnership(orgId: string, brandId: string): Promise<void> {

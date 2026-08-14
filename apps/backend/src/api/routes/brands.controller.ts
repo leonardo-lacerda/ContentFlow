@@ -111,10 +111,11 @@ export class BrandsController {
   @Post('/:id/assets')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async createAsset(
+    @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
     @Body() body: { type: string; mediaId?: string; sourceUrl?: string; metadata?: any }
   ) {
-    return this.brandProfileService.createAsset(id, body);
+    return this.brandProfileService.createAsset(org.id, id, body);
   }
 
   @Post('/:id/analyze')
@@ -150,16 +151,20 @@ export class BrandsController {
   @Patch('/:id/assets/:assetId/approve')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async approveAsset(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') brandId: string,
     @Param('assetId') assetId: string
   ) {
-    return this.brandProfileService.approveAsset(assetId);
+    return this.brandProfileService.approveAsset(org.id, brandId, assetId);
   }
 
   @Delete('/:id/assets/:assetId')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async deleteAsset(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') brandId: string,
     @Param('assetId') assetId: string
   ) {
-    return this.brandProfileService.deleteAsset(assetId);
+    return this.brandProfileService.deleteAsset(org.id, brandId, assetId);
   }
 }

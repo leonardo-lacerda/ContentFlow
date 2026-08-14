@@ -24,6 +24,16 @@ class MockRedis {
     return value;
   }
 
+  async incr(key: string) {
+    const next = Number(this.data.get(key) ?? 0) + 1;
+    this.data.set(key, next);
+    return next;
+  }
+
+  async expire(_key: string, _seconds: number) {
+    return 1;
+  }
+
   // Add other Redis methods as needed for your tests
 }
 
