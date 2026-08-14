@@ -35,7 +35,15 @@ for (const alias of aliases) {
 
   if (!fs.existsSync(target)) continue;
 
-  if (fs.existsSync(link)) continue;
+  // Production deploys hardlink-copy node_modules from the previously
+  // running release (scripts/deploy/selective-production.sh), which carries
+  // over any symlink this script already created there — including ones
+  // whose absolute path points into that OLDER release directory. Leaving
+  // it in place either throws EEXIST on recreation (observed crashing a
+  // real deploy) or, worse, silently keeps working only until that older
+  // release is cleaned up. Removing first makes every alias point at this
+  // release's own node_modules and makes the step safely re-runnable.
+  fs.rmSync(link, { force: true, recursive: true });
 
   // Junctions work on Windows without requiring developer mode; directories
   // are the native equivalent on Linux production hosts.
