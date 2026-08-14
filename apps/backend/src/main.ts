@@ -21,6 +21,15 @@ import { HttpExceptionFilter } from '@gitroom/nestjs-libraries/services/exceptio
 import { ConfigurationChecker } from '@gitroom/helpers/configuration/configuration.checker';
 
 async function start() {
+  const configurationIssues = checkConfiguration();
+  if (process.env.NODE_ENV === 'production' && configurationIssues.length > 0) {
+    Logger.error(
+      `Refusing to start production with ${configurationIssues.length} configuration issue(s)`,
+      'Configuration'
+    );
+    process.exit(1);
+  }
+
   const allowedCorsOrigins = [
     process.env.FRONTEND_URL,
     ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:6274'] : []),
@@ -108,8 +117,6 @@ async function start() {
     await app.listen(port);
     Logger.log('Backend started successfully on port ' + port);
 
-    checkConfiguration(); // Do this last, so that users will see obvious issues at the end of the startup log without having to scroll up.
-
     Logger.log(`🚀 Backend is running on: http://localhost:${port}`);
   } catch (e) {
     Logger.error(`Backend failed to start on port ${port}`, e);
@@ -131,6 +138,7 @@ function checkConfiguration() {
   } else {
     Logger.log('Configuration check completed without any issues');
   }
+  return checker.getIssues();
 }
 
 start();

@@ -59,6 +59,36 @@ export class ConfigurationChecker {
         'Needed to validate Stripe webhook events. (Or set CAKTO_WEBHOOK_* for Cakto)'
       );
     }
+
+    if (this.get('NODE_ENV') === 'production') {
+      for (const key of [
+        'ADMIN_JWT_SECRET',
+        'ADMIN_AUDIT_EXPORT_SECRET',
+        'DATA_ENCRYPTION_KEY',
+        'AI_GENERATE_API_KEY',
+      ]) {
+        if (this.checkNonEmpty(key)) {
+          const value = this.get(key)!;
+          if (value.length < 32) {
+            this.issues.push(`${key} must contain at least 32 characters`);
+          }
+          if (/change-this|troque_por|random string|your jwt secret/i.test(value)) {
+            this.issues.push(`${key} must not use a placeholder value`);
+          }
+        }
+      }
+
+      for (const key of ['MAIN_URL', 'FRONTEND_URL', 'NEXT_PUBLIC_BACKEND_URL']) {
+        const value = this.get(key);
+        if (value && !value.startsWith('https://')) {
+          this.issues.push(`${key} must use HTTPS in production`);
+        }
+      }
+
+      if (String(this.get('NOT_SECURED')).toLowerCase() === 'true') {
+        this.issues.push('NOT_SECURED must not be enabled in production');
+      }
+    }
   }
 
   checkNonEmpty(key: string, description?: string): boolean {

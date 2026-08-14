@@ -42,6 +42,9 @@ not contain credentials or production secret values.
 - Production compose files no longer provide fallback JWT or internal API
   credentials. Runtime startup rejects placeholders, short secrets, insecure
   HTTP URLs, and `NOT_SECURED=true`.
+- The backend now fails closed before binding its production port when required
+  secrets or HTTPS configuration are missing; development retains diagnostic
+  warnings. Production CI smoke tests also refuse HTTP URLs.
 - Static credential scanning and focused auth/SSRF/authorization regression
   tests are now part of CI.
 
@@ -84,7 +87,7 @@ not deleted automatically because they are local deployment artifacts.
 ## Verification performed locally
 
 - Backend and frontend production builds: passed.
-- Focused security tests: 44 tests passed.
+- Focused security tests: 46 tests passed.
 - Static credential scan: passed over tracked files.
 - `pnpm audit --audit-level high`: registry command timed out locally; CI now
   runs it as a required check.
