@@ -97,7 +97,11 @@ export function BillingV2Component() {
     return response.json();
   }, [apiFetch]);
   const { data: catalog, error: catalogError, isLoading: catalogLoading } = useSWR('/billing/v2/plans', load);
-  const { data: account, error: accountError, isLoading: accountLoading, mutate: mutateAccount } = useSWR('/billing/v2/account', load);
+  const { data: account, error: accountError, isLoading: accountLoading, mutate: mutateAccount } = useSWR('/billing/v2/account', load, {
+    dedupingInterval: 30000,
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+  });
   const { data: invoices } = useSWR('/billing/v2/invoices', load);
   const { data: pricingCatalog } = useSWR('/billing/v2/pricing', load);
 

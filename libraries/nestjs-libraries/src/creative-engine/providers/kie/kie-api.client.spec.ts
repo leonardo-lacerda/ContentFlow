@@ -1,4 +1,7 @@
-import { KieApiClient } from './kie-api.client';
+import {
+  KieApiClient,
+  normalizeKieGptImageAspectRatio,
+} from './kie-api.client';
 
 describe('KieApiClient', () => {
   const previous = { ...process.env };
@@ -56,7 +59,7 @@ describe('KieApiClient', () => {
       model: 'gpt-image/1.5-text-to-image',
       input: {
         prompt: 'carousel cover',
-        aspect_ratio: '4:5',
+        aspect_ratio: '2:3',
         quality: 'medium',
       },
     });
@@ -87,5 +90,18 @@ describe('KieApiClient', () => {
         quality: 'medium',
       },
     });
+  });
+
+  it.each([
+    ['1:1', '1:1'],
+    ['4:4', '1:1'],
+    ['4:5', '2:3'],
+    ['3:4', '2:3'],
+    ['9:16', '2:3'],
+    ['16:9', '3:2'],
+    ['4:3', '3:2'],
+    ['1080x1350', '2:3'],
+  ])('maps %s to the nearest Kie GPT Image ratio %s', (input, expected) => {
+    expect(normalizeKieGptImageAspectRatio(input)).toBe(expected);
   });
 });

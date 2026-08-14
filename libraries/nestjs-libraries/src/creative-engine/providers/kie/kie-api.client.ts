@@ -6,6 +6,31 @@ type JsonRecord = Record<string, any>;
 const TERMINAL_SUCCESS = new Set(['succeeded', 'completed', 'ready', 'success', 'done', 'finished']);
 const TERMINAL_FAILURE = new Set(['failed', 'error', 'cancelled', 'canceled', 'rejected', 'expired']);
 
+const KIE_GPT_IMAGE_ASPECT_RATIOS = [
+  { value: '1:1', ratio: 1 },
+  { value: '3:2', ratio: 3 / 2 },
+  { value: '2:3', ratio: 2 / 3 },
+] as const;
+
+export const normalizeKieGptImageAspectRatio = (value?: string) => {
+  const normalized = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+  if (!normalized) return '2:3';
+  if (normalized === 'square') return '1:1';
+
+  const match = normalized.match(/^(\d+(?:\.\d+)?)(?::|x)(\d+(?:\.\d+)?)$/);
+  if (!match) return '2:3';
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (!width || !height) return '2:3';
+  const ratio = width / height;
+
+  return KIE_GPT_IMAGE_ASPECT_RATIOS.reduce((closest, candidate) =>
+    Math.abs(candidate.ratio - ratio) < Math.abs(closest.ratio - ratio)
+      ? candidate
+      : closest
+  ).value;
+};
+
 @Injectable()
 export class KieApiClient {
   private readonly logger = new Logger(KieApiClient.name);
@@ -76,17 +101,20 @@ export class KieApiClient {
       const imageUrls = (input.imageUrls || []).filter(Boolean);
       const resolvedModel = this.resolveMarketImageModel(model, imageUrls.length > 0);
       const isGptImage15 = resolvedModel.startsWith('gpt-image/1.5-');
+      const aspectRatio = isGptImage15
+        ? normalizeKieGptImageAspectRatio(input.aspectRatio)
+        : input.aspectRatio || '9:16';
       const marketInput: JsonRecord = isGptImage15
         ? {
             prompt: input.prompt,
             ...(imageUrls.length ? { input_urls: imageUrls } : {}),
-            aspect_ratio: input.aspectRatio || '9:16',
+            aspect_ratio: aspectRatio,
             quality: process.env.CREATIVE_KIE_IMAGE_QUALITY || 'medium',
           }
         : {
             prompt: input.prompt,
             ...(imageUrls.length ? { image_urls: imageUrls } : {}),
-            aspect_ratio: input.aspectRatio || '9:16',
+            aspect_ratio: aspectRatio,
             ...(input.size ? { size: input.size } : {}),
           };
       return this.createMarketTask(resolvedModel, marketInput, undefined, endpoint);

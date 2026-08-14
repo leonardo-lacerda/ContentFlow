@@ -41,6 +41,20 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
       return true;
     }
 
+    // Billing reads power the credit badge and billing screen. They are
+    // authenticated, read-only and intentionally refreshed while jobs settle.
+    // Applying the global 30/hour bucket here made the dashboard lock itself
+    // after a few minutes and caused SWR retries to amplify the 429 response.
+    if (
+      ['GET', 'HEAD'].includes(method) &&
+      (url.startsWith('/billing/v2/account') ||
+        url.startsWith('/billing/v2/invoices') ||
+        url.startsWith('/billing/v2/plans') ||
+        url.startsWith('/billing/v2/pricing'))
+    ) {
+      return true;
+    }
+
     // Public posting API: throttle per-organization.
     if (method === 'POST' && url.includes('/public/v1/posts')) {
       return super.canActivate(context);
@@ -53,7 +67,7 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
       return true;
     }
 
-    // Always throttle sensitive endpoints (AI generation, billing)
+    // Always throttle sensitive write endpoints (AI generation, billing).
     if (ALWAYS_THROTTLED_PATHS.some((path) => url.startsWith(path))) {
       return super.canActivate(context);
     }

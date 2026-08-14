@@ -76,6 +76,28 @@ describe('ThrottlerBehindProxyGuard', () => {
       await expect(guard.canActivate(context)).resolves.toBe(true);
       expect(superCanActivate).not.toHaveBeenCalled();
     });
+
+    it('does not throttle authenticated billing reads used by the credit UI', async () => {
+      const context = buildContext({
+        method: 'GET',
+        url: '/billing/v2/account',
+        org: { id: 'org-1' },
+      });
+
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+      expect(superCanActivate).not.toHaveBeenCalled();
+    });
+
+    it('continues throttling billing writes', async () => {
+      const context = buildContext({
+        method: 'POST',
+        url: '/billing/v2/checkout',
+        org: { id: 'org-1' },
+      });
+
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+      expect(superCanActivate).toHaveBeenCalledWith(context);
+    });
   });
 
   describe('getTracker', () => {

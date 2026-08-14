@@ -7,7 +7,6 @@ import 'react-tooltip/dist/react-tooltip.css';
 import '@copilotkit/react-ui/styles.css';
 import LayoutContext from '@gitroom/frontend/components/layout/layout.context';
 import { ReactNode } from 'react';
-import { Inter, Fraunces } from 'next/font/google';
 import PlausibleProvider from 'next-plausible';
 import clsx from 'clsx';
 import { VariableContextComponent } from '@gitroom/react/helpers/variable.context';
@@ -25,22 +24,6 @@ import {
 import { HtmlComponent } from '@gitroom/frontend/components/layout/html.component';
 import Script from 'next/script';
 import { ChangeDirClient } from '@gitroom/frontend/components/new-layout/change.dir.client';
-
-const inter = Inter({
-  weight: ['400', '500', '600', '700'],
-  style: ['normal'],
-  subsets: ['latin'],
-  variable: '--font-cf-sans',
-  display: 'swap',
-});
-
-const fraunces = Fraunces({
-  weight: ['400', '500', '600', '700'],
-  style: ['normal', 'italic'],
-  subsets: ['latin'],
-  variable: '--font-cf-serif',
-  display: 'swap',
-});
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const cookieStore = await cookies();
@@ -84,14 +67,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         )}
       </head>
       <ChangeDirClient />
-      <body
-        className={clsx(
-          inter.variable,
-          fraunces.variable,
-          mode,
-          'font-sans'
-        )}
-      >
+      <body className={clsx(mode, 'font-sans')}>
         <VariableContextComponent
           storageProvider={
             process.env.STORAGE_PROVIDER! as 'local' | 'cloudflare'

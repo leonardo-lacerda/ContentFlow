@@ -6,24 +6,8 @@ import 'react-tooltip/dist/react-tooltip.css';
 import '@copilotkit/react-ui/styles.css';
 import LayoutContext from '@gitroom/frontend/components/layout/layout.context';
 import { ReactNode } from 'react';
-import { Inter, Fraunces } from 'next/font/google';
-import clsx from 'clsx';
 import { VariableContextComponent } from '@gitroom/react/helpers/variable.context';
 import UtmSaver from '@gitroom/helpers/utils/utm.saver';
-
-const inter = Inter({
-  weight: ['400', '500', '600', '700'],
-  subsets: ['latin'],
-  variable: '--font-cf-sans',
-  display: 'swap',
-});
-
-const fraunces = Fraunces({
-  weight: ['400', '500', '600', '700'],
-  subsets: ['latin'],
-  variable: '--font-cf-serif',
-  display: 'swap',
-});
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const billingEnabled = !!(
@@ -53,14 +37,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         />
         <link rel="stylesheet" href="/landing-styles.css" />
       </head>
-      <body
-        className={clsx(
-          inter.className,
-          inter.variable,
-          fraunces.variable,
-          'light text-primary !bg-primary font-sans'
-        )}
-      >
+      <body className="light text-primary !bg-primary font-sans">
         <VariableContextComponent
           language="en"
           storageProvider={

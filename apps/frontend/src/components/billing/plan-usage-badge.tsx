@@ -27,8 +27,10 @@ export function PlanUsageBadge() {
     return response.json();
   }, [apiFetch]);
   const { data } = useSWR<BillingAccountResponse>('/billing/v2/account', load, {
-    refreshInterval: 10000,
-    revalidateOnFocus: true,
+    refreshInterval: 60000,
+    dedupingInterval: 30000,
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
   });
 
   if (!data) return null;
