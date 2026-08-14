@@ -38,7 +38,12 @@ import {
 import { useVariables } from '@gitroom/react/helpers/variable.context';
 import { useParams } from 'next/navigation';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
-import { Role, TextMessage } from '@copilotkit/runtime-client-gql';
+import {
+  Role,
+  TextMessage,
+  ActionExecutionMessage,
+  ResultMessage,
+} from '@copilotkit/runtime-client-gql';
 import { AddEditModal } from '@gitroom/frontend/components/new-launch/add.edit.modal';
 import dayjs from 'dayjs';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
@@ -1004,6 +1009,95 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
   );
 };
 
+// Studio artifact cards are generative UI: they are drawn live by an action's
+// `render` during the run, not stored as HTML. On reload the thread comes back
+// as Mastra messages (text + tool invocations). To bring the cards back we
+// replay the tool call as a CopilotKit ActionExecutionMessage + ResultMessage,
+// so the same `render` path fires again. We only replay tools that produce a
+// durable, non-interactive card — never render-and-wait actions such as
+// showCreationOptions/manualPosting, which would re-open a prompt on load.
+const REHYDRATABLE_ACTIONS = new Set(['contentPresentationTool']);
+
+type RecalledToolInvocation = {
+  state?: string;
+  toolCallId?: string;
+  toolName?: string;
+  args?: Record<string, any>;
+  result?: unknown;
+};
+
+const collectToolInvocations = (content: any): RecalledToolInvocation[] => {
+  const invocations: RecalledToolInvocation[] = [];
+  const parts = Array.isArray(content?.parts) ? content.parts : [];
+  for (const part of parts) {
+    if (part?.type === 'tool-invocation' && part.toolInvocation) {
+      invocations.push(part.toolInvocation as RecalledToolInvocation);
+    }
+  }
+  if (!invocations.length && Array.isArray(content?.toolInvocations)) {
+    for (const invocation of content.toolInvocations) {
+      invocations.push(invocation as RecalledToolInvocation);
+    }
+  }
+  return invocations;
+};
+
+const collectText = (content: any): string => {
+  if (typeof content === 'string') return content;
+  const parts = Array.isArray(content?.parts) ? content.parts : [];
+  const textFromParts = parts
+    .filter((part: any) => part?.type === 'text' && typeof part.text === 'string')
+    .map((part: any) => part.text)
+    .join('\n')
+    .trim();
+  if (textFromParts) return textFromParts;
+  if (typeof content?.content === 'string') return content.content;
+  return '';
+};
+
+const rebuildMessages = (recalled: any[]) => {
+  const messages: Array<TextMessage | ActionExecutionMessage | ResultMessage> = [];
+  for (const entry of recalled) {
+    try {
+      const text = collectText(entry?.content);
+      if (text) {
+        messages.push(new TextMessage({ id: entry.id || makeId(10), content: text, role: entry.role }));
+      }
+      const invocations = collectToolInvocations(entry?.content).filter(
+        (invocation) => REHYDRATABLE_ACTIONS.has(String(invocation.toolName))
+      );
+      for (const invocation of invocations) {
+        // Prefer the stored tool result (it holds the server-normalized ideas /
+        // slides) and fall back to the raw call args. resolveContentPresentation
+        // understands both the `{ result: {...} }` and the bare-payload shapes.
+        const renderArgs = (invocation.result ?? invocation.args ?? {}) as Record<string, any>;
+        if (!renderArgs || typeof renderArgs !== 'object') continue;
+        const callId = invocation.toolCallId || makeId(12);
+        messages.push(
+          new ActionExecutionMessage({
+            id: callId,
+            name: String(invocation.toolName),
+            arguments: renderArgs,
+          })
+        );
+        // A result marks the action complete; without it the card would be
+        // treated as still in-progress and suppressed.
+        messages.push(
+          new ResultMessage({
+            id: `${callId}-result`,
+            actionExecutionId: callId,
+            actionName: String(invocation.toolName),
+            result: ResultMessage.encodeResult(invocation.result ?? { acknowledged: true }),
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Failed to rebuild studio message', error);
+    }
+  }
+  return messages;
+};
+
 const LoadMessages: FC<{ id: string }> = ({ id }) => {
   const { setMessages } = useCopilotMessagesContext();
   const fetch = useFetch();
@@ -1012,20 +1106,7 @@ const LoadMessages: FC<{ id: string }> = ({ id }) => {
       const response = await fetch(`/copilot/${idToSet}/list`);
       if (!response.ok) throw new Error(`Failed to load messages: ${response.status}`);
       const data = await response.json();
-      setMessages(
-        (Array.isArray(data?.messages) ? data.messages : []).map((p: any) => {
-          const content =
-            typeof p.content === 'string'
-              ? p.content
-              : typeof p.content?.content === 'string'
-                ? p.content.content
-                : JSON.stringify(p.content || '');
-          return new TextMessage({
-            content,
-            role: p.role,
-          });
-        })
-      );
+      setMessages(rebuildMessages(Array.isArray(data?.messages) ? data.messages : []));
     } catch (err) {
       console.error('Failed to load messages:', err);
     }
