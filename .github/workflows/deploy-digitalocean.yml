@@ -91,46 +91,39 @@ jobs:
     name: Deploy only affected services
     needs: [changes, verify]
     if: needs.changes.outputs.deploy == 'true' && needs.verify.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, contentflow-prod]
     permissions:
       contents: read
     steps:
       - name: Create exact release and deploy
-        uses: appleboy/ssh-action@v1.2.0
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
           RELEASE_SHA: ${{ github.sha }}
           DEPLOY_BACKEND: ${{ needs.changes.outputs.backend }}
           DEPLOY_FRONTEND: ${{ needs.changes.outputs.frontend }}
-        with:
-          host: ${{ secrets.DO_HOST }}
-          username: ${{ secrets.DO_USERNAME }}
-          key: ${{ secrets.DO_SSH_KEY }}
-          port: 22
-          command_timeout: 60m
-          envs: GH_TOKEN,REPOSITORY,RELEASE_SHA,DEPLOY_BACKEND,DEPLOY_FRONTEND
-          script: |
-            set -Eeuo pipefail
-            repo_dir=/opt/contentflow-repository.git
-            release_dir="/opt/contentflow-release-${RELEASE_SHA:0:7}"
-            auth_header="AUTHORIZATION: bearer $GH_TOKEN"
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          repo_dir=/opt/contentflow-repository.git
+          release_dir="/opt/contentflow-release-${RELEASE_SHA:0:7}"
+          auth_header="AUTHORIZATION: bearer $GH_TOKEN"
 
-            if [[ ! -d "$repo_dir" ]]; then
-              git -c http.extraHeader="$auth_header" clone --bare \
-                "https://github.com/$REPOSITORY.git" "$repo_dir"
-            fi
-            git --git-dir="$repo_dir" -c http.extraHeader="$auth_header" fetch origin "$RELEASE_SHA"
+          if [[ ! -d "$repo_dir" ]]; then
+            git -c http.extraHeader="$auth_header" clone --bare \
+              "https://github.com/$REPOSITORY.git" "$repo_dir"
+          fi
+          git --git-dir="$repo_dir" -c http.extraHeader="$auth_header" fetch origin "$RELEASE_SHA"
 
-            if [[ ! -d "$release_dir" ]]; then
-              git --git-dir="$repo_dir" worktree add --detach "$release_dir" "$RELEASE_SHA"
-            fi
+          if [[ ! -d "$release_dir" ]]; then
+            git --git-dir="$repo_dir" worktree add --detach "$release_dir" "$RELEASE_SHA"
+          fi
 
-            chmod +x "$release_dir/scripts/deploy/selective-production.sh"
-            GITHUB_SHA="$RELEASE_SHA" \
-            DEPLOY_BACKEND="$DEPLOY_BACKEND" \
-            DEPLOY_FRONTEND="$DEPLOY_FRONTEND" \
-              "$release_dir/scripts/deploy/selective-production.sh" "$release_dir"
+          chmod +x "$release_dir/scripts/deploy/selective-production.sh"
+          GITHUB_SHA="$RELEASE_SHA" \
+          DEPLOY_BACKEND="$DEPLOY_BACKEND" \
+          DEPLOY_FRONTEND="$DEPLOY_FRONTEND" \
+            "$release_dir/scripts/deploy/selective-production.sh" "$release_dir"
 
       - name: External smoke test
         run: |
