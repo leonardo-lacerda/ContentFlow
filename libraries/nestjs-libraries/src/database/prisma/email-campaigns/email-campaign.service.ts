@@ -25,8 +25,8 @@ export class EmailCampaignService {
     return campaign;
   }
 
-  async getCampaignsByBrand(brandProfileId: string, type?: EmailCampaignType) {
-    return this.emailCampaignRepository.findByBrand(brandProfileId, type);
+  async getCampaignsByBrand(orgId: string, brandProfileId: string, type?: EmailCampaignType) {
+    return this.emailCampaignRepository.findByBrand(orgId, brandProfileId, type);
   }
 
   async createCampaign(data: Prisma.EmailCampaignCreateInput) {

@@ -121,6 +121,15 @@ export class ThirdPartyController {
       throw new HttpException('Invalid identifier', 400);
     }
 
+    // Do not dispatch arbitrary property names from a URL. Besides exposing
+    // private provider helpers, values such as `constructor` can escape the
+    // intended provider API. Keep this endpoint limited to the methods that
+    // are explicitly part of the third-party UI contract.
+    const allowedFunctions = new Set(['generateVoice', 'voices', 'avatars', 'listMedia']);
+    if (!allowedFunctions.has(functionName)) {
+      throw new HttpException('Function not available', 404);
+    }
+
     return thirdPartyInstance?.instance?.[functionName](
       AuthService.secureDecryption(thirdParty.apiKey),
       data

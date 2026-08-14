@@ -35,11 +35,11 @@ export class PublicAuthMiddleware implements NestMiddleware {
           return;
         }
 
-        // Public API keys represent the organization, not a user session.
-        // Keep the role shape expected by PoliciesGuard and grant only the
-        // API role used by public controllers.
+        // Public API credentials represent the organization, not an
+        // administrator session. Never manufacture SUPERADMIN here: doing so
+        // would let a bearer key satisfy unrelated admin policies.
         // @ts-ignore
-        req.org = { ...org, users: [{ role: 'SUPERADMIN' }] };
+        req.org = { ...org, users: [{ role: 'USER' }] };
       } else {
         const org = await this._organizationService.getOrgByApiKey(auth);
         if (!org) {
@@ -57,7 +57,7 @@ export class PublicAuthMiddleware implements NestMiddleware {
         }
 
         // @ts-ignore
-        req.org = { ...org, users: [{ role: 'SUPERADMIN' }] };
+        req.org = { ...org, users: [{ role: 'USER' }] };
       }
     } catch (err) {
       throw new HttpForbiddenException();

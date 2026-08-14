@@ -1,5 +1,6 @@
 ﻿import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import OpenAI from 'openai';
+import { NotFoundException } from '@nestjs/common';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import {
   SocialPostBatchSchema,
@@ -15,7 +16,7 @@ import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/sub
 import { GenerateSocialPostsDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/generate-social-posts.dto';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'sk-proj-',
+  apiKey: process.env.OPENAI_API_KEY || '',
 });
 
 const SYSTEM_PROMPT = `You are a world-class social media content strategist working for ContentFlow.
@@ -193,11 +194,15 @@ export class SocialPostGenerateService {
     }
   }
 
-  async getPostsByContentIdea(ideaId: string): Promise<any[]> {
+  async getPostsByContentIdea(orgId: string, ideaId: string): Promise<any[]> {
+    const idea = await this.contentIdeaService.getIdea(ideaId, orgId);
+    if (!idea) throw new NotFoundException('Content idea not found');
     return [];
   }
 
-  async getPostsByCarouselProject(carouselId: string): Promise<any[]> {
+  async getPostsByCarouselProject(orgId: string, carouselId: string): Promise<any[]> {
+    const project = await this.carouselProjectService.getProject(carouselId, orgId);
+    if (!project) throw new NotFoundException('Carousel project not found');
     return [];
   }
 

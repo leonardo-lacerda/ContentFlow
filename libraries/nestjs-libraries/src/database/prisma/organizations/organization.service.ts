@@ -541,6 +541,12 @@ export class OrganizationService {
   getUserOrg(id: string) { return this._organizationRepository.getUserOrg(id); }
   getOrgsByUserId(userId: string) { return this._organizationRepository.getOrgsByUserId(userId); }
   updateApiKey(orgId: string) { return this._organizationRepository.updateApiKey(orgId); }
+
+  getPublicApiKey(storedApiKey?: string | null) {
+    if (!storedApiKey) return '';
+    if (!storedApiKey.startsWith('gcm:v1:')) return storedApiKey;
+    return AuthService.secureDecryption(storedApiKey);
+  }
   getTeam(orgId: string) { return this._organizationRepository.getTeam(orgId); }
 
   async setStreak(organizationId: string, type: 'start' | 'end') { return this._organizationRepository.setStreak(organizationId, type); }

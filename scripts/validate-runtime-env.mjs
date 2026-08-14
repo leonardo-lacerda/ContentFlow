@@ -62,6 +62,7 @@ export function validateRuntimeEnv({ env = process.env, production = env.NODE_EN
 
   if (production) {
     addRequired(merged, issues, 'ADMIN_JWT_SECRET');
+    addRequired(merged, issues, 'ADMIN_AUDIT_EXPORT_SECRET');
     addRequired(merged, issues, 'AI_GENERATE_API_KEY');
     addRequired(merged, issues, 'DATA_ENCRYPTION_KEY');
   }
@@ -73,6 +74,9 @@ export function validateRuntimeEnv({ env = process.env, production = env.NODE_EN
   }
   if (isSet(merged.ADMIN_JWT_SECRET) && merged.ADMIN_JWT_SECRET.length < 32) {
     issues.push('ADMIN_JWT_SECRET must contain at least 32 characters');
+  }
+  if (isSet(merged.ADMIN_AUDIT_EXPORT_SECRET) && merged.ADMIN_AUDIT_EXPORT_SECRET.length < 32) {
+    issues.push('ADMIN_AUDIT_EXPORT_SECRET must contain at least 32 characters');
   }
   if (isSet(merged.DATA_ENCRYPTION_KEY) && merged.DATA_ENCRYPTION_KEY.length < 32) {
     issues.push('DATA_ENCRYPTION_KEY must contain at least 32 characters');

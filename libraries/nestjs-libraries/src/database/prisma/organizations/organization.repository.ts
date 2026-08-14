@@ -14,14 +14,15 @@ export class OrganizationRepository {
   ) {}
 
   createMaxUser(id: string, name: string, saasName: string, email: string) {
-    return this._organization.model.organization.create({
+    const apiKey = makeId(48);
+    const created = this._organization.model.organization.create({
       select: {
         id: true,
-        apiKey: true,
       },
       data: {
         name: name ? `${name}###${id}` : `Unnamed User###${id}`,
-        apiKey: AuthService.fixedEncryption(makeId(20)),
+        apiKey: AuthService.secureEncryption(apiKey),
+        apiKeyHash: AuthService.hashApiKey(apiKey),
         isTrailing: false,
         subscription: {
           create: {
@@ -50,12 +51,17 @@ export class OrganizationRepository {
         },
       },
     });
+    return created.then((organization) => ({ ...organization, apiKey }));
   }
 
-  getOrgByApiKey(api: string) {
-    return this._organization.model.organization.findFirst({
+  async getOrgByApiKey(api: string) {
+    const organization = await this._organization.model.organization.findFirst({
       where: {
-        apiKey: api,
+        OR: [
+          { apiKeyHash: AuthService.hashApiKey(api) },
+          // Legacy bearer keys are kept readable until the owning org rotates.
+          { apiKey: api },
+        ],
       },
       include: {
         subscription: {
@@ -67,6 +73,23 @@ export class OrganizationRepository {
         },
       },
     });
+
+    // Migrate legacy bearer values on first successful use without changing
+    // the externally visible key. New lookups use only the one-way hash.
+    if (organization?.apiKey === api && !organization.apiKeyHash) {
+      const encrypted = AuthService.secureEncryption(api);
+      await this._organization.model.organization.update({
+        where: { id: organization.id },
+        data: {
+          apiKey: encrypted,
+          apiKeyHash: AuthService.hashApiKey(api),
+        },
+      });
+      organization.apiKey = encrypted;
+      organization.apiKeyHash = AuthService.hashApiKey(api);
+    }
+
+    return organization;
   }
 
   getCount() {
@@ -153,15 +176,18 @@ export class OrganizationRepository {
     });
   }
 
-  updateApiKey(orgId: string) {
-    return this._organization.model.organization.update({
+  async updateApiKey(orgId: string) {
+    const apiKey = makeId(48);
+    await this._organization.model.organization.update({
       where: {
         id: orgId,
       },
       data: {
-        apiKey: AuthService.fixedEncryption(makeId(20)),
+        apiKey: AuthService.secureEncryption(apiKey),
+        apiKeyHash: AuthService.hashApiKey(apiKey),
       },
     });
+    return { apiKey };
   }
 
   async getOrgsByUserId(userId: string) {
@@ -263,10 +289,12 @@ export class OrganizationRepository {
     ip: string,
     userAgent: string
   ) {
+    const apiKey = makeId(48);
     return this._organization.model.organization.create({
       data: {
         name: body.company,
-        apiKey: AuthService.fixedEncryption(makeId(20)),
+        apiKey: AuthService.secureEncryption(apiKey),
+        apiKeyHash: AuthService.hashApiKey(apiKey),
         allowTrial: true,
         isTrailing: true,
         users: {

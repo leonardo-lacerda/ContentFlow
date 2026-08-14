@@ -19,6 +19,20 @@ not contain credentials or production secret values.
 - New MFA, third-party, and social integration secrets use AES-256-GCM with a
   random nonce and authentication tag. Decryption remains backward compatible
   with the legacy CBC format for lazy migration.
+- Organization API keys now use one-way SHA-256 lookup hashes plus GCM storage;
+  newly issued keys are never persisted as plaintext. Existing legacy keys are
+  migrated on successful use and remain compatible until rotated.
+- OAuth client secrets, authorization codes, and access tokens now use lookup
+  hashes plus authenticated encryption. Legacy deterministic values are only a
+  compatibility read path and are replaced on the next rotation/exchange.
+- Public API authentication no longer fabricates a `SUPERADMIN` membership for
+  bearer keys; public requests use the `USER` policy path and remain subject to
+  API feature/capacity checks.
+- Dynamic third-party function dispatch is restricted to an explicit allowlist;
+  URL parameters cannot invoke constructors or provider internals.
+- Legacy provider clients no longer contain fake credential literals. Audit
+  export signing fails closed unless `ADMIN_AUDIT_EXPORT_SECRET` is configured,
+  and production environment validation requires that secret.
 - SSRF validation now resolves all addresses, fails closed on DNS errors, and
   uses a guarded undici dispatcher for redirects and connection lookup.
 - CORS/proxy/security headers, strict request validation, cookie attributes,
@@ -49,6 +63,7 @@ openssl rand -hex 32  # ADMIN_JWT_SECRET
 openssl rand -hex 32  # DATA_ENCRYPTION_KEY
 openssl rand -hex 32  # AI_GENERATE_API_KEY
 openssl rand -hex 32  # MONITOR_TOKEN, if monitor checks are used
+openssl rand -hex 32  # ADMIN_AUDIT_EXPORT_SECRET
 ```
 
 Then configure a real HTTPS domain/reverse proxy, set `NOT_SECURED=false` (or
@@ -60,10 +75,16 @@ compromised and rotated; removing it from Git history requires a coordinated
 history rewrite and force-push, which was deliberately not performed
 automatically.
 
+The workspace also contains ignored deployment archives. One archive contains
+`.env` and `credentials/` paths. These archives are not tracked by Git, but
+they must be removed from shared storage and any secrets they contain must be
+rotated before distributing the workspace or using those artifacts. They were
+not deleted automatically because they are local deployment artifacts.
+
 ## Verification performed locally
 
-- Backend production build: passed.
-- Focused security tests: 36 tests passed.
+- Backend and frontend production builds: passed.
+- Focused security tests: 44 tests passed.
 - Static credential scan: passed over tracked files.
 - `pnpm audit --audit-level high`: registry command timed out locally; CI now
   runs it as a required check.

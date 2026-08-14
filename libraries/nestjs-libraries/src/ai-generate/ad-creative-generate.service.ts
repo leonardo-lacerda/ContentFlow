@@ -18,7 +18,7 @@ import { runAdPolicyChecks } from './ad-templates/ad-policy-checker';
 import { GenerateAdCreativesDto } from '@gitroom/nestjs-libraries/dtos/ai-generate/generate-ad-creatives.dto';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'sk-proj-',
+  apiKey: process.env.OPENAI_API_KEY || '',
 });
 
 const SYSTEM_PROMPT = `You are a world-class performance marketing creative strategist working for ContentFlow.

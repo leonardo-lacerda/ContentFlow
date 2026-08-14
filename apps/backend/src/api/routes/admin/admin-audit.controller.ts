@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Res, UseGuards, ServiceUnavailableException } from '@nestjs/common';
 import { Response } from 'express';
 import { createHmac } from 'crypto';
 import { ApiTags } from '@nestjs/swagger';
@@ -43,7 +43,11 @@ export class AdminAuditController {
     const payload = format === 'csv'
       ? ['id,createdAt,actorEmail,action,resourceType,resourceId,severity,success,reason', ...rows.map((row) => [row.id, row.createdAt.toISOString(), row.actorEmail, row.action, row.resourceType, row.resourceId || '', row.severity, row.success, row.reason || ''].map((value) => JSON.stringify(value)).join(','))].join('\n')
       : JSON.stringify(rows);
-    const signature = createHmac('sha256', process.env.ADMIN_AUDIT_EXPORT_SECRET || process.env.JWT_SECRET || 'change-me').update(payload).digest('hex');
+    const signingSecret = process.env.ADMIN_AUDIT_EXPORT_SECRET;
+    if (!signingSecret) {
+      throw new ServiceUnavailableException('Audit export signing is not configured');
+    }
+    const signature = createHmac('sha256', signingSecret).update(payload).digest('hex');
     response.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/json');
     response.setHeader('X-Audit-Export-Signature', signature);
     return payload;

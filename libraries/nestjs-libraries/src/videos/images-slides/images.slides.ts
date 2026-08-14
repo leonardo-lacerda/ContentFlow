@@ -21,8 +21,8 @@ import { KieCreativeProvider } from '@gitroom/nestjs-libraries/creative-engine/p
 const limit = pLimit(2);
 
 const transloadit = new Transloadit({
-  authKey: process.env.TRANSLOADIT_AUTH || 'just empty text',
-  authSecret: process.env.TRANSLOADIT_SECRET || 'just empty text',
+  authKey: process.env.TRANSLOADIT_AUTH || '',
+  authSecret: process.env.TRANSLOADIT_SECRET || '',
 });
 
 async function getAudioDuration(buffer: Buffer): Promise<number> {

@@ -9,7 +9,7 @@ import { CarouselProjectService } from '@gitroom/nestjs-libraries/database/prism
 import { ContentIdeaService } from '@gitroom/nestjs-libraries/database/prisma/content-ideas/content-idea.service';
 import { GenerationJobService } from '@gitroom/nestjs-libraries/database/prisma/generation-jobs/generation-job.service';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'sk-proj-' });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 const SYSTEM_PROMPT = `You are an expert short-form video scriptwriter. You transform content ideas and carousels into engaging video scripts for Reels, TikTok, and Shorts.
 

@@ -13,6 +13,7 @@ model Organization {
   name                  String
   description           String?
   apiKey                String?
+  apiKeyHash            String?
   paymentId             String?
   streakSince           DateTime?
   createdAt             DateTime                      @default(now())
@@ -88,6 +89,7 @@ model Organization {
   studioAttachments     StudioAttachment[]
 
   @@index([apiKey])
+  @@index([apiKeyHash])
   @@index([streakSince])
   @@index([paymentId])
 }
@@ -1093,6 +1095,7 @@ model OAuthApp {
   redirectUrl    String
   clientId       String               @unique
   clientSecret   String
+  clientSecretHash String?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   deletedAt      DateTime?
@@ -1104,6 +1107,7 @@ model OAuthApp {
   @@index([clientId])
   @@index([organizationId])
   @@index([deletedAt])
+  @@index([clientSecretHash])
 }
 
 model OAuthAuthorization {
@@ -1112,7 +1116,9 @@ model OAuthAuthorization {
   userId            String
   organizationId    String
   accessToken       String?
+  accessTokenHash   String?
   authorizationCode String?
+  authorizationCodeHash String?
   codeExpiresAt     DateTime?
   revokedAt         DateTime?
   createdAt         DateTime     @default(now())
@@ -1124,6 +1130,8 @@ model OAuthAuthorization {
   @@unique([oauthAppId, userId, organizationId])
   @@index([accessToken])
   @@index([authorizationCode])
+  @@index([accessTokenHash])
+  @@index([authorizationCodeHash])
   @@index([oauthAppId])
   @@index([userId])
   @@index([organizationId])

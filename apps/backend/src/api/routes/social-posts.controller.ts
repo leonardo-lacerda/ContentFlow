@@ -42,14 +42,20 @@ export class SocialPostsController {
   @Get('/from-idea/:ideaId')
   @ApiOperation({ summary: 'Get generated posts linked to a content idea' })
   @ApiResponse({ status: 200, description: 'Posts retrieved' })
-  async getPostsFromIdea(@Param('ideaId') ideaId: string) {
-    return this.socialPostGenerateService.getPostsByContentIdea(ideaId);
+  async getPostsFromIdea(
+    @GetOrgFromRequest() org: Organization,
+    @Param('ideaId') ideaId: string
+  ) {
+    return this.socialPostGenerateService.getPostsByContentIdea(org.id, ideaId);
   }
 
   @Get('/from-carousel/:carouselId')
   @ApiOperation({ summary: 'Get generated posts linked to a carousel project' })
   @ApiResponse({ status: 200, description: 'Posts retrieved' })
-  async getPostsFromCarousel(@Param('carouselId') carouselId: string) {
-    return this.socialPostGenerateService.getPostsByCarouselProject(carouselId);
+  async getPostsFromCarousel(
+    @GetOrgFromRequest() org: Organization,
+    @Param('carouselId') carouselId: string
+  ) {
+    return this.socialPostGenerateService.getPostsByCarouselProject(org.id, carouselId);
   }
 }

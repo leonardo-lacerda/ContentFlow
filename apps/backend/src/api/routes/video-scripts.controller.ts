@@ -21,10 +21,11 @@ export class VideoScriptsController {
 
   @Get('/brand/:brandId')
   async getProjectsByBrand(
+    @GetOrgFromRequest() org: Organization,
     @Param('brandId') brandId: string,
     @Body() body?: { status?: string }
   ) {
-    return this.shortVideoService.getProjectsByBrand(brandId, body?.status as any);
+    return this.shortVideoService.getProjectsByBrand(org.id, brandId, body?.status as any);
   }
 
   @Get('/:id')

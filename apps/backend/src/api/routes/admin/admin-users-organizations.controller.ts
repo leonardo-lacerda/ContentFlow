@@ -229,9 +229,15 @@ export class AdminOrganizationsController {
   @Post('/:id/api-key/rotate')
   @AdminPermission('orgs.api-key.rotate', { severity: 'CRITICAL', requireReason: true, resourceType: 'Organization' })
   async rotateApiKey(@Param('id') id: string) {
-    const apiKey = AuthService.fixedEncryption(makeApiKey());
-    await this._prisma.organization.update({ where: { id }, data: { apiKey } });
-    return { rotated: true };
+    const apiKey = makeApiKey();
+    await this._prisma.organization.update({
+      where: { id },
+      data: {
+        apiKey: AuthService.secureEncryption(apiKey),
+        apiKeyHash: AuthService.hashApiKey(apiKey),
+      },
+    });
+    return { rotated: true, apiKey };
   }
 
   @Post('/:id/transfer-ownership')

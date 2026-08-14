@@ -25,10 +25,11 @@ export class CarouselProjectController {
 
   @Get('/brand/:brandId')
   async getProjectsByBrand(
+    @GetOrgFromRequest() org: Organization,
     @Param('brandId') brandId: string,
     @Body() body?: { status?: string }
   ) {
-    return this.carouselProjectService.getProjectsByBrand(brandId, body?.status as any);
+    return this.carouselProjectService.getProjectsByBrand(org.id, brandId, body?.status as any);
   }
 
   @Get('/:id')

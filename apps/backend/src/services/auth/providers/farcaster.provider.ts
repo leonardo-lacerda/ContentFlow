@@ -5,7 +5,7 @@ import {
 import { NeynarAPIClient } from '@neynar/nodejs-sdk';
 
 const client = new NeynarAPIClient({
-  apiKey: process.env.NEYNAR_SECRET_KEY || '00000000-000-0000-000-000000000000',
+  apiKey: process.env.NEYNAR_SECRET_KEY || '',
 });
 
 @AuthProvider({ provider: 'FARCASTER' })

@@ -29,9 +29,10 @@ export class EmailCampaignRepository {
     });
   }
 
-  findByBrand(brandProfileId: string, type?: EmailCampaignType) {
+  findByBrand(orgId: string, brandProfileId: string, type?: EmailCampaignType) {
     return this.prisma.emailCampaign.findMany({
       where: {
+        organizationId: orgId,
         brandProfileId,
         deletedAt: null,
         ...(type ? { type } : {}),

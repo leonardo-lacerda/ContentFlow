@@ -27,7 +27,7 @@ export class OAuthService {
 
     const clientId = 'pca_' + makeId(32);
     const clientSecret = 'pcs_' + makeId(48);
-    const encryptedSecret = AuthService.fixedEncryption(clientSecret);
+    const encryptedSecret = AuthService.secureEncryption(clientSecret);
 
     const app = await this._oauthRepository.createApp(orgId, {
       name: dto.name,
@@ -36,6 +36,7 @@ export class OAuthService {
       redirectUrl: dto.redirectUrl,
       clientId,
       clientSecret: encryptedSecret,
+      clientSecretHash: AuthService.hashApiKey(clientSecret),
     });
 
     return { ...app, clientSecret };
@@ -67,8 +68,12 @@ export class OAuthService {
     }
 
     const newSecret = 'pcs_' + makeId(48);
-    const encrypted = AuthService.fixedEncryption(newSecret);
-    await this._oauthRepository.updateClientSecret(orgId, encrypted);
+    const encrypted = AuthService.secureEncryption(newSecret);
+    await this._oauthRepository.updateClientSecret(
+      orgId,
+      encrypted,
+      AuthService.hashApiKey(newSecret)
+    );
     return { clientSecret: newSecret };
   }
 
@@ -86,7 +91,7 @@ export class OAuthService {
     organizationId: string
   ) {
     const code = makeId(32);
-    const encryptedCode = AuthService.fixedEncryption(code);
+    const encryptedCode = AuthService.secureEncryption(code);
     const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await this._oauthRepository.createAuthorization({
@@ -94,6 +99,7 @@ export class OAuthService {
       userId,
       organizationId,
       authorizationCode: encryptedCode,
+      authorizationCodeHash: AuthService.hashApiKey(code),
       codeExpiresAt,
     });
 
@@ -113,15 +119,17 @@ export class OAuthService {
       );
     }
 
-    if (app.clientSecret !== AuthService.fixedEncryption(clientSecret)) {
+    const validSecret = app.clientSecretHash
+      ? app.clientSecretHash === AuthService.hashApiKey(clientSecret)
+      : app.clientSecret === AuthService.fixedEncryption(clientSecret);
+    if (!validSecret) {
       throw new HttpException(
         { error: 'invalid_client' },
         HttpStatus.UNAUTHORIZED
       );
     }
 
-    const encryptedCode = AuthService.fixedEncryption(code);
-    const auth = await this._oauthRepository.findByCode(encryptedCode);
+    const auth = await this._oauthRepository.findByCode(code);
     if (!auth || auth.oauthAppId !== app.id) {
       throw new HttpException(
         { error: 'invalid_grant' },
@@ -137,13 +145,14 @@ export class OAuthService {
     }
 
     const token = 'pos_' + makeId(40);
-    const encryptedToken = AuthService.fixedEncryption(token);
+    const encryptedToken = AuthService.secureEncryption(token);
     const {
       organizationId,
       organization: { paymentId },
     } = await this._oauthRepository.exchangeCodeForToken(
       auth.id,
-      encryptedToken
+      encryptedToken,
+      AuthService.hashApiKey(token)
     );
 
     return {
@@ -155,8 +164,7 @@ export class OAuthService {
   }
 
   async getOrgByOAuthToken(token: string) {
-    const encrypted = AuthService.fixedEncryption(token);
-    return this._oauthRepository.findByAccessToken(encrypted);
+    return this._oauthRepository.findByAccessToken(token);
   }
 
   async getApprovedApps(userId: string) {

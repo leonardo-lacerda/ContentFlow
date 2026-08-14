@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import { Logger } from '@nestjs/common';
 import { EmailInterface } from '@gitroom/nestjs-libraries/emails/email.interface';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 're_132');
+const resend = new Resend(process.env.RESEND_API_KEY || '');
 const logger = new Logger('ResendProvider');
 
 export class ResendProvider implements EmailInterface {

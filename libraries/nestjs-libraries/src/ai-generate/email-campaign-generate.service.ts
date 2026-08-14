@@ -13,7 +13,7 @@ import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/sub
 import { renderEmailHtml, renderSimpleEmailHtml } from '@gitroom/nestjs-libraries/email-generator/email-html.renderer';
 import { getEmailTemplateById, getActiveEmailTemplates } from '@gitroom/nestjs-libraries/email-generator/email-template-definitions';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'sk-proj-' });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 const SYSTEM_PROMPT = `You are an expert email marketing copywriter. You create email campaigns from brand content.
 

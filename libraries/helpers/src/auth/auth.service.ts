@@ -75,6 +75,10 @@ export function decrypt_using_authenticated_cipher(value: string) {
   ]).toString('utf8');
 }
 export class AuthService {
+  static hashApiKey(value: string) {
+    return crypto.createHash('sha256').update(value, 'utf8').digest('hex');
+  }
+
   static hashPassword(password: string) {
     return hashSync(password, 10);
   }

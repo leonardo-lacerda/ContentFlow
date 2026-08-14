@@ -13,9 +13,10 @@ export class CarouselProjectRepository {
     });
   }
 
-  findByBrandProfile(brandProfileId: string, status?: CarouselProjectStatus) {
+  findByBrandProfile(orgId: string, brandProfileId: string, status?: CarouselProjectStatus) {
     return this.prisma.carouselProject.findMany({
       where: {
+        organizationId: orgId,
         brandProfileId,
         ...(status ? { status } : {}),
       },
@@ -69,9 +70,9 @@ export class CarouselProjectRepository {
     });
   }
 
-  countByBrandAndStatus(brandProfileId: string, status: CarouselProjectStatus) {
+  countByBrandAndStatus(orgId: string, brandProfileId: string, status: CarouselProjectStatus) {
     return this.prisma.carouselProject.count({
-      where: { brandProfileId, status },
+      where: { organizationId: orgId, brandProfileId, status },
     });
   }
 }

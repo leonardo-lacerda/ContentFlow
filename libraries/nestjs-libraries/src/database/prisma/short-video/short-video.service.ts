@@ -25,8 +25,8 @@ export class ShortVideoService {
     return this.shortVideoRepository.findByOrganization(orgId);
   }
 
-  async getProjectsByBrand(brandProfileId: string, status?: ShortVideoStatus) {
-    return this.shortVideoRepository.findByBrandProfile(brandProfileId, status);
+  async getProjectsByBrand(orgId: string, brandProfileId: string, status?: ShortVideoStatus) {
+    return this.shortVideoRepository.findByBrandProfile(orgId, brandProfileId, status);
   }
 
   async getProject(id: string, orgId: string) {

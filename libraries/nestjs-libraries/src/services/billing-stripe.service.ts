@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
 import { BillingAccountingService } from './billing-accounting.service';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_nothing');
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 @Injectable()
 export class BillingStripeService {

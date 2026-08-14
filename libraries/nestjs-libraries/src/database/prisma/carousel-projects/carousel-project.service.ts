@@ -10,8 +10,8 @@ export class CarouselProjectService {
     return this.carouselProjectRepository.findByOrganization(orgId);
   }
 
-  async getProjectsByBrand(brandProfileId: string, status?: CarouselProjectStatus) {
-    return this.carouselProjectRepository.findByBrandProfile(brandProfileId, status);
+  async getProjectsByBrand(orgId: string, brandProfileId: string, status?: CarouselProjectStatus) {
+    return this.carouselProjectRepository.findByBrandProfile(orgId, brandProfileId, status);
   }
 
   async getProject(id: string, orgId: string) {
@@ -50,7 +50,7 @@ export class CarouselProjectService {
     return this.carouselProjectRepository.updateStatus(id, orgId, status);
   }
 
-  async countByBrandAndStatus(brandProfileId: string, status: CarouselProjectStatus) {
-    return this.carouselProjectRepository.countByBrandAndStatus(brandProfileId, status);
+  async countByBrandAndStatus(orgId: string, brandProfileId: string, status: CarouselProjectStatus) {
+    return this.carouselProjectRepository.countByBrandAndStatus(orgId, brandProfileId, status);
   }
 }

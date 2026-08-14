@@ -42,10 +42,11 @@ export class EmailCampaignsController {
 
   @Get('/brand/:brandId')
   async getCampaignsByBrand(
+    @GetOrgFromRequest() org: Organization,
     @Param('brandId') brandId: string,
     @Query('type') type?: string,
   ) {
-    return this.emailCampaignService.getCampaignsByBrand(brandId, type as EmailCampaignType | undefined);
+    return this.emailCampaignService.getCampaignsByBrand(org.id, brandId, type as EmailCampaignType | undefined);
   }
 
   @Get('/welcome-sequence/:brandId')

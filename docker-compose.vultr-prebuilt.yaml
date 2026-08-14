@@ -12,6 +12,7 @@ services:
       NEXT_PUBLIC_BACKEND_URL: '${NEXT_PUBLIC_BACKEND_URL:-http://localhost:4007/api}'
       JWT_SECRET: '${JWT_SECRET}'
       ADMIN_JWT_SECRET: '${ADMIN_JWT_SECRET}'
+      ADMIN_AUDIT_EXPORT_SECRET: '${ADMIN_AUDIT_EXPORT_SECRET}'
       MONITOR_TOKEN: '${MONITOR_TOKEN}'
       DATA_ENCRYPTION_KEY: '${DATA_ENCRYPTION_KEY}'
       DATABASE_URL: 'postgresql://contentflow-user:contentflow-password@contentflow-postgres:5432/contentflow-db-local'

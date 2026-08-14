@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
 import { ShortVideoStatus, ShortVideoFormat } from '@prisma/client';
 
@@ -17,9 +17,10 @@ export class ShortVideoRepository {
     });
   }
 
-  findByBrandProfile(brandProfileId: string, status?: ShortVideoStatus) {
+  findByBrandProfile(orgId: string, brandProfileId: string, status?: ShortVideoStatus) {
     return this.prisma.shortVideoProject.findMany({
       where: {
+        organizationId: orgId,
         brandProfileId,
         ...(status ? { status } : {}),
       },
@@ -64,7 +65,7 @@ export class ShortVideoRepository {
     });
   }
 
-  update(id: string, orgId: string, data: {
+  async update(id: string, orgId: string, data: {
     name?: string;
     format?: ShortVideoFormat;
     status?: ShortVideoStatus;
@@ -82,20 +83,35 @@ export class ShortVideoRepository {
     renderCostActual?: number;
     metadata?: any;
   }) {
+    const existing = await this.prisma.shortVideoProject.findFirst({
+      where: { id, organizationId: orgId },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Short video project not found');
     return this.prisma.shortVideoProject.update({
       where: { id },
       data,
     });
   }
 
-  updateStatus(id: string, orgId: string, status: ShortVideoStatus) {
+  async updateStatus(id: string, orgId: string, status: ShortVideoStatus) {
+    const existing = await this.prisma.shortVideoProject.findFirst({
+      where: { id, organizationId: orgId },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Short video project not found');
     return this.prisma.shortVideoProject.update({
       where: { id },
       data: { status },
     });
   }
 
-  delete(id: string, orgId: string) {
+  async delete(id: string, orgId: string) {
+    const existing = await this.prisma.shortVideoProject.findFirst({
+      where: { id, organizationId: orgId },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Short video project not found');
     return this.prisma.shortVideoProject.delete({
       where: { id },
     });
