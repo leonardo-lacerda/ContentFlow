@@ -44,7 +44,7 @@ jobs:
           frontend=false
           if grep -Eq '^(apps/backend/|scripts/swc-compile-backend\.js$)' /tmp/changed-files; then backend=true; fi
           if grep -Eq '^(apps/frontend/|scripts/ensure-next-external-aliases\.mjs$)' /tmp/changed-files; then frontend=true; fi
-          if grep -Eq '^(libraries/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|tsconfig.*\.json$|ecosystem\.config\.js$|scripts/validate-runtime-env\.mjs$|scripts/deploy/)' /tmp/changed-files; then
+          if grep -Eq '^(libraries/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|tsconfig.*\.json$|ecosystem\.config\.js$|scripts/validate-runtime-env\.mjs$|scripts/deploy/|\.github/workflows/deploy-digitalocean\.yml$)' /tmp/changed-files; then
             backend=true
             frontend=true
           fi
@@ -83,7 +83,7 @@ jobs:
 
       - name: Build backend
         if: needs.changes.outputs.backend == 'true'
-        run: pnpm --filter contentflow-backend run build
+        run: node scripts/swc-compile-backend.js
 
       - name: Build frontend
         if: needs.changes.outputs.frontend == 'true'
