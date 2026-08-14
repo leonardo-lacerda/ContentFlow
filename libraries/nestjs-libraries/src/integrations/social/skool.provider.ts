@@ -31,7 +31,10 @@ export class SkoolProvider extends SocialAbstract implements SocialProvider {
     client_id: string;
     auth_token: string;
   } {
-    return AuthService.verifyJWT(integration.customInstanceDetails!) as {
+    return AuthService.verifyJWT(
+      integration.customInstanceDetails!,
+      'integration-cookies'
+    ) as {
       client_id: string;
       auth_token: string;
     };
@@ -106,7 +109,10 @@ export class SkoolProvider extends SocialAbstract implements SocialProvider {
       return {
         refreshToken: '',
         expiresIn: dayjs().add(100, 'year').unix() - dayjs().unix(),
-        accessToken: AuthService.signJWT(cookies),
+        accessToken: AuthService.signJWT(cookies, {
+          type: 'integration-cookies',
+          expiresIn: '100y',
+        }),
         id: data.id,
         name: data.first_name + ' ' + data.last_name,
         picture: data.metadata.picture_profile || '',

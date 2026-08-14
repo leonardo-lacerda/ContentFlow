@@ -236,7 +236,8 @@ export class NoAuthIntegrationsController {
             )
           : integrationProvider.isChromeExtension
           ? AuthService.signJWT(
-              JSON.parse(Buffer.from(body.code, 'base64').toString())
+              JSON.parse(Buffer.from(body.code, 'base64').toString()),
+              { type: 'integration-cookies', expiresIn: '100y' }
             )
           : undefined
       );
@@ -275,9 +276,10 @@ export class NoAuthIntegrationsController {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            params: AuthService.signJWT({
-              apiKey: this._organizationService.getPublicApiKey(org.apiKey),
-            }),
+            params: AuthService.signJWT(
+              { apiKey: this._organizationService.getPublicApiKey(org.apiKey) },
+              { type: 'integration-webhook', expiresIn: '10m' }
+            ),
           }),
         });
       } catch (err) {}
@@ -291,12 +293,15 @@ export class NoAuthIntegrationsController {
     }
 
     const extensionToken = integrationProvider.isChromeExtension
-      ? AuthService.signJWT({
-          integrationId: createUpdate.id,
-          organizationId: org.id,
-          internalId: String(id),
-          provider: integration,
-        })
+      ? AuthService.signJWT(
+          {
+            integrationId: createUpdate.id,
+            organizationId: org.id,
+            internalId: String(id),
+            provider: integration,
+          },
+          { type: 'extension', expiresIn: '15m' }
+        )
       : undefined;
 
     return {
@@ -330,7 +335,7 @@ export class NoAuthIntegrationsController {
   ) {
     let payload: any;
     try {
-      payload = AuthService.verifyJWT(body.jwt);
+      payload = AuthService.verifyJWT(body.jwt, 'extension');
     } catch {
       throw new HttpException('Invalid token', 401);
     }
@@ -388,7 +393,8 @@ export class NoAuthIntegrationsController {
       undefined,
       undefined,
       AuthService.signJWT(
-        JSON.parse(Buffer.from(body.cookies, 'base64').toString())
+        JSON.parse(Buffer.from(body.cookies, 'base64').toString()),
+        { type: 'integration-cookies', expiresIn: '100y' }
       )
     );
 
