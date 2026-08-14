@@ -22,6 +22,24 @@ old_frontend_cwd=""
 backend_test_pid=""
 frontend_test_pid=""
 
+stop_test_process() {
+  local pid="${1:-}"
+  [[ -n "$pid" ]] || return 0
+
+  # The production wrappers spawn the actual application as a child process.
+  # Start them in their own session and terminate the whole process group so a
+  # successful preflight can never leave the deploy blocked in `wait`.
+  kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+  for _ in $(seq 1 20); do
+    kill -0 "$pid" 2>/dev/null || break
+    sleep 0.25
+  done
+  if kill -0 "$pid" 2>/dev/null; then
+    kill -KILL -- "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
+  fi
+  wait "$pid" 2>/dev/null || true
+}
+
 pm2_cwd() {
   local name="$1" pid
   pid="$(pm2 pid "$name" 2>/dev/null || true)"
@@ -29,8 +47,8 @@ pm2_cwd() {
 }
 
 cleanup_tests() {
-  [[ -n "$backend_test_pid" ]] && kill "$backend_test_pid" 2>/dev/null || true
-  [[ -n "$frontend_test_pid" ]] && kill "$frontend_test_pid" 2>/dev/null || true
+  stop_test_process "$backend_test_pid"
+  stop_test_process "$frontend_test_pid"
 }
 trap cleanup_tests EXIT
 
@@ -74,7 +92,7 @@ if [[ "$DEPLOY_BACKEND" == true ]]; then
   node scripts/swc-compile-backend.js
 
   log "Preflighting backend on port 3101"
-  PORT=3101 CONTENTFLOW_ENV_FILE="$ENV_FILE" node apps/backend/start-production.mjs \
+  PORT=3101 CONTENTFLOW_ENV_FILE="$ENV_FILE" setsid node apps/backend/start-production.mjs \
     >"/tmp/contentflow-backend-${GITHUB_SHA:-candidate}.log" 2>&1 &
   backend_test_pid=$!
   backend_ready=false
@@ -88,8 +106,7 @@ if [[ "$DEPLOY_BACKEND" == true ]]; then
     cat "/tmp/contentflow-backend-${GITHUB_SHA:-candidate}.log" >&2 || true
     fail "backend preflight failed"
   fi
-  kill "$backend_test_pid" 2>/dev/null || true
-  wait "$backend_test_pid" 2>/dev/null || true
+  stop_test_process "$backend_test_pid"
   backend_test_pid=""
 fi
 
@@ -98,7 +115,7 @@ if [[ "$DEPLOY_FRONTEND" == true ]]; then
   pnpm --filter contentflow-frontend run build
 
   log "Preflighting frontend on port 4300"
-  FRONTEND_PORT=4300 CONTENTFLOW_ENV_FILE="$ENV_FILE" node apps/frontend/start-production.mjs \
+  FRONTEND_PORT=4300 CONTENTFLOW_ENV_FILE="$ENV_FILE" setsid node apps/frontend/start-production.mjs \
     >"/tmp/contentflow-frontend-${GITHUB_SHA:-candidate}.log" 2>&1 &
   frontend_test_pid=$!
   frontend_ready=false
@@ -112,8 +129,7 @@ if [[ "$DEPLOY_FRONTEND" == true ]]; then
     cat "/tmp/contentflow-frontend-${GITHUB_SHA:-candidate}.log" >&2 || true
     fail "frontend preflight failed"
   fi
-  kill "$frontend_test_pid" 2>/dev/null || true
-  wait "$frontend_test_pid" 2>/dev/null || true
+  stop_test_process "$frontend_test_pid"
   frontend_test_pid=""
 fi
 
