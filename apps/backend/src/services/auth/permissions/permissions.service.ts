@@ -2,11 +2,9 @@ import { Ability, AbilityBuilder, AbilityClass } from '@casl/ability';
 import { Injectable } from '@nestjs/common';
 import { pricing } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/pricing';
 import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/subscription.service';
-import { PostsService } from '@gitroom/nestjs-libraries/database/prisma/posts/posts.service';
 import { IntegrationService } from '@gitroom/nestjs-libraries/database/prisma/integrations/integration.service';
-import dayjs from 'dayjs';
-import { WebhooksService } from '@gitroom/nestjs-libraries/database/prisma/webhooks/webhooks.service';
 import { AuthorizationActions, Sections } from './permission.exception.class';
+import { BillingEntitlementsService } from '@gitroom/nestjs-libraries/services/billing-entitlements.service';
 
 export type AppAbility = Ability<[AuthorizationActions, Sections]>;
 
@@ -14,9 +12,8 @@ export type AppAbility = Ability<[AuthorizationActions, Sections]>;
 export class PermissionsService {
   constructor(
     private _subscriptionService: SubscriptionService,
-    private _postsService: PostsService,
     private _integrationService: IntegrationService,
-    private _webhooksService: WebhooksService
+    private _entitlements: BillingEntitlementsService
   ) {}
   async getPackageOptions(orgId: string) {
     const subscription =
@@ -62,8 +59,29 @@ export class PermissionsService {
       });
     }
 
-    const { subscription, options } = await this.getPackageOptions(orgId);
+    const [{ options }, access] = await Promise.all([
+      this.getPackageOptions(orgId),
+      this._entitlements.resolveAccess(orgId),
+    ]);
     for (const [action, section] of requestedPermission) {
+      // Billing v2 is the commercial source of truth. Feature-specific checks
+      // happen in the domain service before credits are reserved.
+      if (section === Sections.AI) {
+        if (access.features.includes('studio')) can(action, section);
+        continue;
+      }
+
+      if (section === Sections.VIDEOS_PER_MONTH) {
+        if (access.features.includes('video-generation')) can(action, section);
+        continue;
+      }
+
+      // Publishing is no longer count-limited by the subscription tier.
+      if (section === Sections.POSTS_PER_MONTH) {
+        can(action, section);
+        continue;
+      }
+
       // check for the amount of channels
       if (section === Sections.CHANNEL) {
         // Refreshing an existing channel doesn't add a new one, so skip the limit check
@@ -84,41 +102,15 @@ export class PermissionsService {
           await this._integrationService.getIntegrationsList(orgId)
         ).filter((f) => !f.refreshNeeded).length;
 
-        if (
-          (options.channel && options.channel > totalChannels) ||
-          (subscription?.totalChannels || 0) > totalChannels
-        ) {
+        if (access.capacities.channels > totalChannels) {
           can(action, section);
-          continue;
         }
+        continue;
       }
 
       if (section === Sections.WEBHOOKS) {
-        const totalWebhooks = await this._webhooksService.getTotal(orgId);
-        if (totalWebhooks < options.webhooks) {
-          can(AuthorizationActions.Create, section);
-          continue;
-        }
-      }
-
-      // check for posts per month
-      if (section === Sections.POSTS_PER_MONTH) {
-        const createdAt =
-          (await this._subscriptionService.getSubscription(orgId))?.createdAt ||
-          created_at;
-        const totalMonthPast = Math.abs(
-          dayjs(createdAt).diff(dayjs(), 'month')
-        );
-        const checkFrom = dayjs(createdAt).add(totalMonthPast, 'month');
-        const count = await this._postsService.countPostsFromDay(
-          orgId,
-          checkFrom.toDate()
-        );
-
-        if (count < options.posts_per_month) {
-          can(action, section);
-          continue;
-        }
+        if (access.features.includes('webhooks')) can(action, section);
+        continue;
       }
 
       if (section === Sections.TEAM_MEMBERS && options.team_members) {
@@ -146,11 +138,6 @@ export class PermissionsService {
         section === Sections.FEATURED_BY_GITROOM &&
         options.featured_by_gitroom
       ) {
-        can(action, section);
-        continue;
-      }
-
-      if (section === Sections.AI && options.ai) {
         can(action, section);
         continue;
       }

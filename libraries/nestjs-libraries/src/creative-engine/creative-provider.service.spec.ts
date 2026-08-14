@@ -11,6 +11,7 @@ describe('CreativeProviderService', () => {
     openaiKey: process.env.OPENAI_API_KEY,
     pollAttempts: process.env.CREATIVE_PROVIDER_POLL_ATTEMPTS,
     pollInterval: process.env.CREATIVE_PROVIDER_POLL_INTERVAL_MS,
+    fallbacksEnabled: process.env.CREATIVE_PROVIDER_FALLBACKS_ENABLED,
   };
 
   afterEach(() => {
@@ -32,6 +33,8 @@ describe('CreativeProviderService', () => {
     else process.env.CREATIVE_PROVIDER_POLL_ATTEMPTS = previous.pollAttempts;
     if (previous.pollInterval === undefined) delete process.env.CREATIVE_PROVIDER_POLL_INTERVAL_MS;
     else process.env.CREATIVE_PROVIDER_POLL_INTERVAL_MS = previous.pollInterval;
+    if (previous.fallbacksEnabled === undefined) delete process.env.CREATIVE_PROVIDER_FALLBACKS_ENABLED;
+    else process.env.CREATIVE_PROVIDER_FALLBACKS_ENABLED = previous.fallbacksEnabled;
   });
 
   it('registers the configured lip-sync contract and quotes it', () => {
@@ -74,6 +77,7 @@ describe('CreativeProviderService', () => {
   });
 
   it('falls back to the ContentFlow provider when the configured provider fails', async () => {
+    process.env.CREATIVE_PROVIDER_FALLBACKS_ENABLED = 'true';
     process.env.OPENAI_API_KEY = 'test-key';
     process.env.CREATIVE_IMAGE_URL = 'https://provider.example/image';
     process.env.CREATIVE_IMAGE_PROVIDER = 'image-http';
@@ -91,6 +95,24 @@ describe('CreativeProviderService', () => {
         url: 'https://cdn.example/fallback.png',
       }));
       expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('does not silently change vendors when provider fallbacks are disabled', async () => {
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.CREATIVE_IMAGE_URL = 'https://provider.example/image';
+    process.env.CREATIVE_IMAGE_PROVIDER = 'image-http';
+    delete process.env.CREATIVE_PROVIDER_FALLBACKS_ENABLED;
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockRejectedValue(new Error('primary provider timeout')) as any;
+    const openaiService = { generateImage: jest.fn() };
+    try {
+      const service = new CreativeProviderService(openaiService as any, {} as any);
+      await expect(service.generate('image-generation', { prompt: 'exclusive provider' }))
+        .rejects.toThrow('primary provider timeout');
+      expect(openaiService.generateImage).not.toHaveBeenCalled();
     } finally {
       global.fetch = originalFetch;
     }

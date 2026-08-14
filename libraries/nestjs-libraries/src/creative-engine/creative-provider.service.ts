@@ -139,14 +139,15 @@ export class CreativeProviderService {
   ): Promise<CreativeProviderOutput> {
     const candidates = this.providerCandidates(capability, providerId);
     let lastError: unknown;
-    for (const provider of candidates) {
+    for (const [index, provider] of candidates.entries()) {
       try {
         return await provider.generate(capability, input);
       } catch (error) {
         lastError = error;
         if (providerId) throw error;
+        const hasFallback = index < candidates.length - 1;
         this.logger.warn(
-          `Creative provider ${provider.id} failed for ${capability}; trying fallback`,
+          `Creative provider ${provider.id} failed for ${capability}; ${hasFallback ? 'trying fallback' : 'no fallback is enabled'}`,
         );
       }
     }
@@ -177,6 +178,12 @@ export class CreativeProviderService {
       throw new ServiceUnavailableException(
         `No provider is configured for creative capability: ${capability}`,
       );
+    }
+
+    // A configured primary is a billing boundary. Cross-vendor fallbacks are
+    // opt-in so a Kie failure cannot silently become an OpenAI charge/error.
+    if (selected && process.env.CREATIVE_PROVIDER_FALLBACKS_ENABLED !== 'true') {
+      return [selected];
     }
 
     const fallbacks = [...this.providers.values()].filter(
