@@ -768,6 +768,12 @@ body.light .cf-studio [class*='bg-cyan-'] {
 .cf-studio .copilotKitMessages {
   scroll-behavior: smooth;
   padding-bottom: 8px;
+  /* CopilotKit sets `overflow-y: scroll`, which always reserves the
+     scrollbar gutter on the right side only. That shifts the visible
+     message column (and anything centered against it, like
+     .cf-studio__action-status) off from the true center of this
+     container. Reserving the gutter symmetrically keeps both centered. */
+  scrollbar-gutter: stable both-edges;
 }
 
 .cf-studio .copilotKitUserMessage {
