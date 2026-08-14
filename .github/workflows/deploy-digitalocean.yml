@@ -95,28 +95,25 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout exact release
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Create exact release and deploy
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPOSITORY: ${{ github.repository }}
           RELEASE_SHA: ${{ github.sha }}
           DEPLOY_BACKEND: ${{ needs.changes.outputs.backend }}
           DEPLOY_FRONTEND: ${{ needs.changes.outputs.frontend }}
         shell: bash
         run: |
           set -Eeuo pipefail
-          repo_dir=/opt/contentflow-repository.git
           release_dir="/opt/contentflow-release-${RELEASE_SHA:0:7}"
-          auth_header="AUTHORIZATION: bearer $GH_TOKEN"
-
-          if [[ ! -d "$repo_dir" ]]; then
-            git -c http.extraHeader="$auth_header" clone --bare \
-              "https://github.com/$REPOSITORY.git" "$repo_dir"
-          fi
-          git --git-dir="$repo_dir" -c http.extraHeader="$auth_header" fetch origin "$RELEASE_SHA"
 
           if [[ ! -d "$release_dir" ]]; then
-            git --git-dir="$repo_dir" worktree add --detach "$release_dir" "$RELEASE_SHA"
+            mkdir -p "$release_dir"
+            git archive "$RELEASE_SHA" | tar -x -C "$release_dir"
           fi
 
           chmod +x "$release_dir/scripts/deploy/selective-production.sh"
