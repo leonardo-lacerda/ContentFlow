@@ -133,9 +133,20 @@ jobs:
       - name: External smoke test
         id: smoke
         continue-on-error: true
+        env:
+          PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
         run: |
-          curl --fail --show-error --max-time 20 "http://${{ secrets.DO_HOST }}:4007/" >/dev/null
-          curl --fail --show-error --max-time 20 "http://${{ secrets.DO_HOST }}:4007/auth/login" >/dev/null
+          if [[ -z "$PRODUCTION_URL" ]]; then
+            echo "::warning::PRODUCTION_URL is not configured; external smoke test skipped."
+            exit 0
+          fi
+          if [[ "$PRODUCTION_URL" != https://* ]]; then
+            echo "::error::PRODUCTION_URL must use HTTPS; refusing an insecure external smoke test."
+            exit 1
+          fi
+          base="${PRODUCTION_URL%/}"
+          curl --fail --show-error --max-time 20 "$base/" >/dev/null
+          curl --fail --show-error --max-time 20 "$base/auth/login" >/dev/null
 
       - name: Report external smoke test result
         if: steps.smoke.outcome == 'failure'
