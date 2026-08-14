@@ -70,8 +70,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.12.0
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
 
       - name: Test backend changes
@@ -109,7 +107,7 @@ jobs:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
-          port: ${{ secrets.DO_PORT || '22' }}
+          port: 22
           command_timeout: 60m
           envs: GH_TOKEN,REPOSITORY,RELEASE_SHA,DEPLOY_BACKEND,DEPLOY_FRONTEND
           script: |
