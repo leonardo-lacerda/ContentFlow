@@ -513,7 +513,13 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
 
   const waitForCreativeJob = async (jobId: string): Promise<CreativeJobState> => {
     const terminalStatuses = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'REFUNDED']);
-    for (let attempt = 0; attempt < 60; attempt += 1) {
+    // The backend renders carousel slides sequentially, one image job at a
+    // time (confirmed in production: ~1-2 minutes per slide), not in
+    // parallel. A slide queued near the end of a 7-slide carousel can wait
+    // 6+ minutes just for its turn. ~500 attempts * 2s gives roughly 16
+    // minutes of patience per job, comfortably covering that worst case
+    // instead of giving up (and showing a scary error) after ~90 seconds.
+    for (let attempt = 0; attempt < 500; attempt += 1) {
       const response = await withTimeout(
         apiFetch(`/creative/jobs/${encodeURIComponent(jobId)}`),
         15000,
@@ -522,9 +528,9 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
       if (!response.ok) throw new Error(`Não foi possível acompanhar a geração (HTTP ${response.status})`);
       const job = (await response.json()) as CreativeJobState;
       if (terminalStatuses.has(String(job.status || '').toUpperCase())) return job;
-      await new Promise((resolve) => window.setTimeout(resolve, 1500));
+      await new Promise((resolve) => window.setTimeout(resolve, 2000));
     }
-    throw new Error('A geração demorou mais que o esperado. O job continua disponível em seus projetos.');
+    throw new Error('A geração demorou muito mais que o esperado. O job continua disponível em seus projetos.');
   };
 
   // Mirrors (loosely) what the server hashes for its own idempotency: prompt,
@@ -936,7 +942,7 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
                 </div>
                 <span>
                   {genProgress
-                    ? `${genProgress.done} de ${genProgress.total} imagens prontas — pode deixar aberto, estamos gerando…`
+                    ? `${genProgress.done} de ${genProgress.total} imagens prontas — as imagens são geradas uma por vez, pode levar alguns minutos. Pode deixar esta tela aberta.`
                     : 'Enviando para geração…'}
                 </span>
               </div>
