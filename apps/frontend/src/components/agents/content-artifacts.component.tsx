@@ -124,6 +124,27 @@ const isAwaitingUser = (status?: string) => status === undefined || status === '
 
 const toDataUrl = (value?: string) => value || '';
 
+// The shared fetch wrapper returns a promise that never resolves on some
+// auth/billing responses (to freeze the page during a redirect), and a backend
+// that is restarting can accept the TCP connection but never answer. Either
+// leaves the "Gerando imagens…" button spinning forever. Racing every
+// generation request against a timeout guarantees the flow always ends in a
+// success or a clear, retriable error instead of an infinite spinner.
+const withTimeout = async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`${label} demorou demais e foi interrompida. Tente novamente.`)),
+      ms
+    );
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
 const PALETTES: Array<DesignSpec['palette']> = [
   {
     paletteId: 'cobalt-cream',
@@ -477,7 +498,11 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
   const waitForCreativeJob = async (jobId: string): Promise<CreativeJobState> => {
     const terminalStatuses = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'REFUNDED']);
     for (let attempt = 0; attempt < 60; attempt += 1) {
-      const response = await apiFetch(`/creative/jobs/${encodeURIComponent(jobId)}`);
+      const response = await withTimeout(
+        apiFetch(`/creative/jobs/${encodeURIComponent(jobId)}`),
+        15000,
+        'O acompanhamento da geração'
+      );
       if (!response.ok) throw new Error(`Não foi possível acompanhar a geração (HTTP ${response.status})`);
       const job = (await response.json()) as CreativeJobState;
       if (terminalStatuses.has(String(job.status || '').toUpperCase())) return job;
@@ -528,7 +553,8 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
     }
     setSubmitting(true);
     try {
-      const response = await apiFetch('/creative/carousel/generate-images', {
+      const response = await withTimeout(
+        apiFetch('/creative/carousel/generate-images', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -550,7 +576,10 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
             };
           }),
         }),
-      });
+        }),
+        90000,
+        'A solicitação de geração de imagens'
+      );
       if (!response.ok) {
         const body = await response.json().catch(() => null);
         if (response.status === 403 || body?.code === 'FEATURE_NOT_INCLUDED') {
