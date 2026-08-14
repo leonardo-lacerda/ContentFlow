@@ -14,7 +14,7 @@ import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
 import { Rules } from '@gitroom/nestjs-libraries/chat/rules.description.decorator';
 
 const client = new NeynarAPIClient({
-  apiKey: process.env.NEYNAR_SECRET_KEY || '00000000-000-0000-000-000000000000',
+  apiKey: process.env.NEYNAR_SECRET_KEY || '',
 });
 
 @Rules(
