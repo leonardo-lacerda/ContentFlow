@@ -47,18 +47,27 @@ export class ConfigurationChecker {
         'Needed for AI content/image generation and the AI agents.'
       );
     }
-    const hasCakto = !!(this.cfg.CAKTO_STARTER_CHECKOUT_URL || this.cfg.CAKTO_PRO_CHECKOUT_URL || this.cfg.CAKTO_SCALE_CHECKOUT_URL);
-    const hasStripe = !!this.cfg.STRIPE_SECRET_KEY;
-    if (!hasCakto && !hasStripe) {
-      this.checkNonEmpty(
-        'STRIPE_SECRET_KEY',
-        'Needed to create checkouts and manage subscriptions. (Or set CAKTO_*_CHECKOUT_URL for Cakto)'
-      );
-      this.checkNonEmpty(
-        'STRIPE_SIGNING_KEY',
-        'Needed to validate Stripe webhook events. (Or set CAKTO_WEBHOOK_* for Cakto)'
-      );
-    }
+    // TEMPORARILY DISABLED (2026-08-14): this Vultr production host has never
+    // had a payment provider configured (neither Stripe nor Cakto — both sets
+    // of keys are present in .env but empty). This check itself is not new;
+    // what changed today is main.ts's start() now treats any check() issue as
+    // fatal in production (see below), turning a previously-harmless boot
+    // warning into a hard boot failure. Explicit, informed decision by the
+    // site owner to keep checkout/billing non-functional for now rather than
+    // block deploys on it. Re-enable once a real payment provider is
+    // configured — see SECURITY-REMEDIATION-2026-08-14.md.
+    // const hasCakto = !!(this.cfg.CAKTO_STARTER_CHECKOUT_URL || this.cfg.CAKTO_PRO_CHECKOUT_URL || this.cfg.CAKTO_SCALE_CHECKOUT_URL);
+    // const hasStripe = !!this.cfg.STRIPE_SECRET_KEY;
+    // if (!hasCakto && !hasStripe) {
+    //   this.checkNonEmpty(
+    //     'STRIPE_SECRET_KEY',
+    //     'Needed to create checkouts and manage subscriptions. (Or set CAKTO_*_CHECKOUT_URL for Cakto)'
+    //   );
+    //   this.checkNonEmpty(
+    //     'STRIPE_SIGNING_KEY',
+    //     'Needed to validate Stripe webhook events. (Or set CAKTO_WEBHOOK_* for Cakto)'
+    //   );
+    // }
 
     if (this.get('NODE_ENV') === 'production') {
       for (const key of [
