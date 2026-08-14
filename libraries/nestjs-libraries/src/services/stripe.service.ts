@@ -12,7 +12,22 @@ import { TrackService } from '@gitroom/nestjs-libraries/track/track.service';
 import { UsersService } from '@gitroom/nestjs-libraries/database/prisma/users/users.service';
 import { TrackEnum } from '@gitroom/nestjs-libraries/user/track.enum';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+// Constructed lazily on first actual use, not at module-import time. Nest
+// eagerly instantiates every registered provider (StripeService is always
+// registered in database.module.ts, regardless of the configured billing
+// provider), and this deployment uses Cakto instead of Stripe — leaving
+// STRIPE_SECRET_KEY unset. The Stripe SDK throws at construction without a
+// key, which crashed the whole backend on boot. The Proxy keeps every
+// existing `stripe.<x>` call site in this file unchanged while deferring the
+// real `new Stripe(...)` until a Stripe method is actually invoked, which
+// only happens if Stripe is genuinely the active billing provider.
+let stripeClient: Stripe | undefined;
+const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    if (!stripeClient) stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+    return Reflect.get(stripeClient, prop, stripeClient);
+  },
+});
 
 @Injectable()
 export class StripeService {

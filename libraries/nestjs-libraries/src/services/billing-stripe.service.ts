@@ -3,7 +3,22 @@ import Stripe from 'stripe';
 import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
 import { BillingAccountingService } from './billing-accounting.service';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+// Constructed lazily on first actual use, not at module-import time. Nest
+// eagerly instantiates every registered provider (BillingStripeService is
+// always registered in api.module.ts, regardless of the configured billing
+// provider), and this deployment uses Cakto instead of Stripe — leaving
+// STRIPE_SECRET_KEY unset. The Stripe SDK throws at construction without a
+// key, which crashed the whole backend on boot (same issue as
+// services/stripe.service.ts). The Proxy keeps every existing `stripe.<x>`
+// call site in this file unchanged while deferring the real `new Stripe(...)`
+// until a Stripe method is actually invoked.
+let stripeClient: Stripe | undefined;
+const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    if (!stripeClient) stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+    return Reflect.get(stripeClient, prop, stripeClient);
+  },
+});
 
 @Injectable()
 export class BillingStripeService {
