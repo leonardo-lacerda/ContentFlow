@@ -29,11 +29,10 @@ describe('ConfigurationChecker production guard', () => {
     process.env = originalEnv;
   });
 
-  it('rejects production without the audit signing secret and HTTPS', () => {
+  it('rejects production without the audit signing secret', () => {
     process.env = {
       ...validProductionEnv,
       ADMIN_AUDIT_EXPORT_SECRET: '',
-      FRONTEND_URL: 'http://contentflow.example.com',
     };
 
     const checker = new ConfigurationChecker();
@@ -41,12 +40,28 @@ describe('ConfigurationChecker production guard', () => {
     checker.check();
 
     expect(checker.getIssues()).toEqual(
-      expect.arrayContaining([
-        'ADMIN_AUDIT_EXPORT_SECRET not set. ',
-        'FRONTEND_URL must use HTTPS in production',
-      ])
+      expect.arrayContaining(['ADMIN_AUDIT_EXPORT_SECRET not set. '])
     );
   });
+
+  // TEMPORARILY DISABLED (2026-08-14): the HTTPS/NOT_SECURED production guard
+  // is commented out in configuration.checker.ts until the production host
+  // has a domain + TLS reverse proxy. Re-enable this test alongside that
+  // check — see SECURITY-REMEDIATION-2026-08-14.md.
+  // it('rejects production without HTTPS', () => {
+  //   process.env = {
+  //     ...validProductionEnv,
+  //     FRONTEND_URL: 'http://contentflow.example.com',
+  //   };
+  //
+  //   const checker = new ConfigurationChecker();
+  //   checker.readEnvFromProcess();
+  //   checker.check();
+  //
+  //   expect(checker.getIssues()).toEqual(
+  //     expect.arrayContaining(['FRONTEND_URL must use HTTPS in production'])
+  //   );
+  // });
 
   it('accepts a complete production configuration', () => {
     process.env = { ...validProductionEnv };

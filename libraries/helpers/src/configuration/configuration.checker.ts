@@ -78,16 +78,24 @@ export class ConfigurationChecker {
         }
       }
 
-      for (const key of ['MAIN_URL', 'FRONTEND_URL', 'NEXT_PUBLIC_BACKEND_URL']) {
-        const value = this.get(key);
-        if (value && !value.startsWith('https://')) {
-          this.issues.push(`${key} must use HTTPS in production`);
-        }
-      }
-
-      if (String(this.get('NOT_SECURED')).toLowerCase() === 'true') {
-        this.issues.push('NOT_SECURED must not be enabled in production');
-      }
+      // TEMPORARILY DISABLED (2026-08-14): the current production host
+      // (Vultr, 216.238.121.214:4007) has no domain/TLS termination yet, so
+      // this check refuses to boot the process. Explicit, informed decision
+      // by the site owner to accept plaintext-HTTP session cookies until a
+      // domain + HTTPS reverse proxy is set up. Re-enable as soon as that's
+      // in place — see SECURITY-REMEDIATION-2026-08-14.md, "Production
+      // actions required before deploying this revision". Mirrors the same
+      // temporary change in scripts/validate-runtime-env.mjs.
+      // for (const key of ['MAIN_URL', 'FRONTEND_URL', 'NEXT_PUBLIC_BACKEND_URL']) {
+      //   const value = this.get(key);
+      //   if (value && !value.startsWith('https://')) {
+      //     this.issues.push(`${key} must use HTTPS in production`);
+      //   }
+      // }
+      //
+      // if (String(this.get('NOT_SECURED')).toLowerCase() === 'true') {
+      //   this.issues.push('NOT_SECURED must not be enabled in production');
+      // }
     }
   }
 

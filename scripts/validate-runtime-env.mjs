@@ -104,16 +104,23 @@ export function validateRuntimeEnv({ env = process.env, production = env.NODE_EN
     if (production || isSet(merged, key)) addUrl(merged, issues, key);
   }
 
-  if (production) {
-    for (const key of ['MAIN_URL', 'FRONTEND_URL', 'NEXT_PUBLIC_BACKEND_URL']) {
-      if (isSet(merged, key) && !String(merged[key]).startsWith('https://')) {
-        issues.push(`${key} must use HTTPS in production`);
-      }
-    }
-    if (String(merged.NOT_SECURED).toLowerCase() === 'true') {
-      issues.push('NOT_SECURED must not be enabled in production');
-    }
-  }
+  // TEMPORARILY DISABLED (2026-08-14): the current production host
+  // (Vultr, 216.238.121.214:4007) has no domain/TLS termination yet, so this
+  // check blocks every deploy. Explicit, informed decision by the site owner
+  // to accept plaintext-HTTP session cookies until a domain + HTTPS reverse
+  // proxy is set up. Re-enable this block as soon as that's in place — see
+  // SECURITY-REMEDIATION-2026-08-14.md, "Production actions required before
+  // deploying this revision".
+  // if (production) {
+  //   for (const key of ['MAIN_URL', 'FRONTEND_URL', 'NEXT_PUBLIC_BACKEND_URL']) {
+  //     if (isSet(merged, key) && !String(merged[key]).startsWith('https://')) {
+  //       issues.push(`${key} must use HTTPS in production`);
+  //     }
+  //   }
+  //   if (String(merged.NOT_SECURED).toLowerCase() === 'true') {
+  //     issues.push('NOT_SECURED must not be enabled in production');
+  //   }
+  // }
 
   const provider = String(merged.AI_PRIMARY_PROVIDER || '').toLowerCase();
   if (provider === 'kie') {
