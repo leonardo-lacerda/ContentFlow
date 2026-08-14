@@ -99,7 +99,7 @@ export class ContentPresentationTool implements AgentToolInterface {
     return createTool({
       id: 'contentPresentationTool',
       description:
-        'Prepare structured ContentFlow Studio artifacts for the chat UI. Use operation ideas to provide exactly the requested ready-to-use ideas, or operation carousel to provide a complete visual slide plan. This tool does not generate media, consume credits or save anything.',
+        'Prepare structured ContentFlow Studio artifacts for the chat UI. Use operation ideas to provide exactly the requested ready-to-use ideas, or operation carousel to provide a complete visual slide plan. This tool does not generate media, consume credits or save anything. The chat UI renders this result as a full interactive card (every title, hook, angle, CTA, or slide headline/body/CTA/caption/hashtags). Do not repeat this content in your own text reply — after calling this tool, reply with at most one short sentence and never restate the ideas or slides in prose or a list.',
       inputSchema: z.object({
         operation: z.enum(['ideas', 'carousel']).optional(),
         title: z.string().optional(),
