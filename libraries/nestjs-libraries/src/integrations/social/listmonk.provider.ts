@@ -119,7 +119,7 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
   ) {
     const body: { url: string; username: string; password: string } =
       JSON.parse(
-        AuthService.fixedDecryption(integration.customInstanceDetails!)
+        AuthService.secureDecryption(integration.customInstanceDetails!)
       );
 
     const auth = Buffer.from(`${body.username}:${body.password}`).toString(
@@ -146,7 +146,7 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
   ) {
     const body: { url: string; username: string; password: string } =
       JSON.parse(
-        AuthService.fixedDecryption(integration.customInstanceDetails!)
+        AuthService.secureDecryption(integration.customInstanceDetails!)
       );
 
     const auth = Buffer.from(`${body.username}:${body.password}`).toString(
@@ -175,7 +175,7 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
   ): Promise<PostResponse[]> {
     const body: { url: string; username: string; password: string } =
       JSON.parse(
-        AuthService.fixedDecryption(integration.customInstanceDetails!)
+        AuthService.secureDecryption(integration.customInstanceDetails!)
       );
 
     const auth = Buffer.from(`${body.username}:${body.password}`).toString(

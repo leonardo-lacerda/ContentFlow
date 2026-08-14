@@ -17,7 +17,7 @@ export const removeAuth = (res: Response) => {
       ? {
           secure: true,
           httpOnly: true,
-          sameSite: 'none',
+          sameSite: 'lax',
         }
       : {}),
     expires: new Date(0),
@@ -44,7 +44,7 @@ export class AuthMiddleware implements NestMiddleware {
       throw new HttpForbiddenException();
     }
     try {
-      let user = AuthService.verifyJWT(auth) as User | null;
+      let user = AuthService.verifyJWT(auth, 'session') as User | null;
       const orgHeader = req.cookies.showorg || req.headers.showorg;
 
       if (!user) {
@@ -98,7 +98,7 @@ export class AuthMiddleware implements NestMiddleware {
           return;
         }
         await this._prisma.adminImpersonation.updateMany({ where: { adminUserId: adminUser.id, endedAt: null, expiresAt: { lte: new Date() } }, data: { endedAt: new Date() } });
-        res.cookie('impersonate', '', { httpOnly: true, expires: new Date(0), maxAge: -1, ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'none' as const } : {}) });
+        res.cookie('impersonate', '', { httpOnly: true, expires: new Date(0), maxAge: -1, ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'lax' as const } : {}) });
       }
 
       delete user.password;

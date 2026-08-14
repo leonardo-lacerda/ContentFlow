@@ -6,6 +6,10 @@ tmp
 /out-tsc
 .env
 credentials/
+.env.*
+*.tar.gz
+var/*.log
+reports/
 # dependencies
 node_modules
 

@@ -152,15 +152,15 @@ function normalizeWebsiteUrl(value: string) {
 }
 
 function makeCompanyId() {
-  return `company_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return `company_${Date.now()}_${makeId(12)}`;
 }
 
 function makeVisualAssetId() {
-  return `brand_asset_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return `brand_asset_${Date.now()}_${makeId(12)}`;
 }
 
 function makeBrandKitId(prefix: string) {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}_${Date.now()}_${makeId(12)}`;
 }
 
 function cleanVisualIdentityAssets(value: unknown): VisualIdentityAsset[] {
@@ -551,7 +551,12 @@ export class OrganizationService {
     await this.entitlements.assertCapacity(orgId, 'members', team?.users.length || 0);
     const timeLimit = dayjs().add(1, 'hour').format('YYYY-MM-DD HH:mm:ss');
     const id = makeId(5);
-    const url = process.env.FRONTEND_URL + `/?org=${AuthService.signJWT({ ...body, orgId, timeLimit, id })}`;
+    const url =
+      process.env.FRONTEND_URL +
+      `/?org=${AuthService.signJWT(
+        { ...body, orgId, timeLimit, id },
+        { type: 'org-invite', expiresIn: '1h' }
+      )}`;
     if (body.sendEmail) {
       await this._notificationsService.sendEmail(body.email, 'You have been invited to join an organization', `You have been invited to join an organization. Click <a href="${url}">here</a> to join.<br />The link will expire in 1 hour.`);
     }

@@ -26,7 +26,7 @@ export class Nowpayments {
   constructor(private _subscriptionService: SubscriptionService) {}
 
   async processPayment(path: string, body: ProcessPayment) {
-    const decrypt = AuthService.verifyJWT(path) as any;
+    const decrypt = AuthService.verifyJWT(path, 'payment') as any;
     if (!decrypt || !decrypt.order_id) {
       return;
     }
@@ -38,6 +38,10 @@ export class Nowpayments {
       return;
     }
 
+    if (body.order_id !== decrypt.order_id) {
+      return;
+    }
+
     const [org, make] = body.order_id.split('_');
     await this._subscriptionService.lifeTime(org, make, 'PRO');
     return body;
@@ -46,7 +50,10 @@ export class Nowpayments {
   async createPaymentPage(orgId: string) {
     const onlyId = makeId(5);
     const make = orgId + '_' + onlyId;
-    const signRequest = AuthService.signJWT({ order_id: make });
+    const signRequest = AuthService.signJWT(
+      { order_id: make },
+      { type: 'payment', expiresIn: '2h' }
+    );
 
     const { id, invoice_url } = await (
       await fetch('https://api.nowpayments.io/v1/invoice', {

@@ -58,6 +58,21 @@ async function start() {
     },
   });
 
+  // The app is deployed behind one trusted reverse proxy in production.
+  // Honour its client IP only after the proxy boundary; never trust an
+  // arbitrary X-Forwarded-For supplied directly by a caller.
+  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
+  app.use((_req: any, res: any, next: any) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
+    next();
+  });
+
   const mcpEnabled =
     process.env.DISABLE_MCP !== 'true' &&
     (process.env.NODE_ENV === 'production' ||
@@ -71,6 +86,8 @@ async function start() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
     })
   );
 

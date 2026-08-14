@@ -229,9 +229,9 @@ export class NoAuthIntegrationsController {
         body.refresh,
         +body.timezone,
         details
-          ? AuthService.fixedEncryption(details)
+          ? AuthService.secureEncryption(details)
           : integrationProvider.customFields
-          ? AuthService.fixedEncryption(
+          ? AuthService.secureEncryption(
               Buffer.from(body.code, 'base64').toString()
             )
           : integrationProvider.isChromeExtension

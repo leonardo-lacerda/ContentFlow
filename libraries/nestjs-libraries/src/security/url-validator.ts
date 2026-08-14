@@ -12,6 +12,8 @@
 import { Logger } from '@nestjs/common';
 import * as dns from 'dns';
 import * as net from 'net';
+import { ssrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
+import { isBlockedIp } from '@gitroom/nestjs-libraries/dtos/webhooks/webhook.url.validator';
 
 const logger = new Logger('UrlValidator');
 
@@ -88,29 +90,13 @@ export class UrlValidator {
 
       // 4. Verificar se hostname é IP direto
       if (net.isIP(hostname)) {
-        const ipType = net.isIP(hostname);
-        if (ipType === 4) {
-          if (this.isPrivateIP(hostname)) {
-            return {
-              valid: false,
-              error: `IP privado não permitido: ${hostname}`,
-            };
-          }
-        }
-        // IPv6: verificar se é link-local ou loopback
-        if (ipType === 6) {
-          if (
-            hostname === '::1' ||
-            hostname === '::' ||
-            hostname.startsWith('fe80:') ||
-            hostname.startsWith('fc') ||
-            hostname.startsWith('fd')
-          ) {
-            return {
-              valid: false,
-              error: `IPv6 privado não permitido: ${hostname}`,
-            };
-          }
+        if (isBlockedIp(hostname)) {
+          return {
+            valid: false,
+            error: net.isIP(hostname) === 6
+              ? `IPv6 privado não permitido: ${hostname}`
+              : `IP privado não permitido: ${hostname}`,
+          };
         }
       }
 
@@ -118,7 +104,7 @@ export class UrlValidator {
       try {
         const ips = await this.resolveDns(hostname);
         for (const ip of ips) {
-          if (this.isPrivateIP(ip)) {
+          if (isBlockedIp(ip)) {
             return {
               valid: false,
               error: `DNS resolveu para IP privado: ${ip} (${hostname})`,
@@ -128,7 +114,9 @@ export class UrlValidator {
         }
       } catch (dnsError) {
         logger.warn(`DNS resolution failed for ${hostname}: ${dnsError}`);
-        // Permitir continuar — hostname pode ser válido mas DNS temporariamente indisponível
+        // Fail closed. Fetching after an unresolved validation reintroduces
+        // DNS rebinding and internal-service access through alternate DNS.
+        return { valid: false, error: 'Não foi possível validar o DNS do hostname' };
       }
 
       return { valid: true };
@@ -176,6 +164,10 @@ export class UrlValidator {
 
         const response = await fetch(currentUrl, {
           signal: controller.signal,
+          // Pin the DNS result at socket-connect time and re-check every
+          // address, closing the validation/fetch TOCTOU window.
+          // @ts-expect-error undici dispatcher is not in the DOM fetch type.
+          dispatcher: ssrfSafeDispatcher,
           headers: {
             'User-Agent': 'ContentFlow-Extractor/1.0',
             ...options?.headers,
@@ -318,11 +310,8 @@ export class UrlValidator {
    * Resolver DNS
    */
   private static resolveDns(hostname: string): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-      dns.resolve4(hostname, (err, addresses) => {
-        if (err) reject(err);
-        else resolve(addresses);
-      });
-    });
+    return dns.promises
+      .lookup(hostname, { all: true })
+      .then((records) => records.map((record) => record.address));
   }
 }

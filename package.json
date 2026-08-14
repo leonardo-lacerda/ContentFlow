@@ -28,6 +28,7 @@
     "build:orchestrator": "rm -rf apps/orchestrator/dist && pnpm --filter ./apps/orchestrator run build",
     "build:extension": "rm -rf apps/extension/dist && pnpm --filter ./apps/extension run build",
     "env:check": "node scripts/validate-runtime-env.mjs",
+    "security:static": "node scripts/security-static-check.mjs",
     "production:smoke": "node scripts/production-smoke.mjs",
     "dev:backend": "rm -rf apps/backend/dist && pnpm --filter ./apps/backend run dev",
     "dev:frontend": "rm -rf apps/frontend/dist && pnpm --filter ./apps/frontend run dev",

@@ -75,10 +75,10 @@ export class AuthController {
           ? {
               secure: true,
               httpOnly: true,
-              sameSite: 'none',
+              sameSite: 'lax',
             }
           : {}),
-        expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+        expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
       });
 
       if (process.env.NOT_SECURED) {
@@ -92,10 +92,10 @@ export class AuthController {
             ? {
                 secure: true,
                 httpOnly: true,
-                sameSite: 'none',
+                sameSite: 'lax',
               }
             : {}),
-          expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+          expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
         });
 
         if (process.env.NOT_SECURED) {
@@ -140,10 +140,10 @@ export class AuthController {
           ? {
               secure: true,
               httpOnly: true,
-              sameSite: 'none',
+              sameSite: 'lax',
             }
           : {}),
-        expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+        expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
       });
 
       if (process.env.NOT_SECURED) {
@@ -157,10 +157,10 @@ export class AuthController {
             ? {
                 secure: true,
                 httpOnly: true,
-                sameSite: 'none',
+                sameSite: 'lax',
               }
             : {}),
-          expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+          expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
         });
 
         if (process.env.NOT_SECURED) {
@@ -193,10 +193,12 @@ export class AuthController {
 
   @Post('/forgot-return')
   async forgotReturn(@Body() body: ForgotReturnPasswordDto) {
-    const reset = await this._authService.forgotReturn(body);
-    return {
-      reset: !!reset,
-    };
+    try {
+      const reset = await this._authService.forgotReturn(body);
+      return { reset: !!reset };
+    } catch {
+      return { reset: false };
+    }
   }
 
   @Get('/oauth-mobile-callback')
@@ -237,10 +239,10 @@ export class AuthController {
         ? {
             secure: true,
             httpOnly: true,
-            sameSite: 'none',
+            sameSite: 'lax',
           }
         : {}),
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
     });
 
     if (process.env.NOT_SECURED) {
@@ -290,7 +292,7 @@ export class AuthController {
         ? {
             secure: true,
             httpOnly: true,
-            sameSite: 'none',
+            sameSite: 'lax',
           }
         : {}),
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),

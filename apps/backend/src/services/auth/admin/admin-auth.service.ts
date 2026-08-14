@@ -73,6 +73,7 @@ export class AdminAuthService {
 
     const token = sign({ sub: params.adminUserId, jti, typ: 'admin' }, this.jwtSecret(), {
       expiresIn: '60m',
+      algorithm: 'HS256',
     });
     const refreshToken = randomBytes(48).toString('base64url');
     await this._refreshTokenService.create({
@@ -89,7 +90,9 @@ export class AdminAuthService {
   async validateToken(token: string, ip?: string, userAgent?: string): Promise<AdminAuthContext | null> {
     let payload: { sub: string; jti: string; typ: string };
     try {
-      payload = verify(token, this.jwtSecret()) as typeof payload;
+      payload = verify(token, this.jwtSecret(), {
+        algorithms: ['HS256'],
+      }) as typeof payload;
     } catch {
       return null;
     }
@@ -194,7 +197,11 @@ export class AdminAuthService {
   }
 
   private jwtSecret() {
-    return process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET!;
+    const secret = process.env.ADMIN_JWT_SECRET;
+    if (!secret) {
+      throw new Error('ADMIN_JWT_SECRET is not configured');
+    }
+    return secret;
   }
 
   // MFA brute-force guard: 5 failed codes within a rolling 15-minute window

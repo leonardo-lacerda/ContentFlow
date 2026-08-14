@@ -21,12 +21,14 @@ export class PoliciesGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: Request = context.switchToHttp().getRequest();
-    if (
-      request.path.indexOf('/auth') > -1 ||
-      request.path.indexOf('/auth') > -1 ||
-      request.path.indexOf('/integrations/social-connect') > -1 ||
-      request.path.indexOf('/integrations/provider') > -1
-    ) {
+    const publicPrefixes = [
+      '/auth',
+      '/integrations/social-connect',
+      '/integrations/provider',
+    ];
+    if (publicPrefixes.some((prefix) =>
+      request.path === prefix || request.path.startsWith(`${prefix}/`)
+    )) {
       return true;
     }
 

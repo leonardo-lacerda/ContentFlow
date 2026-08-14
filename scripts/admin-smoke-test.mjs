@@ -32,7 +32,8 @@ function check(name, actual, expected) {
 }
 
 function tokenFor(adminId, jti) {
-  return jwt.sign({ sub: adminId, jti, typ: 'admin' }, process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET, { expiresIn: '60m' });
+  if (!process.env.ADMIN_JWT_SECRET) throw new Error('ADMIN_JWT_SECRET is required');
+  return jwt.sign({ sub: adminId, jti, typ: 'admin' }, process.env.ADMIN_JWT_SECRET, { expiresIn: '60m' });
 }
 
 async function createSession(adminId, mfaVerifiedAt = new Date()) {

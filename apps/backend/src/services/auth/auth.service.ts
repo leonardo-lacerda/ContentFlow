@@ -11,6 +11,8 @@ import { NotificationService } from '@gitroom/nestjs-libraries/database/prisma/n
 import { ForgotReturnPasswordDto } from '@gitroom/nestjs-libraries/dtos/auth/forgot-return.password.dto';
 import { EmailService } from '@gitroom/nestjs-libraries/services/email.service';
 import { NewsletterService } from '@gitroom/nestjs-libraries/newsletter/newsletter.service';
+import { randomBytes, createHash } from 'crypto';
+import { ioRedis } from '@gitroom/nestjs-libraries/redis/redis.service';
 
 @Injectable()
 export class AuthService {
@@ -49,7 +51,7 @@ export class AuthService {
       const user = await this._userService.getUserByEmail(body.email);
       if (body instanceof CreateOrgUserDto) {
         if (user) {
-          throw new Error('Email already exists');
+          throw new Error('Unable to complete registration');
         }
 
         if (!(await this.canRegister(provider))) {
@@ -72,7 +74,17 @@ export class AuthService {
               )
             : false;
 
-        const obj = { addedOrg, jwt: await this.jwt(create.users[0].user) };
+        const obj = {
+          addedOrg,
+          jwt: await this.oneTimeToken(
+            'activation',
+            {
+              id: create.users[0].user.id,
+              email: create.users[0].user.email,
+            },
+            60 * 60 * 24
+          ),
+        };
         await this._emailService.sendEmail(
           body.email,
           'Activate your account',
@@ -122,7 +134,7 @@ export class AuthService {
     }
 
     try {
-      const getOrg: any = AuthChecker.verifyJWT(cookie);
+      const getOrg: any = AuthChecker.verifyJWT(cookie, 'org-invite');
       if (dayjs(getOrg.timeLimit).isBefore(dayjs())) {
         return false;
       }
@@ -224,10 +236,11 @@ export class AuthService {
       return false;
     }
 
-    const resetValues = AuthChecker.signJWT({
-      id: user.id,
-      expires: dayjs().add(20, 'minutes').format('YYYY-MM-DD HH:mm:ss'),
-    });
+    const resetValues = await this.oneTimeToken(
+      'password-reset',
+      { id: user.id },
+      20 * 60
+    );
 
     await this._notificationService.sendEmail(
       user.email,
@@ -236,12 +249,12 @@ export class AuthService {
     );
   }
 
-  forgotReturn(body: ForgotReturnPasswordDto) {
-    const user = AuthChecker.verifyJWT(body.token) as {
-      id: string;
-      expires: string;
-    };
-    if (dayjs(user.expires).isBefore(dayjs())) {
+  async forgotReturn(body: ForgotReturnPasswordDto) {
+    const user = await this.consumeOneTimeToken<{ id: string }>(
+      'password-reset',
+      body.token
+    );
+    if (!user?.id) {
       return false;
     }
 
@@ -249,21 +262,19 @@ export class AuthService {
   }
 
   async activate(code: string, tracking: string) {
-    const user = AuthChecker.verifyJWT(code) as {
+    const user = await this.consumeOneTimeToken<{
       id: string;
-      activated: boolean;
       email: string;
-    };
-    if (user.id && !user.activated) {
+    }>('activation', code);
+    if (user?.id && user.email) {
       const getUserAgain = await this._userService.getUserByEmail(user.email);
-      if (getUserAgain.activated) {
+      if (!getUserAgain || getUserAgain.id !== user.id || getUserAgain.activated) {
         return false;
       }
       await this._userService.activateUser(user.id);
-      user.activated = true;
       this._track('register', user.email, tracking).catch((err) => {});
       await NewsletterService.register(user.email);
-      return this.jwt(user as any);
+      return this.jwt(getUserAgain);
     }
 
     return false;
@@ -272,20 +283,21 @@ export class AuthService {
   async resendActivationEmail(email: string) {
     const user = await this._userService.getUserByEmail(email);
 
-    if (!user) {
-      throw new Error('User not found');
+    if (!user || user.activated) {
+      // Keep this response deliberately generic to avoid account enumeration.
+      return true;
     }
 
-    if (user.activated) {
-      throw new Error('Account is already activated');
-    }
-
-    const jwt = await this.jwt(user);
+    const token = await this.oneTimeToken(
+      'activation',
+      { id: user.id, email: user.email },
+      60 * 60 * 24
+    );
 
     await this._emailService.sendEmail(
       user.email,
       'Activate your account',
-      `Click <a href="${process.env.FRONTEND_URL}/auth/activate/${jwt}">here</a> to activate your account`,
+      `Click <a href="${process.env.FRONTEND_URL}/auth/activate/${token}">here</a> to activate your account`,
       'top'
     );
 
@@ -316,9 +328,50 @@ export class AuthService {
   }
 
   private async jwt(user: User) {
-    if (user.password) {
-      delete user.password;
+    const { password, ...safeUser } = user;
+    return AuthChecker.signJWT(
+      { ...safeUser, authSessionVersion: user.authSessionVersion },
+      { type: 'session', expiresIn: '24h' }
+    );
+  }
+
+  private oneTimeTokenKey(purpose: string, token: string) {
+    return `auth:one-time:${purpose}:${createHash('sha256')
+      .update(token)
+      .digest('hex')}`;
+  }
+
+  private async oneTimeToken(
+    purpose: string,
+    value: object,
+    ttlSeconds: number
+  ) {
+    const token = randomBytes(32).toString('base64url');
+    await ioRedis.set(
+      this.oneTimeTokenKey(purpose, token),
+      JSON.stringify(value),
+      'EX',
+      ttlSeconds
+    );
+    return token;
+  }
+
+  private async consumeOneTimeToken<T>(purpose: string, token: string) {
+    if (!token || token.length > 256) {
+      return null;
     }
-    return AuthChecker.signJWT({ ...user, authSessionVersion: user.authSessionVersion });
+
+    const raw = await (ioRedis as any).getdel(
+      this.oneTimeTokenKey(purpose, token)
+    );
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return null;
+    }
   }
 }

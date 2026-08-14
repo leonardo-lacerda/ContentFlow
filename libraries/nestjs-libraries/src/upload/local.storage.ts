@@ -1,5 +1,6 @@
 import { IUploadProvider } from './upload.interface';
 import { mkdirSync, unlink, writeFileSync } from 'fs';
+import { randomBytes } from 'crypto';
 // @ts-ignore
 import mime from 'mime';
 import { extname } from 'path';
@@ -61,10 +62,7 @@ export class LocalStorage implements IUploadProvider {
     const dir = `${this.uploadDirectory}${innerPath}`;
     mkdirSync(dir, { recursive: true });
 
-    const randomName = Array(32)
-      .fill(null)
-      .map(() => Math.round(Math.random() * 16).toString(16))
-      .join('');
+    const randomName = randomBytes(16).toString('hex');
 
     const filePath = `${dir}/${randomName}.${findExtension}`;
     const publicPath = `${innerPath}/${randomName}.${findExtension}`;
@@ -95,10 +93,7 @@ export class LocalStorage implements IUploadProvider {
       const dir = `${this.uploadDirectory}${innerPath}`;
       mkdirSync(dir, { recursive: true });
 
-      const randomName = Array(32)
-        .fill(null)
-        .map(() => Math.round(Math.random() * 16).toString(16))
-        .join('');
+      const randomName = randomBytes(16).toString('hex');
 
       const filePath = `${dir}/${randomName}${safeExt}`;
       const publicPath = `${innerPath}/${randomName}${safeExt}`;

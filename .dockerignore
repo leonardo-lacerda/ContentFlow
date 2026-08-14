@@ -4,6 +4,11 @@
 **/node_modules
 node_modules/*
 node_modules
+.env
+.env.*
+credentials
+credentials/*
+*.tar.gz
 docker-data/*
 dist
 .nx
@@ -21,3 +26,5 @@ dist
 .git
 .github
 reports
+var/*.log
+.claude

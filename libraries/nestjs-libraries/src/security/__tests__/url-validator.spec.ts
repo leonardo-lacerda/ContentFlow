@@ -74,6 +74,20 @@ describe('UrlValidator', () => {
       expect(result.error).toContain('IP privado não permitido');
     });
 
+    it('should reject alternate IPv4 spellings that resolve to loopback', async () => {
+      for (const value of ['2130706432', '127.1']) {
+        const result = await UrlValidator.validate(`http://${value}/admin`);
+        expect(result.valid).toBe(false);
+      }
+    });
+
+    it('should reject CGNAT and IPv6 unique-local addresses', async () => {
+      for (const value of ['100.64.0.1', '[fd00::1]']) {
+        const result = await UrlValidator.validate(`http://${value}/`);
+        expect(result.valid).toBe(false);
+      }
+    });
+
     it('should reject IPv6 loopback ::1', async () => {
       const result = await UrlValidator.validate('http://[::1]/');
       expect(result.valid).toBe(false);

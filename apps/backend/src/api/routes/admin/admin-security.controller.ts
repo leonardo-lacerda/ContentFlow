@@ -42,7 +42,7 @@ function setAdminCookie(response: Response, token: string, expiresAt: Date) {
   response.cookie('admin_auth', token, {
     domain: getCookieUrlFromDomain(process.env.FRONTEND_URL!),
     httpOnly: true,
-    ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'none' as const } : {}),
+    ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'lax' as const } : {}),
     expires: expiresAt,
   });
 }
@@ -51,14 +51,14 @@ function clearAdminCookie(response: Response) {
   response.cookie('admin_auth', '', {
     domain: getCookieUrlFromDomain(process.env.FRONTEND_URL!),
     httpOnly: true,
-    ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'none' as const } : {}),
+    ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'lax' as const } : {}),
     expires: new Date(0),
     maxAge: -1,
   });
   response.cookie('admin_refresh', '', {
     domain: getCookieUrlFromDomain(process.env.FRONTEND_URL!),
     httpOnly: true,
-    ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'none' as const } : {}),
+    ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'lax' as const } : {}),
     expires: new Date(0),
     maxAge: -1,
   });
@@ -68,14 +68,14 @@ function setRefreshCookie(response: Response, token: string, expiresAt: Date) {
   response.cookie('admin_refresh', token, {
     domain: getCookieUrlFromDomain(process.env.FRONTEND_URL!),
     httpOnly: true,
-    ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'none' as const } : {}),
+    ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'lax' as const } : {}),
     expires: expiresAt,
   });
 }
 
 function decryptMfaSecret(value: string): string {
   try {
-    return AuthService.fixedDecryption(value);
+    return AuthService.secureDecryption(value);
   } catch {
     // Keep compatibility with the short window where pending secrets could
     // have been stored without encryption.
@@ -408,7 +408,7 @@ export class AdminSecurityController {
     const impersonation = await this._prisma.adminImpersonation.create({ data: { adminUserId: actor.id, targetUserId: body.targetUserId, targetOrgId: body.targetOrgId, reason: body.reason, ticketRef: body.ticketRef, readOnly: body.readOnly !== false, expiresAt: new Date(Date.now() + 60 * 60 * 1000) } });
     const target = await this._prisma.user.findUnique({ where: { id: body.targetUserId }, select: { email: true } });
     if (target?.email) void this._emailService.sendEmail(target.email, 'ContentFlow support access started', `A ContentFlow administrator started a ${impersonation.readOnly ? 'read-only ' : ''}support session for your account. Reason: ${body.reason}. It expires at ${impersonation.expiresAt.toISOString()}.`, 'top');
-    response.cookie('impersonate', membership.id, { httpOnly: true, ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'none' as const } : {}), expires: impersonation.expiresAt });
+    response.cookie('impersonate', membership.id, { httpOnly: true, ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'lax' as const } : {}), expires: impersonation.expiresAt });
     return { id: impersonation.id, expiresAt: impersonation.expiresAt, readOnly: impersonation.readOnly };
   }
 
@@ -417,7 +417,7 @@ export class AdminSecurityController {
   @AdminPermission('users.impersonate.end', { severity: 'WARNING', requireReason: true, resourceType: 'AdminImpersonation' })
   async endImpersonation(@GetAdminUserFromRequest() actor: AdminUserWithAccount, @Res({ passthrough: true }) response: Response) {
     await this._prisma.adminImpersonation.updateMany({ where: { adminUserId: actor.id, endedAt: null }, data: { endedAt: new Date() } });
-    response.cookie('impersonate', '', { httpOnly: true, expires: new Date(0), maxAge: -1, ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'none' as const } : {}) });
+    response.cookie('impersonate', '', { httpOnly: true, expires: new Date(0), maxAge: -1, ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'lax' as const } : {}) });
     return { ok: true };
   }
 

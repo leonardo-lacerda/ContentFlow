@@ -60,10 +60,34 @@ export function validateRuntimeEnv({ env = process.env, production = env.NODE_EN
     'AI_PRIMARY_PROVIDER',
   ]) addRequired(merged, issues, key);
 
+  if (production) {
+    addRequired(merged, issues, 'ADMIN_JWT_SECRET');
+    addRequired(merged, issues, 'AI_GENERATE_API_KEY');
+    addRequired(merged, issues, 'DATA_ENCRYPTION_KEY');
+  }
+
   if (production) addRequired(merged, issues, 'UPLOAD_DIRECTORY');
 
   if (isSet(merged.JWT_SECRET) && merged.JWT_SECRET.length < 32) {
     issues.push('JWT_SECRET must contain at least 32 characters');
+  }
+  if (isSet(merged.ADMIN_JWT_SECRET) && merged.ADMIN_JWT_SECRET.length < 32) {
+    issues.push('ADMIN_JWT_SECRET must contain at least 32 characters');
+  }
+  if (isSet(merged.DATA_ENCRYPTION_KEY) && merged.DATA_ENCRYPTION_KEY.length < 32) {
+    issues.push('DATA_ENCRYPTION_KEY must contain at least 32 characters');
+  }
+  if (production && isSet(merged.AI_GENERATE_API_KEY) && merged.AI_GENERATE_API_KEY.length < 32) {
+    issues.push('AI_GENERATE_API_KEY must contain at least 32 characters');
+  }
+  for (const [key, value] of [
+    ['JWT_SECRET', merged.JWT_SECRET],
+    ['ADMIN_JWT_SECRET', merged.ADMIN_JWT_SECRET],
+    ['DATA_ENCRYPTION_KEY', merged.DATA_ENCRYPTION_KEY],
+  ]) {
+    if (isSet(value) && /change-this|troque_por|random string|your jwt secret/i.test(value)) {
+      issues.push(`${key} must not use a placeholder value`);
+    }
   }
   if (isSet(merged.DATABASE_URL) && !/^postgres(ql)?:\/\//i.test(merged.DATABASE_URL)) {
     issues.push('DATABASE_URL must use the postgres:// or postgresql:// scheme');
@@ -74,6 +98,17 @@ export function validateRuntimeEnv({ env = process.env, production = env.NODE_EN
 
   for (const key of ['MAIN_URL', 'FRONTEND_URL', 'NEXT_PUBLIC_BACKEND_URL', 'BACKEND_INTERNAL_URL']) {
     if (production || isSet(merged, key)) addUrl(merged, issues, key);
+  }
+
+  if (production) {
+    for (const key of ['MAIN_URL', 'FRONTEND_URL', 'NEXT_PUBLIC_BACKEND_URL']) {
+      if (isSet(merged, key) && !String(merged[key]).startsWith('https://')) {
+        issues.push(`${key} must use HTTPS in production`);
+      }
+    }
+    if (String(merged.NOT_SECURED).toLowerCase() === 'true') {
+      issues.push('NOT_SECURED must not be enabled in production');
+    }
   }
 
   const provider = String(merged.AI_PRIMARY_PROVIDER || '').toLowerCase();

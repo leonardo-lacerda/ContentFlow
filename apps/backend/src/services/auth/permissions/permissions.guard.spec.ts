@@ -88,6 +88,18 @@ describe('PoliciesGuard', () => {
     expect(permissionsService.check).not.toHaveBeenCalled();
   });
 
+  it('does not bypass authorization when auth appears in an unrelated route', async () => {
+    (reflector.get as jest.Mock).mockReturnValue([
+      [AuthorizationActions.Create, Sections.CHANNEL],
+    ]);
+    (permissionsService.check as jest.Mock).mockResolvedValue(buildAbility(true));
+
+    await expect(
+      guard.canActivate(buildContext({ path: '/posts/authentic' }))
+    ).resolves.toBe(true);
+    expect(permissionsService.check).toHaveBeenCalled();
+  });
+
   it('allows the request when the handler has no policies attached', async () => {
     (reflector.get as jest.Mock).mockReturnValue(undefined);
 

@@ -52,7 +52,7 @@ export class AdminUserRepository {
   updateMfaPending(id: string, mfaSecret: string) {
     return this._adminUser.model.adminUser.update({
       where: { id },
-      data: { mfaSecret: AuthService.fixedEncryption(mfaSecret) },
+      data: { mfaSecret: AuthService.secureEncryption(mfaSecret) },
     });
   }
 

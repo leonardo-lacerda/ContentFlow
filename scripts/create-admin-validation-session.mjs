@@ -14,7 +14,8 @@ try {
   });
   const jti = randomUUID();
   await prisma.adminSession.create({ data: { adminUserId: admin.id, jti, expiresAt: new Date(Date.now() + 3600000), mfaVerifiedAt: new Date() } });
-  process.stdout.write(jwt.sign({ sub: admin.id, jti, typ: 'admin' }, process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET, { expiresIn: '60m' }));
+  if (!process.env.ADMIN_JWT_SECRET) throw new Error('ADMIN_JWT_SECRET is required');
+  process.stdout.write(jwt.sign({ sub: admin.id, jti, typ: 'admin' }, process.env.ADMIN_JWT_SECRET, { expiresIn: '60m' }));
 } finally {
   await prisma.$disconnect();
 }
