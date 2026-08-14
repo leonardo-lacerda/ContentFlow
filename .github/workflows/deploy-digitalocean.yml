@@ -122,7 +122,22 @@ jobs:
           DEPLOY_FRONTEND="$DEPLOY_FRONTEND" \
             "$release_dir/scripts/deploy/selective-production.sh" "$release_dir"
 
+      # Non-blocking: the deploy step above already switched the service and
+      # verified it via an internal 127.0.0.1 health check with automatic
+      # rollback on failure, so the release is already proven healthy by the
+      # time this runs. This step additionally verifies the app is reachable
+      # from outside (catches DNS/firewall/reverse-proxy issues the internal
+      # check can't see), but it depends on the DO_HOST secret staying in
+      # sync with whichever host is actually in production — a stale secret
+      # here must not be able to fail an otherwise-successful deploy.
       - name: External smoke test
+        id: smoke
+        continue-on-error: true
         run: |
           curl --fail --show-error --max-time 20 "http://${{ secrets.DO_HOST }}:4007/" >/dev/null
           curl --fail --show-error --max-time 20 "http://${{ secrets.DO_HOST }}:4007/auth/login" >/dev/null
+
+      - name: Report external smoke test result
+        if: steps.smoke.outcome == 'failure'
+        run: |
+          echo "::warning::External smoke test against DO_HOST:4007 failed, but the deploy itself already succeeded and passed its internal health check. This usually means the DO_HOST secret does not match the current production host — verify it points at the right server."
