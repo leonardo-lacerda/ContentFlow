@@ -29,6 +29,7 @@ import {
   CopilotKit,
   useCopilotChat,
   useCopilotAction,
+  useCopilotContext,
   useCopilotMessagesContext,
 } from '@copilotkit/react-core';
 import {
@@ -36,7 +37,7 @@ import {
   PropertiesContext,
 } from '@gitroom/frontend/components/agents/agent';
 import { useVariables } from '@gitroom/react/helpers/variable.context';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import {
   Role,
@@ -135,6 +136,23 @@ const StudioChat: FC = () => {
   // only clear the status banner once that run *finishes* — not on the brief
   // window before isLoading flips to true.
   const actionRunSawLoading = useRef(false);
+
+  // CopilotKit assigns a real thread id internally the moment the provider
+  // mounts (props.threadId || randomUUID()), even on `/studio/new` — but the
+  // URL never picks it up, so a reload of a brand-new conversation loses it
+  // (params.id is still literally "new", a different id than the one the
+  // agent run actually used) and any duplicate card produced during that run
+  // gets replayed forever on every future reload once it's next opened by id,
+  // since there is nothing to replay under "new". Swap the URL to the real id
+  // as soon as the first message is in flight, without adding a history entry.
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const { threadId: liveThreadId } = useCopilotContext();
+  useEffect(() => {
+    if (params.id === 'new' && isLoading && liveThreadId) {
+      router.replace(`/studio/${liveThreadId}`);
+    }
+  }, [params.id, isLoading, liveThreadId, router]);
   const sendArtifactAction = useCallback(
     async (value: Record<string, unknown>) => {
       const action = String(value.action || 'continue');
