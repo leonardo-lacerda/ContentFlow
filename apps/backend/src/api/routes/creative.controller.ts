@@ -51,6 +51,7 @@ import {
   CreativePublishVariantDto,
   CreativeLocalizeVariantDto,
   CreativePresetRunDto,
+  SaveStudioCarouselImagesDto,
 } from '@gitroom/nestjs-libraries/dtos/creative';
 
 @ApiTags('Creative Engine')
@@ -331,6 +332,25 @@ export class CreativeController {
   @Get('/jobs')
   listJobs(@GetOrgFromRequest() org: Organization) {
     return this.creative.listJobs(org.id);
+  }
+
+  // Re-hydration of a Studio chat carousel card: persist the generated slide
+  // images so they survive the user leaving and returning to the chat.
+  @Post('/studio-carousel/images')
+  @CheckPolicies([AuthorizationActions.Create, Sections.AI])
+  saveStudioCarouselImages(
+    @GetOrgFromRequest() org: Organization,
+    @Body() body: SaveStudioCarouselImagesDto,
+  ) {
+    return this.creative.saveStudioCarouselImages(org.id, body.cardKey, body.images);
+  }
+
+  @Get('/studio-carousel/images')
+  getStudioCarouselImages(
+    @GetOrgFromRequest() org: Organization,
+    @Query('cardKey') cardKey: string,
+  ) {
+    return this.creative.getStudioCarouselImages(org.id, cardKey);
   }
 
   @Get('/variants')

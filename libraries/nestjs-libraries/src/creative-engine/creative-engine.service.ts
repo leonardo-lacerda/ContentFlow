@@ -1342,6 +1342,52 @@ export class CreativeEngineService {
     });
   }
 
+  // Persists the images generated for a Studio chat carousel card so the card
+  // can re-hydrate them after the user leaves and returns. Keyed by a stable
+  // hash of the card's payload (`cardKey`), one row per slide, upserted so a
+  // regenerated slide simply overwrites its previous URL.
+  async saveStudioCarouselImages(
+    organizationId: string,
+    cardKey: string,
+    images: Array<{ slideId?: string; imageUrl?: string }> = [],
+  ) {
+    const raw = String(cardKey || '').trim();
+    if (!raw) throw new BadRequestException('cardKey is required');
+    // Hash to a fixed length so an arbitrarily long card signature never
+    // overflows the composite unique btree index.
+    const key = createHash('sha256').update(raw).digest('hex');
+    const clean = (images || [])
+      .filter((item) => item && item.slideId && item.imageUrl)
+      .map((item) => ({ slideId: String(item.slideId), imageUrl: String(item.imageUrl) }));
+    await Promise.all(
+      clean.map((item) =>
+        this.prisma.studioCarouselImage.upsert({
+          where: {
+            organizationId_cardKey_slideId: {
+              organizationId,
+              cardKey: key,
+              slideId: item.slideId,
+            },
+          },
+          create: { organizationId, cardKey: key, slideId: item.slideId, imageUrl: item.imageUrl },
+          update: { imageUrl: item.imageUrl },
+        }),
+      ),
+    );
+    return { saved: clean.length };
+  }
+
+  async getStudioCarouselImages(organizationId: string, cardKey: string) {
+    const raw = String(cardKey || '').trim();
+    if (!raw) return { images: [] as Array<{ slideId: string; imageUrl: string }> };
+    const key = createHash('sha256').update(raw).digest('hex');
+    const rows = await this.prisma.studioCarouselImage.findMany({
+      where: { organizationId, cardKey: key },
+      orderBy: { updatedAt: 'desc' },
+    });
+    return { images: rows.map((row) => ({ slideId: row.slideId, imageUrl: row.imageUrl })) };
+  }
+
   async listVariants(organizationId: string, projectId?: string) {
     return this.prisma.creativeVariant.findMany({
       where: { organizationId, ...(projectId ? { projectId } : {}) },

@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { CarouselDesignEditor, type DesignScope } from './carousel-design-editor.component';
 import { CreationOptionsCard } from './creation-options.component';
+import { artifactSignature } from './content-presentation-payload';
 
 export type ContentIdea = {
   id?: string;
@@ -448,6 +450,11 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
   const isBusy = !isAwaitingUser(status) || submitting;
   const sendAction = useArtifactResponder(respond, onAction);
   const apiFetch = useFetch();
+  // Stable identifier for this specific carousel card, derived from its
+  // persisted payload (slide headlines). Survives reloads of the chat thread,
+  // so it's the key under which generated images are saved and re-loaded from
+  // the server. The backend hashes it before storing.
+  const carouselCardKey = artifactSignature('carousel', args);
 
   useEffect(() => {
     if (!lightboxUrl) return;
@@ -525,22 +532,59 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
 
   const waitForCreativeJob = async (jobId: string): Promise<CreativeJobState> => {
     const terminalStatuses = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'REFUNDED']);
+    const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
     // The backend renders carousel slides sequentially, one image job at a
     // time (confirmed in production: ~1-2 minutes per slide), not in
     // parallel. A slide queued near the end of a 7-slide carousel can wait
     // 6+ minutes just for its turn. ~500 attempts * 2s gives roughly 16
     // minutes of patience per job, comfortably covering that worst case
     // instead of giving up (and showing a scary error) after ~90 seconds.
+    //
+    // Polling has to survive transient hiccups without failing the slide.
+    // Because every job in a carousel polls in parallel, a batch of slides
+    // briefly exceeds the creative-read rate bucket, so a 429 here means
+    // "slow down" — NOT "the generation failed". The KIE job keeps running
+    // server-side and the image lands a moment later. The same is true for a
+    // 5xx from a redeploying backend or a dropped connection: back off and
+    // keep polling instead of surfacing a scary "Falha ao gerar (HTTP 429)".
+    let missingStreak = 0;
     for (let attempt = 0; attempt < 500; attempt += 1) {
-      const response = await withTimeout(
-        apiFetch(`/creative/jobs/${encodeURIComponent(jobId)}`),
-        15000,
-        'O acompanhamento da geração'
-      );
-      if (!response.ok) throw new Error(`Não foi possível acompanhar a geração (HTTP ${response.status})`);
+      let response: Response;
+      try {
+        response = await withTimeout(
+          apiFetch(`/creative/jobs/${encodeURIComponent(jobId)}`),
+          15000,
+          'O acompanhamento da geração'
+        );
+      } catch {
+        // Timeout or network blip: transient, keep waiting.
+        await sleep(3000);
+        continue;
+      }
+      if (response.status === 429 || response.status >= 500) {
+        // Rate limited or backend hiccup: back off a little longer so we stop
+        // adding pressure, then keep polling. The job is still running.
+        await sleep(4000);
+        continue;
+      }
+      if (response.status === 404) {
+        // The job row can lag a beat behind creation; tolerate a short window
+        // before concluding it truly doesn't exist.
+        missingStreak += 1;
+        if (missingStreak > 5) {
+          throw new Error('Não foi possível acompanhar a geração (job não encontrado).');
+        }
+        await sleep(2000);
+        continue;
+      }
+      if (!response.ok) {
+        // 401/403 and similar won't fix themselves by retrying.
+        throw new Error(`Não foi possível acompanhar a geração (HTTP ${response.status})`);
+      }
+      missingStreak = 0;
       const job = (await response.json()) as CreativeJobState;
       if (terminalStatuses.has(String(job.status || '').toUpperCase())) return job;
-      await new Promise((resolve) => window.setTimeout(resolve, 2000));
+      await sleep(2000);
     }
     throw new Error('A geração demorou muito mais que o esperado. O job continua disponível em seus projetos.');
   };
@@ -723,6 +767,7 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
       }
       if (anySucceeded) {
         void persistGeneratedImagesToMedia(settledEntries);
+        void persistGeneratedImagesToStudioStore(settledEntries);
       }
     } catch (error) {
       setGenerationError(error instanceof Error ? error.message : 'Nao foi possivel gerar as imagens.');
@@ -763,6 +808,80 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
       // Non-fatal: the images remain visible in the preview regardless.
     }
   };
+
+  // Persists the generated slide images against this card's stable key, so that
+  // leaving and reopening the chat re-hydrates them (see the mount effect below).
+  const persistGeneratedImagesToStudioStore = async (
+    settledEntries: Array<{ slideId?: string; slideIndex: number; job?: CreativeJobState; error?: string }>
+  ) => {
+    if (!carouselCardKey) return;
+    const images = settledEntries
+      .filter((entry) => entry.job?.status === 'SUCCEEDED' && Boolean(entry.job.output?.url))
+      .map((entry) => ({
+        slideId: entry.slideId || String(entry.slideIndex),
+        imageUrl: String(entry.job!.output!.url),
+      }));
+    if (!images.length) return;
+    try {
+      await withTimeout(
+        apiFetch('/creative/studio-carousel/images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cardKey: carouselCardKey, images }),
+        }),
+        30000,
+        'O salvamento das imagens do carrossel'
+      );
+    } catch {
+      // Best-effort: the images still show in this session regardless.
+    }
+  };
+
+  // On mount (and whenever a different card is shown), pull any previously
+  // generated images for this card from the server and fill in the slides that
+  // don't already have a locally-generated image. This is what makes the images
+  // reappear after the user leaves the chat and comes back.
+  useEffect(() => {
+    if (!carouselCardKey) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await withTimeout(
+          apiFetch(`/creative/studio-carousel/images?cardKey=${encodeURIComponent(carouselCardKey)}`),
+          15000,
+          'O carregamento das imagens salvas'
+        );
+        if (cancelled || !response.ok) return;
+        const data = (await response.json()) as {
+          images?: Array<{ slideId: string; imageUrl: string }>;
+        };
+        const bySlide = new Map((data.images || []).map((item) => [item.slideId, item.imageUrl]));
+        if (cancelled || !bySlide.size) return;
+        const hydratedFingerprints: Record<string, string> = {};
+        setDraftSlides((current) =>
+          current.map((slide, index) => {
+            const url = bySlide.get(slideKey(slide, index));
+            if (url && !(slide.imageUrl || slide.image?.url)) {
+              hydratedFingerprints[slideKey(slide, index)] = slideFingerprint(slide, index);
+              return { ...slide, imageUrl: url, status: 'imagem gerada' };
+            }
+            return slide;
+          })
+        );
+        if (Object.keys(hydratedFingerprints).length) {
+          // Locally-generated fingerprints win (…cur last): a fresh render this
+          // session is more authoritative than what the server had saved.
+          setGeneratedFingerprints((cur) => ({ ...hydratedFingerprints, ...cur }));
+        }
+      } catch {
+        // Best-effort: a failed reload just means the user sees no image yet.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carouselCardKey]);
 
   return (
     <section className="cf-content-artifact cf-carousel-preview" aria-label="Preview do carrossel">
@@ -982,29 +1101,36 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
         <span>Você pode editar cada slide antes de gerar.</span>
       </footer>
 
-      {lightboxUrl && (
-        <div
-          className="cf-carousel-lightbox"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Imagem ampliada"
-          onClick={() => setLightboxUrl(null)}
-        >
-          <button
-            type="button"
-            className="cf-carousel-lightbox__close"
-            aria-label="Fechar"
+      {/* Rendered through a portal into <body> so the fullscreen overlay
+          escapes this section — the card keeps a lingering transform (from its
+          entrance animation) plus overflow:hidden, which would otherwise trap
+          and clip a position:fixed child inside the copy block. */}
+      {lightboxUrl &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="cf-carousel-lightbox"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Imagem ampliada"
             onClick={() => setLightboxUrl(null)}
           >
-            ×
-          </button>
-          <img
-            src={lightboxUrl}
-            alt="Imagem do slide ampliada"
-            onClick={(event) => event.stopPropagation()}
-          />
-        </div>
-      )}
+            <button
+              type="button"
+              className="cf-carousel-lightbox__close"
+              aria-label="Fechar"
+              onClick={() => setLightboxUrl(null)}
+            >
+              ×
+            </button>
+            <img
+              src={lightboxUrl}
+              alt="Imagem do slide ampliada"
+              onClick={(event) => event.stopPropagation()}
+            />
+          </div>,
+          document.body
+        )}
     </section>
   );
 }

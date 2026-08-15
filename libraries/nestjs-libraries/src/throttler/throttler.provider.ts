@@ -62,9 +62,15 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
 
     // Creative writes are expensive and must be throttled; polling and read-only
     // catalog/health endpoints remain available for job progress and operations.
+    // The studio polls every job of a carousel in parallel every 2s, so a
+    // 7-slide carousel alone is ~210 reads/min — a 120/min bucket tripped
+    // mid-generation and surfaced a false "Falha ao gerar (HTTP 429)" even
+    // though the images were rendering fine. These are cheap, per-org status
+    // reads (a technical abuse guard, not a commercial limit), so the ceiling
+    // is generous enough to cover a large carousel's parallel polling.
     const isCreativePath = url.startsWith('/creative') || url.startsWith('/public/v1/creative');
     if (isCreativePath && !['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      return this.enforceOrganizationBucket(request, 'creative-read', 120);
+      return this.enforceOrganizationBucket(request, 'creative-read', 600);
     }
 
     // Always throttle sensitive write endpoints (AI generation, billing).

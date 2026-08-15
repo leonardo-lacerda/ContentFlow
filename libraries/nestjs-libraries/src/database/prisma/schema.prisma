@@ -73,6 +73,7 @@ model Organization {
   creativeProvenance    CreativeProvenance[]
   creativeWebhooks      CreativeWebhookSubscription[]
   creativeMetrics       CreativeMetricEvent[]
+  studioCarouselImages  StudioCarouselImage[]
   billingSubscription   BillingSubscription?
   billingInvoices       BillingInvoice[]
   billingWebhookEvents  BillingWebhookEvent[]
@@ -2147,6 +2148,24 @@ model CreativeJobAttempt {
   @@unique([jobId, attempt])
   @@index([jobId])
   @@index([status])
+}
+
+// Durable link between a Studio chat carousel card and the images generated for
+// it, so the card can re-hydrate its slide images after the user leaves and
+// comes back. `cardKey` is a stable hash of the card's persisted payload
+// (headlines), keyed per organization; one row per slide.
+model StudioCarouselImage {
+  id             String       @id @default(uuid())
+  organizationId String
+  cardKey        String
+  slideId        String
+  imageUrl       String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, cardKey, slideId])
+  @@index([organizationId, cardKey])
 }
 
 model CreativeReview {

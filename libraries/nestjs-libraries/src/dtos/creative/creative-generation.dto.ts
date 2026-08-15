@@ -222,3 +222,24 @@ export class CreativeLocalizeVariantDto {
   @IsString()
   idempotencyKey?: string;
 }
+
+// One generated slide image belonging to a Studio chat carousel card.
+// Every field is decorated on purpose: an undecorated class-validator field is
+// still emitted by swc and whitelist-validation then rejects the whole request.
+export class StudioCarouselImageItemDto {
+  @IsString()
+  slideId!: string;
+
+  @IsString()
+  imageUrl!: string;
+}
+
+export class SaveStudioCarouselImagesDto {
+  @IsString()
+  cardKey!: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => StudioCarouselImageItemDto)
+  images!: StudioCarouselImageItemDto[];
+}
