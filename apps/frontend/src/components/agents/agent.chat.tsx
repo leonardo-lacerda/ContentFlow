@@ -678,126 +678,6 @@ const cleanIdeaLine = (line: unknown) =>
     .replace(/\*\*/g, '')
     .trim();
 
-const extractPlainIdeasArtifact = (content: string) => {
-  const parseSource = content.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const source = content.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-  const platformMatches = Array.from(
-    source.matchAll(/(?:[-*•]\s*)?(?:\*\*)?plataforma(?:\*\*)?\s*:/gi)
-  );
-  if (!platformMatches.length) return null;
-
-  const readField = (block: string, labels: string) => {
-    const simpleMatch = block.match(new RegExp(`${labels}[^:]*: *(.+)`, 'i'));
-    return simpleMatch ? cleanIdeaLine(simpleMatch[1]) : '';
-    const normalizedBlock = block
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/Ã§/g, 'c')
-      .replace(/Ã£/g, 'a')
-      .replace(/Ã¢/g, 'a')
-      .replace(/Ã¡/g, 'a')
-      .replace(/Ã©/g, 'e')
-      .replace(/Ã³/g, 'o');
-    const match = normalizedBlock.match(
-      new RegExp(`(?:[-*•]\\s*)?(?:\\*\\*)?(?:${labels})(?:\\*\\*)?\\s*:\\s*([^\\n]+)`, 'i')
-    );
-    return match ? cleanIdeaLine(match[1]) : '';
-  };
-  const ideas: ContentIdea[] = [];
-  let firstTitleIndex = -1;
-
-  platformMatches.forEach((match, index) => {
-    const platformStart = match.index ?? -1;
-    if (platformStart < 0) return;
-    const previousStart = index > 0 ? platformMatches[index - 1].index ?? 0 : 0;
-    const nextStart = index + 1 < platformMatches.length ? platformMatches[index + 1].index ?? source.length : source.length;
-    const titleLines = source
-      .slice(previousStart, platformStart)
-      .split(/\r?\n/)
-      .map(cleanIdeaLine)
-      .filter((line) => line && !/^(?:plataforma|formato|gancho|hook|angulo|objetivo|objectivo|cta|chamada para acao)\s*:/i.test(line));
-    const title = titleLines.at(-1) || '';
-    const block = source.slice(platformStart, nextStart);
-    const idea = {
-      title,
-      platform: readField(block, 'plataforma'),
-      format: readField(block, 'formato'),
-      hook: readField(block, 'gancho\\s*\\(hook\\)|hook'),
-      angle: readField(block, 'ângulo|angulo'),
-      objective: readField(block, 'objetivo|objectivo') || 'Engajamento e autoridade',
-      suggestedCta: readField(block, 'chamada para ação|chamada para acao|cta'),
-    } satisfies Partial<ContentIdea>;
-    const normalizedIdea = {
-      ...idea,
-      angle: idea.angle || readField(block, 'angulo'),
-      suggestedCta: idea.suggestedCta || readField(block, 'chamada para acao|cta(?:\\s+sugerida)?'),
-    };
-    if (normalizedIdea.title && normalizedIdea.platform && normalizedIdea.format && normalizedIdea.hook && normalizedIdea.angle && normalizedIdea.suggestedCta) {
-      ideas.push(normalizedIdea as ContentIdea);
-      if (firstTitleIndex < 0) firstTitleIndex = content.indexOf(title);
-    }
-  });
-
-  if (ideas.length < 1 || firstTitleIndex < 0) return null;
-  const hasIdeaSignals = /\b(ideias?|plataforma|formato|gancho|hook|angulo|cta)\b/i.test(parseSource);
-  if (!hasIdeaSignals) return null;
-
-  return {
-    raw: source.slice(firstTitleIndex),
-    sourceStart: firstTitleIndex,
-    parsed: {
-      operation: 'ideas',
-      title: `${ideas.length} ideias prontas para usar`,
-      ideas,
-    },
-  };
-};
-
-const extractLooseIdeasArtifact = (content: string) => {
-  const source = content.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-  const normalized = source.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/Ã./g, 'a');
-  const formatMatches = Array.from(normalized.matchAll(/(?:[-*•]\s*)?(?:\*\*)?formato(?:\*\*)?\s*:/gi));
-  if (!formatMatches.length) return null;
-  const readField = (block: string, labels: string) => {
-    const match = block.match(new RegExp(`(?:[-*•]\s*)?(?:\*\*)?(?:${labels})(?:\*\*)?\s*:\s*([^\n]+)`, 'i'));
-    return match ? cleanIdeaLine(match[1]) : '';
-  };
-  const ideas: ContentIdea[] = [];
-  let firstTitleIndex = -1;
-  formatMatches.forEach((match, index) => {
-    const start = match.index ?? -1;
-    if (start < 0) return;
-    const previousStart = index > 0 ? formatMatches[index - 1].index ?? 0 : 0;
-    const nextStart = index + 1 < formatMatches.length ? formatMatches[index + 1].index ?? normalized.length : normalized.length;
-    const block = normalized.slice(previousStart, nextStart);
-    const titleCandidates = Array.from(source.slice(previousStart, start).matchAll(/\*\*([^*]+)\*\*/g))
-      .map((item) => cleanIdeaLine(item[1]))
-      .filter((line) => line && !/:/.test(line) && !/^(plataforma|formato|angulo|hook|gancho|objetivo|cta|dor do publico)/i.test(line));
-    const title = titleCandidates.at(-1) || '';
-    const platform = readField(block, 'plataforma') || (title.match(/\(([^)]+)\)/)?.[1] || 'Instagram');
-    const cleanTitle = title.replace(/\s*\([^)]*\)\s*$/, '').trim();
-    const idea = {
-      title: cleanTitle,
-      platform,
-      format: readField(block, 'formato'),
-      hook: readField(block, 'gancho\\s*\\(hook\\)|hook'),
-      angle: readField(block, 'angulo'),
-      objective: readField(block, 'objetivo') || 'Engajamento e autoridade',
-      suggestedCta: readField(block, 'chamada para acao|cta(?:\\s+sugerida)?'),
-    };
-    if (idea.title && idea.format && idea.hook && idea.angle && idea.suggestedCta) {
-      ideas.push(idea);
-      if (firstTitleIndex < 0) firstTitleIndex = content.indexOf(idea.title);
-    }
-  });
-  if (!ideas.length || firstTitleIndex < 0) return null;
-  return {
-    raw: source.slice(firstTitleIndex),
-    sourceStart: firstTitleIndex,
-    parsed: { operation: 'ideas', title: `${ideas.length} ideias prontas para usar`, ideas },
-  };
-};
-
 const extractLooseIdeasArtifactSafe = (content: string) => {
   const source = content.replace(/\\n/g, '\n').replace(/\\"/g, '"');
   const normalized = source.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/Ã./g, 'a');
@@ -977,7 +857,7 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
   const canRenderFallback =
     !props.isLoading &&
     !!textFallbackArtifact &&
-    claimArtifactCard(fallbackSignature, props.message?.id || fallbackSignature);
+    claimArtifactCard(fallbackSignature, `text:${props.message?.id || fallbackSignature}`);
   const hasCreativeArtifact =
     !props.isLoading &&
     /(ideia|carrossel|roteiro|storyboard|v[ií]deo|imagem|publica[cç][aã]o)/i.test(
