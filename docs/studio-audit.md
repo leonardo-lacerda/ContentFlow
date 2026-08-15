@@ -146,6 +146,14 @@ arquitetural** em 3 pontos (renderização, modelo, persistência), não de mais
     de forma perceptível, e ataca exatamente o sintoma (o modelo às vezes não chama a tool). Trocar de
     modelo é a opção de maior risco/custo e só faria sentido se o `toolChoice` condicional, testado ao
     vivo, não resolver o suficiente.
+  - **Atualização (2026-08-15, ao implementar C4):** a recomendação (a) — "isolar o prompt do Studio num
+    agente dedicado" — teve sua **infraestrutura implementada**, como pré-requisito para dividir
+    `creativeEngineTool` sem quebrar o MCP público (ver C4 abaixo): existe agora um agente Mastra separado
+    (`'contentflow-studio'`) só para o chat do Studio. O que **não** foi feito é a parte de "enxuto" — o
+    texto do prompt continua idêntico ao do agente original (mesmas ~45 regras, incluindo agendamento e
+    integrações que talvez nem sejam necessárias no fluxo de criação de conteúdo). Ter dois agentes
+    separados agora torna essa redução **segura de tentar depois**: qualquer ajuste no prompt do
+    `'contentflow-studio'` não afeta mais o `'contentflow'` usado pelo MCP.
 
 ---
 
@@ -210,40 +218,38 @@ arquitetural** em 3 pontos (renderização, modelo, persistência), não de mais
   e fazer chat, imagens e artifacts referenciarem ele. Investigação adicional necessária para desenhar a
   migração sem quebrar threads existentes.
 - **Risco:** Alto (mexe em dados de produção) — exige migração cuidadosa.
-- **Investigação (2026-08-15) — plano concreto, não implementado, decisão do usuário necessária:**
-  - **Por que não implementei:** isso é uma migração de dados de produção que toca 4 sistemas de
-    armazenamento simultaneamente, sem um jeito de testar contra o banco real a partir deste ambiente
-    (nem acesso SSH à produção no momento — ver memória do projeto sobre a chave `vultr_slimflow`
-    revogada). Um erro aqui não é "corrigível com git revert": dados já migrados incorretamente ficam
-    incorretos. Isso é exatamente o tipo de ação que devo escalar para confirmação explícita antes de
-    executar, não tentar sozinho numa sessão autônoma.
-  - **Plano de migração proposto:**
-    1. **Identificador canônico:** usar `CarouselProject.id` (já existe, já é o mais "de negócio" dos
-       quatro — `ContentIdea`/`CarouselProject` vivem em `content.studio.tool.ts`) como a chave única de
-       um carrossel, em vez de: (a) o hash de conteúdo `cardKey` que criei para `StudioCarouselImage`,
-       (b) o `toolCallId`/mensagem no Mastra, (c) qualquer id de `StudioArtifact`.
-    2. **Migração de dados existente:** para cada `CarouselProject` já salvo, procurar por
-       `StudioCarouselImage` rows cujo `cardKey` corresponda ao hash das headlines das slides desse
-       projeto (o mesmo algoritmo usado para gerar o `cardKey` original) e re-escrever essas linhas para
-       referenciar `carouselProjectId` em vez de `cardKey`. Carrosséis que nunca foram salvos via
-       `contentStudioTool save-carousel` (a maioria — salvar é uma ação explícita do usuário) **não têm**
-       um `CarouselProject` para migrar; esses continuam órfãos do ponto de vista dessa unificação, o que
-       é aceitável (são carrosséis que o próprio usuário nunca considerou dignos de salvar).
-    3. **Mudança de schema:** adicionar `carouselProjectId` (opcional, nullable) em `StudioCarouselImage`,
-       manter `cardKey` como fallback só para carrosséis ainda não salvos (não removível sem quebrar o
-       fluxo "gerar antes de salvar", que é o caminho normal de uso).
-    4. **Mudança de API:** `POST /creative/studio-carousel/images` e o `GET` correspondente passam a
-       aceitar `carouselProjectId` como alternativa a `cardKey`; o frontend usa `carouselProjectId` quando
-       disponível (depois de um save bem-sucedido) e `cardKey` antes disso.
-    5. **Não migrar** a memória Mastra nem `StudioArtifact` nesta primeira fase — são sistemas com
-       propósitos genuinamente diferentes (histórico de conversa vs. draft versionado vs. conteúdo
-       aprovado), e forçá-los a compartilhar uma tabela ou id único provavelmente criaria mais confusão do
-       que resolveria. A unificação que importa de verdade é entre **imagens geradas** e **o carrossel
-       salvo**, que é o ponto onde o usuário efetivamente perde dados hoje.
-  - **Pré-requisito antes de executar:** rodar a query de "quantos `StudioCarouselImage` existem sem
-    `CarouselProject` correspondente" em produção primeiro, para dimensionar o quanto fica órfão — decide
-    se vale a pena automatizar a migração ou se um script único, revisado manualmente, é mais seguro dado
-    o volume.
+- **Status (2026-08-15):** 🟡 **Infraestrutura aditiva implementada; migração de dados e ligação do
+  frontend deliberadamente não feitas.**
+  - **O que foi feito:** `CarouselProject.id` foi adotado como identificador canônico, de forma
+    **puramente aditiva**: `StudioCarouselImage` ganhou uma coluna `carouselProjectId` opcional
+    (migration `20260815140000_add_carousel_project_link`), com índice único
+    `(organizationId, carouselProjectId, slideId)` — nulo é tratado como distinto pelo Postgres, então
+    não colide com as linhas existentes (todas sem esse campo). `cardKey` continua obrigatório e
+    inalterado; nenhuma linha existente foi tocada ou migrada. `saveStudioCarouselImages` e
+    `getStudioCarouselImages` (em `creative-engine.service.ts`) e os endpoints
+    `POST`/`GET /creative/studio-carousel/images` agora aceitam `carouselProjectId` opcionalmente — a
+    busca passou a checar `cardKey` OU `carouselProjectId`, o que quer que o chamador tenha.
+  - **Por que não migrei os dados existentes:** confirmei antes de escrever qualquer SQL que um backfill
+    automatizado é genuinamente arriscado aqui — recomputar o `cardKey` de um `CarouselProject` já salvo
+    exige reproduzir exatamente o hash original das headlines, que só é estável se a copy nunca foi
+    editada depois de salva; qualquer edição quebra o casamento silenciosamente. Migração de dados de
+    produção sem forma de validar contra o banco real a partir deste ambiente (sem acesso SSH agora — ver
+    memória do projeto) não é algo pra fazer sem supervisão explícita, então não escrevi esse UPDATE.
+  - **Por que não liguei o frontend:** ao investigar, descobri que **não existe hoje nenhum botão** no
+    card do carrossel que salve como `CarouselProject` — o salvamento (`contentStudioTool save-carousel`)
+    só acontece via texto livre no chat, e o resultado não volta pro componente React que renderizou o
+    card original (ele fica só na resposta do agente). Fazer o frontend usar `carouselProjectId`
+    automaticamente exigiria construir esse mecanismo de retorno (ouvir por um resultado de save
+    referenciando o mesmo card na stream de mensagens) — um trabalho de frontend separado, maior que
+    "adicionar um campo", e que não estava no escopo original do B1.
+  - **O que isso significa na prática:** a base está pronta e seguinda (nenhum risco pra dados
+    existentes), mas o benefício real do B1 — carrosséis salvos não perderem mais o vínculo com suas
+    imagens — só se realiza depois desse trabalho de frontend adicional. Até lá, o comportamento é
+    idêntico ao de antes desta mudança.
+  - **Próximos passos, em ordem:** (1) frontend: capturar o `carouselProjectId` quando `save-carousel`
+    retornar e persisti-lo no estado do card; (2) frontend: enviar `carouselProjectId` junto de `cardKey`
+    nas chamadas de salvar/carregar imagens; (3) só então avaliar se vale a pena um backfill dos dados
+    antigos, com uma query de diagnóstico rodada em produção primeiro para dimensionar o volume.
 
 ---
 
@@ -359,34 +365,46 @@ arquitetural** em 3 pontos (renderização, modelo, persistência), não de mais
 - **Sintoma:** O modelo escolhe operação/parâmetros errados; contribui para A3.
 - **Correção recomendada:** Quebrar em tools menores e específicas para os fluxos do Studio.
 - **Risco:** Médio.
-- **Investigação (2026-08-15) — desenho pronto, não implementado, decisão do usuário necessária:**
-  - **Por que não implementei às cegas:** `creative.engine.tool.ts` tem **zero testes automatizados**
-    (confirmado — não existe nenhum `.spec.ts` para ele, diferente de `throttler.provider.spec.ts` ou
-    `kie-api.client.spec.ts`, que o CI roda a cada deploy). Dividir suas 40 operações em várias tools
-    menores é mecanicamente simples (mesma lógica de negócio, apenas reorganizada em registros Mastra
-    diferentes) e verificável por type-check — mas o **benefício real** (o modelo escolher a operação
-    certa com mais frequência) só é observável rodando contra o kie.ai de verdade, e um erro sutil ao
-    copiar um dos 40 `case`s para o novo arquivo só apareceria em produção, num caminho sem nenhuma rede
-    de segurança automatizada, potencialmente quebrando geração de imagem/vídeo para usuários reais. Isso
-    ultrapassa o que faço sem confirmação explícita, dado o guardrail de ações de alto raio de impacto.
-  - **Desenho concreto proposto** (pronto para implementar mediante aprovação, ou depois de escrever testes
-    primeiro): dividir em 6 tools por domínio, preservando 100% da lógica de cada `case` atual —
-    1. `creativeCatalogTool` (somente leitura, sem confirmação): `capabilities`, `presets`, `projects`,
-       `project`, `assets`, `products`, `actors`, `voices`, `jobs`, `job`, `credits`, `metrics`,
-       `publications`, `workflows`, `workflow`, `workflow-run`
-    2. `creativeProjectTool` (CRUD de projeto/roteiro): `create-project`, `create-script`, `revise-script`
-    3. `creativeGenerationTool` (geração, consome crédito): `generate-image`, `generate-carousel`,
-       `generate`, `generate-matrix`, `localize`, `run-preset`, `run-tool`, `quote-tool`, `quote`, `quote-matrix`
-    4. `creativeJobTool`: `cancel-job`, `evaluate`, `review`
-    5. `creativePublishTool`: `publish`, `export-project`, `download`
-    6. `creativeWorkflowTool`: `create-workflow`, `validate-workflow`, `quote-workflow`, `run-workflow`,
+- **Status (2026-08-15):** ✅ **Implementado, combinado com A3.** Descoberta crítica durante a
+  investigação: `creativeEngineTool` é **exposta publicamente via MCP**
+  (`docs/creative-engine/mcp.md`, confirmado em `start.mcp.ts:37` — `agent.listTools()`) para clientes
+  externos autenticados por API key/OAuth. Como um `Agent` do Mastra tem um único mapa de `tools`
+  compartilhado entre o runtime do chat e a exportação MCP, uma divisão simples da tool quebraria essa
+  API pública. A correção implementada foi maior que o C4 original: criei um **segundo agente Mastra**
+  dedicado (`'contentflow-studio'`), com o mesmo prompt e as mesmas capacidades do agente original, mas
+  com `creativeEngineTool` substituída pelas 6 tools menores desenhadas abaixo. O agente `'contentflow'`
+  original permanece **100% intacto** e é o único exposto via MCP.
+  - **Arquitetura:** `libraries/nestjs-libraries/src/chat/tools/tool.list.ts` agora exporta `toolList`
+    (original, MCP), `studioToolList` (novo, chat) e `allToolProviders` (união, para o DI do NestJS).
+    `LoadToolsService` ganhou `studioAgent()` além de `agent()`, ambos chamando um `buildAgent()` privado
+    compartilhado (mesmo prompt, mesmo modelo, mesmo `maxSteps`). `MastraService` registra os dois
+    agentes na mesma instância `Mastra`. O frontend (`agent.chat.tsx`) passou a usar
+    `agent="contentflow-studio"` no `<CopilotKit>`.
+  - **Continuidade de conversas:** confirmado no schema do `@mastra/pg` que a tabela `mastra_threads` não
+    tem coluna de agente — é uma migração zero-risco no sentido de que **nenhum dado de conversa é
+    tocado**; threads existentes continuam visíveis normalmente.
+  - **6 tools criadas** (`libraries/nestjs-libraries/src/chat/tools/creative-{catalog,project,generation,job,publish,workflow}.tool.ts`),
+    preservando a lógica de cada operação 1:1 do arquivo original:
+    1. `creativeCatalogTool` — leitura: `capabilities`, `presets`, `projects`, `project`, `assets`,
+       `products`, `actors`, `voices`, `jobs`, `job`, `credits`, `metrics`, `publications`, `workflows`,
+       `workflow`, `workflow-run`
+    2. `creativeProjectTool` — `create-project`, `create-script`, `revise-script`
+    3. `creativeGenerationTool` — `generate-image`, `generate-carousel`, `generate`, `generate-matrix`,
+       `localize`, `run-preset`, `run-tool`, `quote-tool`, `quote`, `quote-matrix`
+    4. `creativeJobTool` — `cancel-job`, `evaluate`, `review`
+    5. `creativePublishTool` — `publish`, `export-project`, `download`
+    6. `creativeWorkflowTool` — `create-workflow`, `validate-workflow`, `quote-workflow`, `run-workflow`,
        `cancel-workflow-run`
-  - **Pré-requisito antes de implementar:** escrever testes unitários para o comportamento atual de
-    `creative.engine.tool.ts` (mesmo que só cobrindo a validação de campos obrigatórios por operação e o
-    dispatch para o service certo), para que a divisão tenha uma rede de segurança real antes de mexer.
-    Depois da divisão, cada prompt reference a `creativeEngineTool` (~8 ocorrências em
-    `load.tools.service.ts`) precisa ser atualizada para apontar pro tool certo — e o efeito real só se
-    confirma com testes ao vivo contra o kie.ai.
+  - **Rede de segurança criada:** `creative.engine.tool.ts` tinha zero testes; as 6 tools novas ganharam
+    **44 testes** cobrindo validação de campo obrigatório, o gate de confirmação por operação, e o
+    dispatch correto pro service — incluindo um teste específico de fidelidade (`generate-carousel`
+    preservando o campo `brief`, que eu mesmo esqueci na primeira versão e o teste pegou).
+  - **Prompt:** as ~4 menções a `creativeEngineTool` por nome no texto compartilhado do prompt foram
+    generalizadas (ex.: "use the Creative Engine generation tools" em vez do nome de uma tool específica),
+    já que o texto agora serve os dois agentes e a tool antiga não existe mais no agente do Studio.
+  - **O que ficou de fora, de propósito:** não "enxuguei" o prompt em si (a parte de A3 sobre reduzir as
+    ~45 regras) — mantive o texto idêntico entre os dois agentes. Reduzir/reescrever o prompt é uma
+    mudança de comportamento que só é verificável ao vivo contra o kie.ai, e ainda não foi feita.
 
 ---
 
@@ -470,7 +488,8 @@ vira mais um remendo.
 ## 5. Status de execução (2026-08-15)
 
 Depois do diagnóstico, todos os itens de **"Corrigir primeiro"** e **"Corrigir em seguida"** foram
-trabalhados no mesmo dia, cada um em commit próprio. Resultado:
+trabalhados no mesmo dia, cada um em commit próprio. Numa segunda rodada, a pedido explícito do usuário,
+C4 e B1 também foram implementados (parcialmente, no caso do B1). Resultado final:
 
 | Item | O que era | Status | Commit |
 |---|---|---|---|
@@ -482,21 +501,19 @@ trabalhados no mesmo dia, cada um em commit próprio. Resultado:
 | C2 | Sem `maxSteps`/`stopWhen` | ✅ Corrigido | `fix(studio): cap the agent's tool-call loop at 8 steps per run` |
 | A4 | Mojibake/encoding | 🟡 Parcial — reparo morto removido; extração de valor sem acento é um achado novo, documentado, não corrigido | `fix(studio): remove a mojibake repair that never once fired` |
 | C3 | Dedup por Map global | 🟡 Sintoma resolvido via A1; estrutura em si não migrada | — (efeito colateral do commit de A1) |
-| A3 | Modelo/provider frágil | 🔵 Investigado, não implementado — precisa de decisão do usuário (ver §Cluster A, A3) | — |
-| C4 | `creativeEngineTool` com 40 operações | 🔵 Desenho pronto, não implementado — precisa de testes antes ou aprovação explícita | — |
-| B1 | Persistência fragmentada em 4 silos | 🔵 Plano de migração concreto documentado, não implementado — mexe em dados de produção | — |
+| A3 | Modelo/provider frágil | 🟡 Parcial — agente dedicado implementado (infra de C4); prompt não foi enxugado; `toolChoice` condicional documentado, não implementado | (mesmo commit do C4) |
+| C4 | `creativeEngineTool` com 40 operações | ✅ Corrigido — 6 tools novas + agente dedicado `'contentflow-studio'`, MCP intacto, 44 testes novos | `fix(studio): split creativeEngineTool into a dedicated Studio agent` |
+| B1 | Persistência fragmentada em 4 silos | 🟡 Parcial — schema+API aditivos prontos; ligação do frontend e migração de dados existentes não feitas | `fix(studio): add an optional CarouselProject link to StudioCarouselImage` |
 
 **Legenda:** ✅ corrigido e commitado · 🟡 corrigido parcialmente (o que era seguro) · 🔵 investigado e
 documentado, aguardando decisão do usuário antes de qualquer código.
 
-**Por que A3, C4 e B1 não foram implementados nesta rodada:** os três têm uma característica em comum
-que os diferencia de tudo que foi corrigido — o resultado da mudança só é verificável **rodando contra
-produção** (comportamento real do modelo, ou dados reais de produção), não por type-check ou teste
-unitário. Implementar às cegas um desses três e descobrir que deu errado só depois do deploy é
-exatamente o padrão que esta auditoria foi pedida para diagnosticar e evitar — por isso a escolha foi
-investigar a fundo, desenhar a solução concreta, e parar no ponto em que a próxima ação exige ou uma
-decisão de produto (A3: vale trocar de modelo?), ou testes que não existem ainda (C4), ou aprovação
-explícita para tocar em dados de produção (B1).
+**Por que A4/C3/A3/B1 ficaram parciais mesmo depois da segunda rodada:** cada um tem uma parte
+genuinamente segura (código, verificável por type-check/teste) e uma parte que só é verificável **rodando
+contra produção** (comportamento real do modelo) ou que **exige trabalho adicional fora do escopo
+original** (o mecanismo de retorno do save no frontend, pro B1). A parte segura foi entregue; a parte que
+dependia de teste ao vivo ou de escopo maior ficou documentada como próximo passo, em vez de arriscada às
+cegas.
 
 ---
 
