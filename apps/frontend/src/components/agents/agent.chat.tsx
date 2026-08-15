@@ -379,9 +379,7 @@ You can also use me as an MCP Server, check Settings >> Public API
               */
             }}
             UserMessage={Message}
-             AssistantMessage={(messageProps) => (
-               <StudioAssistantMessage {...messageProps} onAction={dispatchArtifactAction} />
-             )}
+            AssistantMessage={StudioAssistantMessageWithAction}
             Input={NewInput}
             onError={(errorEvent) => {
               setChatError(classifyChatError(errorEvent));
@@ -1008,6 +1006,21 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
     </div>
   );
 };
+
+// CopilotChat's `AssistantMessage` prop must stay referentially stable.
+// Passing an inline arrow function (as this used to) hands CopilotChat a new
+// component *type* on every render of StudioChat, which forces it to
+// remount every assistant-message subtree it manages. In production this
+// compounded into an unbounded, ever-growing pile of leftover
+// `.cf-studio__assistant-message` nodes (thousands, still climbing) instead
+// of being cleanly replaced — the artifact cards inside them stopped
+// receiving clicks because the instance they were bound to kept getting
+// discarded before a state update could render. `dispatchArtifactAction` is
+// already a stable module-level function, so this wrapper only needs to be
+// declared once.
+const StudioAssistantMessageWithAction: FC<AssistantMessageProps> = (messageProps) => (
+  <StudioAssistantMessage {...messageProps} onAction={dispatchArtifactAction} />
+);
 
 // Studio artifact cards are generative UI: they are drawn live by an action's
 // `render` during the run, not stored as HTML. On reload the thread comes back
