@@ -899,6 +899,20 @@ export class CreativeEngineService {
     productAssetIds?: string[];
     idempotencyKey?: string;
   }) {
+    const prepared = await this.prepareImageJob(organizationId, projectId, input);
+    return prepared.run ? prepared.run() : prepared.job;
+  }
+
+  // Same validation and provider-input assembly as generateImage, but stops at
+  // the reserved job and hands back the deferred `run()` so the carousel path
+  // can return immediately and generate in the background.
+  private async prepareImageJob(organizationId: string, projectId: string, input: {
+    prompt: string;
+    name?: string;
+    aspectRatio?: string;
+    productAssetIds?: string[];
+    idempotencyKey?: string;
+  }) {
     await this.getProject(projectId, organizationId);
     await this.planLimits?.enforceLimit(organizationId, 'image_generation');
     this.moderation.assertAllowed(input.prompt);
@@ -907,7 +921,7 @@ export class CreativeEngineService {
       aspectRatio: normalizeAspectRatio(input.aspectRatio),
       imageUrls: await this.resolveAssetUrls(organizationId, input.productAssetIds),
     };
-    return this.executeCreativeJob(organizationId, projectId, {
+    return this.prepareCreativeJob(organizationId, projectId, {
       capability: 'image-generation',
       input: providerInput,
       variantId: undefined,
@@ -954,29 +968,45 @@ export class CreativeEngineService {
           aspectRatio: input.aspectRatio,
         });
     const jobs: Array<{ slideId?: string; slideIndex: number; job?: unknown; error?: string }> = [];
+    const runners: Array<() => Promise<unknown>> = [];
     for (const [i, slide] of input.slides.entries()) {
       const slideIndex = slide.index ?? i;
       try {
         // Omitting idempotencyKey (rather than defaulting to a fixed string)
-        // lets executeCreativeJob fall through to its own content hash of
+        // lets prepareCreativeJob fall through to its own content hash of
         // {organizationId, projectId, prompt, aspectRatio, assetName}: an
         // unmodified slide regenerated against the same project — the common
         // case of "I only edited slide 3, why did all 5 bill again" —
         // resolves to the same hash and returns the cached job for free.
         // Editing the copy/design changes the compiled prompt, which changes
         // the hash, which correctly forces a fresh generation.
-        const job = await this.generateImage(organizationId, project.id, {
+        const prepared = await this.prepareImageJob(organizationId, project.id, {
           prompt: compileDesignPrompt(slide.imagePrompt, input.designSpec, slide),
           name: `${input.name || 'Carousel'} slide ${slideIndex + 1}`,
           aspectRatio: slide.aspectRatio || input.aspectRatio,
           idempotencyKey: input.idempotencyKey ? `${input.idempotencyKey}:${slide.id || slideIndex + 1}` : undefined,
         });
-        jobs.push({ slideId: slide.id, slideIndex, job });
+        jobs.push({ slideId: slide.id, slideIndex, job: prepared.job });
+        // A cached (already-succeeded) slide has no run closure; only queue the
+        // ones that still need the provider.
+        if (prepared.run) runners.push(prepared.run);
       } catch (error) {
-        // One slide failing a content-moderation or provider check should not
-        // discard the images already generated for the rest of the carousel.
+        // One slide failing a content-moderation, reservation or provider check
+        // should not discard the images already generated for the rest of the
+        // carousel.
         jobs.push({ slideId: slide.id, slideIndex, error: this.errorMessage(error) });
       }
+    }
+    // Each slide image takes ~1-2 minutes to render — far longer than any HTTP
+    // request (or the fronting nginx, ~60s by default) will stay open. Reserving
+    // the jobs above is fast; here we hand the actual generation to a background
+    // task and return the reserved jobs immediately, so the Studio can poll each
+    // job to completion instead of the request dying at the proxy while the work
+    // continues server-side (which billed credits for images the client never
+    // received). The reservations already hold the credits, so a crash between
+    // now and completion leaves a RESERVED job the client can still poll.
+    if (runners.length) {
+      void this.runJobsSequentially(runners);
     }
     return { projectId: project.id, jobs, slides: input.slides };
   }
@@ -1526,6 +1556,32 @@ export class CreativeEngineService {
     assetName?: string;
     idempotencyKey?: string;
   }) {
+    // Default (synchronous) path: reserve, run the provider to completion, and
+    // return the finished job. Preserved for every caller that awaits a single
+    // result inline (single image/voice generation, variants, etc.).
+    const prepared = await this.prepareCreativeJob(organizationId, projectId, input);
+    return prepared.run ? prepared.run() : prepared.job;
+  }
+
+  // Reserves credits and returns the job immediately, deferring the slow
+  // provider call to the returned `run()` closure. This splits the fast,
+  // request-bound work (quota + reservation, milliseconds) from the slow
+  // generation (minutes per image), letting callers that must not block an HTTP
+  // request — the Studio carousel — return the reserved jobs right away and
+  // finish generation in the background while the client polls each job. When
+  // the idempotency cache already holds a non-FAILED job there is nothing to
+  // run, so `run` is omitted and the cached job is returned as-is.
+  private async prepareCreativeJob(organizationId: string, projectId: string, input: {
+    capability: CreativeCapability;
+    input: CreativeProviderInput;
+    variantId?: string;
+    outputType: 'asset' | 'variant';
+    assetName?: string;
+    idempotencyKey?: string;
+  }): Promise<{
+    job: Awaited<ReturnType<CreativeEngineService['getJob']>>;
+    run?: () => Promise<Awaited<ReturnType<CreativeEngineService['getJob']>>>;
+  }> {
     const quote = this.providers.quote(input.capability, input.input);
     await this.assertCreativeAccess(organizationId, input.capability, quote.model, input.input);
     const idempotencyKey = input.idempotencyKey
@@ -1539,7 +1595,7 @@ export class CreativeEngineService {
     // CreativeJobAttempt rows reference it by id, so delete-and-recreate
     // would violate that foreign key; update-in-place sidesteps that).
     if (existing && existing.status !== CreativeJobStatus.FAILED) {
-      return this.getJob(existing.id, organizationId);
+      return { job: await this.getJob(existing.id, organizationId) };
     }
     await this.credits.assertConcurrencyQuota(organizationId);
     const job = existing
@@ -1569,6 +1625,9 @@ export class CreativeEngineService {
             idempotencyKey,
           },
         });
+    // Reserve synchronously so credits are held before this call returns; a
+    // reservation failure (e.g. insufficient credits) marks the job FAILED and
+    // propagates, exactly as the old inline path did.
     try {
       const reservation = await this.credits.reserve(organizationId, quote.estimatedCredits, {
         projectId,
@@ -1577,34 +1636,57 @@ export class CreativeEngineService {
         metadata: { capability: input.capability },
       });
       await this.prisma.creativeJob.update({ where: { id: job.id }, data: { status: CreativeJobStatus.RESERVED, input: { ...input.input, capability: input.capability, reservationId: reservation.id } as Prisma.InputJsonValue } });
-      const output = await this.executeJob(job.id, organizationId);
-      if (!output || !('url' in output) || !output.url) return this.getJob(job.id, organizationId);
-      if (input.outputType === 'asset') {
-        const assetType = input.capability === 'text-to-speech'
-          ? CreativeAssetType.AUDIO
-          : input.capability === 'image-generation'
-            ? CreativeAssetType.IMAGE
-            : input.capability === 'captions' || input.capability === 'translation'
-              ? CreativeAssetType.OTHER
-              : CreativeAssetType.VIDEO;
-        await this.prisma.creativeAsset.create({
-          data: {
-            organizationId,
-            projectId,
-            type: assetType,
-            status: CreativeAssetStatus.READY,
-            rightsStatus: CreativeRightsStatus.UNKNOWN,
-            name: input.assetName || 'Generated asset',
-            url: output.url,
-            thumbnailUrl: output.thumbnailUrl,
-            metadata: { provider: output.provider, model: output.model, jobId: job.id } as Prisma.InputJsonValue,
-          },
-        });
-      }
-      return this.getJob(job.id, organizationId);
     } catch (error) {
       await this.prisma.creativeJob.update({ where: { id: job.id }, data: { status: CreativeJobStatus.FAILED, error: this.errorMessage(error) } });
       throw error;
+    }
+    const run = async () => {
+      try {
+        const output = await this.executeJob(job.id, organizationId);
+        if (!output || !('url' in output) || !output.url) return this.getJob(job.id, organizationId);
+        if (input.outputType === 'asset') {
+          const assetType = input.capability === 'text-to-speech'
+            ? CreativeAssetType.AUDIO
+            : input.capability === 'image-generation'
+              ? CreativeAssetType.IMAGE
+              : input.capability === 'captions' || input.capability === 'translation'
+                ? CreativeAssetType.OTHER
+                : CreativeAssetType.VIDEO;
+          await this.prisma.creativeAsset.create({
+            data: {
+              organizationId,
+              projectId,
+              type: assetType,
+              status: CreativeAssetStatus.READY,
+              rightsStatus: CreativeRightsStatus.UNKNOWN,
+              name: input.assetName || 'Generated asset',
+              url: output.url,
+              thumbnailUrl: output.thumbnailUrl,
+              metadata: { provider: output.provider, model: output.model, jobId: job.id } as Prisma.InputJsonValue,
+            },
+          });
+        }
+        return this.getJob(job.id, organizationId);
+      } catch (error) {
+        await this.prisma.creativeJob.update({ where: { id: job.id }, data: { status: CreativeJobStatus.FAILED, error: this.errorMessage(error) } });
+        throw error;
+      }
+    };
+    return { job: await this.getJob(job.id, organizationId), run };
+  }
+
+  // Runs deferred job executors one after another in the background. Each
+  // runner already records its own failure onto the job (prepareCreativeJob's
+  // closure), so errors are only logged here to avoid an unhandled rejection.
+  // Sequential execution preserves the provider's one-image-at-a-time behavior
+  // and keeps only a single job RUNNING at any moment.
+  private async runJobsSequentially(runners: Array<() => Promise<unknown>>) {
+    for (const run of runners) {
+      try {
+        await run();
+      } catch (error) {
+        this.logger.warn(`Background creative job failed: ${this.errorMessage(error)}`);
+      }
     }
   }
 
