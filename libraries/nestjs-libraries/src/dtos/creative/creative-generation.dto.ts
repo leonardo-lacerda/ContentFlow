@@ -238,6 +238,12 @@ export class SaveStudioCarouselImagesDto {
   @IsString()
   cardKey!: string;
 
+  // Optional, additive link to a saved CarouselProject (docs/studio-audit.md,
+  // item B1).
+  @IsOptional()
+  @IsString()
+  carouselProjectId?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => StudioCarouselImageItemDto)

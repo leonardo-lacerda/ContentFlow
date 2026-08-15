@@ -1369,6 +1369,7 @@ model CarouselProject {
   emailCampaigns     EmailCampaign[]
   shortVideoProjects ShortVideoProject[]
   AdCreative         AdCreative[]
+  studioCarouselImages StudioCarouselImage[]
 
   @@index([organizationId])
   @@index([brandProfileId])
@@ -2153,19 +2154,34 @@ model CreativeJobAttempt {
 // Durable link between a Studio chat carousel card and the images generated for
 // it, so the card can re-hydrate its slide images after the user leaves and
 // comes back. `cardKey` is a stable hash of the card's persisted payload
-// (headlines), keyed per organization; one row per slide.
+// (headlines), keyed per organization; one row per slide. Always populated
+// (unchanged from the original design) - it remains the fallback/primary
+// lookup for any carousel that has not been saved as a CarouselProject yet.
+//
+// `carouselProjectId` is an additive, optional upgrade path (see
+// docs/studio-audit.md, item B1): once a carousel is saved as a
+// CarouselProject, new rows can ALSO be linked to that canonical id, which is
+// stable and user-meaningful instead of a hash of headlines that breaks the
+// moment the copy is edited - the exact "yet another silo" gap the audit
+// flagged. This is purely additive: existing rows are untouched, no data is
+// migrated or backfilled, and `cardKey` stays required so the existing lookup
+// path never changes for a carousel that isn't linked to a project.
 model StudioCarouselImage {
-  id             String       @id @default(uuid())
-  organizationId String
-  cardKey        String
-  slideId        String
-  imageUrl       String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  id                String           @id @default(uuid())
+  organizationId    String
+  cardKey           String
+  carouselProjectId String?
+  slideId           String
+  imageUrl          String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  carouselProject   CarouselProject? @relation(fields: [carouselProjectId], references: [id])
 
   @@unique([organizationId, cardKey, slideId])
+  @@unique([organizationId, carouselProjectId, slideId])
   @@index([organizationId, cardKey])
+  @@index([organizationId, carouselProjectId])
 }
 
 model CreativeReview {

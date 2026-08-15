@@ -342,15 +342,16 @@ export class CreativeController {
     @GetOrgFromRequest() org: Organization,
     @Body() body: SaveStudioCarouselImagesDto,
   ) {
-    return this.creative.saveStudioCarouselImages(org.id, body.cardKey, body.images);
+    return this.creative.saveStudioCarouselImages(org.id, body.cardKey, body.images, body.carouselProjectId);
   }
 
   @Get('/studio-carousel/images')
   getStudioCarouselImages(
     @GetOrgFromRequest() org: Organization,
     @Query('cardKey') cardKey: string,
+    @Query('carouselProjectId') carouselProjectId?: string,
   ) {
-    return this.creative.getStudioCarouselImages(org.id, cardKey);
+    return this.creative.getStudioCarouselImages(org.id, cardKey, carouselProjectId);
   }
 
   @Get('/variants')

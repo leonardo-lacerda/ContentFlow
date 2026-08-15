@@ -1346,16 +1346,25 @@ export class CreativeEngineService {
   // can re-hydrate them after the user leaves and returns. Keyed by a stable
   // hash of the card's payload (`cardKey`), one row per slide, upserted so a
   // regenerated slide simply overwrites its previous URL.
+  //
+  // `carouselProjectId` is an optional, additive link to a saved
+  // CarouselProject (see docs/studio-audit.md, item B1): when the caller
+  // knows it, it's stored alongside cardKey on the same row (not a second
+  // row), so the images become findable by either identifier. cardKey stays
+  // required and remains the only identifier a caller needs before a
+  // carousel has ever been saved.
   async saveStudioCarouselImages(
     organizationId: string,
     cardKey: string,
     images: Array<{ slideId?: string; imageUrl?: string }> = [],
+    carouselProjectId?: string,
   ) {
     const raw = String(cardKey || '').trim();
     if (!raw) throw new BadRequestException('cardKey is required');
     // Hash to a fixed length so an arbitrarily long card signature never
     // overflows the composite unique btree index.
     const key = createHash('sha256').update(raw).digest('hex');
+    const projectId = carouselProjectId?.trim() || undefined;
     const clean = (images || [])
       .filter((item) => item && item.slideId && item.imageUrl)
       .map((item) => ({ slideId: String(item.slideId), imageUrl: String(item.imageUrl) }));
@@ -1369,20 +1378,27 @@ export class CreativeEngineService {
               slideId: item.slideId,
             },
           },
-          create: { organizationId, cardKey: key, slideId: item.slideId, imageUrl: item.imageUrl },
-          update: { imageUrl: item.imageUrl },
+          create: { organizationId, cardKey: key, carouselProjectId: projectId, slideId: item.slideId, imageUrl: item.imageUrl },
+          update: { imageUrl: item.imageUrl, ...(projectId ? { carouselProjectId: projectId } : {}) },
         }),
       ),
     );
     return { saved: clean.length };
   }
 
-  async getStudioCarouselImages(organizationId: string, cardKey: string) {
+  async getStudioCarouselImages(organizationId: string, cardKey: string, carouselProjectId?: string) {
     const raw = String(cardKey || '').trim();
-    if (!raw) return { images: [] as Array<{ slideId: string; imageUrl: string }> };
-    const key = createHash('sha256').update(raw).digest('hex');
+    const projectId = carouselProjectId?.trim() || undefined;
+    if (!raw && !projectId) return { images: [] as Array<{ slideId: string; imageUrl: string }> };
+    const key = raw ? createHash('sha256').update(raw).digest('hex') : undefined;
+    // Matches on either identifier so a caller that only knows the
+    // carouselProjectId (post-save) still finds images saved back when only
+    // cardKey was known, and vice versa.
     const rows = await this.prisma.studioCarouselImage.findMany({
-      where: { organizationId, cardKey: key },
+      where: {
+        organizationId,
+        OR: [...(key ? [{ cardKey: key }] : []), ...(projectId ? [{ carouselProjectId: projectId }] : [])],
+      },
       orderBy: { updatedAt: 'desc' },
     });
     return { images: rows.map((row) => ({ slideId: row.slideId, imageUrl: row.imageUrl })) };
