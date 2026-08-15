@@ -42,6 +42,7 @@ import { compileDesignPrompt } from './creative-design-prompt.util';
 import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
 import { BillingEntitlementsService } from '@gitroom/nestjs-libraries/services/billing-entitlements.service';
+import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
 import { BillingModelAccessCode } from '@gitroom/nestjs-libraries/services/billing-catalog';
 
 type JsonRecord = Record<string, any>;
@@ -75,6 +76,7 @@ export class CreativeEngineService {
     @Optional() private readonly planLimits?: PlanLimitsService,
     @Optional() private readonly pricingCatalog?: PricingCatalogService,
     @Optional() private readonly entitlements?: BillingEntitlementsService,
+    @Optional() private readonly brandProfiles?: BrandProfileService,
   ) {}
 
   listCapabilities() {
@@ -931,6 +933,47 @@ export class CreativeEngineService {
     });
   }
 
+  // Builds the concrete brand identity injected into every carousel slide so
+  // they stay coherent (same brand, same product, same visual world). Pulls
+  // from the org's selected Brand Profile + its latest DNA snapshot; falls
+  // back to the carousel's own name/brief as the brand name when no profile is
+  // selected. Best-effort: any failure yields a minimal identity rather than
+  // blocking generation.
+  private async buildBrandIdentityBlock(
+    organizationId: string,
+    fallbackName?: string,
+  ): Promise<string> {
+    const compact = (value: unknown, max = 240): string => {
+      if (!value) return '';
+      const text = typeof value === 'string' ? value : JSON.stringify(value);
+      const clean = text.replace(/\s+/g, ' ').trim();
+      return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
+    };
+
+    let brandName = compact(fallbackName, 80);
+    const parts: string[] = [];
+    try {
+      const brand = await this.brandProfiles?.getSelectedBrand(organizationId);
+      if (brand?.name) {
+        brandName = compact(brand.name, 80);
+        if (brand.industry) parts.push(`Industry: ${compact(brand.industry, 80)}.`);
+        const dna = await this.brandProfiles?.getLatestDnaSnapshot(brand.id);
+        const offer = compact(dna?.offer);
+        const visual = compact(dna?.visual);
+        if (offer) parts.push(`Product / offer: ${offer}`);
+        if (visual) parts.push(`Visual identity: ${visual}`);
+      }
+    } catch {
+      // best-effort — fall through to the name-only identity below
+    }
+
+    const nameLine = brandName
+      ? `Brand name (render only as a plain-text wordmark, never an icon or emblem): ${brandName}.`
+      : 'This carousel represents a single brand. Use one consistent, plain-text brand wordmark on every slide.';
+
+    return [nameLine, ...parts].join('\n');
+  }
+
   /**
    * Single source of truth for turning an approved carousel into real slide
    * images: used by both the chat tool and the Studio's "generate images"
@@ -967,6 +1010,13 @@ export class CreativeEngineService {
           objective: input.brief || input.prompt || 'Carousel image generation',
           aspectRatio: input.aspectRatio,
         });
+    // Build one brand identity and hand it to every slide. Each slide image is
+    // generated in its own independent provider request, so without this shared
+    // block every slide invented a different brand + product (a jewelry brand
+    // on one slide, a skincare brand on the next). Sourced from the org's
+    // selected Brand Profile; folded into the content hash via the compiled
+    // prompt, so changing brands correctly forces a regeneration.
+    const brandIdentity = await this.buildBrandIdentityBlock(organizationId, input.name || input.brief);
     const jobs: Array<{ slideId?: string; slideIndex: number; job?: unknown; error?: string }> = [];
     const runners: Array<() => Promise<unknown>> = [];
     for (const [i, slide] of input.slides.entries()) {
@@ -981,7 +1031,7 @@ export class CreativeEngineService {
         // Editing the copy/design changes the compiled prompt, which changes
         // the hash, which correctly forces a fresh generation.
         const prepared = await this.prepareImageJob(organizationId, project.id, {
-          prompt: compileDesignPrompt(slide.imagePrompt, input.designSpec, slide),
+          prompt: compileDesignPrompt(slide.imagePrompt, input.designSpec, slide, brandIdentity),
           name: `${input.name || 'Carousel'} slide ${slideIndex + 1}`,
           aspectRatio: slide.aspectRatio || input.aspectRatio,
           idempotencyKey: input.idempotencyKey ? `${input.idempotencyKey}:${slide.id || slideIndex + 1}` : undefined,
