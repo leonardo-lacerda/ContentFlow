@@ -773,9 +773,6 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
           <p>{activeDesign.platform} · {activeDesign.aspectRatio} · {draftSlides.length} slides</p>
         </div>
         <div className="cf-carousel-preview__header-actions">
-          <button type="button" className={designOpen ? 'is-active' : ''} onClick={() => setDesignOpen((open) => !open)} disabled={isBusy}>
-            {designOpen ? 'Fechar design' : 'Editar design'}
-          </button>
           <span className="cf-content-artifact__count">{draftSlides.length}</span>
         </div>
       </header>
@@ -924,6 +921,14 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
                 }}
               >
                 Salvar copy e revisar
+              </button>
+              <button
+                type="button"
+                className={designOpen ? 'is-active' : ''}
+                onClick={() => setDesignOpen((open) => !open)}
+                disabled={isBusy}
+              >
+                {designOpen ? 'Fechar design' : 'Editar design'}
               </button>
               <button
                 type="button"
