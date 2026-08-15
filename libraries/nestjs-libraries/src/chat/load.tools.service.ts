@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Agent } from '@mastra/core/agent';
+import { Agent, type AgentExecutionOptions } from '@mastra/core/agent';
 import { createOpenAI, openai } from '@ai-sdk/openai';
 import { Memory } from '@mastra/memory';
 import { pStore } from '@gitroom/nestjs-libraries/chat/mastra.store';
@@ -146,6 +146,22 @@ export class LoadToolsService {
       },
       model: studioModel(),
       tools,
+      // Without an explicit bound the tool-call loop has no limit: nothing
+      // stops the model from re-emitting the same tool call turn after turn
+      // within a single run (observed live as several identical "ideas" cards
+      // stacking while the copy step processed). No legitimate Studio flow in
+      // the instructions above needs more than a handful of tool calls per
+      // turn (e.g. creationOptionsTool -> showCreationOptions, or a schema
+      // check -> confirmation -> schedule), so 8 comfortably covers real
+      // workflows while still capping a runaway loop.
+      // Mastra's AgentExecutionOptions<OUTPUT> conditionally requires
+      // structuredOutput when OUTPUT resolves to a non-undefined type, and it
+      // resolves that way for this agent's inferred type parameters even
+      // though no structured output is configured anywhere - a type-only
+      // quirk in how the generic default is instantiated here, not a real
+      // shape mismatch (maxSteps is a genuine, always-optional field of the
+      // same type). Assert the concrete shape rather than fight the inference.
+      defaultOptions: { maxSteps: 8 } as AgentExecutionOptions<undefined>,
       memory: new Memory({
         storage: pStore,
         options: {
