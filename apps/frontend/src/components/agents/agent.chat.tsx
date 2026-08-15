@@ -698,7 +698,13 @@ const cleanIdeaLine = (line: unknown) =>
 
 const extractLooseIdeasArtifactSafe = (content: string) => {
   const source = content.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-  const normalized = source.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/Ã./g, 'a');
+  // `normalized` used to end with a `.replace(/\u00c3./g, 'a')` mojibake repair
+  // (here and in the two functions below). It never once fired: decomposing
+  // a precomposed "\u00c3" (U+00C3) via NFD splits it into "A" + a combining
+  // tilde, which the strip above already removes, so there is never an "\u00c3"
+  // left for that regex to match by the time it would run. Confirmed dead
+  // code, not a working repair - removed.
+  const normalized = source.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const matches = Array.from(normalized.matchAll(/formato\s*:/gi));
   if (!matches.length) return null;
   const readField = (block: string, labels: string) => {
@@ -737,7 +743,7 @@ const extractLooseIdeasArtifactSafe = (content: string) => {
 
 const extractTitleIdeasArtifact = (content: string) => {
   const source = content.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-  const normalized = source.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/Ã./g, 'a');
+  const normalized = source.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const titleMatches = Array.from(source.matchAll(/^\s*\*\*([^*\n:]+)\*\*(?:\s*\(([^)\n]+)\))?\s*$/gm));
   if (!titleMatches.length) return null;
   const readField = (block: string, labels: string) => {
@@ -771,7 +777,7 @@ const extractTitleIdeasArtifact = (content: string) => {
 
 const extractSequenceIdeasArtifact = (content: string) => {
   const source = content.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-  const normalized = source.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/Ã./g, 'a');
+  const normalized = source.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const matches = Array.from(normalized.matchAll(/angulo\s*:/gi));
   if (!matches.length) return null;
   const readField = (block: string, labels: string) => {

@@ -109,17 +109,39 @@ arquitetural** em 3 pontos (renderização, modelo, persistência), não de mais
 
 ---
 
-#### A4 — Encoding/mojibake (UTF-8 duplo) — 🟡 MÉDIA
+#### A4 — Encoding/mojibake (UTF-8 duplo) — 🟡 MÉDIA — **investigado em 2026-08-15, parcialmente corrigido**
 
-- **Problema:** Parsers cheios de reparos como `.replace(/Ã§/g,'c')`, `.replace(/Ã£/g,'a')`
-  (`apps/frontend/src/components/agents/agent.chat.tsx:695-700`).
-- **Causa raiz:** Texto em português chega **duplo-codificado** em algum ponto do transporte
-  (resposta kie.ai ou runtime CopilotKit). Os parsers "consertam" no fim da linha.
-- **Sintoma:** Acentos quebrados; parsers falham quando o padrão de mojibake muda.
-- **Impacto:** Cards não reconhecidos; texto corrompido.
-- **Correção recomendada:** Corrigir o encoding **na fonte** (garantir UTF-8 no fetch/stream do provider)
-  e remover os reparos.
-- **Risco:** Baixo, se identificada a origem.
+- **Problema original:** Parsers cheios de reparos como `.replace(/Ã§/g,'c')`, `.replace(/Ã£/g,'a')`
+  (`apps/frontend/src/components/agents/agent.chat.tsx`, dentro de `extractLooseIdeasArtifactSafe`,
+  `extractTitleIdeasArtifact` e `extractSequenceIdeasArtifact`).
+- **Descoberta concreta (verificável, sem depender do modelo ao vivo):** esses reparos eram
+  **código morto — nunca executavam uma única vez**. A linha anterior fazia
+  `.normalize('NFD').replace(/[̀-ͯ]/g, '')` antes do reparo de mojibake. Decompor um "Ã"
+  precomposto (U+00C3) via NFD o separa em "A" + til combinante — que a etapa de strip já remove.
+  Ou seja, quando o `.replace(/Ã./g, 'a')` rodava, **nunca existia mais nenhum "Ã" pra ele encontrar**.
+  Uma correção que nunca corrigiu nada — pior que não ter correção, porque dava falsa confiança de que
+  o mojibake estava tratado.
+- **Correção aplicada:** removido o código morto (`.replace(/Ã./g, 'a')`) nas três funções — mudança
+  segura, comprovável por semântica Unicode pura, sem dependência de comportamento do modelo.
+- **Achado adicional, mais profundo (não corrigido ainda):** essas mesmas três funções extraem o
+  **valor** de cada campo (hook, ângulo, objetivo, CTA) a partir do texto **já sem acentos**
+  (`normalized`, a string pós-NFD-strip), não do texto original (`source`). Isso significa que,
+  mesmo com input **perfeitamente bem codificado**, essas funções de fallback já removiam acentos de
+  todo o conteúdo exibido ao usuário (ex.: "humanização" virava "humanizacao") — um bug real e ativo,
+  independente da questão do mojibake.
+- **Por que não foi corrigido nesta rodada:** o `readField` usa a posição do match dentro do texto
+  normalizado para fatiar o campo; migrar a extração para ler do `source` original exige realinhar os
+  offsets nas três funções e não há nenhum teste cobrindo essas três funções especificamente
+  (`idea-summary-parser.spec.ts` cobre só `extractSummaryIdeasArtifact`, uma quarta função). Um erro de
+  offset poderia trocar "sem acento" por "sem card nenhum" — uma regressão pior que a atual. Precisa de
+  testes dedicados antes de mexer.
+- **Causa raiz de origem (ainda não confirmada):** de onde vem o mojibake em primeiro lugar (kie.ai?
+  o shim OpenAI-compatible? o runtime do CopilotKit?) continua sem confirmação — não há acesso a logs
+  de produção nem forma de inspecionar os bytes brutos da resposta do provider a partir deste ambiente.
+- **Correção recomendada (restante):** (1) mover a extração de valor para ler do `source` original nas
+  três funções, com testes dedicados primeiro; (2) rastrear a origem do mojibake em produção (logar a
+  resposta bruta do provider antes de qualquer processamento) para decidir se cabe corrigir na fonte.
+- **Risco:** Baixo para o que falta (é um refactor mecânico, mas precisa de testes antes).
 
 ---
 
