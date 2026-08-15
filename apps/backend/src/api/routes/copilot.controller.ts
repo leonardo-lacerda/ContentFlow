@@ -8,6 +8,7 @@ import {
   Query,
   Param,
 } from '@nestjs/common';
+import { createHash } from 'crypto';
 import {
   CopilotRuntime,
   OpenAIAdapter,
@@ -190,9 +191,24 @@ export class CopilotController {
     // exhaust an org's credits without a single generation.
     if (req?.body?.operationName === 'generateCopilotResponse') {
       const quote = await this._pricingCatalog.quote({ operation: 'chat-ideas' });
+      // The previous fallback keyed on Date.now(), which is unique on every
+      // call by construction - it could never actually deduplicate anything,
+      // so a dropped connection or client retry of the exact same mutation
+      // reserved (and eventually billed) credits a second time for one chat
+      // turn. Hashing the request body makes a genuine retry - byte-identical
+      // payload - collapse onto the same reservation via reserve()'s own
+      // idempotencyKey lookup. Bucketed to a short window so the key expires
+      // naturally instead of colliding with a much later, coincidentally
+      // identical body.
+      const idempotencyKey = String(
+        req.headers['idempotency-key'] ||
+          `chat:${organization.id}:${createHash('sha256')
+            .update(JSON.stringify(req.body || {}))
+            .digest('hex')}:${Math.floor(Date.now() / 30000)}`
+      );
       const reservation = await this._credits.reserve(organization.id, quote.credits, {
         quoteId: quote.quoteId,
-        idempotencyKey: String(req.headers['idempotency-key'] || `chat:${organization.id}:${req.body?.threadId || 'new'}:${Date.now()}`),
+        idempotencyKey,
         operation: 'chat-ideas',
         provider: quote.provider,
         model: quote.model,
