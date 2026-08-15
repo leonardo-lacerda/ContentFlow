@@ -3,10 +3,11 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
-  Patch,
   Post,
   Put,
+  Query,
   Res,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -93,7 +94,7 @@ export class BrandsController {
     @Param('id') id: string
   ) {
     const brand = await this.brandProfileService.getBrand(id, org.id);
-    if (!brand) throw new Error('Brand not found');
+    if (!brand) throw new NotFoundException('Brand not found');
     return this.brandProfileService.getDnaSnapshots(id);
   }
 
@@ -101,11 +102,13 @@ export class BrandsController {
   async getAssets(
     @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
-    @Body() body?: { type?: string }
+    // GET requests don't carry a body reliably; read the optional type filter
+    // from the query string instead (the old @Body() was silently ignored).
+    @Query('type') type?: string
   ) {
     const brand = await this.brandProfileService.getBrand(id, org.id);
-    if (!brand) throw new Error('Brand not found');
-    return this.brandProfileService.getAssets(id, body?.type);
+    if (!brand) throw new NotFoundException('Brand not found');
+    return this.brandProfileService.getAssets(id, type);
   }
 
   @Post('/:id/assets')
@@ -125,7 +128,10 @@ export class BrandsController {
     @Param('id') id: string,
     @Body() body: AnalyzeBrandDto
   ) {
-    return this.brandProfileService.analyzeBrand(org.id, id, body);
+    // Non-blocking: kicks the slow site-fetch + LLM extraction off in the
+    // background and returns immediately with status ANALYZING, so the request
+    // never exceeds the reverse-proxy timeout. The UI polls for completion.
+    return this.brandProfileService.startAnalyzeBrand(org.id, id, body);
   }
 
   @Get('/:id/dna/latest')
@@ -134,7 +140,7 @@ export class BrandsController {
     @Param('id') id: string
   ) {
     const brand = await this.brandProfileService.getBrand(id, org.id);
-    if (!brand) throw new Error('Brand not found');
+    if (!brand) throw new NotFoundException('Brand not found');
     return this.brandProfileService.getLatestDnaSnapshot(id);
   }
 
@@ -148,7 +154,9 @@ export class BrandsController {
     return this.brandProfileService.createDnaSnapshot(org.id, id, body);
   }
 
-  @Patch('/:id/assets/:assetId/approve')
+  // POST (not PATCH) to match the frontend client and the sibling
+  // /:id/select action endpoint — the old @Patch made every approve 404.
+  @Post('/:id/assets/:assetId/approve')
   @CheckPolicies([AuthorizationActions.Create, Sections.ADMIN])
   async approveAsset(
     @GetOrgFromRequest() org: Organization,

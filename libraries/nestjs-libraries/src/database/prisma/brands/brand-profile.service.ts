@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { BrandProfileRepository } from './brand-profile.repository';
 import { BrandDnaSnapshotRepository } from './brand-dna-snapshot.repository';
 import { BrandAssetRepository } from './brand-asset.repository';
@@ -97,12 +97,25 @@ export class BrandProfileService {
     return this.brandAssetRepository.create({ brandProfileId, ...data });
   }
 
+  // Blocking: waits for the full extraction. Used by the public v1 API, which
+  // returns the DNA in its response.
   async analyzeBrand(orgId: string, brandId: string, dto: AnalyzeBrandDto) {
     const brand = await this.brandProfileRepository.findById(brandId, orgId);
     if (!brand) {
-      throw new Error('Brand not found');
+      throw new NotFoundException('Brand not found');
     }
     return this.brandDnaExtractionService.analyze(brandId, dto.url, orgId);
+  }
+
+  // Non-blocking: validates synchronously, then extracts in the background and
+  // returns immediately with status ANALYZING. Used by the brand-DNA UI, which
+  // polls for completion — avoids the reverse-proxy timeout on the slow LLM call.
+  async startAnalyzeBrand(orgId: string, brandId: string, dto: AnalyzeBrandDto) {
+    const brand = await this.brandProfileRepository.findById(brandId, orgId);
+    if (!brand) {
+      throw new NotFoundException('Brand not found');
+    }
+    return this.brandDnaExtractionService.startAnalysis(brandId, dto.url, orgId);
   }
 
   async migrateFromLegacy(orgId: string, org: Organization) {

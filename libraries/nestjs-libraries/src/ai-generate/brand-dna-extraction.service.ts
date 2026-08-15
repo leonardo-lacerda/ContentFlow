@@ -32,14 +32,21 @@ export class BrandDnaExtractionService {
     private planLimitsService: PlanLimitsService,
   ) {}
 
-  async analyze(
+  // Fast, synchronous guards shared by both the blocking analyze() and the
+  // fire-and-forget startAnalysis(): plan limit + URL validation, then flips
+  // the brand to ANALYZING. Returns the validated URL, or an early error the
+  // caller surfaces to the user immediately (without ever leaving the brand
+  // stuck on ANALYZING, since ANALYZING is only set once both guards pass).
+  // Returns { url } on success, or { error } with an early ExtractionResult the
+  // caller returns as-is. Two nullable fields (rather than a discriminated
+  // union) so callers narrow with a plain truthiness check — this project's
+  // tsconfig doesn't reliably narrow `ok: true | false` unions.
+  private async prepareAnalysis(
     brandProfileId: string,
     rawUrl: string,
     orgId?: string,
-  ): Promise<ExtractionResult> {
-    const errors: string[] = [];
-
-    // 0. Enforce plan limits
+  ): Promise<{ url?: string; error?: ExtractionResult }> {
+    // 0. Enforce plan limits (throws -> surfaces to the caller synchronously)
     if (orgId) {
       await this.planLimitsService.enforceLimit(orgId, 'dna_extraction');
     }
@@ -47,7 +54,7 @@ export class BrandDnaExtractionService {
     // 1. Validar URL
     const validation = await this.urlValidationService.validate(rawUrl);
     if (!validation.success) {
-      return { success: false, errors: ['URL validation failed'] };
+      return { error: { success: false, errors: ['URL validation failed'] } };
     }
     const { url } = validation.data;
 
@@ -56,6 +63,55 @@ export class BrandDnaExtractionService {
       status: BrandProfileStatus.ANALYZING,
     });
 
+    return { url };
+  }
+
+  // Blocking analysis: runs the whole pipeline and returns the extracted DNA
+  // inline. Kept for callers that need the result in the response (the public
+  // v1 API). The brand-DNA UI uses startAnalysis() to dodge the proxy timeout.
+  async analyze(
+    brandProfileId: string,
+    rawUrl: string,
+    orgId?: string,
+  ): Promise<ExtractionResult> {
+    const prepared = await this.prepareAnalysis(brandProfileId, rawUrl, orgId);
+    if (prepared.error || !prepared.url) {
+      return prepared.error ?? { success: false, errors: ['URL validation failed'] };
+    }
+    return this.runExtraction(brandProfileId, prepared.url);
+  }
+
+  // Non-blocking analysis: runs the fast guards synchronously (so plan-limit
+  // and bad-URL errors still reach the user immediately), then kicks the heavy
+  // fetch + LLM + save work off in the background and returns right away with
+  // status ANALYZING. The UI polls the brand/DNA until it settles on
+  // NEEDS_REVIEW or FAILED. This is what stops the request from exceeding the
+  // ~60s reverse-proxy timeout and surfacing a false "analysis failed" even
+  // though the extraction actually completed server-side.
+  async startAnalysis(
+    brandProfileId: string,
+    rawUrl: string,
+    orgId?: string,
+  ): Promise<{ success: boolean; started?: boolean; status?: string; errors?: string[] }> {
+    const prepared = await this.prepareAnalysis(brandProfileId, rawUrl, orgId);
+    if (prepared.error || !prepared.url) {
+      return prepared.error ?? { success: false, errors: ['URL validation failed'] };
+    }
+    // Fire-and-forget: runExtraction sets NEEDS_REVIEW/FAILED on its own, so a
+    // failure never leaves the brand stuck on ANALYZING. The backend process
+    // is long-lived (pm2), so the unawaited promise runs to completion.
+    const url = prepared.url;
+    void this.runExtraction(brandProfileId, url).catch(() => {
+      // runExtraction already recorded FAILED; nothing else to do here.
+    });
+    return { success: true, started: true, status: BrandProfileStatus.ANALYZING };
+  }
+
+  private async runExtraction(
+    brandProfileId: string,
+    url: string,
+  ): Promise<ExtractionResult> {
+    const errors: string[] = [];
     try {
       // 3. Extrair metadados do site
       const metadata = await this.websiteMetadataExtractor.extract(url);

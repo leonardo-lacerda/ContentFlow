@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@gitroom/react/form/button';
 import { Sparkles } from 'lucide-react';
 import { useToaster } from '@gitroom/react/toaster/toaster';
-import { analyzeBrand } from './brand-dna.service';
+import { analyzeBrand, getLatestDna } from './brand-dna.service';
 import { mutateBrand } from './brand-dna.hooks';
+
+// The analysis now runs in the background (site fetch + LLM can take well over
+// a minute — longer than the reverse proxy will hold a request open). The
+// endpoint returns immediately with status ANALYZING; we poll the latest DNA
+// until it appears (success) or we give up. ~2s * 60 = up to ~2 min of patience.
+const POLL_INTERVAL_MS = 2000;
+const POLL_MAX_ATTEMPTS = 60;
 
 export function AnalyzeSiteButton({
   brandId,
@@ -17,6 +24,17 @@ export function AnalyzeSiteButton({
   const [url, setUrl] = useState(website || '');
   const [loading, setLoading] = useState(false);
   const toaster = useToaster();
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearPoll = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  };
+
+  // Stop polling if the component unmounts mid-analysis.
+  useEffect(() => clearPoll, []);
 
   const handleAnalyze = async () => {
     if (!url.trim()) {
@@ -25,21 +43,43 @@ export function AnalyzeSiteButton({
     }
 
     setLoading(true);
+    clearPoll();
     try {
       const result = await analyzeBrand(brandId, url.trim());
-      if (result.success) {
-        toaster.show('Análise concluída! Revise os dados extraídos.', 'success');
-        mutateBrand(brandId);
-      } else {
-        toaster.show(
-          result.errors?.join(', ') || 'Falha na análise',
-          'warning'
-        );
+      // A synchronous failure (plan limit, invalid URL) comes back right away.
+      if (result && result.success === false) {
+        toaster.show(result.errors?.join(', ') || 'Falha na análise', 'warning');
+        setLoading(false);
+        return;
       }
+      toaster.show('Análise iniciada… extraindo o Brand DNA (pode levar até ~1 min).', 'success');
+      let attempts = 0;
+      pollRef.current = setInterval(async () => {
+        attempts += 1;
+        try {
+          const dna = await getLatestDna(brandId);
+          if (dna?.summary) {
+            clearPoll();
+            setLoading(false);
+            mutateBrand(brandId);
+            toaster.show('Análise concluída! Revise os dados extraídos.', 'success');
+          } else if (attempts >= POLL_MAX_ATTEMPTS) {
+            clearPoll();
+            setLoading(false);
+            mutateBrand(brandId);
+            toaster.show(
+              'A análise está demorando mais que o esperado. Ela continua rodando — atualize a página em instantes.',
+              'warning'
+            );
+          }
+        } catch {
+          // transient read error — keep polling
+        }
+      }, POLL_INTERVAL_MS);
     } catch (err: any) {
-      toaster.show(err.message || 'Erro ao analisar site', 'warning');
-    } finally {
+      clearPoll();
       setLoading(false);
+      toaster.show(err.message || 'Erro ao analisar site', 'warning');
     }
   };
 
