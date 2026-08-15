@@ -97,6 +97,18 @@ if [[ "$DEPLOY_BACKEND" == true ]]; then
   log "Applying pending Prisma migrations"
   pnpm dlx prisma@6.5.0 migrate deploy --schema ./libraries/nestjs-libraries/src/database/prisma/schema.prisma
 
+  # The dependency-reuse path above hardlink-copies node_modules from a prior
+  # release and skips `pnpm install` (and its postinstall `prisma generate`)
+  # whenever pnpm-lock.yaml is unchanged — which a schema.prisma-only change
+  # always is. That left the compiled backend running against a @prisma/client
+  # built from an older schema: it rejected any field added since (confirmed
+  # live — "Unknown argument `apiKeyHash`" is @prisma/client's own runtime
+  # validation, thrown before a query is even sent). Regenerating
+  # unconditionally here means the client always matches this release's schema
+  # regardless of which dependency path was taken.
+  log "Regenerating Prisma client for this release's schema"
+  pnpm dlx prisma@6.5.0 generate --schema ./libraries/nestjs-libraries/src/database/prisma/schema.prisma
+
   log "Building backend"
   node scripts/swc-compile-backend.js
 
