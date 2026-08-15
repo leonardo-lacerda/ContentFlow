@@ -5,7 +5,7 @@ import { Memory } from '@mastra/memory';
 import { pStore } from '@gitroom/nestjs-libraries/chat/mastra.store';
 import { array, object, string } from 'zod';
 import { ModuleRef } from '@nestjs/core';
-import { toolList } from '@gitroom/nestjs-libraries/chat/tools/tool.list';
+import { toolList, studioToolList } from '@gitroom/nestjs-libraries/chat/tools/tool.list';
 import dayjs from 'dayjs';
 
 export const AgentState = object({
@@ -40,10 +40,10 @@ const renderArray = (list: string[], show: boolean) => {
 export class LoadToolsService {
   constructor(private _moduleRef: ModuleRef) {}
 
-  async loadTools() {
+  private async loadTools(list: Array<new (...args: any[]) => any>) {
     return (
       await Promise.all<{ name: string; tool: any }>(
-        toolList
+        list
           .map((p) => this._moduleRef.get(p, { strict: false }))
           .map(async (p) => ({
             name: p.name as string,
@@ -59,11 +59,32 @@ export class LoadToolsService {
     );
   }
 
+  // The original agent, exposed publicly over MCP (start.mcp.ts) with the
+  // full, unsplit creativeEngineTool - kept byte-identical to before the
+  // Studio chat moved off it, so external MCP clients calling
+  // `creativeEngineTool` by name are unaffected. Not used by the Studio UI.
   async agent() {
-    const tools = await this.loadTools();
+    const tools = await this.loadTools(toolList);
+    return this.buildAgent('contentflow', tools);
+  }
+
+  // The agent actually used by the Studio chat UI (see
+  // apps/frontend/.../agent.chat.tsx, agent="contentflow-studio"). Same
+  // instructions and model as `agent()` above, but creativeEngineTool's 40
+  // operations are split into 6 smaller, domain-focused tools (see
+  // docs/studio-audit.md, item C4) - a narrower surface for the model to pick
+  // from without touching the MCP-facing agent at all. Both agents share the
+  // same Postgres-backed thread storage (keyed by resourceId/threadId, not by
+  // agent), so existing Studio conversations remain fully readable.
+  async studioAgent() {
+    const tools = await this.loadTools(studioToolList);
+    return this.buildAgent('contentflow-studio', tools);
+  }
+
+  private buildAgent(id: string, tools: Record<string, any>) {
     return new Agent({
-      id: 'contentflow',
-      name: 'contentflow',
+      id,
+      name: id,
       description:
         'Agent that helps manage and schedule social media posts for users',
       instructions: ({ requestContext }) => {
@@ -87,17 +108,17 @@ export class LoadToolsService {
         - For every initial ideas request, ignore any stale conversation interpretation about a previously selected idea. Determine the requested count from the latest user message: use 1 through 10 when requested, cap any request above 10 at 10, and default to 10 when no count is provided. Build exactly that normalized count of complete ideas before calling any presentation action. Validate that ideas.length equals the normalized count; if it does not, create the missing ideas and validate again. Then call only contentPresentationTool with operation=ideas and the complete array. It is the single interactive ideas artifact. Each item must be specific to the user's brand and niche, with a concrete title, hook, audience pain, angle, format, platform, objective and CTA. Never answer an ideas request with plain prose, a markdown/numbered list, a framework, or a question asking the user to invent the topic.
         - The card rendered by contentPresentationTool (ideas or carousel) is the single source of truth shown to the user: it already displays every title, hook, angle, platform, CTA, and every slide's headline, body, CTA, caption and hashtags. After a contentPresentationTool call succeeds, your accompanying text reply must be short (one sentence, no bullets, no markdown list) and must never restate, list or summarize the ideas or slides again — the user already sees them in the card above your message. Only add brief guidance, such as inviting the user to pick an idea or review and approve the carousel.
         - If the user selects an idea through the interactive contentPresentationTool artifact, preserve the selected idea verbatim as the brief for the next creation. Do not ask the user to repeat or reinterpret it.
-        - When the ideas artifact returns action=transform-carousel, preserve the selected idea as the carousel brief and start the copy workflow. Do not generate images yet and do not call creativeEngineTool, quote or any credit-consuming tool. If the action payload already contains confirmed=true and options, use those options directly; otherwise first call creationOptionsTool and the frontend showCreationOptions for creationType=carousel, asking only for the platform, image format/aspect ratio, tone, visual style and slide count, then wait for confirmed=true. After the options are confirmed, use them to create the complete copy and call only contentPresentationTool with operation=carousel, including every slide's headline, body, CTA, visual direction, layout and imagePrompt. When it returns action=generate-image, call showCreationOptions for creationType=image and wait for the user's simple choices before any generation.
+        - When the ideas artifact returns action=transform-carousel, preserve the selected idea as the carousel brief and start the copy workflow. Do not generate images yet and do not call any Creative Engine generation, quote or credit-consuming tool. If the action payload already contains confirmed=true and options, use those options directly; otherwise first call creationOptionsTool and the frontend showCreationOptions for creationType=carousel, asking only for the platform, image format/aspect ratio, tone, visual style and slide count, then wait for confirmed=true. After the options are confirmed, use them to create the complete copy and call only contentPresentationTool with operation=carousel, including every slide's headline, body, CTA, visual direction, layout and imagePrompt. When it returns action=generate-image, call showCreationOptions for creationType=image and wait for the user's simple choices before any generation.
         - Tool-first creation protocol: when the user asks to create a new image, video, carousel or text content, identify the requested creationType and call creationOptionsTool first. Then call the frontend action showCreationOptions with the same detected type, brief and suggestions. The action is the product configurator: it must be used to present simple choices such as channel, aspect ratio, tone, visual style, duration or slide count.
         - Never replace showCreationOptions with a long text list of technical choices. The user must select the options in the rendered configurator, and you must wait for its response before continuing.
         - After showCreationOptions returns confirmed=true, carry every returned option into the appropriate generation or content tool. If the user cancels, acknowledge it and do not start a generation job.
         - If the user's message contains [--creation-options--], those options are already confirmed by the user through the Studio configurator. Do not ask for the configurator again; use the selected values and continue with the appropriate tool and credit confirmation flow.
         - If the user's message contains [--contentflow-intent--], follow that instruction as an internal UI contract: use contentPresentationTool with the matching operation instead of falling back to plain prose.
         - If the user's message contains [--content-action--], it is a structured click from the ContentFlow artifact UI. Parse the ACTION and PAYLOAD, preserve the selected idea or carousel, and continue the requested workflow without asking the user to repeat it. A transform-carousel action starts the carousel options-to-copy workflow; it is not a generation confirmation. An approve-carousel-copy action means the user edited the copy; call contentPresentationTool again with the edited slides and do not generate images yet. A generate-image action means showCreationOptions must be rendered before the generation flow.
-        - For images and videos outside a carousel, use creativeEngineTool for Studio generation whenever possible. Follow its quote and explicit confirmation rules before calling a credit-consuming operation. Do not silently fall back to external prompt suggestions when a provider fails.
+        - For images and videos outside a carousel, use the Creative Engine generation tools for Studio generation whenever possible. Follow their quote and explicit confirmation rules before calling a credit-consuming operation. Do not silently fall back to external prompt suggestions when a provider fails.
         - For carousels and text-first content, use the selected options to produce the structured artifact in chat, and use contentStudioTool only when the user explicitly asks to save, approve or continue editing it.
         - For a carousel, call only contentPresentationTool with operation=carousel and include final copy, visualDirection, layout and imagePrompt for every slide so the user sees a horizontal visual preview in the chat. A plain slide-by-slide text outline is never a sufficient carousel result.
-        - Once a carousel is presented via contentPresentationTool, its slide images are rendered and generated entirely by the Studio UI's own "Gerar Imagens" button - that flow talks to the Creative Engine directly and never reaches you. Do not call creativeEngineTool with operation=generate-carousel for that carousel, and do not tell the user you are generating its images; the button is the only generation path for it. Only fall back to creativeEngineTool generate-carousel (with confirmed=true, copyApproved=true and designApproved=true) if the user explicitly asks in chat for images on a carousel that was never shown as a Studio artifact card in this thread.
+        - Once a carousel is presented via contentPresentationTool, its slide images are rendered and generated entirely by the Studio UI's own "Gerar Imagens" button - that flow talks to the Creative Engine directly and never reaches you. Do not call any Creative Engine generate-carousel operation for that carousel, and do not tell the user you are generating its images; the button is the only generation path for it. Only fall back to a Creative Engine generate-carousel operation (with confirmed=true, copyApproved=true and designApproved=true) if the user explicitly asks in chat for images on a carousel that was never shown as a Studio artifact card in this thread.
         - If a generation provider fails, report that the creation failed, preserve the selected options and offer retry or edit options. Do not claim success and do not present Midjourney, DALL-E or Canva prompts unless the user explicitly asks for an exportable prompt.
         - Do not expose provider names, model names, internal capability names or technical configuration unless the user explicitly asks.
         - For a new creative request, first create a concise production plan in the response: objective, format, audience, hook, structure and next action.

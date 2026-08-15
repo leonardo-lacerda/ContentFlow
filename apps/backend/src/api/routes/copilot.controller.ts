@@ -273,7 +273,13 @@ export class CopilotController {
     @Param('thread') threadId: string
   ): Promise<any> {
     const mastra = await this._mastraService.mastra();
-    const memory = await mastra.getAgent('contentflow').getMemory();
+    // Studio's own thread/message management now reads from the
+    // 'contentflow-studio' agent (see docs/studio-audit.md, item C4) - the
+    // one actually used by the chat UI. Both agents share the same
+    // Postgres-backed storage (keyed by resourceId/threadId, not by agent
+    // name), so this is not a data migration, just pointing reads at the
+    // agent object the Studio UI's own runs are recorded under.
+    const memory = await mastra.getAgent('contentflow-studio').getMemory();
     try {
       return await memory.recall({
         resourceId: organization.id,
@@ -291,7 +297,13 @@ export class CopilotController {
     @Param('thread') threadId: string
   ): Promise<any> {
     const mastra = await this._mastraService.mastra();
-    const memory = await mastra.getAgent('contentflow').getMemory();
+    // Studio's own thread/message management now reads from the
+    // 'contentflow-studio' agent (see docs/studio-audit.md, item C4) - the
+    // one actually used by the chat UI. Both agents share the same
+    // Postgres-backed storage (keyed by resourceId/threadId, not by agent
+    // name), so this is not a data migration, just pointing reads at the
+    // agent object the Studio UI's own runs are recorded under.
+    const memory = await mastra.getAgent('contentflow-studio').getMemory();
     const thread = await memory.getThreadById({ threadId });
     if (!thread || thread.resourceId !== organization.id) {
       return { thread: null, metadata: {} };
@@ -315,7 +327,13 @@ export class CopilotController {
     @Param('thread') threadId: string
   ): Promise<any> {
     const mastra = await this._mastraService.mastra();
-    const memory = await mastra.getAgent('contentflow').getMemory();
+    // Studio's own thread/message management now reads from the
+    // 'contentflow-studio' agent (see docs/studio-audit.md, item C4) - the
+    // one actually used by the chat UI. Both agents share the same
+    // Postgres-backed storage (keyed by resourceId/threadId, not by agent
+    // name), so this is not a data migration, just pointing reads at the
+    // agent object the Studio UI's own runs are recorded under.
+    const memory = await mastra.getAgent('contentflow-studio').getMemory();
     const thread = await memory.getThreadById({ threadId });
     if (!thread || thread.resourceId !== organization.id) {
       return { archived: false };
@@ -337,7 +355,13 @@ export class CopilotController {
     @Param('thread') threadId: string
   ): Promise<any> {
     const mastra = await this._mastraService.mastra();
-    const memory = await mastra.getAgent('contentflow').getMemory();
+    // Studio's own thread/message management now reads from the
+    // 'contentflow-studio' agent (see docs/studio-audit.md, item C4) - the
+    // one actually used by the chat UI. Both agents share the same
+    // Postgres-backed storage (keyed by resourceId/threadId, not by agent
+    // name), so this is not a data migration, just pointing reads at the
+    // agent object the Studio UI's own runs are recorded under.
+    const memory = await mastra.getAgent('contentflow-studio').getMemory();
     const thread = await memory.getThreadById({ threadId });
     if (!thread || thread.resourceId !== organization.id) {
       return { restored: false };
@@ -356,7 +380,13 @@ export class CopilotController {
   @CheckPolicies([AuthorizationActions.Create, Sections.AI])
   async getList(@GetOrgFromRequest() organization: Organization) {
     const mastra = await this._mastraService.mastra();
-    const memory = await mastra.getAgent('contentflow').getMemory();
+    // Studio's own thread/message management now reads from the
+    // 'contentflow-studio' agent (see docs/studio-audit.md, item C4) - the
+    // one actually used by the chat UI. Both agents share the same
+    // Postgres-backed storage (keyed by resourceId/threadId, not by agent
+    // name), so this is not a data migration, just pointing reads at the
+    // agent object the Studio UI's own runs are recorded under.
+    const memory = await mastra.getAgent('contentflow-studio').getMemory();
     const list = await memory.listThreads({
       filter: { resourceId: organization.id },
       perPage: 100000,

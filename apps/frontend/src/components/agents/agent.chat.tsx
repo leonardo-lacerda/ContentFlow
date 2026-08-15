@@ -420,7 +420,11 @@ const AgentChatContent: FC = () => {
       credentials="include"
       runtimeUrl={backendUrl + '/copilot/agent'}
       showDevConsole={false}
-      agent="contentflow"
+      // Studio talks to its own Mastra agent (see docs/studio-audit.md, item
+      // C4) - same instructions as 'contentflow', but with the 40-operation
+      // creativeEngineTool split into 6 smaller tools. 'contentflow' itself
+      // stays reserved for MCP (external API clients), untouched.
+      agent="contentflow-studio"
       properties={{
         integrations: properties,
       }}

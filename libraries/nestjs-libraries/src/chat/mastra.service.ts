@@ -14,7 +14,13 @@ export class MastraService {
       new Mastra({
         storage: pStore,
         agents: {
+          // Unchanged, full tool set - this is the one exposed over MCP
+          // (start.mcp.ts) to external clients. Keep it byte-identical.
           contentflow: await this._loadToolsService.agent(),
+          // Studio chat UI's agent (see docs/studio-audit.md, item C4): same
+          // instructions, but creativeEngineTool split into 6 smaller tools.
+          // Never exposed over MCP.
+          'contentflow-studio': await this._loadToolsService.studioAgent(),
         },
         logger: new ConsoleLogger({
           level: 'info',
