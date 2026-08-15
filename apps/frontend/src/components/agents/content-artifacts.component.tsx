@@ -296,9 +296,21 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
   // user has picked an idea and the follow-up request is on its way.
   const isBusy = !isAwaitingUser(status) || pendingAction !== null || configuringIdea !== null;
   const sendAction = useArtifactResponder(respond, onAction);
+  // If this card is still mounted 45s after the request went out, no carousel
+  // artifact ever replaced it — the agent turn finished (isLoading already
+  // cycled back to false) without producing usable output, most likely because
+  // the model failed to return a valid slides array. Silently clearing
+  // pendingAction here used to leave the user staring at a card that just
+  // "went back to normal" with zero explanation, which read as "I clicked
+  // Gerar Copy and nothing happened."
   useEffect(() => {
     if (!pendingAction) return;
-    const timeout = window.setTimeout(() => setPendingAction(null), 45000);
+    const timeout = window.setTimeout(() => {
+      setPendingAction(null);
+      setActionError(
+        'Não recebi a copy completa desta vez. Tente novamente — às vezes a segunda tentativa funciona.'
+      );
+    }, 45000);
     return () => window.clearTimeout(timeout);
   }, [pendingAction]);
   const optionsArgs = useMemo(
