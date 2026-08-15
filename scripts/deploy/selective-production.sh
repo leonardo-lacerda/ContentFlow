@@ -88,6 +88,15 @@ ln -sfn "$ENV_FILE" "$RELEASE_DIR/.env"
 node scripts/validate-runtime-env.mjs --production
 
 if [[ "$DEPLOY_BACKEND" == true ]]; then
+  # Migration files land in libraries/nestjs-libraries/src/database/prisma/migrations
+  # via normal commits, but nothing else in this pipeline ever applied them to the
+  # production database — the backend was deploying code that assumed columns
+  # (e.g. Organization.apiKeyHash, added 2026-08-14) which never actually existed
+  # on disk. `migrate deploy` only applies migrations not yet recorded as applied,
+  # so this is a no-op on every deploy that doesn't add a new one.
+  log "Applying pending Prisma migrations"
+  pnpm dlx prisma@6.5.0 migrate deploy --schema ./libraries/nestjs-libraries/src/database/prisma/schema.prisma
+
   log "Building backend"
   node scripts/swc-compile-backend.js
 
