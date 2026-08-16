@@ -60,6 +60,21 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
       return super.canActivate(context);
     }
 
+    // The Studio chat send (/copilot/agent, and its public-API twin
+    // /copilot/chat) is the single most latency-sensitive endpoint in the
+    // product — every keystroke the user is waiting on goes through it. It
+    // used to share the generic "authenticated" bucket with every background
+    // read the app makes (layout shell mount, 5s job polling, notifications),
+    // so a burst of unrelated traffic could 429 a chat message with no
+    // visible error (CopilotKit's streaming client doesn't surface a 429 the
+    // way a normal fetch does, so the whole turn just silently did nothing —
+    // reported as "the screen flickers and nothing happens", worked again a
+    // minute later once the shared bucket's window rolled over). Give it its
+    // own generous, isolated ceiling instead.
+    if (method === 'POST' && (url.startsWith('/copilot/agent') || url.startsWith('/copilot/chat'))) {
+      return this.enforceOrganizationBucket(request, 'copilot-chat', 120);
+    }
+
     // Creative writes are expensive and must be throttled; polling and read-only
     // catalog/health endpoints remain available for job progress and operations.
     // The studio polls every job of a carousel in parallel every 2s, so a
