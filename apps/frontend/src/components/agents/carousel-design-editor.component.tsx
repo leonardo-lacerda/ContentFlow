@@ -259,14 +259,13 @@ export function CarouselDesignEditor({ design, activeSlide, activeIndex, scope, 
         <button type="button" className="is-quiet" onClick={onReset} disabled={disabled}>Restaurar IA</button>
       </div>
 
-      <div className="cf-carousel-design-editor__scope">
-        <span>Alterar</span>
+      <div className="cf-segmented" role="group" aria-label="Escopo das mudanças">
         <button type="button" className={scope === 'all' ? 'is-active' : ''} onClick={() => onScopeChange('all')} disabled={disabled}>Todos os slides</button>
         <button type="button" className={scope === 'slide' ? 'is-active' : ''} onClick={() => onScopeChange('slide')} disabled={disabled}>Somente este slide</button>
       </div>
 
       <fieldset>
-        <legend>Estilo visual (maior impacto)</legend>
+        <legend>Estilo visual <span className="cf-design-tag">maior impacto</span></legend>
         <div className="cf-design-style-grid">
           {STYLE_PRESETS.map((preset) => {
             const palette = paletteById(preset.paletteId);
@@ -277,10 +276,11 @@ export function CarouselDesignEditor({ design, activeSlide, activeIndex, scope, 
                 className={`cf-design-style-card ${activeDesign.style.presetId === preset.presetId ? 'is-selected' : ''}`}
                 onClick={() => applyPreset(preset)}
                 disabled={disabled}
+                aria-pressed={activeDesign.style.presetId === preset.presetId}
               >
                 <span className="cf-design-style-card__preview" style={{ background: palette.gradient }}>
                   <span className="cf-design-style-card__chip" style={{ background: palette.accent }} />
-                  <span className="cf-design-style-card__chip" style={{ background: palette.accent2 }} />
+                  <span className="cf-design-style-card__chip cf-design-style-card__chip--second" style={{ background: palette.accent2 }} />
                 </span>
                 <strong>{preset.presetName}</strong>
               </button>
@@ -337,7 +337,7 @@ export function CarouselDesignEditor({ design, activeSlide, activeIndex, scope, 
         <legend>Paleta de cores</legend>
         <div className="cf-design-choice-grid">
           {PALETTES.map((palette) => (
-            <button type="button" key={palette.paletteId} className={activeDesign.palette.paletteId === palette.paletteId ? 'is-selected' : ''} onClick={() => patchScoped({ palette, background: { ...activeDesign.background, type: 'gradient', value: palette.gradient } })} disabled={disabled}>
+            <button type="button" key={palette.paletteId} className={activeDesign.palette.paletteId === palette.paletteId ? 'is-selected' : ''} onClick={() => patchScoped({ palette, background: { ...activeDesign.background, type: 'gradient', value: palette.gradient } })} disabled={disabled} aria-pressed={activeDesign.palette.paletteId === palette.paletteId}>
               <span className="cf-design-swatch" style={{ background: palette.gradient, borderColor: palette.accent }} /><span>{palette.name}</span>
             </button>
           ))}
@@ -346,7 +346,7 @@ export function CarouselDesignEditor({ design, activeSlide, activeIndex, scope, 
 
       <fieldset>
         <legend>Cores personalizadas</legend>
-        <div className="cf-carousel-design-editor__row">
+        <div className="cf-design-colors">
           <label className="cf-design-color-field">Fundo
             <span><input type="color" value={activeDesign.palette.background} onChange={(event) => patchScoped({ palette: { ...activeDesign.palette, background: event.target.value }, background: { ...activeDesign.background, type: 'solid', value: event.target.value } })} disabled={disabled} />{activeDesign.palette.background}</span>
           </label>
@@ -402,7 +402,7 @@ export function CarouselDesignEditor({ design, activeSlide, activeIndex, scope, 
         <legend>Tipografia da prévia</legend>
         <div className="cf-design-choice-grid cf-design-choice-grid--fonts">
           {FONTS.map((font) => (
-            <button type="button" key={font.fontPairId} className={activeDesign.typography.fontPairId === font.fontPairId ? 'is-selected' : ''} onClick={() => patchScoped({ typography: { ...activeDesign.typography, ...font } })} disabled={disabled}>
+            <button type="button" key={font.fontPairId} className={activeDesign.typography.fontPairId === font.fontPairId ? 'is-selected' : ''} onClick={() => patchScoped({ typography: { ...activeDesign.typography, ...font } })} disabled={disabled} aria-pressed={activeDesign.typography.fontPairId === font.fontPairId}>
               <strong style={{ fontFamily: font.headingFont }}>{font.name}</strong><small>{font.headingFont} + {font.bodyFont}</small>
             </button>
           ))}
@@ -424,9 +424,14 @@ export function CarouselDesignEditor({ design, activeSlide, activeIndex, scope, 
       <fieldset>
         <legend>Elementos</legend>
         <div className="cf-design-elements">
-          {activeDesign.elements.map((element) => (
-            <label key={element.id} className="cf-design-toggle"><input type="checkbox" checked={element.visible} onChange={() => toggleElement(element.id)} disabled={disabled} />{element.type === 'logo' ? 'Logo' : element.type === 'product' ? 'Produto' : element.type === 'shape' ? 'Formas' : element.type === 'icon' ? 'Ícones' : element.type === 'badge' ? 'Selo' : 'Divisor'}</label>
-          ))}
+          {activeDesign.elements.map((element) => {
+            const label = element.type === 'logo' ? 'Logo' : element.type === 'product' ? 'Produto' : element.type === 'shape' ? 'Formas' : element.type === 'icon' ? 'Ícones' : element.type === 'badge' ? 'Selo' : 'Divisor';
+            return (
+              <button type="button" key={element.id} className="cf-design-chip" aria-pressed={element.visible} onClick={() => toggleElement(element.id)} disabled={disabled}>
+                <span className="cf-design-chip__dot" />{label}
+              </button>
+            );
+          })}
         </div>
       </fieldset>
 
