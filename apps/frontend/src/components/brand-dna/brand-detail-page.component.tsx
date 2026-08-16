@@ -653,6 +653,12 @@ export function BrandDetailPage(props: { brandId?: string } = {}) {
                     </span>
                   ) : null}
                 </div>
+                {brand.status === 'FAILED' && brand.lastAnalysisError ? (
+                  <div className="mt-3 text-[12px] text-red-500 bg-red-500/10 border border-red-500/25 rounded-[8px] px-[10px] py-[6px]">
+                    <span className="font-[600]">Última análise falhou: </span>
+                    {brand.lastAnalysisError}
+                  </div>
+                ) : null}
                 {dna && (
                   <div className="mt-3">
                     <BrandHealthBar dna={dna} />

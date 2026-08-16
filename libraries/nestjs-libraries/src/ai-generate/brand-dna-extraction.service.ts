@@ -7,7 +7,6 @@ import { BrandDnaSnapshotRepository } from '@gitroom/nestjs-libraries/database/p
 import { BrandAssetRepository } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-asset.repository';
 import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import {
-  BrandDnaExtractionSchema,
   normalizeBrandDnaExtraction,
   VERSION,
 } from '@gitroom/nestjs-libraries/ai-generate/schemas/brand-dna-extraction.schema';
@@ -59,9 +58,12 @@ export class BrandDnaExtractionService {
     }
     const { url } = validation.data;
 
-    // 2. Atualizar status para ANALYZING
+    // 2. Atualizar status para ANALYZING (clears any stale error from a
+    // previous failed attempt so the UI doesn't show an old reason for a
+    // brand-new run).
     await this.brandProfileRepository.updateById(brandProfileId, {
       status: BrandProfileStatus.ANALYZING,
+      lastAnalysisError: null,
     });
 
     return { url };
@@ -120,48 +122,42 @@ export class BrandDnaExtractionService {
       // 4. Construir prompt para LLM
       const prompt = this.buildPrompt(metadata);
 
-      // 5. Chamar OpenAI
-      const llmResult = await this.openaiService.generateBrandDna(prompt);
+      // 5. Chamar OpenAI (generateStructured already validates against the
+      // schema internally and retries on failure - a non-null `data` here is
+      // already schema-valid, so there is nothing left to re-validate).
+      const { data: llmResult, lastError } = await this.openaiService.generateBrandDna(prompt);
 
       if (!llmResult) {
-        errors.push('AI returned null or empty response');
+        // lastError is the REAL reason (provider exception, unparseable
+        // reply, or schema mismatch) instead of the old generic message that
+        // gave no way to tell those apart without production log access.
+        const reason = lastError || 'AI returned no usable response after retries';
+        errors.push(reason);
         await this.brandProfileRepository.updateById(brandProfileId, {
           status: BrandProfileStatus.FAILED,
+          lastAnalysisError: reason.slice(0, 2000),
         });
         return { success: false, errors };
       }
 
-      // 6. Validar resposta contra schema (schema is intentionally permissive —
-      // see the schema file's header comment — so this now only rejects
-      // genuinely malformed shapes, not a response that merely omitted a
-      // handful of the ~40 nested fields).
-      const validationResult = BrandDnaExtractionSchema.safeParse(llmResult);
-      if (!validationResult.success) {
-        errors.push(
-          'AI response validation failed: ' + validationResult.error.message,
-        );
-        await this.brandProfileRepository.updateById(brandProfileId, {
-          status: BrandProfileStatus.FAILED,
-        });
-        return { success: false, errors };
-      }
-
-      // Because every field is now optional, a technically-valid but
-      // completely empty `{}` would otherwise "succeed" with a useless blank
-      // DNA. Require at least one substantive text field before accepting.
-      const raw = validationResult.data;
+      // Because every field is optional (kie.ai has no structured-output
+      // enforcement - see the schema file's header comment), a technically
+      // valid but completely empty `{}` would otherwise "succeed" with a
+      // useless blank DNA. Require at least one substantive field.
       const hasContent =
-        raw.summary?.tagline || raw.summary?.description || raw.summary?.industry ||
-        raw.voice?.tone || raw.offer?.products?.length || raw.offer?.services?.length;
+        llmResult.summary?.tagline || llmResult.summary?.description || llmResult.summary?.industry ||
+        llmResult.voice?.tone || llmResult.offer?.products?.length || llmResult.offer?.services?.length;
       if (!hasContent) {
-        errors.push('AI response validated but contained no usable brand data');
+        const reason = 'AI response validated but contained no usable brand data';
+        errors.push(reason);
         await this.brandProfileRepository.updateById(brandProfileId, {
           status: BrandProfileStatus.FAILED,
+          lastAnalysisError: reason,
         });
         return { success: false, errors };
       }
 
-      const dnaData: BrandDnaExtraction = normalizeBrandDnaExtraction(raw);
+      const dnaData: BrandDnaExtraction = normalizeBrandDnaExtraction(llmResult);
 
       // 7. Calculate next version
       const latestSnapshot =
@@ -220,6 +216,7 @@ export class BrandDnaExtractionService {
       // 10. Atualizar status para NEEDS_REVIEW
       await this.brandProfileRepository.updateById(brandProfileId, {
         status: BrandProfileStatus.NEEDS_REVIEW,
+        lastAnalysisError: null,
       });
 
       // Serialize Prisma models to plain JSON-safe objects
@@ -237,10 +234,17 @@ export class BrandDnaExtractionService {
         ),
       };
     } catch (error: any) {
-      errors.push(error.message || 'Extraction failed');
+      // Catches failures from steps before the LLM call too - most notably
+      // websiteMetadataExtractor.extract() throwing (site fetch failed,
+      // timed out, or returned something JSDOM/extraction choked on). This
+      // is a real, distinct failure mode from the LLM-response cases above,
+      // and previously produced the exact same opaque "Falhou" badge.
+      const reason = error?.message || 'Extraction failed';
+      errors.push(reason);
       try {
         await this.brandProfileRepository.updateById(brandProfileId, {
           status: BrandProfileStatus.FAILED,
+          lastAnalysisError: String(reason).slice(0, 2000),
         });
       } catch {
         // ignore secondary failure

@@ -51,6 +51,7 @@ export class BrandProfileRepository {
       website?: string;
       industry?: string;
       status?: BrandProfileStatus;
+      lastAnalysisError?: string | null;
       selected?: boolean;
     }
   ) {

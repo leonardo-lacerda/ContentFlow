@@ -7,6 +7,7 @@ export interface BrandProfile {
   website?: string;
   industry?: string;
   status: BrandStatus;
+  lastAnalysisError?: string | null;
   selected: boolean;
   createdAt: string;
   updatedAt: string;

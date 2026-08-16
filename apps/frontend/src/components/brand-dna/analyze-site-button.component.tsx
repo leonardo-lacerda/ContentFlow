@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@gitroom/react/form/button';
 import { Sparkles } from 'lucide-react';
 import { useToaster } from '@gitroom/react/toaster/toaster';
-import { analyzeBrand, getLatestDna } from './brand-dna.service';
+import { analyzeBrand, getBrand, getLatestDna } from './brand-dna.service';
 import { mutateBrand } from './brand-dna.hooks';
 
 // The analysis now runs in the background (site fetch + LLM can take well over
@@ -57,6 +57,23 @@ export function AnalyzeSiteButton({
       pollRef.current = setInterval(async () => {
         attempts += 1;
         try {
+          // Check the brand's own status first: a FAILED result is terminal
+          // and should surface immediately (with the real reason) instead of
+          // silently polling until the generic timeout message, which used to
+          // be the only thing a fast, real failure ever showed the user.
+          const brand = await getBrand(brandId);
+          if (brand?.status === 'FAILED') {
+            clearPoll();
+            setLoading(false);
+            mutateBrand(brandId);
+            toaster.show(
+              brand.lastAnalysisError
+                ? `Falha na análise: ${brand.lastAnalysisError}`
+                : 'A análise falhou.',
+              'warning'
+            );
+            return;
+          }
           const dna = await getLatestDna(brandId);
           if (dna?.summary) {
             clearPoll();

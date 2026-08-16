@@ -1226,6 +1226,11 @@ model BrandProfile {
   website            String?
   industry           String?
   status             BrandProfileStatus  @default(DRAFT)
+  // Real reason the last site analysis ended in FAILED (network error,
+  // provider exception, or the model's response never validating), so the UI
+  // and support/debugging can see *why* instead of just the FAILED badge.
+  // Cleared whenever a new analysis starts or one succeeds.
+  lastAnalysisError  String?
   selected           Boolean             @default(false)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt

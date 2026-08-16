@@ -277,7 +277,9 @@ export class OpenaiService {
     return [];
   }
 
-  async generateBrandDna(prompt: string): Promise<BrandDnaExtraction | null> {
+  async generateBrandDna(
+    prompt: string
+  ): Promise<{ data: BrandDnaExtraction | null; lastError?: string }> {
     // Routed through the central kie.ai text client. kie has no structured-output
     // API, so generateStructured drives the JSON via prompt + zod validation.
     return generateStructured(BrandDnaExtractionSchema, {

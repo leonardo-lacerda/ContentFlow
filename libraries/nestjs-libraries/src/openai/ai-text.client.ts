@@ -82,12 +82,24 @@ export const extractJsonBlock = (text: string): unknown | null => {
   return null;
 };
 
+export type GenerateStructuredResult<T> = {
+  data: T | null;
+  // Set whenever data is null, describing what went wrong on the LAST
+  // attempt specifically (not every attempt) - enough to tell apart a
+  // provider/network exception from a response that just didn't parse or
+  // validate, without changing the "give up after N tries, don't throw"
+  // contract callers rely on.
+  lastError?: string;
+};
+
 /**
  * Ask the model for a value matching `schema`. Embeds the schema (via
  * zod-to-json-schema) in the system prompt, extracts the JSON from the reply,
- * and validates it. Returns null after `retries` failed attempts instead of
- * throwing, matching the previous OpenAI structured-output call sites that
- * caught and returned null.
+ * and validates it. Returns { data: null, lastError } after `retries` failed
+ * attempts instead of throwing, matching the previous OpenAI
+ * structured-output call sites that caught and returned null - but callers
+ * that need to know *why* (e.g. to surface a real error instead of a generic
+ * "AI returned nothing") can read `lastError`.
  */
 export async function generateStructured<T>(
   schema: ZodType<T>,
@@ -98,7 +110,7 @@ export async function generateStructured<T>(
     retries?: number;
     temperature?: number;
   }
-): Promise<T | null> {
+): Promise<GenerateStructuredResult<T>> {
   const { openai, model } = aiTextClient();
   // Reuse openai's own zod->json-schema conversion (no extra dependency) to
   // describe the exact shape to the model, then validate the reply ourselves.
@@ -112,6 +124,7 @@ Respond with a single valid JSON value and nothing else: no prose, no markdown, 
 The JSON MUST strictly conform to this JSON Schema:
 ${jsonSchema}`;
   const retries = params.retries ?? 3;
+  let lastError: string | undefined;
   for (let attempt = 0; attempt < retries; attempt += 1) {
     try {
       const response = await openai.chat.completions.create({
@@ -125,12 +138,17 @@ ${jsonSchema}`;
       const content = response.choices?.[0]?.message?.content;
       const raw = typeof content === 'string' ? content : JSON.stringify(content ?? '');
       const parsed = extractJsonBlock(raw);
-      if (parsed == null) continue;
+      if (parsed == null) {
+        lastError = `Model reply had no parseable JSON block (raw length ${raw.length}): ${raw.slice(0, 300)}`;
+        continue;
+      }
       const result = schema.safeParse(parsed);
-      if (result.success) return result.data;
-    } catch {
-      // Retry on transient/provider errors.
+      if (result.success) return { data: result.data };
+      lastError = `Schema validation failed: ${result.error.message}`;
+    } catch (error: any) {
+      // Retry on transient/provider errors, but remember what happened.
+      lastError = `Provider call threw: ${error?.message || String(error)}`;
     }
   }
-  return null;
+  return { data: null, lastError };
 }
