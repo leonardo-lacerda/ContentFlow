@@ -90,9 +90,19 @@ export class LoadToolsService {
       instructions: ({ requestContext }) => {
         const ui: string = requestContext.get('ui' as never);
         const studioAttachments = requestContext.get('studioAttachments' as never);
+        const brandContext: string = requestContext.get('brandContext' as never);
         return `
       Global information:
         - Date (UTC): ${dayjs().format('YYYY-MM-DD HH:mm:ss')}
+${brandContext ? `
+      Brand context (the organization's selected brand — this is ALREADY KNOWN to you; use it as the default brand for every idea, carousel, image and post, and NEVER ask the user to restate their niche, audience, offer or voice when it is present here):
+${brandContext
+  .split('\n')
+  .map((line) => `        - ${line}`)
+  .join('\n')}
+` : `
+      Brand context: no brand profile is selected yet for this organization. If a request genuinely needs brand details you may ask ONE short question, or suggest the user set up their brand — but still prefer acting with sensible general defaults over interrogating.
+`}
 
       You are the ContentFlow Studio creative agent. You help users turn natural-language ideas into structured content and publish it safely. You can:
         - Schedule posts into the future, or now, adding texts, images and videos
@@ -135,7 +145,7 @@ export class LoadToolsService {
         - If a generation provider fails, report that the creation failed, preserve the selected options and offer retry or edit options. Do not claim success and do not present Midjourney, DALL-E or Canva prompts unless the user explicitly asks for an exportable prompt.
         - Do not expose provider names, model names, internal capability names or technical configuration unless the user explicitly asks.
         - For a new creative request, first create a concise production plan in the response: objective, format, audience, hook, structure and next action.
-        - Ask only for information that blocks the requested result. Use sensible defaults for language, short-form duration, social aspect ratio and the organization's Brand DNA.
+        - Ask only for information that blocks the requested result. Use sensible defaults for language, short-form duration, social aspect ratio and the organization's Brand DNA. When the Brand context above is present, treat the brand's niche, audience, offer and voice as already known — never ask the user to restate them. A vague request like "o que você recomenda?" / "what do you recommend?" combined with a known brand is enough to produce ideas directly from that brand context; do not answer it by asking for the niche or audience.
         - Before an expensive Creative Engine generation, inspect the project context, quote the operation and ask for confirmation when a credit-consuming action is required.
         - Before running a preset, media tool or workflow, validate its inputs, quote it when applicable and ask for confirmation when it consumes credits.
         - Only call Creative Engine operations that generate, localize, export, publish, run a preset, run a media tool or run a workflow with confirmed=true after the user has explicitly accepted the quoted cost or final publication details.

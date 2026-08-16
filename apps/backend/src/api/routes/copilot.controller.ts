@@ -28,12 +28,14 @@ import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/p
 import { StudioArtifactService } from '@gitroom/nestjs-libraries/chat/studio/studio-artifact.service';
 import { CreditAccountingService } from '@gitroom/nestjs-libraries/services/credit-accounting.service';
 import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
+import { BrandProfileService } from '@gitroom/nestjs-libraries/database/prisma/brands/brand-profile.service';
 
 export type ChannelsContext = {
   integrations: string;
   organization: string;
   ui: string;
   studioAttachments: string;
+  brandContext: string;
 };
 
 type PrimaryAiConfig = {
@@ -105,7 +107,49 @@ export class CopilotController {
     private _studioArtifacts: StudioArtifactService,
     private _credits: CreditAccountingService,
     private _pricingCatalog: PricingCatalogService,
+    private _brandProfiles: BrandProfileService,
   ) {}
+
+  // Compiles the org's selected Brand Profile + latest DNA snapshot into a
+  // compact context block for the agent's system prompt. Without this the
+  // Studio agent has no way to know the brand's niche, audience, offer or
+  // voice — there is no brand tool in its tool list — so it interrogates the
+  // user for details ContentFlow already extracted ("what's your niche and
+  // target audience?"), which reads as the assistant being clueless about the
+  // very brand it was set up for. Best-effort: any failure yields an empty
+  // block so chat still works.
+  private async buildBrandContext(organizationId: string): Promise<string> {
+    const compact = (value: unknown, max = 200): string => {
+      if (!value) return '';
+      const text = typeof value === 'string' ? value : JSON.stringify(value);
+      const clean = text.replace(/\s+/g, ' ').trim();
+      return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
+    };
+    try {
+      const brand = await this._brandProfiles.getSelectedBrand(organizationId);
+      if (!brand?.name) return '';
+      const dna: any = await this._brandProfiles.getLatestDnaSnapshot(brand.id);
+      const lines: string[] = [`Name: ${compact(brand.name, 80)}.`];
+      const industry = brand.industry || dna?.summary?.industry;
+      if (industry) lines.push(`Industry / niche: ${compact(industry, 80)}.`);
+      if (dna?.summary?.tagline) lines.push(`Tagline: ${compact(dna.summary.tagline, 120)}.`);
+      const audience = compact(dna?.audience?.demographics) || compact(dna?.audience);
+      if (audience) lines.push(`Target audience: ${audience}`);
+      if (Array.isArray(dna?.audience?.painPoints) && dna.audience.painPoints.length) {
+        lines.push(`Audience pain points: ${compact(dna.audience.painPoints.join(', '))}`);
+      }
+      const offer = compact(dna?.offer?.uniqueSellingPoints) || compact(dna?.offer);
+      if (offer) lines.push(`Offer / value proposition: ${offer}`);
+      const voice = [dna?.voice?.tone, dna?.voice?.style, dna?.voice?.personality]
+        .map((v) => compact(v, 60))
+        .filter(Boolean)
+        .join(', ');
+      if (voice) lines.push(`Brand voice: ${voice}.`);
+      return lines.join('\n');
+    } catch {
+      return '';
+    }
+  }
 
   @Get('/status')
   status() {
@@ -162,6 +206,7 @@ export class CopilotController {
 
     requestContext.set('organization', JSON.stringify(organization));
     requestContext.set('ui', 'true');
+    requestContext.set('brandContext', await this.buildBrandContext(organization.id));
     const threadId =
       req.body?.threadId || req.body?.thread?.id || req.body?.variables?.threadId;
     if (threadId) {
