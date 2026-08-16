@@ -85,8 +85,15 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
 
     // Every authenticated organization request is rate limited. This is a
     // technical abuse guard only; commercial generation limits are enforced by
-    // credits/entitlements, not by this bucket.
-    return this.enforceOrganizationBucket(request, 'authenticated', 120);
+    // credits/entitlements, not by this bucket. The main layout shell mounts
+    // on every page and fires ~9 concurrent reads (self, organizations,
+    // integrations, announcements, notifications, onboarding settings,
+    // generation-jobs, copilot) - a few seconds of normal navigation across
+    // several pages right after login can multiply that past a 120/min
+    // ceiling and 429 the whole shell, crashing components that don't expect
+    // an error body in place of their array response. Same class of false
+    // positive as the /creative bucket above.
+    return this.enforceOrganizationBucket(request, 'authenticated', 300);
   }
 
   private async enforceOrganizationBucket(
