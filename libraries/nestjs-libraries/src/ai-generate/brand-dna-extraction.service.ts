@@ -12,6 +12,7 @@ import {
 } from '@gitroom/nestjs-libraries/ai-generate/schemas/brand-dna-extraction.schema';
 import type { BrandDnaExtraction } from '@gitroom/nestjs-libraries/ai-generate/schemas/brand-dna-extraction.schema';
 import { BrandProfileStatus } from '@prisma/client';
+import { aiTextConfig } from '@gitroom/nestjs-libraries/openai/ai-text.client';
 
 export interface ExtractionResult {
   success: boolean;
@@ -180,7 +181,7 @@ export class BrandDnaExtractionService {
         contentGuidelines: dnaData.contentGuidelines,
         confidence: dnaData.confidence || null,
         promptVersion: VERSION,
-        model: 'gpt-4.1',
+        model: aiTextConfig().model,
       });
 
       // 9. Salvar assets candidatos

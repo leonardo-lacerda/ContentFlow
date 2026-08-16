@@ -12,25 +12,39 @@ export const VERSION = '2.0.0';
 // defaults so callers can keep treating the result as fully-shaped, matching
 // the same loosen-then-backfill pattern already used for
 // contentPresentationTool (see content.presentation.tool.ts).
+//
+// IMPORTANT: "optional" here means `.nullable()`, NOT `.optional()`. This
+// schema is fed through the `openai` SDK's `zodResponseFormat()` helper
+// (ai-text.client.ts) purely to generate the JSON Schema description shown to
+// the model in the prompt — but that helper enforces OpenAI's real
+// Structured Outputs constraint at conversion time, synchronously, regardless
+// of which provider actually receives the request: every property must stay
+// in the schema's "required" list, so optionality can only be expressed via
+// `.nullable()` (value present but null), never `.optional()` (key omitted
+// entirely). Using `.optional()` throws immediately - "uses `.optional()`
+// without `.nullable()` which is not supported by the API" - before any
+// network call is ever made, which is why every analysis failed 3/3 tries
+// the moment this schema was loosened with plain `.optional()`.
+// https://platform.openai.com/docs/guides/structured-outputs#all-fields-must-be-required
 
 const SummarySchema = z.object({
-  tagline: z.string().optional().describe('A short, catchy tagline for the brand'),
+  tagline: z.string().nullable().describe('A short, catchy tagline for the brand'),
   description: z
     .string()
-    .optional()
+    .nullable()
     .describe('A concise description of what the brand does'),
-  industry: z.string().optional().describe('The industry the brand operates in'),
+  industry: z.string().nullable().describe('The industry the brand operates in'),
   targetAudience: z
     .string()
-    .optional()
+    .nullable()
     .describe('The primary target audience of the brand'),
   missionStatement: z
     .string()
-    .optional()
+    .nullable()
     .describe('The brand mission statement, or empty string if not found'),
   valueProposition: z
     .string()
-    .optional()
+    .nullable()
     .describe(
       'The core value proposition - what unique value the brand delivers to customers'
     ),
@@ -39,20 +53,20 @@ const SummarySchema = z.object({
 const VoiceSchema = z.object({
   tone: z
     .string()
-    .optional()
+    .nullable()
     .describe('The overall tone of the brand voice (e.g. professional, playful)'),
   style: z
     .string()
-    .optional()
+    .nullable()
     .describe('The writing style (e.g. conversational, technical)'),
-  personality: z.string().optional().describe('The brand personality adjectives'),
+  personality: z.string().nullable().describe('The brand personality adjectives'),
   forbiddenWords: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe('Words the brand avoids (empty array if none)'),
   examplePhrases: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe(
       '2-3 example sentences written in the brand voice to illustrate tone and style'
     ),
@@ -61,71 +75,67 @@ const VoiceSchema = z.object({
 const AudienceSchema = z.object({
   demographics: z
     .string()
-    .optional()
+    .nullable()
     .describe('Key demographic information about the audience'),
   painPoints: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe('Primary pain points the audience faces'),
-  desires: z.array(z.string()).optional().describe('What the audience desires'),
+  desires: z.array(z.string()).nullable().describe('What the audience desires'),
   objections: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe('Common objections to purchasing/engaging'),
   buyerPersonas: z
     .array(
       z.object({
-        name: z.string().optional().describe('A short persona name (e.g. "Marketing Manager Maria")'),
-        description: z.string().optional().describe('Brief 1-2 sentence persona description'),
-        role: z.string().optional().describe('Typical job role or life context'),
+        name: z.string().nullable().describe('A short persona name (e.g. "Marketing Manager Maria")'),
+        description: z.string().nullable().describe('Brief 1-2 sentence persona description'),
+        role: z.string().nullable().describe('Typical job role or life context'),
       })
     )
-    .optional()
+    .nullable()
     .describe('2-3 primary buyer personas identified from the website'),
 });
 
 const OfferSchema = z.object({
-  products: z.array(z.string()).optional().describe('Products offered by the brand'),
-  services: z.array(z.string()).optional().describe('Services offered by the brand'),
+  products: z.array(z.string()).nullable().describe('Products offered by the brand'),
+  services: z.array(z.string()).nullable().describe('Services offered by the brand'),
   uniqueSellingPoints: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe('What differentiates the brand from competitors'),
   pricingHint: z
     .string()
     .nullable()
-    .optional()
     .describe('Any hints about pricing positioning, or null if unknown'),
   category: z
     .string()
     .nullable()
-    .optional()
     .describe(
       'Product/service category classification (e.g. "SaaS", "E-commerce", "Agency")'
     ),
   topCompetitors: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe(
       '2-4 main competitor brand names detected from the website content'
     ),
 });
 
 const VisualSchema = z.object({
-  colors: z.array(z.string()).optional().describe('Brand colors (hex or named)'),
+  colors: z.array(z.string()).nullable().describe('Brand colors (hex or named)'),
   style: z
     .string()
-    .optional()
+    .nullable()
     .describe('Visual style (e.g. minimalist, bold, modern)'),
   typographyHint: z
     .string()
     .nullable()
-    .optional()
     .describe('Typography preferences if identifiable, or null'),
   imageryStyle: z
     .string()
     .nullable()
-    .optional()
     .describe(
       'Type of imagery used (e.g. "lifestyle photography", "abstract illustrations", "product shots", "team photos")'
     ),
@@ -134,33 +144,32 @@ const VisualSchema = z.object({
 const ConstraintsSchema = z.object({
   do: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe('Things to do when representing this brand'),
   avoid: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe('Things to avoid when representing this brand'),
   requiredElements: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe('Elements that must be included in content'),
 });
 
 const MessagingSchema = z.object({
   messagingPillars: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe(
       '3-5 core messaging pillars / recurring themes the brand emphasizes'
     ),
   keyMessages: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe('2-4 key messages the brand consistently communicates across channels'),
   callToActionStyle: z
     .string()
     .nullable()
-    .optional()
     .describe(
       'Preferred CTA style (e.g. "urgency-driven", "value-led", "soft invitation", "data-backed")'
     ),
@@ -169,76 +178,74 @@ const MessagingSchema = z.object({
 const ContentGuidelinesSchema = z.object({
   preferredFormats: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe(
       'Content formats the brand favors (e.g. "carousels", "short-form video", "long-form blog", "infographics")'
     ),
   hashtagsStrategy: z
     .string()
     .nullable()
-    .optional()
     .describe(
       'Hashtag usage strategy observed (e.g. "branded + 5-10 niche", "minimal 2-3 broad")'
     ),
   emojiUsage: z
     .string()
     .nullable()
-    .optional()
     .describe(
       'Emoji usage pattern (e.g. "frequent in captions", "none in formal posts", "sparingly for emphasis")'
     ),
 });
 
 const ConfidenceSchema = z.object({
-  overall: z.number().min(0).max(1).optional().describe('Overall confidence score (0-1)'),
+  overall: z.number().min(0).max(1).nullable().describe('Overall confidence score (0-1)'),
   textual: z
     .number()
     .min(0)
     .max(1)
-    .optional()
+    .nullable()
     .describe('Confidence in text-based analysis (0-1)'),
   visual: z
     .number()
     .min(0)
     .max(1)
-    .optional()
+    .nullable()
     .describe('Confidence in visual analysis (0-1)'),
   commercial: z
     .number()
     .min(0)
     .max(1)
-    .optional()
+    .nullable()
     .describe('Confidence in commercial/offer analysis (0-1)'),
   messaging: z
     .number()
     .min(0)
     .max(1)
-    .optional()
+    .nullable()
     .describe('Confidence in messaging and positioning analysis (0-1)'),
   brandValues: z
     .number()
     .min(0)
     .max(1)
-    .optional()
+    .nullable()
     .describe('Confidence in brand values and mission extraction (0-1)'),
 });
 
 export const BrandDnaExtractionSchema = z.object({
-  summary: SummarySchema.optional().describe('High-level brand summary'),
-  voice: VoiceSchema.optional().describe('Brand voice characteristics'),
-  audience: AudienceSchema.optional().describe('Target audience insights'),
-  offer: OfferSchema.optional().describe('Products, services and differentiators'),
-  visual: VisualSchema.optional().describe('Visual identity guidelines'),
-  constraints: ConstraintsSchema.optional().describe(
+  summary: SummarySchema.nullable().describe('High-level brand summary'),
+  voice: VoiceSchema.nullable().describe('Brand voice characteristics'),
+  audience: AudienceSchema.nullable().describe('Target audience insights'),
+  offer: OfferSchema.nullable().describe('Products, services and differentiators'),
+  visual: VisualSchema.nullable().describe('Visual identity guidelines'),
+  constraints: ConstraintsSchema.nullable().describe(
     'Content constraints and requirements'
   ),
-  messaging: MessagingSchema.optional().describe(
+  messaging: MessagingSchema.nullable().describe(
     'Messaging strategy and communication pillars'
   ),
-  contentGuidelines: ContentGuidelinesSchema.optional().describe(
+  contentGuidelines: ContentGuidelinesSchema.nullable().describe(
     'Content format and publishing guidelines'
   ),
-  confidence: ConfidenceSchema.optional().describe(
+  confidence: ConfidenceSchema.nullable().describe(
     'Confidence levels for each analysis dimension'
   ),
 });
@@ -270,18 +277,24 @@ export function parse(data: unknown): BrandDnaExtraction {
 }
 
 /**
- * Fills every optional field left out by the model with the same empty
- * defaults the previous fully-required schema effectively guaranteed, so
+ * Fills every null/missing field left out by the model with the same empty
+ * defaults the original fully-required schema effectively guaranteed, so
  * every downstream consumer (Prisma Json columns, the brand detail page's
  * rendering) keeps seeing the full, fully-shaped object it always has —
  * a genuinely partial extraction is still useful and saved, instead of the
- * whole analysis being discarded because the model missed one field.
+ * whole analysis being discarded because the model left one field null.
  */
 export function normalizeBrandDnaExtraction(
   data: BrandDnaExtraction
 ): Required<{
-  summary: Required<z.infer<typeof SummarySchema>>;
-  voice: Required<z.infer<typeof VoiceSchema>>;
+  summary: Required<{ [K in keyof z.infer<typeof SummarySchema>]: string }>;
+  voice: {
+    tone: string;
+    style: string;
+    personality: string;
+    forbiddenWords: string[];
+    examplePhrases: string[];
+  };
   audience: {
     demographics: string;
     painPoints: string[];
@@ -289,12 +302,39 @@ export function normalizeBrandDnaExtraction(
     objections: string[];
     buyerPersonas: Array<{ name: string; description: string; role: string }>;
   };
-  offer: Required<z.infer<typeof OfferSchema>>;
-  visual: Required<z.infer<typeof VisualSchema>>;
-  constraints: Required<z.infer<typeof ConstraintsSchema>>;
-  messaging: Required<z.infer<typeof MessagingSchema>>;
-  contentGuidelines: Required<z.infer<typeof ContentGuidelinesSchema>>;
-  confidence: Required<z.infer<typeof ConfidenceSchema>>;
+  offer: {
+    products: string[];
+    services: string[];
+    uniqueSellingPoints: string[];
+    pricingHint: string | null;
+    category: string | null;
+    topCompetitors: string[];
+  };
+  visual: {
+    colors: string[];
+    style: string;
+    typographyHint: string | null;
+    imageryStyle: string | null;
+  };
+  constraints: { do: string[]; avoid: string[]; requiredElements: string[] };
+  messaging: {
+    messagingPillars: string[];
+    keyMessages: string[];
+    callToActionStyle: string | null;
+  };
+  contentGuidelines: {
+    preferredFormats: string[];
+    hashtagsStrategy: string | null;
+    emojiUsage: string | null;
+  };
+  confidence: {
+    overall: number;
+    textual: number;
+    visual: number;
+    commercial: number;
+    messaging: number;
+    brandValues: number;
+  };
 }> {
   const s = data.summary || {};
   const v = data.voice || {};
