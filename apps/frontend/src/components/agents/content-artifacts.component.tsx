@@ -4,9 +4,21 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom';
 import { useCopilotChat } from '@copilotkit/react-core';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
-import { CarouselDesignEditor, type DesignScope } from './carousel-design-editor.component';
+import {
+  CarouselDesignEditor,
+  createDefaultDesign,
+  designBackground,
+  effectiveDesign,
+  mergeDesign,
+  normalizeDesign,
+  type DesignElement,
+  type DesignScope,
+  type DesignSpec,
+} from './carousel-design-editor.component';
 import { CreationOptionsCard } from './creation-options.component';
 import { artifactSignature } from './content-presentation-payload';
+
+export type { DesignSpec, DesignElement } from './carousel-design-editor.component';
 
 export type ContentIdea = {
   id?: string;
@@ -35,52 +47,6 @@ export type CarouselPreviewSlide = {
   imageUrl?: string;
   image?: { url?: string; b64_json?: string };
   status?: string;
-};
-
-export type DesignElement = {
-  id: string;
-  type: 'logo' | 'product' | 'shape' | 'icon' | 'badge' | 'divider';
-  visible: boolean;
-};
-
-export type DesignSpec = {
-  version: number;
-  platform: string;
-  aspectRatio: string;
-  sizeId: string;
-  palette: {
-    paletteId: string;
-    name: string;
-    background: string;
-    surface: string;
-    text: string;
-    muted: string;
-    accent: string;
-    accent2: string;
-    gradient: string;
-  };
-  typography: {
-    fontPairId: string;
-    name: string;
-    headingFont: string;
-    bodyFont: string;
-    scale: 'compact' | 'balanced' | 'expressive';
-    alignment: 'left' | 'center' | 'right';
-  };
-  layout: {
-    templateId: string;
-    density: 'airy' | 'balanced' | 'dense';
-    safePadding: 'compact' | 'balanced' | 'airy';
-  };
-  background: {
-    type: 'solid' | 'gradient' | 'image' | 'texture';
-    value?: string;
-    overlay?: string;
-    opacity?: number;
-  };
-  elements: DesignElement[];
-  renderMode: 'native-overlay' | 'hybrid' | 'ai-composed';
-  slideOverrides?: Record<string, Partial<DesignSpec>>;
 };
 
 type CreativeJobState = {
@@ -146,122 +112,6 @@ const withTimeout = async <T,>(promise: Promise<T>, ms: number, label: string): 
   } finally {
     if (timer) clearTimeout(timer);
   }
-};
-
-const PALETTES: Array<DesignSpec['palette']> = [
-  {
-    paletteId: 'cobalt-cream',
-    name: 'Azul & creme',
-    background: '#F4F1E9',
-    surface: '#FFFFFF',
-    text: '#0B1B3A',
-    muted: '#5A6B8C',
-    accent: '#1E40FF',
-    accent2: '#0B1B3A',
-    gradient: 'radial-gradient(circle at top left, #dfe5ff, #f4f1e9 62%)',
-  },
-  {
-    paletteId: 'midnight-neon',
-    name: 'Noite neon',
-    background: '#0A0A12',
-    surface: '#14141F',
-    text: '#F5F5FF',
-    muted: '#9A9AB0',
-    accent: '#00F0FF',
-    accent2: '#FF2D95',
-    gradient: 'radial-gradient(circle at top left, #213b52, #0a0a12 68%)',
-  },
-  {
-    paletteId: 'mint-fresh',
-    name: 'Menta fresco',
-    background: '#EEF7F1',
-    surface: '#FFFFFF',
-    text: '#0F2A1E',
-    muted: '#4E6B5E',
-    accent: '#0FB57E',
-    accent2: '#0A8C61',
-    gradient: 'radial-gradient(circle at top right, #baf0d9, #eef7f1 66%)',
-  },
-  {
-    paletteId: 'sunset-pop',
-    name: 'Sunset vibrante',
-    background: '#FF5E3A',
-    surface: '#FF7A52',
-    text: '#1A0B07',
-    muted: '#7A2E14',
-    accent: '#FFD23F',
-    accent2: '#2D1810',
-    gradient: 'radial-gradient(circle at top left, #ffbf65, #ff5e3a 68%)',
-  },
-];
-
-const FONTS: Array<Pick<DesignSpec['typography'], 'fontPairId' | 'name' | 'headingFont' | 'bodyFont'>> = [
-  { fontPairId: 'archivo-figtree', name: 'Moderna', headingFont: 'Archivo Black', bodyFont: 'Figtree' },
-  { fontPairId: 'fraunces-grotesk', name: 'Editorial', headingFont: 'Fraunces', bodyFont: 'Space Grotesk' },
-  { fontPairId: 'grotesk-mono', name: 'Tecnológica', headingFont: 'Space Grotesk', bodyFont: 'IBM Plex Mono' },
-  { fontPairId: 'instrument-jakarta', name: 'Elegante', headingFont: 'Instrument Serif', bodyFont: 'Plus Jakarta Sans' },
-];
-
-const DEFAULT_ELEMENTS: DesignElement[] = [
-  { id: 'logo', type: 'logo', visible: true },
-  { id: 'product', type: 'product', visible: true },
-  { id: 'shape', type: 'shape', visible: true },
-  { id: 'badge', type: 'badge', visible: false },
-  { id: 'divider', type: 'divider', visible: false },
-];
-
-const createDefaultDesign = (aspectRatio = '4:5'): DesignSpec => ({
-  version: 1,
-  platform: 'Instagram',
-  aspectRatio,
-  sizeId: aspectRatio === '1:1' ? 'ig-square' : 'ig-portrait',
-  palette: PALETTES[0],
-  typography: {
-    ...FONTS[0],
-    scale: 'balanced',
-    alignment: 'left',
-  },
-  layout: { templateId: 'carousel-cover', density: 'balanced', safePadding: 'balanced' },
-  background: { type: 'gradient', value: PALETTES[0].gradient, opacity: 1 },
-  elements: DEFAULT_ELEMENTS,
-  renderMode: 'hybrid',
-  slideOverrides: {},
-});
-
-const mergeDesign = (base: DesignSpec, patch: Partial<DesignSpec>): DesignSpec => ({
-  ...base,
-  ...patch,
-  palette: { ...base.palette, ...(patch.palette || {}) },
-  typography: { ...base.typography, ...(patch.typography || {}) },
-  layout: { ...base.layout, ...(patch.layout || {}) },
-  background: { ...base.background, ...(patch.background || {}) },
-  elements: patch.elements || base.elements,
-});
-
-const normalizeDesign = (raw: unknown, aspectRatio: string): DesignSpec => {
-  const fallback = createDefaultDesign(aspectRatio);
-  if (!raw || typeof raw !== 'object') return fallback;
-  const candidate = raw as Partial<DesignSpec>;
-  return mergeDesign(fallback, {
-    ...candidate,
-    aspectRatio: candidate.aspectRatio || aspectRatio,
-    elements: Array.isArray(candidate.elements) ? candidate.elements : fallback.elements,
-  });
-};
-
-const effectiveDesign = (design: DesignSpec, slide: CarouselPreviewSlide, index: number) => {
-  const key = slide.id || String(slide.index ?? index + 1);
-  const override = design.slideOverrides?.[key];
-  return override ? mergeDesign(design, override) : design;
-};
-
-const designBackground = (design: DesignSpec) => {
-  if (design.background.type === 'image' && design.background.value) {
-    return `linear-gradient(${design.background.overlay || 'rgba(0,0,0,.12)'}, ${design.background.overlay || 'rgba(0,0,0,.12)'}), url(${design.background.value}) center/cover`;
-  }
-  if (design.background.type === 'solid') return design.palette.background;
-  if (design.background.type === 'texture') return `repeating-linear-gradient(135deg, ${design.palette.background}, ${design.palette.background} 12px, ${design.palette.surface} 13px)`;
-  return design.palette.gradient;
 };
 
 const readableTextOn = (color: string) => {
@@ -534,6 +384,13 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
     setDraftSlides((current) => current.map((slide, index) => (index === active ? { ...slide, [field]: value } : slide)));
   };
 
+  // The per-slide art-direction prompt, edited in the design panel. Written to
+  // imagePrompt (which the generation payload prefers over visualDirection) so
+  // editing it immediately marks the slide for regeneration via the fingerprint.
+  const updateActiveSlideImagePrompt = (value: string) => {
+    setDraftSlides((current) => current.map((slide, index) => (index === active ? { ...slide, imagePrompt: value } : slide)));
+  };
+
   const activeSlide = draftSlides[active];
   const activeDesign = activeSlide ? effectiveDesign(design, activeSlide, active) : design;
   const draftCarousel = { ...args, slides: draftSlides, designSpec: design };
@@ -560,13 +417,26 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
 
   const waitForCreativeJob = async (jobId: string): Promise<CreativeJobState> => {
     const terminalStatuses = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'REFUNDED']);
+    // Slides waiting their turn sit in QUEUED/RESERVED; that wait is the
+    // carousel's sequential queue, not this job's own render.
+    const queuedStatuses = new Set(['QUEUED', 'RESERVED', 'PENDING']);
     const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
     // The backend renders carousel slides sequentially, one image job at a
-    // time (confirmed in production: ~1-2 minutes per slide), not in
-    // parallel. A slide queued near the end of a 7-slide carousel can wait
-    // 6+ minutes just for its turn. ~500 attempts * 2s gives roughly 16
-    // minutes of patience per job, comfortably covering that worst case
-    // instead of giving up (and showing a scary error) after ~90 seconds.
+    // time (confirmed in production: ~1-2 minutes per slide, and a slow
+    // provider day stretches that). A slide queued near the end of a 7-slide
+    // carousel can wait many minutes just for its turn, so a single fixed
+    // budget counted from the "Gerar imagens" click gave up on healthy late
+    // slides. Patience is therefore split in two: a generous budget for
+    // waiting in the queue, and a separate one that only starts ticking when
+    // THIS job actually reports RUNNING. RETRYABLE means a transient provider
+    // failure that the backend redrives — it counts as rendering, and a fresh
+    // provider attempt (RETRYABLE → RUNNING) re-arms the render budget.
+    const queueTimeoutMs = 45 * 60_000;
+    const renderTimeoutMs = 20 * 60_000;
+    const startedAt = Date.now();
+    let renderDeadline = 0;
+    let lastStatus = '';
+    let missingStreak = 0;
     //
     // Polling has to survive transient hiccups without failing the slide.
     // Because every job in a carousel polls in parallel, a batch of slides
@@ -575,8 +445,7 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
     // server-side and the image lands a moment later. The same is true for a
     // 5xx from a redeploying backend or a dropped connection: back off and
     // keep polling instead of surfacing a scary "Falha ao gerar (HTTP 429)".
-    let missingStreak = 0;
-    for (let attempt = 0; attempt < 500; attempt += 1) {
+    while (Date.now() - startedAt < queueTimeoutMs + renderTimeoutMs) {
       let response: Response;
       try {
         response = await withTimeout(
@@ -611,15 +480,34 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
       }
       missingStreak = 0;
       const job = (await response.json()) as CreativeJobState;
-      if (terminalStatuses.has(String(job.status || '').toUpperCase())) return job;
+      const status = String(job.status || '').toUpperCase();
+      if (terminalStatuses.has(status)) return job;
+      const previousStatus = lastStatus;
+      lastStatus = status;
+      if (queuedStatuses.has(status)) {
+        if (Date.now() - startedAt > queueTimeoutMs) break;
+        await sleep(5000);
+        continue;
+      }
+      // RUNNING/RETRYABLE: the slide is on the provider. Start the render
+      // budget on the first such observation, and re-arm it when a backend
+      // redrive (RETRYABLE → RUNNING) begins a fresh provider attempt.
+      if (!renderDeadline || (status === 'RUNNING' && previousStatus === 'RETRYABLE')) {
+        renderDeadline = Date.now() + renderTimeoutMs;
+      }
+      if (Date.now() > renderDeadline) break;
       await sleep(2000);
     }
     throw new Error('A geração demorou muito mais que o esperado. O job continua disponível em seus projetos.');
   };
 
-  // Mirrors (loosely) what the server hashes for its own idempotency: prompt,
-  // effective per-slide design, and aspect ratio. Doesn't need to match the
-  // server byte-for-byte — it only has to change when the server's would.
+  // Mirrors (loosely) what the server hashes for its own idempotency. Must
+  // cover EVERY field that reaches the compiled image prompt — style
+  // fragments, full palette, layout, background, elements, platform/format,
+  // alignment — or a design edit silently skips regeneration (the slide never
+  // re-enters toGenerate). Deliberately EXCLUDES preview-only fields
+  // (typography fonts/scale, palette.gradient CSS) so tweaking the card
+  // preview doesn't bill a regeneration the image can't reflect.
   const slideFingerprint = (slide: CarouselPreviewSlide, index: number) => {
     const slideDesign = effectiveDesign(design, slide, index);
     return JSON.stringify({
@@ -627,11 +515,29 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
       headline: slide.headline,
       body: slide.body,
       cta: slide.cta,
-      paletteId: slideDesign.palette.paletteId,
-      fontPairId: slideDesign.typography.fontPairId,
-      templateId: slideDesign.layout.templateId,
+      style: {
+        visualStyle: slideDesign.style.visualStyle,
+        lighting: slideDesign.style.lighting,
+        mood: slideDesign.style.mood,
+        finish: slideDesign.style.finish,
+      },
+      palette: {
+        paletteId: slideDesign.palette.paletteId,
+        background: slideDesign.palette.background,
+        surface: slideDesign.palette.surface,
+        text: slideDesign.palette.text,
+        muted: slideDesign.palette.muted,
+        accent: slideDesign.palette.accent,
+        accent2: slideDesign.palette.accent2,
+      },
+      layout: slideDesign.layout,
       background: slideDesign.background,
+      elements: slideDesign.elements.map((element) => [element.id, element.visible]),
+      platform: slideDesign.platform,
+      sizeId: slideDesign.sizeId,
       aspectRatio: slideDesign.aspectRatio,
+      alignment: slideDesign.typography.alignment,
+      renderMode: slideDesign.renderMode,
     });
   };
 
@@ -1017,6 +923,7 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
             disabled={isBusy}
             onScopeChange={setScope}
             onChange={updateDesign}
+            onImagePromptChange={updateActiveSlideImagePrompt}
             onReset={() => {
               setDesignDirty(true);
               setDesign(createDefaultDesign(args.aspectRatio || '4:5'));

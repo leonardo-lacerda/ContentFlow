@@ -2324,6 +2324,35 @@ body.light .cf-studio__refinement-note {
   text-transform: none;
 }
 
+.cf-carousel-design-editor textarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--cf-border, #ffffff1f);
+  border-radius: 9px;
+  background: var(--cf-surface, #171a1d);
+  color: var(--cf-text, #f5f7f8);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.cf-design-imageprompt {
+  display: grid;
+  gap: 5px;
+  color: color-mix(in srgb, var(--cf-text, #f5f7f8) 70%, transparent);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.cf-design-imageprompt small {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: none;
+  color: color-mix(in srgb, var(--cf-text, #f5f7f8) 55%, transparent);
+}
+
 .cf-design-color-field > span {
   display: flex;
   align-items: center;
