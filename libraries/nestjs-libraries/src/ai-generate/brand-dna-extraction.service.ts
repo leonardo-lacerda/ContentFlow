@@ -8,6 +8,7 @@ import { BrandAssetRepository } from '@gitroom/nestjs-libraries/database/prisma/
 import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import {
   BrandDnaExtractionSchema,
+  normalizeBrandDnaExtraction,
   VERSION,
 } from '@gitroom/nestjs-libraries/ai-generate/schemas/brand-dna-extraction.schema';
 import type { BrandDnaExtraction } from '@gitroom/nestjs-libraries/ai-generate/schemas/brand-dna-extraction.schema';
@@ -130,7 +131,10 @@ export class BrandDnaExtractionService {
         return { success: false, errors };
       }
 
-      // 6. Validar resposta contra schema
+      // 6. Validar resposta contra schema (schema is intentionally permissive —
+      // see the schema file's header comment — so this now only rejects
+      // genuinely malformed shapes, not a response that merely omitted a
+      // handful of the ~40 nested fields).
       const validationResult = BrandDnaExtractionSchema.safeParse(llmResult);
       if (!validationResult.success) {
         errors.push(
@@ -142,7 +146,22 @@ export class BrandDnaExtractionService {
         return { success: false, errors };
       }
 
-      const dnaData: BrandDnaExtraction = validationResult.data;
+      // Because every field is now optional, a technically-valid but
+      // completely empty `{}` would otherwise "succeed" with a useless blank
+      // DNA. Require at least one substantive text field before accepting.
+      const raw = validationResult.data;
+      const hasContent =
+        raw.summary?.tagline || raw.summary?.description || raw.summary?.industry ||
+        raw.voice?.tone || raw.offer?.products?.length || raw.offer?.services?.length;
+      if (!hasContent) {
+        errors.push('AI response validated but contained no usable brand data');
+        await this.brandProfileRepository.updateById(brandProfileId, {
+          status: BrandProfileStatus.FAILED,
+        });
+        return { success: false, errors };
+      }
+
+      const dnaData: BrandDnaExtraction = normalizeBrandDnaExtraction(raw);
 
       // 7. Calculate next version
       const latestSnapshot =
