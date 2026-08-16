@@ -37,7 +37,7 @@ import {
   PropertiesContext,
 } from '@gitroom/frontend/components/agents/agent';
 import { useVariables } from '@gitroom/react/helpers/variable.context';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import {
   Role,
@@ -142,14 +142,24 @@ const StudioChat: FC = () => {
   // gets replayed forever on every future reload once it's next opened by id,
   // since there is nothing to replay under "new". Swap the URL to the real id
   // as soon as the first message is in flight, without adding a history entry.
+  //
+  // This MUST use window.history.replaceState, not router.replace: router.replace
+  // pushes a real Next.js navigation, which updates useParams() to the new id
+  // mid-send. That re-runs LoadMessages' [id] effect, which fetches the new
+  // thread's message list — empty, because the very first message hasn't been
+  // persisted yet — and setMessages([]) wipes the in-flight message off screen
+  // (reported as "I send the first message, the screen reloads and nothing is
+  // sent; every message after that works"). history.replaceState updates only
+  // the address bar, so useParams() stays "new" for this session (no remount,
+  // no LoadMessages re-run, run continues), while a later hard reload still
+  // reads the real id straight from the URL.
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const { threadId: liveThreadId } = useCopilotContext();
   useEffect(() => {
     if (params.id === 'new' && isLoading && liveThreadId) {
-      router.replace(`/studio/${liveThreadId}`);
+      window.history.replaceState(null, '', `/studio/${liveThreadId}`);
     }
-  }, [params.id, isLoading, liveThreadId, router]);
+  }, [params.id, isLoading, liveThreadId]);
   const sendArtifactAction = useCallback(
     async (value: Record<string, unknown>) => {
       const action = String(value.action || 'continue');
