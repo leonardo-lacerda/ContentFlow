@@ -1118,10 +1118,14 @@ export class CreativeEngineService {
           runners.push(async () => {
             try {
               await firstRun();
+              await this.redriveRetryableJob(prepared.job.id, organizationId);
             } catch (error) {
               this.logger.warn(`Carousel slide ${slideIndex + 1} failed, retrying once: ${this.errorMessage(error)}`);
               const retried = await this.prepareImageJob(organizationId, project.id, slideJobInput);
-              if (retried.run) await retried.run();
+              if (retried.run) {
+                await retried.run();
+                await this.redriveRetryableJob(retried.job.id, organizationId);
+              }
             }
           });
         }
@@ -1884,6 +1888,26 @@ export class CreativeEngineService {
       } catch (error) {
         this.logger.warn(`Background creative job failed: ${this.errorMessage(error)}`);
       }
+    }
+  }
+
+  // executeJob resolves (rather than throwing) leaving the job RETRYABLE when
+  // the provider fails transiently, and its built-in re-dispatch only fires
+  // under DISABLE_TEMPORAL. Carousel slides never get a Temporal workflow —
+  // the sequential runner calls the job directly — so a RETRYABLE slide would
+  // stay non-terminal forever and the Studio's poller would give up on it
+  // while the job never finished. Redrive it here, still sequentially:
+  // executeJob enforces its own attempt cap (CREATIVE_MAX_ATTEMPTS, default 2)
+  // and flips the job to FAILED once the attempts are spent, so this loop
+  // always terminates.
+  private async redriveRetryableJob(jobId: string, organizationId: string) {
+    let delayMs = 2000;
+    for (;;) {
+      const job = await this.getJob(jobId, organizationId);
+      if (job.status !== CreativeJobStatus.RETRYABLE) return;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      delayMs = Math.min(30000, delayMs * 2);
+      await this.executeJob(jobId, organizationId);
     }
   }
 
