@@ -1108,9 +1108,25 @@ const hasCreationIntent = (text: string) =>
     normalizePrompt(text)
   );
 
-const hasIdeaIntent = (text: string) =>
-  /\b(ideia|ideias|pauta|pautas|temas|conteudos)\b/i.test(normalizePrompt(text)) &&
-  /\b(de|gere|gerar|crie|criar|me mostre|sugira|sugerir)\b/i.test(normalizePrompt(text));
+const hasIdeaIntent = (text: string) => {
+  const normalized = normalizePrompt(text);
+  const mentionsIdeas =
+    /\b(ideia|ideias|pauta|pautas|temas|conteudos?)\b/.test(normalized);
+  if (!mentionsIdeas) return false;
+  // "N ideias" ("2 ideias", "me da 10 ideias") is unambiguously a request on
+  // its own - no verb needed. This alone covers most terse phrasings.
+  if (/\b\d{1,2}\s+ideias?\b/.test(normalized)) return true;
+  // Otherwise require a request/imperative verb so we don't force the ideas
+  // card on a reference like "nao gostei dessas ideias". The old list was so
+  // short that "me de" passed only by coincidence (its "de" is the
+  // preposition, not the verb "de"/give) while natural forms like "me da",
+  // "gera umas ideias" or "quero ideias" fell through to plain prose and the
+  // model answered inconsistently. Cover the common imperatives and
+  // desire verbs, accent-stripped.
+  return /\b(de|da|gera|gere|gerar|cria|crie|criar|monta|monte|montar|faz|faca|fazer|mostra|mostre|mostrar|sugira|sugere|sugerir|manda|mande|mandar|traz|traga|trazer|lista|liste|listar|quero|queria|preciso|gostaria|bora|vamos|sobre)\b/.test(
+    normalized
+  );
+};
 
 const requestedIdeaCount = (text: string) => {
   const match = normalizePrompt(text).match(/\b(\d{1,2})\s+ideias?\b/);
