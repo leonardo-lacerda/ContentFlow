@@ -59,7 +59,15 @@ const VoiceSchema = z.object({
     .string()
     .nullable()
     .describe('The writing style (e.g. conversational, technical)'),
-  personality: z.string().nullable().describe('The brand personality adjectives'),
+  // Accepts either shape: the prompt asks for "2-4 personality adjectives",
+  // which models frequently answer as an array even though every frontend
+  // consumer (brand-detail-page, onboarding review, brand-company-bridge)
+  // renders this as a single string - normalizeBrandDnaExtraction() below
+  // joins an array reply into a comma-separated string.
+  personality: z
+    .union([z.string(), z.array(z.string())])
+    .nullable()
+    .describe('The brand personality adjectives, as a comma-separated string'),
   forbiddenWords: z
     .array(z.string())
     .nullable()
@@ -357,7 +365,9 @@ export function normalizeBrandDnaExtraction(
     voice: {
       tone: v.tone || '',
       style: v.style || '',
-      personality: v.personality || '',
+      personality: Array.isArray(v.personality)
+        ? v.personality.filter(Boolean).join(', ')
+        : v.personality || '',
       forbiddenWords: v.forbiddenWords || [],
       examplePhrases: v.examplePhrases || [],
     },
