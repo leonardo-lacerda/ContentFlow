@@ -58,7 +58,7 @@ export function compileDesignPrompt(
 
   if (designSpec) {
     const overrides = (designSpec.slideOverrides as Record<string, unknown> | undefined) || {};
-    const key = slide?.id || String(slide?.index || '');
+    const key = slide?.id || String(slide?.index ?? '');
     const override = key && overrides[key] && typeof overrides[key] === 'object'
       ? overrides[key] as Record<string, unknown>
       : undefined;
@@ -67,6 +67,16 @@ export function compileDesignPrompt(
     // Pin the brand wordmark to the palette's primary text colour so it stays
     // identical across independently-generated slides.
     wordmarkColor = String(palette.text || palette.accent || '').trim();
+    // The style block is chosen in the Studio's design editor (preset or
+    // fine-tuned) and stored as concrete English prompt fragments — it is the
+    // user's loudest lever on the image, so it goes in verbatim. Every field
+    // is optional to stay compatible with specs saved before the block
+    // existed (and with slideOverrides that don't touch it).
+    const style = (resolved.style || {}) as Record<string, unknown>;
+    const visualStyle = String(style.visualStyle || '').trim();
+    const lighting = String(style.lighting || '').trim();
+    const mood = String(style.mood || '').trim();
+    const finish = String(style.finish || '').trim();
     const typography = (resolved.typography || {}) as Record<string, unknown>;
     const layout = (resolved.layout || {}) as Record<string, unknown>;
     const background = (resolved.background || {}) as Record<string, unknown>;
@@ -92,8 +102,10 @@ export function compileDesignPrompt(
       '',
       '[ART DIRECTION]',
       'Compose the shot with a clear focal subject and deliberate negative space — never fill the frame edge to edge with dense detail. Use the negative space implied by the layout above as the reserved area for the headline/body/CTA text so nothing competes with it.',
-      `Depth and lighting: give the scene real depth (foreground/midground/background separation) and a single, consistent light direction and colour temperature — avoid flat, evenly-lit stock-photo lighting.`,
-      `Finish: match the "${String(palette.name || palette.paletteId || 'brand')}" palette mood consistently — do not drift into unrelated hues outside this palette's family.`,
+      visualStyle ? `Visual style: ${visualStyle}.` : '',
+      mood ? `Mood: ${mood}.` : '',
+      `Depth and lighting: give the scene real depth (foreground/midground/background separation) and a single, consistent light direction and colour temperature — avoid flat, evenly-lit stock-photo lighting.${lighting ? ` Lighting: ${lighting}.` : ''}`,
+      `Finish: ${finish ? `${finish}. ` : ''}Match the "${String(palette.name || palette.paletteId || 'brand')}" palette mood consistently — do not drift into unrelated hues outside this palette's family.`,
       '',
       '[TYPOGRAPHY DIRECTION]',
       `Rendered text (headline/body/CTA) uses one consistent typeface family per role, ${alignment}-aligned, with a clear size hierarchy: headline largest and boldest, body smaller and lighter, CTA set apart as a distinct button-like element. Keep a generous, even margin ("${safePadding}" safe padding) around all text — never let text touch the frame edge or overlap the subject.`,
