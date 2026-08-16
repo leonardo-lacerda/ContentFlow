@@ -50,10 +50,7 @@ import dayjs from 'dayjs';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { ExistingDataContextProvider } from '@gitroom/frontend/components/launches/helpers/use.existing.data';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
-import {
-  CreationOptionsCard,
-  type CreationType,
-} from '@gitroom/frontend/components/agents/creation-options.component';
+import { CreationOptionsCard } from '@gitroom/frontend/components/agents/creation-options.component';
 import {
   CarouselPreviewCard,
   ContentIdeasCard,
@@ -1088,59 +1085,18 @@ const Message: FC<UserMessageProps> = (props) => {
   );
 };
 
-const normalizePrompt = (text: string) =>
-  text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-
-const detectCreationType = (text: string): CreationType | null => {
-  const normalized = normalizePrompt(text);
-  if (/(imagem|visual|banner|thumbnail|capa|arte)/i.test(normalized)) return 'image';
-  if (/(video|reels|tiktok|ugc|storyboard)/i.test(normalized)) return 'video';
-  if (/(carrossel|carousel|slides)/i.test(normalized)) return 'carousel';
-  if (/(legenda|copy|post|texto|e-mail|email)/i.test(normalized)) return 'text';
-  return null;
-};
-
-const hasCreationIntent = (text: string) =>
-  /\b(crie|criar|gera|gerar|faca|monta|montar|prepare|planeje|transforme|produza)\b/i.test(
-    normalizePrompt(text)
-  );
-
-const hasIdeaIntent = (text: string) => {
-  const normalized = normalizePrompt(text);
-  const mentionsIdeas =
-    /\b(ideia|ideias|pauta|pautas|temas|conteudos?)\b/.test(normalized);
-  if (!mentionsIdeas) return false;
-  // "N ideias" ("2 ideias", "me da 10 ideias") is unambiguously a request on
-  // its own - no verb needed. This alone covers most terse phrasings.
-  if (/\b\d{1,2}\s+ideias?\b/.test(normalized)) return true;
-  // Otherwise require a request/imperative verb so we don't force the ideas
-  // card on a reference like "nao gostei dessas ideias". The old list was so
-  // short that "me de" passed only by coincidence (its "de" is the
-  // preposition, not the verb "de"/give) while natural forms like "me da",
-  // "gera umas ideias" or "quero ideias" fell through to plain prose and the
-  // model answered inconsistently. Cover the common imperatives and
-  // desire verbs, accent-stripped.
-  return /\b(de|da|gera|gere|gerar|cria|crie|criar|monta|monte|montar|faz|faca|fazer|mostra|mostre|mostrar|sugira|sugere|sugerir|manda|mande|mandar|traz|traga|trazer|lista|liste|listar|quero|queria|preciso|gostaria|bora|vamos|sobre)\b/.test(
-    normalized
-  );
-};
-
-const requestedIdeaCount = (text: string) => {
-  const match = normalizePrompt(text).match(/\b(\d{1,2})\s+ideias?\b/);
-  if (!match) return 10;
-  return Math.min(10, Math.max(1, Number(match[1])));
-};
-
-const suggestedPlatformFromPrompt = (text: string) => {
-  const normalized = normalizePrompt(text);
-  if (/linkedin/.test(normalized)) return 'linkedin';
-  if (/(tiktok|reels)/.test(normalized)) return 'tiktok';
-  if (/(an[uú]ncio|meta ads|facebook)/.test(normalized)) return 'meta-ads';
-  return 'instagram';
-};
+// Intent classification deliberately lives in the agent, not here. This
+// composer used to keyword-match the message before the model ever saw it:
+// one regex forced the ideas artifact by injecting a [--contentflow-intent--]
+// block, another opened the creation configurator locally without consulting
+// the model at all. Those regexes decided the whole experience and were wrong
+// often enough to read as "the chat does not understand me" - "me de 2
+// ideias" matched only because its "de" collided with the verb list, while
+// "me da 2 ideias", "2 ideias" or "quero ideias" silently fell through to
+// plain prose. The agent already owns every tool those branches were
+// simulating (contentPresentationTool, showCreationOptions, the generation
+// tools) and its instructions now route intent explicitly, so the composer
+// just sends what the user actually typed.
 
 const NewInput: FC<InputProps> = (props) => {
   // Expose the input's send channel so artifact buttons can reuse it.
@@ -1154,7 +1110,6 @@ const NewInput: FC<InputProps> = (props) => {
 
   const [media, setMedia] = useState([] as { path: string; id: string }[]);
   const [value, setValue] = useState('');
-  const [pendingCreation, setPendingCreation] = useState<Record<string, any> | null>(null);
   const [attachments, setAttachments] = useState(
     [] as { filename: string; storageUrl: string; mimeType?: string; size?: number }[]
   );
@@ -1263,21 +1218,6 @@ Use the following social media platforms: ${JSON.stringify(
     return send;
   };
 
-  const handleCreationSelection = (result: any) => {
-    const creation = pendingCreation;
-    setPendingCreation(null);
-    if (!creation || !result?.confirmed) return;
-    const selectedOptions = JSON.stringify(result.options || {});
-    void submitToAgent(
-      `${creation.brief}
-
-[--creation-options--]
-The user selected these creation options and confirmed that you should continue:
-${selectedOptions}
-[--creation-options--]`
-    );
-  };
-
   return (
     <>
       <div className="cf-studio__composer-tools">
@@ -1318,39 +1258,14 @@ ${selectedOptions}
           {attachmentError && <span className="text-rose-300">{attachmentError}</span>}
         </div>
       </div>
-      {pendingCreation && (
-        <CreationOptionsCard
-          args={pendingCreation}
-          status="inProgress"
-          respond={handleCreationSelection}
-        />
-      )}
+      {/* The creation configurator is rendered by the agent's own
+          showCreationOptions action (see AgentChatContent above), so it appears
+          only when the model actually decides a configurator is the right next
+          step - not because the composer guessed from keywords. */}
       <Input
         {...props}
         onChange={setValue}
-        onSend={async (text) => {
-          if (hasIdeaIntent(text)) {
-            const ideaCount = requestedIdeaCount(text);
-            return submitToAgent(
-              `${text}\n\n[--contentflow-intent--]\nREQUESTED_IDEA_COUNT: ${ideaCount}\nThis is a structured ideas request. Return exactly ${ideaCount} ideas. The allowed range is 1 to 10; requests above 10 are capped at 10. You MUST call only contentPresentationTool with operation=ideas and the same ${ideaCount} structured ideas. Make every idea concrete and ready to use, with a specific hook, angle, format, platform and CTA. Do not return a plain list, markdown outline, JSON dump or ask the user to think of the topic again.\n[--contentflow-intent--]`
-            );
-          }
-          const creationType = detectCreationType(text);
-          if (!pendingCreation && creationType && hasCreationIntent(text)) {
-            setPendingCreation({
-              creationType,
-              title: `Configure seu ${creationType === 'image' ? 'visual' : creationType}`,
-              brief: text,
-              suggestedPlatform: suggestedPlatformFromPrompt(text),
-              suggestedAspectRatio: creationType === 'video' ? '9:16' : creationType === 'carousel' ? '4:5' : '4:5',
-              suggestedDurationSec: 30,
-              suggestedSlideCount: 7,
-            });
-            setValue('');
-            return;
-          }
-          return submitToAgent(text);
-        }}
+        onSend={async (text) => submitToAgent(text)}
       />
     </>
   );
