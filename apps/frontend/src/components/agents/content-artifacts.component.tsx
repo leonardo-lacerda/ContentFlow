@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
+import { useCopilotChat } from '@copilotkit/react-core';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { CarouselDesignEditor, type DesignScope } from './carousel-design-editor.component';
 import { CreationOptionsCard } from './creation-options.component';
@@ -298,22 +299,49 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
   // user has picked an idea and the follow-up request is on its way.
   const isBusy = !isAwaitingUser(status) || pendingAction !== null || configuringIdea !== null;
   const sendAction = useArtifactResponder(respond, onAction);
-  // If this card is still mounted 45s after the request went out, no carousel
-  // artifact ever replaced it — the agent turn finished (isLoading already
-  // cycled back to false) without producing usable output, most likely because
-  // the model failed to return a valid slides array. Silently clearing
-  // pendingAction here used to leave the user staring at a card that just
-  // "went back to normal" with zero explanation, which read as "I clicked
-  // Gerar Copy and nothing happened."
+  // Same fix as the action-status banner in agent.chat.tsx ("stops the
+  // spinner appears then silently vanishes behaviour"): a blind clock cannot
+  // tell a slow-but-working generation from a genuinely stuck one. A full
+  // carousel copy is 7 slides of headline/body/CTA/visual direction/layout/
+  // imagePrompt each - a heavier generation than a plain chat reply - and a
+  // fixed 45s timer fired false negatives on legitimately slow (but
+  // eventually successful) runs. Track the real agent run via isLoading
+  // instead: only decide "nothing came back" once the run that started after
+  // clicking Gerar Copy has actually finished.
+  const { isLoading } = useCopilotChat();
+  const sawRunLoading = useRef(false);
   useEffect(() => {
-    if (!pendingAction) return;
-    const timeout = window.setTimeout(() => {
+    if (!pendingAction) {
+      sawRunLoading.current = false;
+      return;
+    }
+    if (isLoading) {
+      sawRunLoading.current = true;
+      return;
+    }
+    if (!sawRunLoading.current) return;
+    // isLoading just flipped back to false after we watched this run go —
+    // give the new artifact a brief moment to mount before giving up on it.
+    const settle = window.setTimeout(() => {
       setPendingAction(null);
       setActionError(
         'Não recebi a copy completa desta vez. Tente novamente — às vezes a segunda tentativa funciona.'
       );
-    }, 45000);
-    return () => window.clearTimeout(timeout);
+    }, 800);
+    return () => window.clearTimeout(settle);
+  }, [pendingAction, isLoading]);
+  // Backstop only, same role as the 90s backstop in agent.chat.tsx: covers a
+  // dropped connection or a run that never flips isLoading back at all. Not
+  // the primary signal, so it can afford to be generous.
+  useEffect(() => {
+    if (!pendingAction) return;
+    const backstop = window.setTimeout(() => {
+      setPendingAction(null);
+      setActionError(
+        'Não recebi a copy completa desta vez. Tente novamente — às vezes a segunda tentativa funciona.'
+      );
+    }, 120000);
+    return () => window.clearTimeout(backstop);
   }, [pendingAction]);
   const optionsArgs = useMemo(
     () => configuringIdea ? {
