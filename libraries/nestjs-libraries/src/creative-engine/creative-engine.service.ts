@@ -914,6 +914,10 @@ export class CreativeEngineService {
     aspectRatio?: string;
     productAssetIds?: string[];
     idempotencyKey?: string;
+    // Reference image URLs resolved by the caller (e.g. the org's approved
+    // brand logo) rather than looked up from productAssetIds — merged in
+    // as-is, no ownership/approval check here since the caller already did it.
+    extraImageUrls?: string[];
   }) {
     await this.getProject(projectId, organizationId);
     await this.planLimits?.enforceLimit(organizationId, 'image_generation');
@@ -921,7 +925,10 @@ export class CreativeEngineService {
     const providerInput: CreativeProviderInput = {
       prompt: input.prompt,
       aspectRatio: normalizeAspectRatio(input.aspectRatio),
-      imageUrls: await this.resolveAssetUrls(organizationId, input.productAssetIds),
+      imageUrls: [
+        ...(await this.resolveAssetUrls(organizationId, input.productAssetIds)),
+        ...(input.extraImageUrls || []),
+      ],
     };
     return this.prepareCreativeJob(organizationId, projectId, {
       capability: 'image-generation',
@@ -959,9 +966,38 @@ export class CreativeEngineService {
         if (brand.industry) parts.push(`Industry: ${compact(brand.industry, 80)}.`);
         const dna = await this.brandProfiles?.getLatestDnaSnapshot(brand.id);
         const offer = compact(dna?.offer);
-        const visual = compact(dna?.visual);
         if (offer) parts.push(`Product / offer: ${offer}`);
-        if (visual) parts.push(`Visual identity: ${visual}`);
+
+        // Concrete brand colours, called out on their own line and phrased as
+        // a hard override: the carousel's design-spec palette is a generic
+        // starting point (still defaults to the same swatch for every brand
+        // until a human customises it), so without this the rendered art
+        // drifts away from the brand's real colours. Doing this once here and
+        // folding it into the identity block that's already injected
+        // identically into every slide (see compileDesignPrompt) keeps every
+        // slide's palette pinned to the same real brand colours.
+        const visual = dna?.visual as { colors?: unknown; style?: unknown; imageryStyle?: unknown } | undefined;
+        const colors = Array.isArray(visual?.colors)
+          ? (visual!.colors as unknown[]).map((c) => String(c).trim()).filter(Boolean).slice(0, 4)
+          : [];
+        if (colors.length) {
+          parts.push(
+            `Primary brand colours (use these as the dominant background/accent colours on every slide; they take priority over any generic palette suggestion): ${colors.join(', ')}.`
+          );
+        }
+
+        // A single, concrete rendering-style directive — the visual style
+        // "signature" for this carousel. Phrased so the exact same sentence
+        // lands on every slide (this whole block is injected verbatim into
+        // each independent slide generation), which is what keeps a
+        // photography-style carousel from drifting into illustration (or a
+        // different subject/product) halfway through.
+        const styleHint = compact(visual?.style, 120) || compact(visual?.imageryStyle, 120);
+        parts.push(
+          styleHint
+            ? `Visual style signature (render every slide in this exact same style, do not vary it slide to slide): ${styleHint}.`
+            : 'Visual style signature: pick ONE rendering style (e.g. clean product photography, or flat editorial illustration) on the first slide and reuse that exact same style, lighting and mood on every other slide — never mix photography and illustration within one carousel.'
+        );
       }
     } catch {
       // best-effort — fall through to the name-only identity below
@@ -972,6 +1008,26 @@ export class CreativeEngineService {
       : 'This carousel represents a single brand. Use one consistent, plain-text brand wordmark on every slide.';
 
     return [nameLine, ...parts].join('\n');
+  }
+
+  // Best-effort reference image for brand anchoring (Studio "professional
+  // carousel" improvement): the org's approved logo/product BrandAsset,
+  // fetched once per carousel and handed to every slide as an extra
+  // `imageUrls` reference so independently-generated slides converge on the
+  // real brand's colours/shapes instead of inventing them from a text
+  // description alone. Never blocks generation — returns [] on any failure.
+  private async resolveBrandReferenceImageUrls(organizationId: string): Promise<string[]> {
+    try {
+      const brand = await this.brandProfiles?.getSelectedBrand(organizationId);
+      if (!brand?.id) return [];
+      const assets = await this.brandProfiles?.getAssets(brand.id, 'logo');
+      return (assets || [])
+        .filter((asset: { approved?: boolean; sourceUrl?: string | null }) => asset.approved && asset.sourceUrl)
+        .slice(0, 1)
+        .map((asset: { sourceUrl?: string | null }) => asset.sourceUrl as string);
+    } catch {
+      return [];
+    }
   }
 
   /**
@@ -1016,7 +1072,16 @@ export class CreativeEngineService {
     // on one slide, a skincare brand on the next). Sourced from the org's
     // selected Brand Profile; folded into the content hash via the compiled
     // prompt, so changing brands correctly forces a regeneration.
-    const brandIdentity = await this.buildBrandIdentityBlock(organizationId, input.name || input.brief);
+    let brandIdentity = await this.buildBrandIdentityBlock(organizationId, input.name || input.brief);
+    // Best-effort reference image for real-brand anchoring. When present, it
+    // must not fight the logo rule above (which mandates a plain-text
+    // wordmark) — the source logo asset is frequently a graphic icon, so we
+    // spell out that the reference is for colour/shape/material continuity
+    // only, never for literally recreating that icon.
+    const referenceImageUrls = await this.resolveBrandReferenceImageUrls(organizationId);
+    if (referenceImageUrls.length) {
+      brandIdentity = `${brandIdentity}\nA reference image of the real brand logo is attached. Use it ONLY to match the brand's real colours, shapes and materials — never recreate it as a graphic icon; the wordmark is still plain text only, per the logo rule.`;
+    }
     const jobs: Array<{ slideId?: string; slideIndex: number; job?: unknown; error?: string }> = [];
     const runners: Array<() => Promise<unknown>> = [];
     for (const [i, slide] of input.slides.entries()) {
@@ -1030,16 +1095,36 @@ export class CreativeEngineService {
         // resolves to the same hash and returns the cached job for free.
         // Editing the copy/design changes the compiled prompt, which changes
         // the hash, which correctly forces a fresh generation.
-        const prepared = await this.prepareImageJob(organizationId, project.id, {
+        const slideJobInput = {
           prompt: compileDesignPrompt(slide.imagePrompt, input.designSpec, slide, brandIdentity),
           name: `${input.name || 'Carousel'} slide ${slideIndex + 1}`,
           aspectRatio: slide.aspectRatio || input.aspectRatio,
           idempotencyKey: input.idempotencyKey ? `${input.idempotencyKey}:${slide.id || slideIndex + 1}` : undefined,
-        });
+          extraImageUrls: referenceImageUrls,
+        };
+        const prepared = await this.prepareImageJob(organizationId, project.id, slideJobInput);
         jobs.push({ slideId: slide.id, slideIndex, job: prepared.job });
         // A cached (already-succeeded) slide has no run closure; only queue the
-        // ones that still need the provider.
-        if (prepared.run) runners.push(prepared.run);
+        // ones that still need the provider. Wrap with a single automatic
+        // retry: prepareCreativeJob's own idempotency re-queues a FAILED job
+        // under the same key (see prepareCreativeJob below), so re-preparing
+        // with identical slideJobInput after a transient provider failure
+        // picks the same job back up instead of creating a duplicate. This is
+        // a completion/integrity retry, not a visual-quality judge — a slide
+        // that fails outright (provider error, timeout) gets one more real
+        // attempt before being left as a genuine failure the user can retry.
+        if (prepared.run) {
+          const firstRun = prepared.run;
+          runners.push(async () => {
+            try {
+              await firstRun();
+            } catch (error) {
+              this.logger.warn(`Carousel slide ${slideIndex + 1} failed, retrying once: ${this.errorMessage(error)}`);
+              const retried = await this.prepareImageJob(organizationId, project.id, slideJobInput);
+              if (retried.run) await retried.run();
+            }
+          });
+        }
       } catch (error) {
         // One slide failing a content-moderation, reservation or provider check
         // should not discard the images already generated for the rest of the
