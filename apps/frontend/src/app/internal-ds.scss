@@ -839,28 +839,6 @@ body.light .cf-studio [class*='bg-cyan-'] {
   50% { opacity: 1; transform: translateY(-1px); }
 }
 
-.cf-studio__refinement-note {
-  align-self: flex-end;
-  width: fit-content;
-  max-width: min(720px, calc(100% - 24px));
-  margin: 8px 12px 14px auto;
-  padding: 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--cf-blue) 34%, var(--studio-line));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--cf-blue) 10%, var(--studio-elevated));
-  color: color-mix(in srgb, var(--cf-blue) 78%, var(--cf-fg));
-  font-size: 11px;
-  line-height: 1.45;
-  box-shadow: 0 5px 14px rgb(0 0 0 / 5%);
-}
-
-html.light .cf-studio__refinement-note,
-body.light .cf-studio__refinement-note {
-  border-color: color-mix(in srgb, var(--cf-blue) 30%, var(--studio-line));
-  background: color-mix(in srgb, var(--cf-blue) 8%, var(--studio-elevated));
-  color: color-mix(in srgb, var(--cf-blue) 82%, var(--cf-fg));
-}
-
 @keyframes cf-studio-message-in {
   from {
     opacity: 0;

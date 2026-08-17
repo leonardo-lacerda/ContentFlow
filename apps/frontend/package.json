@@ -10,6 +10,8 @@
     "build:sentry": "dotenv -e ../../.env -- next build",
     "postbuild:sentry": "node ../../scripts/ensure-next-external-aliases.mjs",
     "start": "node ./start-production.mjs",
+    "test": "vitest run --no-coverage",
+    "test:watch": "vitest",
     "pm2": "pm2 start pnpm --name frontend -- start"
   },
   "dependencies": {

@@ -5,6 +5,7 @@ import {
   CarouselPreviewCard,
   ContentIdeasCard,
 } from './content-artifacts.component';
+import { CardErrorBoundary } from './card-error-boundary';
 import {
   artifactSignature,
   claimArtifactCard,
@@ -38,10 +39,18 @@ export const ContentPresentationAction: FC<PresentationActionProps> = ({
   const owned = claimArtifactCard(signature, `structured:${instanceId}`, true);
   if (!owned) return null;
   if (presentation.operation === 'ideas') {
-    return <ContentIdeasCard args={presentation.payload} onAction={onAction} />;
+    return (
+      <CardErrorBoundary label="ideas card">
+        <ContentIdeasCard args={presentation.payload} onAction={onAction} />
+      </CardErrorBoundary>
+    );
   }
   if (presentation.operation === 'carousel') {
-    return <CarouselPreviewCard args={presentation.payload} onAction={onAction} />;
+    return (
+      <CardErrorBoundary label="carousel card">
+        <CarouselPreviewCard args={presentation.payload} onAction={onAction} />
+      </CardErrorBoundary>
+    );
   }
   return null;
 };

@@ -15,7 +15,11 @@ describe('buildAmpliarUrl', () => {
     expect(url).toContain('ideaId=i1');
     expect(url).toContain('brandId=b1');
     expect(url).toContain('from=swipe');
-    expect(decodeURIComponent(url)).toContain('Hook teste');
+    // Parse the query semantically rather than string-matching: URLSearchParams
+    // encodes spaces as '+' (form-urlencoding), which decodeURIComponent does not
+    // turn back into a space — only .get() does. Assert on the decoded value.
+    const params = new URLSearchParams(url.split('?')[1]);
+    expect(params.get('topic')).toBe('Hook teste');
   });
 
   it('builds email and video canonical paths', () => {

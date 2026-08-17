@@ -58,6 +58,7 @@ import {
 } from '@gitroom/frontend/components/agents/content-artifacts.component';
 import { extractSummaryIdeasArtifact } from '@gitroom/frontend/components/agents/idea-summary-parser';
 import { ContentPresentationAction } from '@gitroom/frontend/components/agents/content-presentation-action';
+import { CardErrorBoundary } from '@gitroom/frontend/components/agents/card-error-boundary';
 import {
   artifactSignature,
   claimArtifactCard,
@@ -461,10 +462,9 @@ class AgentChatErrorBoundary extends Component<
     if (this.state.error) {
       return (
         <div className="flex h-full min-h-[320px] flex-col items-center justify-center gap-3 px-6 text-center text-white">
-          <h2 className="text-base font-semibold">O chat nao conseguiu abrir</h2>
+          <h2 className="text-base font-semibold">Algo inesperado aconteceu no chat</h2>
           <p className="max-w-md text-sm leading-6 text-white/60">
-            O backend esta acessivel, mas o provedor de IA ainda nao esta
-            configurado ou esta temporariamente indisponivel.
+            Recarregue para continuar. Sua conversa fica salva — nada foi perdido.
           </p>
           <button
             type="button"
@@ -893,12 +893,6 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
     !props.isLoading &&
     !!textFallbackArtifact &&
     claimArtifactCard(fallbackSignature, `text:${props.message?.id || fallbackSignature}`);
-  const hasCreativeArtifact =
-    !props.isLoading &&
-    /(ideia|carrossel|roteiro|storyboard|v[ií]deo|imagem|publica[cç][aã]o)/i.test(
-      visibleSource
-    );
-
   return (
     <div
       className="cf-studio__assistant-message"
@@ -906,17 +900,15 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
       data-loading={props.isLoading ? 'true' : 'false'}
     >
       <DefaultAssistantMessage {...displayProps} />
-      {hasCreativeArtifact && (
-        <div className="cf-studio__refinement-note">
-          Este resultado pode ser refinado pela conversa. Quando estiver pronto,
-          diga “salve isso” ou peça uma variação.
-        </div>
-      )}
       {canRenderFallback && textFallbackArtifact?.operation === 'ideas' && textFallbackArtifact.ideas?.length > 0 && (
-        <ContentIdeasCard args={textFallbackArtifact} onAction={props.onAction} />
+        <CardErrorBoundary label="ideas card (fallback)">
+          <ContentIdeasCard args={textFallbackArtifact} onAction={props.onAction} />
+        </CardErrorBoundary>
       )}
       {canRenderFallback && textFallbackArtifact?.operation === 'carousel' && textFallbackArtifact.slides?.length > 0 && (
-        <CarouselPreviewCard args={textFallbackArtifact} onAction={props.onAction} />
+        <CardErrorBoundary label="carousel card (fallback)">
+          <CarouselPreviewCard args={textFallbackArtifact} onAction={props.onAction} />
+        </CardErrorBoundary>
       )}
     </div>
   );
@@ -934,7 +926,15 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
 // already a stable module-level function, so this wrapper only needs to be
 // declared once.
 const StudioAssistantMessageWithAction: FC<AssistantMessageProps> = (messageProps) => (
-  <StudioAssistantMessage {...messageProps} onAction={dispatchArtifactAction} />
+  // Per-message isolation: StudioAssistantMessage runs fragile string parsing
+  // and card extraction in its own body, so a single malformed message must not
+  // be allowed to throw up to the chat-wide boundary and blank the studio. On a
+  // crash here, that one message degrades to the inline notice and every other
+  // message keeps rendering. `fallback={null}` keeps a purely-decorative failure
+  // silent rather than stamping a notice on an otherwise fine text reply.
+  <CardErrorBoundary label="assistant message" fallback={null}>
+    <StudioAssistantMessage {...messageProps} onAction={dispatchArtifactAction} />
+  </CardErrorBoundary>
 );
 
 // Studio artifact cards are generative UI: they are drawn live by an action's

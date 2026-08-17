@@ -46,7 +46,9 @@
     "docker-create": "./var/docker/docker-create.sh",
     "docker-redeploy": "node var/docker/redeploy.mjs",
     "postinstall": "pnpm run prisma-generate",
-    "test": "jest --config apps/backend/jest.config.ts --coverage --detectOpenHandles --reporters=default --reporters=jest-junit"
+    "test": "pnpm run test:backend && pnpm run test:frontend"
+    ,"test:backend": "jest --config apps/backend/jest.config.ts --coverage --detectOpenHandles --reporters=default --reporters=jest-junit"
+    ,"test:frontend": "pnpm --filter ./apps/frontend run test"
     ,"admin:load": "node scripts/admin-load-test.mjs"
     ,"admin:audit:verify": "node scripts/verify-admin-audit-immutability.mjs"
     ,"billing:entitlements:migrate": "node scripts/migrate-billing-entitlements.mjs"
