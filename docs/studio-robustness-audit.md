@@ -97,13 +97,46 @@ naquele momento. É exatamente esse o mecanismo do "mexeu aqui, quebrou lá".
 Estes são reais e alimentam a fragilidade, mas exigem verificação ao vivo ou refatoração
 maior — documento para não virar remendo às cegas:
 
-### 🟠 R4 — Comportamento crítico codificado em prompt de prosa (~45 regras)
+### 🟠 R4 — Comportamento crítico codificado em prompt de prosa (~45 regras) — **PARCIAL (2026-08-17)**
 
-- `load.tools.service.ts` define o roteamento de intenção, regras de carrossel, agendamento
-  e crédito num único bloco de instruções de ~200 linhas. Decisões de roteamento **não são
-  testáveis** — um ajuste de prompt para um fluxo (ex.: ideias) pode mudar silenciosamente
-  outro (ex.: saudação vira card). Recomendo extrair a lógica de decisão que puder para
-  código testável e reduzir o prompt do agente dedicado `contentflow-studio`.
+- **Decisão importante antes de mexer:** o histórico (`git log 883aa08`) mostra que a
+  classificação de intenção (saudação vs. pedido de conteúdo, etc.) **já foi feita em
+  código** (regex/keywords) e foi **deliberadamente revertida** por ser pior — "me da 2
+  ideias" batia só por acaso, "me de 2 ideias"/"2 ideias"/"quero ideias" caíam em prosa
+  comum. Reintroduzir classificação por regex seria repetir esse erro já corrigido. Por
+  isso, a classificação de linguagem natural (é uma saudação? é um pedido de ideias vs.
+  criação?) permanece no modelo — não é candidata a extração para código.
+- **O que É genuinamente mecânico e foi extraído:**
+  1. **Limite de 10 ideias** — o prompt já dizia "cap anything above 10 at 10", mas isso
+     era só confiança em prosa; o modelo pode simplesmente não seguir (como já aconteceu
+     com duplicação de cards, ver A1/C2 na auditoria antiga). Agora `content.presentation.tool.ts`
+     corta o array para 10 itens no código, incondicionalmente. 2 testes novos (limite e
+     boundary exato).
+  2. **Blocos de marcador `[--nome--]...[--nome--]`** (`content-action`, `creation-options`,
+     `contentflow-intent`, `integrations`) — a limpeza desses blocos para exibição estava
+     duplicada como regex ad-hoc, sem teste, em dois lugares (`StudioAssistantMessage` e
+     `Message`/user-message). Consolidado num único módulo testado,
+     `studio-marker-blocks.ts` (`stripStudioMarkerBlocks`), 6 testes novos.
+- **Investigado e explicitamente NÃO implementado — o achado mais valioso desta rodada:**
+  cliques de botão no card (`transform-carousel`, `approve-carousel-copy`, etc.) viram
+  **texto** (`ACTION: X.\nPAYLOAD: {...}`) que o **modelo** tem que reparsear da mensagem —
+  mesmo já existindo `action`/`payload` estruturados no frontend, e mesmo já existindo o
+  mecanismo `RequestContext` usado para `brandContext`/`studioAttachments`/`organization`.
+  Investiguei mover isso para `RequestContext` (determinístico, sem depender do modelo
+  reparsear texto) e decidi **não implementar às cegas**: toda leitura existente de
+  `req.body` em `copilot.controller.ts` (ex.: a cadeia de fallback
+  `req.body?.threadId || req.body?.thread?.id || req.body?.variables?.threadId`) já lida com
+  **múltiplos formatos possíveis em cascata**, sinal de que ninguém validou o shape exato do
+  GraphQL do CopilotKit com tráfego real. Construir lógica nova sobre um caminho não
+  verificado repetiria exatamente o padrão "às vezes funciona, às vezes não" que essa
+  rodada inteira existe para eliminar. **Recomendação para o futuro:** validar o shape real
+  de `req.body.variables` com uma request autenticada de verdade (ou logging temporário em
+  produção) antes de implementar o parse determinístico do clique.
+- **Prompt em si:** não foi reduzido/reescrito (a parte "enxugar as ~45 regras" da
+  recomendação original) — mudar o texto do prompt só é verificável rodando ao vivo contra
+  o modelo, fora do que dá para validar com testes automatizados nesta sessão.
+- Suítes completas verdes após a mudança: backend 55/312 (2 testes novos), frontend 9/156
+  (6 testes novos).
 
 ### 🟠 R5 — 5 parsers de texto de fallback legados em `agent.chat.tsx` — **CORRIGIDO (2026-08-17)**
 

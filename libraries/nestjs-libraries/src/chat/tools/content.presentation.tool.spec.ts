@@ -83,6 +83,20 @@ describe('ContentPresentationTool', () => {
         execute({ operation: 'ideas', ideas: [{}, { angle: '' }] })
       ).rejects.toThrow(/ideas are required/);
     });
+
+    it('caps the ideas card at 10 even when the model sends more (R4: enforced in code, not just the prompt)', async () => {
+      const ideas = Array.from({ length: 15 }, (_, i) => ({ title: `Ideia ${i + 1}` }));
+      const out = await execute({ operation: 'ideas', ideas });
+      expect(out.result.ideas).toHaveLength(10);
+      expect(out.result.ideas[0].title).toBe('Ideia 1');
+      expect(out.result.ideas[9].title).toBe('Ideia 10');
+    });
+
+    it('keeps exactly 10 ideas untouched (boundary, not off-by-one)', async () => {
+      const ideas = Array.from({ length: 10 }, (_, i) => ({ title: `Ideia ${i + 1}` }));
+      const out = await execute({ operation: 'ideas', ideas });
+      expect(out.result.ideas).toHaveLength(10);
+    });
   });
 
   describe('operation carousel', () => {

@@ -59,6 +59,7 @@ import {
   extractPresentedArtifact,
   stripTransportEnvelope,
 } from '@gitroom/frontend/components/agents/fallback-artifact-parser';
+import { stripStudioMarkerBlocks } from '@gitroom/frontend/components/agents/studio-marker-blocks';
 import { ContentPresentationAction } from '@gitroom/frontend/components/agents/content-presentation-action';
 import { CardErrorBoundary } from '@gitroom/frontend/components/agents/card-error-boundary';
 import {
@@ -562,11 +563,11 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
   const visibleSource = useMemo(() => stripTransportEnvelope(content), [content]);
   const presentedArtifact = useMemo(() => extractPresentedArtifact(content) || extractPresentedArtifact(visibleSource), [content, visibleSource]);
   const renderSource = presentedArtifact?.sourceStart === 0 && visibleSource !== content ? visibleSource : content;
-  const displayContent = (presentedArtifact
+  const displayContentRaw = (presentedArtifact
     ? `${renderSource.slice(0, presentedArtifact.sourceStart).replace(/(?:```)?json\s*$/i, '').trim()}\n\n${renderSource.slice(renderSource.indexOf('Este resultado', presentedArtifact.sourceStart) >= 0 ? renderSource.indexOf('Este resultado', presentedArtifact.sourceStart) : renderSource.length)}`
     : visibleSource)
-    .replace(/```?json\s*/gi, '')
-    .replace(/\[--content-action--\][\s\S]*?\[--content-action--\]/g, '')
+    .replace(/```?json\s*/gi, '');
+  const displayContent = stripStudioMarkerBlocks(displayContentRaw, ['content-action'])
     .replace(/^\s*\{"format"\s*:\s*2[\s\S]*?\}\s*/g, '')
     .replace(/^\s*\*\*\s*$/gm, '')
     .trim();
@@ -760,31 +761,17 @@ const Message: FC<UserMessageProps> = (props) => {
       })
       .replace(/\[\-\-Media\-\-\](.*)\[\-\-Media\-\-\]/g, (match, p1) => {
         return `<div class="flex justify-center mt-[20px]">${p1}</div>`;
-      })
-      .replace(
-        /(\[--integrations--\][\s\S]*?\[--integrations--\])/g,
-        (match, p1) => {
-          return ``;
-        }
-      )
-      .replace(
-        /(\[--creation-options--\][\s\S]*?\[--creation-options--\])/g,
-        () => ``
-      )
-      .replace(
-        /(\[--contentflow-intent--\][\s\S]*?\[--contentflow-intent--\])/g,
-        () => ``
-      )
-      .replace(
-        /(\[--content-action--\][\s\S]*?\[--content-action--\])/g,
-        () => ``
-      );
+      });
   }, [props.message?.content]);
+  const sanitizedForDisplay = useMemo(
+    () => stripStudioMarkerBlocks(convertContentToImagesAndVideo),
+    [convertContentToImagesAndVideo]
+  );
   return (
     <div
       className="copilotKitMessage copilotKitUserMessage min-w-[300px]"
       dangerouslySetInnerHTML={{
-        __html: sanitizeHtml(convertContentToImagesAndVideo),
+        __html: sanitizeHtml(sanitizedForDisplay),
       }}
     />
   );

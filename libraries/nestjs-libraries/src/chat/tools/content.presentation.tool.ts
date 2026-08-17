@@ -4,6 +4,11 @@ import { z } from 'zod';
 import { AgentToolInterface } from '@gitroom/nestjs-libraries/chat/agent.tool.interface';
 import { checkAuth } from '@gitroom/nestjs-libraries/chat/auth.context';
 
+// Matches the prompt's own stated rule in load.tools.service.ts ("Accept 1
+// through 10, cap anything above 10 at 10") - enforced here so the cap holds
+// even when the model doesn't follow it.
+const MAX_IDEAS = 10;
+
 // The schema is intentionally permissive. The Studio model (gpt-5-2 via kie.ai)
 // frequently omits one or two fields per idea/slide; when the schema rejected
 // those calls, the tool never returned an artifact, the chat fell back to raw
@@ -122,7 +127,13 @@ export class ContentPresentationTool implements AgentToolInterface {
           const ideas = ((input.ideas || []) as RawIdea[])
             .filter((idea: RawIdea) => clean(idea.title) || clean(idea.hook) || clean(idea.angle))
             .map(normalizeIdea)
-            .filter((idea: ReturnType<typeof normalizeIdea>) => idea.title);
+            .filter((idea: ReturnType<typeof normalizeIdea>) => idea.title)
+            // The prompt tells the model to cap a request above 10 at 10, but
+            // that's advisory text the model can simply not follow (it has, in
+            // the past, re-emitted or over-produced ideas — see A1/C2 in
+            // docs/studio-audit.md). Enforcing the cap here means the card the
+            // user sees is bounded regardless of what the model actually sent.
+            .slice(0, MAX_IDEAS);
           if (!ideas.length) throw new Error('ideas are required for operation ideas');
           return {
             result: {
