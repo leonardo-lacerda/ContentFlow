@@ -105,14 +105,44 @@ maior — documento para não virar remendo às cegas:
   outro (ex.: saudação vira card). Recomendo extrair a lógica de decisão que puder para
   código testável e reduzir o prompt do agente dedicado `contentflow-studio`.
 
-### 🟠 R5 — 5 parsers de texto de fallback legados em `agent.chat.tsx`
+### 🟠 R5 — 5 parsers de texto de fallback legados em `agent.chat.tsx` — **CORRIGIDO (2026-08-17)**
 
-- `extractStructuredPresentedArtifact`, `extractLooseIdeasArtifactSafe`,
-  `extractTitleIdeasArtifact`, `extractSequenceIdeasArtifact`, `extractSummaryIdeasArtifact`.
-  Existiam para compensar o modelo antigo que não chamava tools de forma confiável. Com o
-  modelo atual (tool-calling nativo confiável) são, em boa parte, superfície morta e fonte
-  de duplicação. **Agora que há rede de testes**, dá para consolidá-los para 1 com testes
-  como guarda — antes era arriscado demais.
+- **Achado adicional durante a correção, mais grave que "parsers redundantes":** só
+  `extractSummaryIdeasArtifact` marcava `renderFromText: true` — e só essa flag faz
+  `StudioAssistantMessage` renderizar um card de fallback. Os outros 4 parsers
+  (`extractStructuredPresentedArtifact`, `extractLooseIdeasArtifactSafe`,
+  `extractTitleIdeasArtifact`, `extractSequenceIdeasArtifact`) só limpavam o texto bruto
+  exibido — nunca produziam um card visível. Confirmado via `git log -S` que a flag foi
+  introduzida num commit que criou `extractSummaryIdeasArtifact` especificamente para
+  "restaurar" os cards, e nunca foi retroaplicada aos 4 parsers pré-existentes. Resultado em
+  produção: sempre que o modelo despejava ideias/carrossel num desses 4 formatos, o texto
+  bruto era removido da tela e **nenhum card aparecia** — perda silenciosa de conteúdo já
+  gerado.
+- **Segundo achado:** o helper `readField` (triplicado nos 3 parsers de prosa) interpolava
+  labels alternativos (`'gancho|hook'`, `'chamada para acao|cta'`) sem agrupá-los:
+  `` `${labels}[^:]*: *(.+)` `` vira `gancho|hook[^:]*: *(.+)` — por precedência do `|`, isso
+  é `(gancho)` OU `(hook[^:]*: *(.+))`. Como o rótulo em português (`gancho:`) é o comum, a
+  extração sempre caía no ramo sem grupo de captura, retornando vazio e caindo no valor
+  default genérico. CTA tinha o mesmo problema com `chamada para acao|cta`.
+- **Correção aplicada:**
+  - Extraídas as 5 funções (mais o parser de JSON balanceado duplicado dentro de
+    `extractStructuredPresentedArtifact`) para um novo módulo testável,
+    `fallback-artifact-parser.ts`. As 3 heurísticas de prosa quase-idênticas
+    (`extractLooseIdeasArtifactSafe`/`extractTitleIdeasArtifact`/`extractSequenceIdeasArtifact`)
+    viraram 3 estratégias internas de uma única função pública `extractProseIdeasArtifact`,
+    compartilhando `readField`/`cleanIdeaLine` (antes triplicados), na mesma ordem de
+    precedência original.
+  - `renderFromText: true` agora é aplicado uniformemente em todo `extractPresentedArtifact`
+    — qualquer parse bem-sucedido de qualquer estratégia agora efetivamente renderiza um
+    card, fechando o vazamento de conteúdo.
+  - Corrigido o bug de agrupamento do `readField` (`(?:${labels})[^:]*: *(.+)`).
+  - **23 testes de caracterização** novos (`fallback-artifact-parser.spec.ts`), incluindo um
+    teste que documenta explicitamente uma falha pré-existente e não corrigida (títulos em
+    negrito misturam a estratégia "sequence" com o conteúdo da ideia anterior) — capturada
+    como comportamento conhecido, não silenciosamente confiável.
+  - `extractSummaryIdeasArtifact` (`idea-summary-parser.ts`) mantido como estava — já tinha
+    testes próprios e escopo bem definido.
+  - Suítes completas verdes após a mudança: backend 55/310, frontend 8/150.
 
 ### 🟠 R6 — Persistência fragmentada em 4 silos sem id canônico
 
