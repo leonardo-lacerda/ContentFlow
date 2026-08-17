@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "dev": "dotenv -e ../../.env -- nest start --watch --entryFile=main",
-    "build": "node ../../scripts/fix-swcrc-baseurl.js .swcrc && cross-env NODE_OPTIONS=--max_old_space_size=4096 NODE_ENV=production nest build",
+    "build": "cd ../.. && cross-env NODE_OPTIONS=--max_old_space_size=4096 NODE_ENV=production node scripts/swc-compile-backend.js",
     "start": "node ./start-production.mjs",
     "pm2": "pm2 start pnpm --name backend -- start"
   },
