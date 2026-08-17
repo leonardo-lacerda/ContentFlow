@@ -177,11 +177,45 @@ maior — documento para não virar remendo às cegas:
     testes próprios e escopo bem definido.
   - Suítes completas verdes após a mudança: backend 55/310, frontend 8/150.
 
-### 🟠 R6 — Persistência fragmentada em 4 silos sem id canônico
+### 🟠 R6 — Persistência fragmentada em 4 silos sem id canônico — **PARCIAL (2026-08-17)**
 
 - Memória Mastra, `StudioArtifact`, `ContentIdea`/`CarouselProject`, `StudioCarouselImage`
-  não compartilham um identificador único de carrossel. Mexe em dados de produção; precisa
-  de migração cuidadosa validada contra o banco real. Não fazer às cegas.
+  não compartilham um identificador único de carrossel. A infraestrutura aditiva (coluna
+  `carouselProjectId` em `StudioCarouselImage`, API aceitando o id em ambos os endpoints)
+  já existia de uma sessão anterior — ver histórico do B1.
+- **Duas frentes investigadas e deliberadamente NÃO implementadas nesta rodada:**
+  1. **Backfill dos dados existentes** — recomputar o `cardKey` (hash das headlines) de um
+     `CarouselProject` já salvo só é seguro se a copy nunca foi editada depois; validar isso
+     exige rodar uma query de diagnóstico contra o banco real primeiro. Sem acesso
+     SSH/produção nesta sessão (ver memória do projeto: acesso revogado), continua
+     impossível de fazer com segurança.
+  2. **Ligar o frontend** — o `save-carousel` (`contentStudioTool`) só é acionado por texto
+     livre no chat ("salva esse carrossel"), como uma tool call **desconectada** do
+     componente React que renderizou o card original. Fazer o card capturar o
+     `carouselProjectId` de volta exigiria escanear o restante da lista de mensagens em
+     busca de um resultado de tool call posterior com conteúdo equivalente (mesmo mecanismo
+     de assinatura usado no dedup de cards) — infraestrutura nova na área mais frágil do
+     sistema. **Verifiquei antes de decidir:** `grep` confirma que `getStudioCarouselImages`/
+     `/creative/studio-carousel/images` **não tem nenhum outro consumidor no frontend** além
+     do próprio card do carrossel — ou seja, hoje não existe nenhuma tela (biblioteca de
+     carrosséis, etc.) que se beneficiaria de já ter o `carouselProjectId` ligado. Implementar
+     esse mecanismo agora seria infraestrutura especulativa, arriscada, sem consumidor real.
+     Fica documentado como pré-requisito de uma feature futura (ex.: tela "Meus Carrosséis"),
+     não como trabalho a fazer isoladamente.
+- **O que FOI corrigido, dentro do que é seguro sem acesso a produção/modelo ao vivo:**
+  `content.studio.tool.ts` — o ponto central que escreve em 3 dos 4 silos (`ContentIdea`/
+  `CarouselProject` via os services, `StudioArtifact` via `persistStudioArtifact`/
+  `versionStudioArtifact`, e a metadata da thread Mastra via `linkArtifactToThread`) —
+  tinha **zero testes**, o mesmo padrão exato do R2 (`content.presentation.tool.ts` também
+  tinha zero testes antes de ser corrigido). **22 testes novos** cobrindo: resolução de
+  marca (explícita → selecionada → primeira → erro), a heurística de escala de score
+  (0-10 → ×10 vs. já-0-100, caracterizada como está, não alterada — mudar a heurística sem
+  saber o que o modelo realmente envia seria um chute), indexação de slides, criação vs.
+  versionamento de `StudioArtifact` (por `sourceId` na metadata), e o invariante mais
+  importante: a vinculação à thread é *best-effort* e **nunca** pode derrubar um save que já
+  teve sucesso — testado explicitamente sem `threadId`, com `mastra` ausente, e com a
+  própria consulta da thread lançando erro.
+- Suítes completas verdes após a mudança: backend 56/334 (22 testes novos).
 
 ---
 
@@ -193,6 +227,11 @@ maior — documento para não virar remendo às cegas:
 | Contrato tool → card | nenhum | specs de contrato nos dois lados |
 | Isolamento de erro | 1 boundary global (derruba tudo) | boundary por card + por mensagem |
 | Cópia de erro enganosa | "provedor não configurado" | mensagem honesta de erro inesperado |
+| Parsers de fallback (R5) | 5 funções duplicadas; 4 nunca renderizavam card | 1 módulo testado; bug de perda silenciosa corrigido; 23 testes |
+| Limite de ideias / marcadores (R4) | só confiança em prosa; regex duplicada sem teste | limite forçado em código; 1 módulo de stripping testado; 8 testes |
+| `content.studio.tool.ts` (R6) | zero testes no ponto central de escrita em 3 silos | 22 testes; invariante "save nunca falha por causa do link à thread" travado |
+
+Baseline final desta rodada: **backend 56 suites / 334 testes, frontend 9 suites / 156 testes**, todos verdes, confirmados no CI (ambiente limpo) a cada push.
 
 **Princípio para daqui pra frente:** toda mudança no pipeline de render/costura agora tem
 onde falar "isso quebrou" **antes** do navegador. A robustez real vem de manter e expandir
