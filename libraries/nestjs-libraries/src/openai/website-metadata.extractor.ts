@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JSDOM } from 'jsdom';
 import { ExtractContentService } from '@gitroom/nestjs-libraries/openai/extract.content.service';
+import { UrlValidator } from '@gitroom/nestjs-libraries/security/url-validator';
 
 export interface WebsiteMetadata {
   url: string;
@@ -26,12 +27,16 @@ export class WebsiteMetadataExtractor {
   constructor(private extractContentService: ExtractContentService) {}
 
   async extract(url: string): Promise<WebsiteMetadata> {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': 'ContentFlow/1.0' },
-      signal: AbortSignal.timeout(15000),
+    const response = await UrlValidator.safeFetch(url, {
+      headers: { 'User-Agent': 'ContentFlow/1.0', Accept: 'text/html, application/xhtml+xml' },
+      timeout: 15000,
+      maxSize: MAX_TEXT_SIZE,
     });
+    if (!response.ok || !response.text) {
+      throw new Error(response.error || 'Unable to fetch website metadata');
+    }
 
-    const html = await response.text();
+    const html = response.text;
     const dom = new JSDOM(html);
     const doc = dom.window.document;
 

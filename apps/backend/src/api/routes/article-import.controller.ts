@@ -24,7 +24,10 @@ export class ArticleImportController {
   }
 
   @Get('/extract')
-  async extractOnly(@Query('url') url: string) {
+  async extractOnly(
+    @GetOrgFromRequest() _org: Organization,
+    @Query('url') url: string,
+  ) {
     return this._articleImportService.extractOnly(url);
   }
 }
