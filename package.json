@@ -125,7 +125,7 @@
     "@tiptap/react": "^3.0.6",
     "@tiptap/starter-kit": "^3.0.6",
     "@tiptap/suggestion": "^3.0.7",
-    "@types/archiver": "^8.0.0",
+    "@types/archiver": "^7.0.0",
     "@types/bcrypt": "^5.0.2",
     "@types/concat-stream": "^2.0.3",
     "@types/facebook-nodejs-business-sdk": "^20.0.2",
