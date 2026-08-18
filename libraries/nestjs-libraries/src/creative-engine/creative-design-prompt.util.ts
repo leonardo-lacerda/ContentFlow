@@ -94,6 +94,20 @@ export function compileDesignPrompt(
 
     lines.push(
       '[APPROVED DESIGN SPEC — FOLLOW EXACTLY]',
+      // The creative brief above (`prompt`) is free text the chat agent wrote
+      // before any palette was chosen, and it routinely bakes in colour/mood
+      // language of its own (e.g. "dark navy", "cyan highlights", "dark tech
+      // aesthetic") that has nothing to do with the palette actually approved
+      // here. Every slide in a carousel gets this same conflict, and the
+      // "match the palette mood" line further below was not always enough on
+      // its own to win that conflict — confirmed live: 7 slides sharing this
+      // exact same design spec each carried a "dark ..." brief against an
+      // approved light palette, and 6 of 7 rendered correctly light while one
+      // rendered dark, i.e. followed the brief's colour language instead.
+      // State the override as its own explicit line, first, right where the
+      // real palette is about to be given, rather than trusting a single
+      // mention buried in the art-direction paragraph below to win.
+      'Colour override: the creative brief above may mention colours, palette or lighting mood of its own (e.g. "dark", "navy", "cyan", "light") - treat those words only as scene/composition inspiration, never as colour instructions. The ONLY colours and lighting to actually render are the ones specified below.',
       `Platform: ${String(resolved.platform || 'social media')}; aspect ratio: ${String(resolved.aspectRatio || '4:5')}; size: ${String(resolved.sizeId || 'default')}.`,
       `Palette: ${String(palette.name || palette.paletteId || 'custom')}; background ${String(palette.background || '')}; surface ${String(palette.surface || '')}; text ${String(palette.text || '')}; secondary text ${String(palette.muted || '')}; accent ${String(palette.accent || '')}; secondary accent ${String(palette.accent2 || '')}.`,
       `Layout: ${String(layout.templateId || 'carousel-cover')}; density ${density}; safe padding ${safePadding}.`,

@@ -72,6 +72,32 @@ describe('compileDesignPrompt', () => {
     expect(byZeroIndex).toContain('Mood: sophisticated, elegant, high-end.');
   });
 
+  it('tells the model to override any colour language in the base creative brief with the approved palette', () => {
+    // Regression for a live incident: the chat agent writes each slide's base
+    // imagePrompt before any palette is chosen, and it routinely bakes in its
+    // own colour language ("dark navy", "cyan highlights") that conflicts
+    // with the palette actually approved for the carousel. One slide out of
+    // seven rendered with the brief's dark colours instead of the approved
+    // light palette even though every slide shared this exact same design
+    // spec - the "match the palette mood" line alone was not a strong enough
+    // signal. This explicit override line is what was added to fix it.
+    const compiled = compileDesignPrompt(
+      'Sleek B2B analytical visual, dark navy aesthetic with vibrant cyan highlights, Tegrus brand style.',
+      baseSpec,
+      { index: 1 }
+    );
+    expect(compiled).toContain(
+      'Colour override: the creative brief above may mention colours, palette or lighting mood of its own'
+    );
+    // The override line must appear before the actual palette values, so a
+    // model reading top-to-bottom sees "ignore brief colours" before it sees
+    // what to use instead.
+    const overrideIndex = compiled.indexOf('Colour override:');
+    const paletteIndex = compiled.indexOf('Palette: Azul & creme');
+    expect(overrideIndex).toBeGreaterThan(-1);
+    expect(paletteIndex).toBeGreaterThan(overrideIndex);
+  });
+
   it('preserves the approved copy verbatim and pins the wordmark colour', () => {
     const compiled = compileDesignPrompt('p', baseSpec, { index: 2, headline: 'Título exato', body: 'Corpo exato', cta: 'CTA exato' });
 
