@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   extractPresentedArtifact,
+  extractProseCarouselArtifact,
   extractProseIdeasArtifact,
   extractStructuredPresentedArtifact,
   extractTransportArtifact,
@@ -185,6 +186,91 @@ describe('extractProseIdeasArtifact — known quirk (documented, not fixed here)
     // angle value instead of "Segredos do Setor".
     expect(artifact?.parsed.ideas).toHaveLength(1);
     expect(artifact?.parsed.ideas[0].title).toBe('Humanização e confiança.');
+  });
+});
+
+describe('extractProseCarouselArtifact — slide strategy (Slide N: / Título: / Texto: anchored)', () => {
+  // Reproduces the shape observed live in production: a "text/copy" creation
+  // request (creationType='text') where the model organized its answer as a
+  // slide-by-slide carousel proposal in markdown instead of calling
+  // contentPresentationTool with operation=carousel.
+  const content = [
+    'Aqui está uma proposta completa de copy para o Instagram:',
+    '',
+    '📌 Opção de Carrossel (7 Slides) | Formato 4:5',
+    '',
+    'Slide 1 (Capa / Gancho):',
+    'Título: Por que seu engajamento no Instagram não vira pipeline de vendas?',
+    'Subtítulo: A métrica da vaidade que está custando a previsibilidade da sua receita.',
+    'Slide 2:',
+    'Título: Curtida não fecha contrato.',
+    'Texto: No B2B, buscar engajamento genérico atrai o público errado.',
+    'Slide 3:',
+    'Título: O desalinhamento clássico',
+    'Texto: Marketing comemora posts com alto alcance. Vendas reclama de leads desqualificados.',
+  ].join('\n');
+
+  it('recovers every slide anchored on a "Slide N:" heading', () => {
+    const artifact = extractProseCarouselArtifact(content);
+    expect(artifact).not.toBeNull();
+    expect(artifact?.renderFromText).toBe(true);
+    expect(artifact?.parsed.operation).toBe('carousel');
+    expect(artifact?.parsed.slides).toHaveLength(3);
+    expect(artifact?.parsed.slides[0].headline).toBe(
+      'Por que seu engajamento no Instagram não vira pipeline de vendas?'
+    );
+    expect(artifact?.parsed.slides[0].highlight).toBe(
+      'A métrica da vaidade que está custando a previsibilidade da sua receita.'
+    );
+    expect(artifact?.parsed.slides[1].body).toBe(
+      'No B2B, buscar engajamento genérico atrai o público errado.'
+    );
+  });
+
+  it('derives the artifact title from the line preceding "Slide 1"', () => {
+    const artifact = extractProseCarouselArtifact(content);
+    expect(artifact?.parsed.title).toBe('Opção de Carrossel (7 Slides) | Formato 4:5');
+  });
+
+  it('leaves the intro sentence before the slide breakdown out of the stripped raw text', () => {
+    const artifact = extractProseCarouselArtifact(content);
+    expect(artifact?.sourceStart).toBeGreaterThan(content.indexOf('Aqui está'));
+  });
+
+  it('requires at least 2 slides — a single stray "slide" mention is too weak a signal', () => {
+    const single = 'Vou te mostrar o Slide 1 como exemplo.\nTítulo: Um exemplo qualquer';
+    expect(extractProseCarouselArtifact(single)).toBeNull();
+  });
+
+  it('drops a slide heading with no recognizable Título field', () => {
+    const missingTitle = [
+      'Slide 1:',
+      'Texto: só corpo, sem título',
+      'Slide 2:',
+      'Título: Este tem título',
+    ].join('\n');
+    const artifact = extractProseCarouselArtifact(missingTitle);
+    expect(artifact).toBeNull();
+  });
+
+  it('returns null for ordinary prose with no slide structure', () => {
+    expect(extractProseCarouselArtifact('Isso é só uma resposta normal do assistente.')).toBeNull();
+  });
+});
+
+describe('extractPresentedArtifact — orchestrator picks up the carousel prose fallback', () => {
+  it('recovers a CAROUSEL_PREVIEW artifact end to end via the orchestrator', () => {
+    const content = [
+      'Slide 1:',
+      'Título: Primeiro slide',
+      'Texto: corpo do primeiro',
+      'Slide 2:',
+      'Título: Segundo slide',
+      'Texto: corpo do segundo',
+    ].join('\n');
+    const artifact = extractPresentedArtifact(content);
+    expect(artifact?.parsed.operation).toBe('carousel');
+    expect((artifact?.parsed as any).slides).toHaveLength(2);
   });
 });
 

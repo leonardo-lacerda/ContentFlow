@@ -1,4 +1,4 @@
-import type { ContentIdea } from './content-artifacts.component';
+﻿import type { ContentIdea } from './content-artifacts.component';
 import { extractSummaryIdeasArtifact } from './idea-summary-parser';
 
 /**
@@ -206,6 +206,21 @@ const readField = (block: string, labels: string) => {
   return match ? cleanIdeaLine(match[1]).replace(/^\*+\s*/, '').replace(/\*+$/, '').trim() : '';
 };
 
+// Same label matching as readField (accent/case-insensitive, run against the
+// normalized block so "Título"/"titulo" both match), but slices the captured
+// value out of the accent-preserving source block instead — so a recovered
+// headline reads "não vira pipeline" rather than "nao vira pipeline". Relies
+// on NFD-decompose-then-strip-combining-marks preserving one codepoint per
+// character (true for the standard Portuguese diacritics), which keeps
+// `sourceBlock` and `normalizedBlock` positionally aligned.
+const readSourceField = (sourceBlock: string, normalizedBlock: string, labels: string) => {
+  const match = normalizedBlock.match(new RegExp(`(?:${labels})[^:]*: *(.+)`, 'i'));
+  if (!match || match.index == null) return '';
+  const valueStart = match.index + (match[0].length - match[1].length);
+  const valueEnd = valueStart + match[1].length;
+  return cleanIdeaLine(sourceBlock.slice(valueStart, valueEnd)).replace(/^\*+\s*/, '').replace(/\*+$/, '').trim();
+};
+
 /**
  * Strategy 1 (tried first, matching the original precedence): anchors on each
  * "angulo:" occurrence and takes the last plain heading-like line before it as
@@ -344,6 +359,72 @@ export const extractProseIdeasArtifact = (content: string): ParsedIdeasArtifact 
   return null;
 };
 
+/**
+ * Strategy 4 (carousel shape): anchors on each "Slide N" heading and reads
+ * the Título/Subtítulo/Texto/CTA/Direção visual fields from the block that
+ * follows. Recovers a CAROUSEL_PREVIEW artifact when the model writes a
+ * slide-by-slide copy proposal in prose instead of calling
+ * contentPresentationTool with operation=carousel — observed in production
+ * when a "text/copy" creation request (creationType='text', which has no
+ * card of its own) naturally organizes itself into slides: the model had no
+ * tool call that matched a plain-text creationType, so it fell back to
+ * markdown, and none of the three ideas-shaped strategies above recognize a
+ * "Slide N: / Título: / Texto:" shape. Requires at least 2 slides with a
+ * headline — a single stray "slide" mention in ordinary prose is too weak a
+ * signal on its own.
+ */
+const matchSlideAnchored = (source: string, normalized: string) => {
+  const matches = Array.from(normalized.matchAll(/slide\s*\d+\b/gi));
+  if (matches.length < 2) return null;
+  const slides: Array<{ index: number; headline: string; highlight?: string; body?: string; cta?: string; imagePrompt?: string }> = [];
+  matches.forEach((match, index) => {
+    const start = match.index ?? -1;
+    if (start < 0) return;
+    const end = index + 1 < matches.length ? matches[index + 1].index ?? normalized.length : normalized.length;
+    const block = normalized.slice(start, end);
+    const sourceBlock = source.slice(start, end);
+    const headline = readSourceField(sourceBlock, block, 'titulo|title');
+    const highlight = readSourceField(sourceBlock, block, 'subtitulo|subtitle|destaque|highlight');
+    const body = readSourceField(sourceBlock, block, 'texto|body|corpo');
+    const cta = readSourceField(sourceBlock, block, 'chamada para acao|cta');
+    const imagePrompt = readSourceField(sourceBlock, block, 'direcao visual|visual direction|imagem|visual');
+    if (!headline) return;
+    slides.push({
+      index: Number(match[0].replace(/\D/g, '')) || index + 1,
+      headline,
+      ...(highlight && highlight !== headline ? { highlight } : {}),
+      ...(body ? { body } : {}),
+      ...(cta ? { cta } : {}),
+      ...(imagePrompt ? { imagePrompt } : {}),
+    });
+  });
+  return slides.length >= 2 ? slides : null;
+};
+
+export const extractProseCarouselArtifact = (content: string): ParsedCarouselArtifact | null => {
+  const source = content.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+  const normalized = source.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const slides = matchSlideAnchored(source, normalized);
+  if (!slides) return null;
+  const firstSlideMatch = normalized.match(/slide\s*\d+\b/i);
+  const sourceStart = firstSlideMatch?.index ?? 0;
+  const precedingLine = source
+    .slice(0, sourceStart)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .at(-1);
+  const title = precedingLine
+    ? precedingLine.replace(/^[^\p{L}\d]+/u, '').replace(/\*\*/g, '').trim()
+    : 'Copy do carrossel';
+  return {
+    raw: source.slice(sourceStart),
+    sourceStart,
+    renderFromText: true,
+    parsed: { operation: 'carousel', title: title || 'Copy do carrossel', slides },
+  };
+};
+
 // --- orchestrator -----------------------------------------------------------
 
 export const extractPresentedArtifact = (content: string): ParsedArtifact | null => {
@@ -351,6 +432,9 @@ export const extractPresentedArtifact = (content: string): ParsedArtifact | null
 
   const proseArtifact = extractProseIdeasArtifact(visibleContent);
   if (proseArtifact) return proseArtifact;
+
+  const proseCarousel = extractProseCarouselArtifact(visibleContent);
+  if (proseCarousel) return proseCarousel;
 
   const transport = extractTransportArtifact(content);
   if (transport?.parsed) {
