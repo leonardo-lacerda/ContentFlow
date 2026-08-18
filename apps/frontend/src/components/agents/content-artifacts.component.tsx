@@ -11,6 +11,7 @@ import {
   effectiveDesign,
   mergeDesign,
   normalizeDesign,
+  removeSlideOverride,
   type DesignElement,
   type DesignScope,
   type DesignSpec,
@@ -926,6 +927,18 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
             onImagePromptChange={updateActiveSlideImagePrompt}
             onReset={() => {
               setDesignDirty(true);
+              // "Restaurar IA" used to always replace the WHOLE design spec,
+              // wiping every slide's override regardless of which scope was
+              // selected - so trying to reset just the slide you're looking
+              // at (scope: 'slide') silently reset every other slide too.
+              // Match the scope toggle: reset only the active slide's
+              // override when scoped to it, the whole spec when scoped to
+              // all slides.
+              if (scope === 'slide' && activeSlide) {
+                const key = slideKey(activeSlide, active);
+                setDesign((current) => removeSlideOverride(current, key));
+                return;
+              }
               setDesign(createDefaultDesign(args.aspectRatio || '4:5'));
             }}
           />

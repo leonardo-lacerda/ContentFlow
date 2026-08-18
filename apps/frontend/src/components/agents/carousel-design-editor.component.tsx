@@ -208,6 +208,16 @@ export const effectiveDesign = (design: DesignSpec, slide: DesignSlideRef, index
   return override ? mergeDesign(design, override) : design;
 };
 
+// Drops one slide's override so it falls back to the shared design, leaving
+// every other slide's override (and the shared design itself) untouched.
+// Used by "Restaurar IA" when scoped to a single slide - resetting one slide
+// must never discard customizations made to the others.
+export const removeSlideOverride = (design: DesignSpec, key: string): DesignSpec => {
+  if (!design.slideOverrides || !(key in design.slideOverrides)) return design;
+  const { [key]: _removed, ...rest } = design.slideOverrides;
+  return { ...design, slideOverrides: rest };
+};
+
 export const designBackground = (design: DesignSpec) => {
   if (design.background.type === 'image' && design.background.value) {
     return `linear-gradient(${design.background.overlay || 'rgba(0,0,0,.12)'}, ${design.background.overlay || 'rgba(0,0,0,.12)'}), url(${design.background.value}) center/cover`;
@@ -256,7 +266,9 @@ export function CarouselDesignEditor({ design, activeSlide, activeIndex, scope, 
           <strong>Design da criação</strong>
           <p>Escolha um estilo pronto ou ajuste cada detalhe. Tudo isso vai direto no prompt da imagem gerada pela IA.</p>
         </div>
-        <button type="button" className="is-quiet" onClick={onReset} disabled={disabled}>Restaurar IA</button>
+        <button type="button" className="is-quiet" onClick={onReset} disabled={disabled}>
+          {scope === 'slide' ? 'Restaurar este slide' : 'Restaurar todos os slides'}
+        </button>
       </div>
 
       <div className="cf-segmented" role="group" aria-label="Escopo das mudanças">
