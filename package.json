@@ -46,12 +46,12 @@
     "docker-create": "./var/docker/docker-create.sh",
     "docker-redeploy": "node var/docker/redeploy.mjs",
     "postinstall": "pnpm run prisma-generate",
-    "test": "pnpm run test:backend && pnpm run test:frontend"
-    ,"test:backend": "jest --config apps/backend/jest.config.ts --coverage --detectOpenHandles --reporters=default --reporters=jest-junit"
-    ,"test:frontend": "pnpm --filter ./apps/frontend run test"
-    ,"admin:load": "node scripts/admin-load-test.mjs"
-    ,"admin:audit:verify": "node scripts/verify-admin-audit-immutability.mjs"
-    ,"billing:entitlements:migrate": "node scripts/migrate-billing-entitlements.mjs"
+    "test": "pnpm run test:backend && pnpm run test:frontend",
+    "test:backend": "jest --config apps/backend/jest.config.ts --coverage --detectOpenHandles --reporters=default --reporters=jest-junit",
+    "test:frontend": "pnpm --filter ./apps/frontend run test",
+    "admin:load": "node scripts/admin-load-test.mjs",
+    "admin:audit:verify": "node scripts/verify-admin-audit-immutability.mjs",
+    "billing:entitlements:migrate": "node scripts/migrate-billing-entitlements.mjs"
   },
   "dependencies": {
     "@ag-ui/mastra": "^1.0.1",
@@ -125,6 +125,7 @@
     "@tiptap/react": "^3.0.6",
     "@tiptap/starter-kit": "^3.0.6",
     "@tiptap/suggestion": "^3.0.7",
+    "@types/archiver": "^8.0.0",
     "@types/bcrypt": "^5.0.2",
     "@types/concat-stream": "^2.0.3",
     "@types/facebook-nodejs-business-sdk": "^20.0.2",
@@ -155,6 +156,7 @@
     "@uppy/transloadit": "^4.2.2",
     "@uppy/xhr-upload": "^4.3.3",
     "accept-language": "^3.0.20",
+    "archiver": "^7.0.1",
     "array-move": "^4.0.0",
     "async-mutex": "^0.5.0",
     "axios": "^1.14.0",

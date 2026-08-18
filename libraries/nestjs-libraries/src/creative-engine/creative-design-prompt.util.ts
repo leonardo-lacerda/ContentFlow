@@ -9,23 +9,17 @@ export function mergeDesignRecord(base: Record<string, unknown>, override: Recor
   } as Record<string, unknown>;
 }
 
-// A logo must never be an invented graphic mark, AND — because each carousel
-// slide is a separate, independent generation that can't see the others — the
-// wordmark drifts between slides (different colour, weight, size, position)
-// unless every slide is handed the exact same, fully-specified treatment.
-// Every image carries this rule so the brand renders as one identical text
-// wordmark across the whole set, never an emblem/icon and never restyled.
-const LOGO_RULE_BASE =
-  'Logo rule: if any brand logo appears, render it ONLY as the brand name in clean typography (a plain text wordmark). Never invent or draw an icon, symbol, emblem, monogram, badge, mascot or any graphic mark — text only. The wordmark MUST be identical on every slide of the carousel: same fixed position (top-left corner), same single solid colour, same font family and weight, and the same relative size. Never restyle, recolour, resize or reposition it from one slide to another.';
-
-// When the approved palette gives us a concrete text colour, pin the wordmark
-// to that exact value so independent per-slide generations can't each pick
-// their own colour (the root cause of the "logo looks different every slide"
-// report).
-const logoRule = (wordmarkColor?: string) =>
-  wordmarkColor
-    ? `${LOGO_RULE_BASE} The wordmark colour is exactly ${wordmarkColor} on every slide.`
-    : LOGO_RULE_BASE;
+// The logo is no longer AI-generated at all: it used to be rendered as a text
+// wordmark baked into the image, which independent per-slide generations
+// could never keep perfectly consistent (drifting colour, weight, size,
+// position across slides — the root cause of a string of past "logo looks
+// different every slide" reports). The logo is now a real file the user
+// uploads and composites onto the finished image afterward (see
+// carousel-image-compositor.service.ts), so the image itself must be
+// generated with NO logo, wordmark or brand-name typography at all — leaving
+// clean space for the real logo to be placed on top later.
+const LOGO_RULE =
+  'Logo rule: do NOT render any brand logo, wordmark, brand name typography, icon, symbol, emblem, monogram, badge or mascot anywhere in the image. The logo is applied separately afterward as a real file, not generated. Leave the composition clean, with no text or mark standing in for a logo.';
 
 // A baseline production-quality bar, applied to every generated image
 // regardless of whether a design spec or brand identity is present. Cheap to
@@ -50,7 +44,6 @@ export function compileDesignPrompt(
 ) {
   const brandBlock = brand?.trim() || '';
   const lines: string[] = [prompt, ''];
-  let wordmarkColor = '';
 
   if (brandBlock) {
     lines.push('[BRAND IDENTITY — IDENTICAL ON EVERY SLIDE OF THIS CAROUSEL]', brandBlock, '');
@@ -64,9 +57,6 @@ export function compileDesignPrompt(
       : undefined;
     const resolved = override ? mergeDesignRecord(designSpec, override) : designSpec;
     const palette = (resolved.palette || {}) as Record<string, unknown>;
-    // Pin the brand wordmark to the palette's primary text colour so it stays
-    // identical across independently-generated slides.
-    wordmarkColor = String(palette.text || palette.accent || '').trim();
     // The style block is chosen in the Studio's design editor (preset or
     // fine-tuned) and stored as concrete English prompt fragments — it is the
     // user's loudest lever on the image, so it goes in verbatim. Every field
@@ -84,6 +74,10 @@ export function compileDesignPrompt(
       ? resolved.elements
           .map((item) => item && typeof item === 'object' ? item as Record<string, unknown> : null)
           .filter((item) => item?.visible !== false)
+          // A logo is never AI-generated (see LOGO_RULE above) - filter it out
+          // even if an older, pre-existing design spec still lists it as a
+          // visible element, so this list never contradicts that rule.
+          .filter((item) => item?.type !== 'logo')
           .map((item) => String(item?.type || item?.id))
           .join(', ')
       : 'none';
@@ -129,7 +123,7 @@ export function compileDesignPrompt(
     );
   }
 
-  lines.push(QUALITY_BAR, logoRule(wordmarkColor));
+  lines.push(QUALITY_BAR, LOGO_RULE);
   if (brandBlock) lines.push(CAROUSEL_CONSISTENCY_RULE);
 
   return lines.filter(Boolean).join('\n');

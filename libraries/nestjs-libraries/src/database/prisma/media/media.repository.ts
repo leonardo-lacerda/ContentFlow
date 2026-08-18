@@ -2,10 +2,10 @@ import { PrismaRepository } from '@gitroom/nestjs-libraries/database/prisma/pris
 import { Injectable } from '@nestjs/common';
 import { SaveMediaInformationDto } from '@gitroom/nestjs-libraries/dtos/media/save.media.information.dto';
 
-const CAROUSEL_PROJECT_METADATA_PREFIX =
+export const CAROUSEL_PROJECT_METADATA_PREFIX =
   '__CONTENTFLOW_CAROUSEL_PROJECT__:';
 
-function parseCarouselProjectMetadata(alt?: string | null) {
+export function parseCarouselProjectMetadata(alt?: string | null) {
   if (!alt?.startsWith(CAROUSEL_PROJECT_METADATA_PREFIX)) {
     return { alt, projectMetadata: null };
   }
@@ -24,6 +24,23 @@ function parseCarouselProjectMetadata(alt?: string | null) {
     alt: altParts.join('\n\n').trim() || null,
     projectMetadata,
   };
+}
+
+/**
+ * Inverse of parseCarouselProjectMetadata: re-serializes a (possibly updated)
+ * metadata object plus the slide's own free-text alt back into the single
+ * alt string stored on the row. `metadata` must be a plain object - only
+ * parseCarouselProjectMetadata's success path (JSON.parse) produces one; its
+ * catch path can yield a bare string for pre-existing rows saved before this
+ * convention was JSON, which callers should treat as unmergeable and replace
+ * rather than pass here.
+ */
+export function serializeCarouselProjectMetadata(
+  metadata: Record<string, unknown>,
+  ownAlt?: string | null
+): string {
+  const prefixed = `${CAROUSEL_PROJECT_METADATA_PREFIX}${JSON.stringify(metadata)}`;
+  return ownAlt ? `${prefixed}\n\n${ownAlt}` : prefixed;
 }
 
 @Injectable()
@@ -173,5 +190,60 @@ export class MediaRepository {
       pages: Math.ceil(results.length / 18),
       results: results.slice(pageNum * 18, pageNum * 18 + 18),
     };
+  }
+
+  /**
+   * Resolves and validates a carousel group by its child Media ids (the ids
+   * embedded in the synthetic `carousel:<id1>:<id2>:...` id `getMedia`
+   * produces). Scoped to `org` and non-deleted so a group can never be read
+   * or written by/for another organization, and silently drops any id that
+   * doesn't belong to this org rather than throwing - the caller decides
+   * whether a partial/empty result is acceptable.
+   */
+  async getCarouselGroup(org: string, childIds: string[]) {
+    const rows = await this._media.model.media.findMany({
+      where: { id: { in: childIds }, organizationId: org, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        originalName: true,
+        path: true,
+        alt: true,
+        createdAt: true,
+      },
+    });
+    return rows.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * Sets or clears the carousel-level logo config, persisted the same way
+   * projectMetadata already is: JSON embedded in the metadata-carrying
+   * slide's `alt` field (see parseCarouselProjectMetadata /
+   * serializeCarouselProjectMetadata above), under a `logo` key alongside
+   * whatever project metadata was already there. Never touches the other
+   * slides' rows, and preserves the metadata-carrying slide's own free-text
+   * alt suffix if it had one.
+   */
+  async setCarouselLogo(
+    org: string,
+    childIds: string[],
+    logo: Record<string, unknown> | null
+  ) {
+    const group = await this.getCarouselGroup(org, childIds);
+    if (!group.length) return null;
+    const carrier =
+      group.find((item) => item.alt?.startsWith(CAROUSEL_PROJECT_METADATA_PREFIX)) ||
+      group[0];
+    const parsed = parseCarouselProjectMetadata(carrier.alt);
+    const existingMetadata =
+      parsed.projectMetadata && typeof parsed.projectMetadata === 'object'
+        ? (parsed.projectMetadata as Record<string, unknown>)
+        : {};
+    const nextMetadata = { ...existingMetadata };
+    if (logo) nextMetadata.logo = logo;
+    else delete nextMetadata.logo;
+
+    const alt = serializeCarouselProjectMetadata(nextMetadata, parsed.alt);
+    return this.saveMediaInformation(org, { id: carrier.id, alt });
   }
 }

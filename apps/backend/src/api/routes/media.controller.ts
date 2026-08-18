@@ -24,6 +24,7 @@ import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/s
 import { UploadFactory } from '@gitroom/nestjs-libraries/upload/upload.factory';
 import { SaveMediaInformationDto } from '@gitroom/nestjs-libraries/dtos/media/save.media.information.dto';
 import { SaveMediaCarouselDto } from '@gitroom/nestjs-libraries/dtos/media/save.media.carousel.dto';
+import { SetCarouselLogoDto } from '@gitroom/nestjs-libraries/dtos/media/carousel-logo.dto';
 import { VideoDto } from '@gitroom/nestjs-libraries/dtos/videos/video.dto';
 import { VideoFunctionDto } from '@gitroom/nestjs-libraries/dtos/videos/video.function.dto';
 
@@ -133,6 +134,49 @@ export class MediaController {
     @Body() body: SaveMediaCarouselDto
   ) {
     return this._mediaService.saveCarousel(org.id, body);
+  }
+
+  @Post('/carousel/logo')
+  setCarouselLogo(
+    @GetOrgFromRequest() org: Organization,
+    @Body() body: SetCarouselLogoDto
+  ) {
+    return this._mediaService.setCarouselLogo(org.id, body);
+  }
+
+  @Get('/carousel/slide/download')
+  async downloadCarouselSlide(
+    @GetOrgFromRequest() org: Organization,
+    @Res() res: Response,
+    @Query('groupId') groupId: string,
+    @Query('mediaId') mediaId: string
+  ) {
+    const { buffer, filename } = await this._mediaService.downloadCarouselSlide(
+      org.id,
+      groupId,
+      mediaId
+    );
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+  }
+
+  @Get('/carousel/download-zip')
+  async downloadCarouselZip(
+    @GetOrgFromRequest() org: Organization,
+    @Res() res: Response,
+    @Query('groupId') groupId: string
+  ) {
+    const { title, entries } = await this._mediaService.renderCarouselForZip(
+      org.id,
+      groupId
+    );
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${title}.zip"`
+    );
+    await this._mediaService.streamZipTo(res, entries);
   }
 
   @Post('/upload-simple')

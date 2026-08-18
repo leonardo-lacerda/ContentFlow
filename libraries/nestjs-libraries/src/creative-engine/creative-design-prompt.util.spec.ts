@@ -98,11 +98,30 @@ describe('compileDesignPrompt', () => {
     expect(paletteIndex).toBeGreaterThan(overrideIndex);
   });
 
-  it('preserves the approved copy verbatim and pins the wordmark colour', () => {
+  it('preserves the approved copy verbatim', () => {
     const compiled = compileDesignPrompt('p', baseSpec, { index: 2, headline: 'Título exato', body: 'Corpo exato', cta: 'CTA exato' });
 
     expect(compiled).toContain('Approved copy for this slide, preserve verbatim, do not add or drop words: Título exato | Corpo exato | CTA exato');
-    expect(compiled).toContain('The wordmark colour is exactly #0B1B3A on every slide.');
+  });
+
+  it('instructs the model never to render a logo, wordmark or brand-name typography - the logo is applied separately as a real uploaded file', () => {
+    const compiled = compileDesignPrompt('p', baseSpec, { index: 0 });
+    expect(compiled).toContain('do NOT render any brand logo, wordmark, brand name typography');
+    expect(compiled).not.toMatch(/wordmark colour is exactly/i);
+  });
+
+  it('filters a logo out of the visible-elements list even if an older design spec still lists one', () => {
+    const specWithLogoElement = {
+      ...baseSpec,
+      elements: [
+        { id: 'logo', type: 'logo', visible: true },
+        { id: 'product', type: 'product', visible: true },
+      ],
+    };
+    const compiled = compileDesignPrompt('p', specWithLogoElement, { index: 0 });
+    const elementsLine = compiled.split('\n').find((line) => line.startsWith('Visible elements:'));
+    expect(elementsLine).toContain('product');
+    expect(elementsLine).not.toContain('logo');
   });
 });
 

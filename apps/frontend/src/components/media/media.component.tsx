@@ -36,6 +36,10 @@ import { useModals } from '@gitroom/frontend/components/layout/new-modal';
 import { ThirdPartyMediaLibrary } from '@gitroom/frontend/components/third-parties/third-party.media-library';
 import { Dashboard } from '@uppy/react';
 import { Pagination } from '@gitroom/frontend/components/media/media-pagination';
+import {
+  CarouselViewerModal,
+  type CarouselViewerMedia,
+} from '@gitroom/frontend/components/media/carousel-viewer-modal.component';
 export { Pagination } from '@gitroom/frontend/components/media/media-pagination';
 import {
   PlusIcon,
@@ -280,69 +284,40 @@ export const MediaBox: FC<{
     (media: Media) => async (e: any) => {
       e.stopPropagation();
       const extendedMedia = media as Media & {
-        carouselProject?: {
-          company?: { name?: string };
-          generation?: { totalCost?: { brl?: number } };
-          plan?: { title?: string };
-          creativeBrief?: string;
-        };
+        carouselProject?: CarouselViewerMedia['carouselProject'];
         isCarousel?: boolean;
-        children?: Array<{ id: string; path: string; alt?: string }>;
+        children?: CarouselViewerMedia['children'];
       };
-      const project = extendedMedia.carouselProject;
       const carouselChildren = extendedMedia.isCarousel
         ? extendedMedia.children || []
         : [];
+
+      if (carouselChildren.length > 0) {
+        modals.openModal({
+          title: '',
+          top: 10,
+          size: '1100px',
+          children: (
+            <CarouselViewerModal
+              media={{
+                id: extendedMedia.id,
+                originalName: extendedMedia.originalName || undefined,
+                carouselProject: extendedMedia.carouselProject || null,
+                children: carouselChildren,
+              }}
+              onLogoChanged={() => void mutate()}
+            />
+          ),
+        });
+        return;
+      }
+
       modals.openModal({
         title: '',
         top: 10,
         children: (
           <div className="flex h-full w-full flex-col gap-[18px] p-[50px] text-white">
-            {project && (
-              <div className="rounded-[16px] border border-cyan-400/20 bg-cyan-500/10 p-[16px]">
-                <div className="mb-[8px] flex flex-wrap items-center gap-[8px]">
-                  <span className="rounded-full bg-cyan-500 px-[10px] py-[5px] text-[11px] font-[900] text-white">
-                    Projeto AI Images
-                  </span>
-                  {project?.company?.name && (
-                    <span className="rounded-full bg-white/10 px-[10px] py-[5px] text-[11px] font-[700] text-white/80">
-                      {project.company.name}
-                    </span>
-                  )}
-                  {project?.generation?.totalCost?.brl > 0 && (
-                    <span className="rounded-full bg-white/10 px-[10px] py-[5px] text-[11px] font-[700] text-white/80">
-                      R${' '}
-                      {Number(project.generation.totalCost.brl).toFixed(4)}
-                    </span>
-                  )}
-                </div>
-                <div className="text-[13px] leading-relaxed text-white/75">
-                  {project?.plan?.title && (
-                    <div className="font-[800] text-white">
-                      {project.plan.title}
-                    </div>
-                  )}
-                  {project?.creativeBrief && (
-                    <div className="mt-[6px] line-clamp-3">
-                      {project.creativeBrief}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {carouselChildren.length > 0 ? (
-              <div className="grid grid-cols-2 gap-[12px] md:grid-cols-4">
-                {carouselChildren.map((item: { id: string; path: string; alt?: string }) => (
-                  <img
-                    key={item.id}
-                    className="aspect-square w-full rounded-[12px] object-cover"
-                    src={mediaDirectory.set(item.path)}
-                    alt={item.alt || 'carousel slide'}
-                  />
-                ))}
-              </div>
-            ) : media.path.indexOf('mp4') > -1 ? (
+            {media.path.indexOf('mp4') > -1 ? (
               <VideoFrame
                 autoplay={true}
                 url={mediaDirectory.set(media.path)}
@@ -360,7 +335,7 @@ export const MediaBox: FC<{
         ),
       });
     },
-    []
+    [mutate]
   );
 
   const deleteImage = useCallback(

@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { MediaRepository } from '@gitroom/nestjs-libraries/database/prisma/media/media.repository';
 import { OpenaiService } from '@gitroom/nestjs-libraries/openai/openai.service';
 import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/subscription.service';
@@ -8,14 +8,17 @@ import { VideoManager } from '@gitroom/nestjs-libraries/videos/video.manager';
 import { VideoDto } from '@gitroom/nestjs-libraries/dtos/videos/video.dto';
 import { UploadFactory } from '@gitroom/nestjs-libraries/upload/upload.factory';
 import { SaveMediaCarouselDto } from '@gitroom/nestjs-libraries/dtos/media/save.media.carousel.dto';
+import { SetCarouselLogoDto } from '@gitroom/nestjs-libraries/dtos/media/carousel-logo.dto';
 import {
   AuthorizationActions,
   Sections,
   SubscriptionException,
 } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
-
-export const CAROUSEL_PROJECT_METADATA_PREFIX =
-  '__CONTENTFLOW_CAROUSEL_PROJECT__:';
+import {
+  CAROUSEL_PROJECT_METADATA_PREFIX,
+  parseCarouselProjectMetadata,
+} from '@gitroom/nestjs-libraries/database/prisma/media/media.repository';
+import { CarouselImageCompositorService } from '@gitroom/nestjs-libraries/database/prisma/media/carousel-image-compositor.service';
 
 @Injectable()
 export class MediaService {
@@ -25,7 +28,8 @@ export class MediaService {
     private _mediaRepository: MediaRepository,
     private _openAi: OpenaiService,
     private _subscriptionService: SubscriptionService,
-    private _videoManager: VideoManager
+    private _videoManager: VideoManager,
+    private _compositor: CarouselImageCompositorService
   ) {}
 
   async deleteMedia(org: string, id: string) {
@@ -108,6 +112,107 @@ export class MediaService {
         return saved;
       })
     );
+  }
+
+  /**
+   * The frontend only ever holds the synthetic "carousel:<id1>:<id2>:..." id
+   * `getMedia`'s grouping already produces - this parses it back into the
+   * child Media ids without a second lookup by originalName.
+   */
+  private parseCarouselGroupId(groupId: string): string[] {
+    const parts = groupId.split(':');
+    if (parts[0] !== 'carousel' || parts.length < 2) {
+      throw new BadRequestException('Invalid carousel group id');
+    }
+    return parts.slice(1);
+  }
+
+  private slugifyTitle(title: string): string {
+    return (
+      title
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60) || 'carrossel'
+    );
+  }
+
+  async setCarouselLogo(org: string, body: SetCarouselLogoDto) {
+    const childIds = this.parseCarouselGroupId(body.groupId);
+    const result = await this._mediaRepository.setCarouselLogo(
+      org,
+      childIds,
+      body.logo ? { ...body.logo } : null
+    );
+    if (!result) throw new NotFoundException('Carousel not found');
+    return { ok: true };
+  }
+
+  /**
+   * Resolves a carousel group and its current logo config (if any) in one
+   * call, shared by both the single-slide and zip download paths so they
+   * always agree on which logo is "current".
+   */
+  private async resolveCarouselForDownload(org: string, groupId: string) {
+    const childIds = this.parseCarouselGroupId(groupId);
+    const group = await this._mediaRepository.getCarouselGroup(org, childIds);
+    if (!group.length) throw new NotFoundException('Carousel not found');
+    const carrier = group.find((item) =>
+      item.alt?.startsWith(CAROUSEL_PROJECT_METADATA_PREFIX)
+    );
+    const parsed = parseCarouselProjectMetadata(carrier?.alt);
+    const metadata =
+      parsed.projectMetadata && typeof parsed.projectMetadata === 'object'
+        ? (parsed.projectMetadata as Record<string, unknown>)
+        : {};
+    const logo = (metadata.logo as any) || null;
+    const title =
+      (metadata.plan as any)?.title ||
+      group[0]?.originalName?.replace(/^Carrossel:\s*/, '').replace(/\s*\([^)]*\)\s*$/, '') ||
+      'Carrossel';
+    return { group, logo, title: this.slugifyTitle(title) };
+  }
+
+  /**
+   * Renders one slide (logo baked in if configured) and returns the bytes
+   * plus a predictable filename. Always renders fresh from the untouched
+   * original - never persists the composited result - so removing/changing
+   * the logo later needs no cleanup of stale baked files.
+   */
+  async downloadCarouselSlide(org: string, groupId: string, mediaId: string) {
+    const { group, logo, title } = await this.resolveCarouselForDownload(org, groupId);
+    const index = group.findIndex((item) => item.id === mediaId);
+    if (index < 0) throw new NotFoundException('Slide not found in this carousel');
+    const buffer = await this._compositor.renderSlide(group[index].path, logo);
+    return {
+      buffer,
+      filename: `${title}-slide-${String(index + 1).padStart(2, '0')}.png`,
+    };
+  }
+
+  /**
+   * Renders every slide (logo baked in if configured) for a zip download.
+   * Returns the entries plus the archive's own filename; the controller owns
+   * streaming them into a zip since it owns the HTTP response.
+   */
+  async renderCarouselForZip(org: string, groupId: string) {
+    const { group, logo, title } = await this.resolveCarouselForDownload(org, groupId);
+    const entries = await Promise.all(
+      group.map(async (item, index) => ({
+        filename: `${title}-slide-${String(index + 1).padStart(2, '0')}.png`,
+        buffer: await this._compositor.renderSlide(item.path, logo),
+      }))
+    );
+    return { title, entries };
+  }
+
+  streamZipTo(
+    writeStream: NodeJS.WritableStream,
+    entries: Array<{ filename: string; buffer: Buffer }>
+  ) {
+    return this._compositor.streamZip(writeStream, entries);
   }
 
   private async uploadCarouselImage(image: string, index: number) {

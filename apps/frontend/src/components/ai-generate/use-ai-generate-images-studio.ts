@@ -187,7 +187,13 @@ export function useAiGenerateImagesStudio() {
   const [slideImageAdjustments, setSlideImageAdjustments] = useState<
     Record<string, string>
   >({});
-  const [logoUsage, setLogoUsage] = useState('subtle');
+  // Logos are no longer AI-generated anywhere in the app (see
+  // creative-design-prompt.util.ts's LOGO_RULE and the real upload+composite
+  // flow in /media) - default to not asking the image model for one. Still
+  // user-selectable in the UI below for now; the option itself was not ripped
+  // out in this pass since this whole studio (apps/frontend/.../ai-generate/)
+  // is an orphaned flow not linked from the app's nav.
+  const [logoUsage, setLogoUsage] = useState('none');
   const [logoPosition, setLogoPosition] = useState('top-right');
   const [logoScale, setLogoScale] = useState('small');
   const [selectedLogoReferenceId, setSelectedLogoReferenceId] = useState('');
