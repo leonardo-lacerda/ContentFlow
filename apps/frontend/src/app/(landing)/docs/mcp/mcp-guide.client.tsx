@@ -204,11 +204,15 @@ export function McpGuideClient() {
 
       <section className="container" style={{ marginTop: 8 }}>
         <div className="mcpdocs-note" style={{ maxWidth: 640 }}>
-          <b>Não curte configuração técnica?</b> Copie o endereço desta página e
-          cole numa conversa com o Claude, o ChatGPT ou o Gemini pedindo:{' '}
-          <i>"configure a integração MCP do ContentFlow pra mim, seguindo essa
-          página."</i> Ela consegue ler os passos abaixo e fazer a configuração
-          por você — essa página foi escrita pensando nisso.
+          <b>Não curte configuração técnica?</b> Você pode pedir pra sua IA
+          (Claude, ChatGPT, Gemini) ler o link desta página e te ajudar a
+          seguir os passos — é uma página de documentação normal, sem nada
+          escondido. Sua IA provavelmente vai confirmar com você antes de
+          mexer em qualquer configuração, principalmente por causa da API
+          Key — isso é o comportamento certo dela, não um erro. Nunca cole
+          sua API Key real numa conversa com outra ferramenta de IA além da
+          que você está configurando; se isso acontecer, rotacione a chave em{' '}
+          <b>Configurações → Acesso à API</b> depois.
         </div>
       </section>
 
@@ -283,6 +287,12 @@ export function McpGuideClient() {
               Preencha os dois campos abaixo com os seus dados e o texto pronto
               pra copiar aparece na caixinha, atualizado na hora. Não precisa
               entender o que ele significa — só copiar e colar onde sua IA pedir.
+            </p>
+            <p className="sec-sub" style={{ color: 'var(--danger, #b91c1c)' }}>
+              ⚠️ Sua API Key é uma senha. O texto gerado abaixo a contém em
+              texto puro — cole ele só na configuração da sua própria IA
+              (Claude Desktop, Cursor etc.), nunca dentro de uma conversa de
+              chat com outra IA.
             </p>
           </div>
 
