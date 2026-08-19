@@ -25,7 +25,7 @@ const surfaceCopy: Record<
   studio: {
     tag: 'recomendado pra quase todo mundo',
     title: 'Estúdio — cria e agenda',
-    endpoint: '/mcp-studio',
+    endpoint: '/api/mcp-studio',
     points: [
       'Faz tudo que a opção "Agendamento" faz, e também:',
       'Cria ideias de post e carrosséis inteiros do zero',
@@ -36,7 +36,7 @@ const surfaceCopy: Record<
   scheduling: {
     tag: 'só agendamento',
     title: 'Agendamento',
-    endpoint: '/mcp',
+    endpoint: '/api/mcp',
     points: [
       'Agenda posts prontos em qualquer rede conectada',
       'Confere se suas redes sociais estão conectadas certinho',
@@ -88,7 +88,10 @@ export function McpGuideClient() {
   const [method, setMethod] = useState<AuthMethod>('header');
   const [client, setClient] = useState<McpClient>('Claude Code');
 
-  const effectiveBase = (backendUrl.trim() || 'https://sua-instancia.com').replace(/\/$/, '');
+  const effectiveSite = (backendUrl.trim() || 'https://sua-instancia.com').replace(/\/$/, '');
+  // The field asks for the site's own address (what's in the browser bar), but
+  // the MCP endpoints are mounted under the backend's /api prefix behind nginx.
+  const effectiveBase = `${effectiveSite}/api`;
   const effectiveKey = apiKey.trim() || 'SUA_API_KEY';
 
   const { config, hint } = getMcpConfig(client, method, effectiveBase, effectiveKey, surface) ?? {
