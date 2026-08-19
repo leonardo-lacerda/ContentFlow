@@ -124,6 +124,29 @@ describe('CreativeGenerationTool', () => {
     );
   });
 
+  it('passes stylePresetId/paletteId/density/alignment through to generateCarouselImages', async () => {
+    await execute({
+      operation: 'generate-carousel',
+      confirmed: true,
+      designApproved: true,
+      projectId: 'proj-1',
+      slides: [{ imagePrompt: 'slide 1' }],
+      stylePresetId: 'dark-premium',
+      paletteId: 'mint-fresh',
+      density: 'dense',
+      alignment: 'center',
+    });
+    expect(service.generateCarouselImages).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({
+        stylePresetId: 'dark-premium',
+        paletteId: 'mint-fresh',
+        density: 'dense',
+        alignment: 'center',
+      })
+    );
+  });
+
   it('requires projectId and presetId for run-preset', async () => {
     await expect(execute({ operation: 'run-preset', confirmed: true })).rejects.toThrow(
       /projectId and presetId are required/

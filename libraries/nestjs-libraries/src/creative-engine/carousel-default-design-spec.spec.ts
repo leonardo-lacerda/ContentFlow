@@ -14,6 +14,15 @@ describe('buildDefaultCarouselDesignSpec', () => {
     expect(prompt).toContain('carousel-cover');
   });
 
+  it('defaults to the photo-clean preset and its cobalt-cream palette', () => {
+    const spec = buildDefaultCarouselDesignSpec({ aspectRatio: '4:5' });
+    const style = spec.style as Record<string, unknown>;
+    const palette = spec.palette as Record<string, unknown>;
+    expect(style.presetId).toBe('photo-clean');
+    expect(palette.paletteId).toBe('cobalt-cream');
+    expect(palette.accent).toBe('#1E40FF');
+  });
+
   it('seeds the accent colours from the brand DNA colours when present', () => {
     const spec = buildDefaultCarouselDesignSpec({
       aspectRatio: '4:5',
@@ -26,13 +35,6 @@ describe('buildDefaultCarouselDesignSpec', () => {
     // what pushes brand colours as dominant; the spec palette must stay legible.
     expect(palette.background).toBe('#F4F1E9');
     expect(palette.text).toBe('#0B1B3A');
-  });
-
-  it('falls back to the default accents when no brand colours are given', () => {
-    const spec = buildDefaultCarouselDesignSpec({ aspectRatio: '4:5' });
-    const palette = spec.palette as Record<string, unknown>;
-    expect(palette.accent).toBe('#1E40FF');
-    expect(palette.accent2).toBe('#0B1B3A');
   });
 
   it('ignores blank/whitespace brand colours', () => {
@@ -51,5 +53,71 @@ describe('buildDefaultCarouselDesignSpec', () => {
     expect(buildDefaultCarouselDesignSpec({ aspectRatio: '4:5' }).sizeId).toBe('ig-portrait');
     // Default when unspecified is portrait, matching the editor's default.
     expect(buildDefaultCarouselDesignSpec({}).sizeId).toBe('ig-portrait');
+  });
+
+  describe('explicit stylePresetId / paletteId (MCP agent passthrough)', () => {
+    it('resolves the requested preset into the style block and its matching palette', () => {
+      const spec = buildDefaultCarouselDesignSpec({ stylePresetId: 'dark-premium' });
+      const style = spec.style as Record<string, unknown>;
+      const palette = spec.palette as Record<string, unknown>;
+      expect(style.presetId).toBe('dark-premium');
+      expect(style.mood).toContain('sophisticated');
+      expect(palette.paletteId).toBe('midnight-neon');
+      const layout = spec.layout as Record<string, unknown>;
+      expect(layout.density).toBe('balanced');
+    });
+
+    it('falls back to the default preset for an unknown stylePresetId', () => {
+      const spec = buildDefaultCarouselDesignSpec({ stylePresetId: 'not-a-real-preset' });
+      const style = spec.style as Record<string, unknown>;
+      expect(style.presetId).toBe('photo-clean');
+    });
+
+    it('lets an explicit paletteId override the preset default palette', () => {
+      const spec = buildDefaultCarouselDesignSpec({
+        stylePresetId: 'dark-premium',
+        paletteId: 'mint-fresh',
+      });
+      const style = spec.style as Record<string, unknown>;
+      const palette = spec.palette as Record<string, unknown>;
+      // Style still comes from the requested preset...
+      expect(style.presetId).toBe('dark-premium');
+      // ...but the palette is the explicitly requested one, not dark-premium's own midnight-neon.
+      expect(palette.paletteId).toBe('mint-fresh');
+    });
+
+    it('an explicit paletteId wins over brand DNA colours', () => {
+      const spec = buildDefaultCarouselDesignSpec({
+        paletteId: 'mono-ink',
+        brandColors: ['#FF0000', '#00FF00'],
+      });
+      const palette = spec.palette as Record<string, unknown>;
+      // The user's explicit palette choice must not be overwritten by inferred
+      // brand colours — brand-colour seeding is an inference for when the
+      // caller expressed no preference at all.
+      expect(palette.paletteId).toBe('mono-ink');
+      expect(palette.accent).toBe('#141414');
+      expect(palette.accent2).toBe('#8A8A85');
+    });
+
+    it('lets explicit density/alignment override the preset default and the left default', () => {
+      const spec = buildDefaultCarouselDesignSpec({
+        stylePresetId: 'photo-clean', // preset density is 'airy'
+        density: 'dense',
+        alignment: 'center',
+      });
+      const layout = spec.layout as Record<string, unknown>;
+      const typography = spec.typography as Record<string, unknown>;
+      expect(layout.density).toBe('dense');
+      expect(typography.alignment).toBe('center');
+    });
+
+    it('falls back to the preset density and left alignment when not overridden', () => {
+      const spec = buildDefaultCarouselDesignSpec({ stylePresetId: 'photo-clean' });
+      const layout = spec.layout as Record<string, unknown>;
+      const typography = spec.typography as Record<string, unknown>;
+      expect(layout.density).toBe('airy');
+      expect(typography.alignment).toBe('left');
+    });
   });
 });

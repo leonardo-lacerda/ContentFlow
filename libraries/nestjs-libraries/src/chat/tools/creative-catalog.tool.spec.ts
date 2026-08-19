@@ -110,4 +110,23 @@ describe('CreativeCatalogTool', () => {
     await expect(execute({ operation: 'capabilities' })).rejects.toThrow(/Creative Engine is disabled/);
     delete process.env.CREATIVE_ENGINE_ENABLED;
   });
+
+  // Lets an MCP agent list real style/palette options before generate-carousel
+  // (see creativeGenerationTool's stylePresetId/paletteId) instead of guessing
+  // or always using the default - static catalogue data, no service call.
+  it('dispatches carousel-styles to the shared design catalogue', async () => {
+    const result = await execute({ operation: 'carousel-styles' });
+    expect(result.result.stylePresets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'dark-premium', name: 'Premium escuro', defaultPaletteId: 'midnight-neon' }),
+      ])
+    );
+    expect(result.result.palettes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'cobalt-cream', name: 'Azul & creme' }),
+      ])
+    );
+    expect(result.result.stylePresets).toHaveLength(10);
+    expect(result.result.palettes).toHaveLength(10);
+  });
 });

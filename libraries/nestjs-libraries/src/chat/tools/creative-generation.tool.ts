@@ -8,6 +8,17 @@ import type { CreativeMediaTool } from '@gitroom/nestjs-libraries/creative-engin
 import { AgentToolInterface } from '@gitroom/nestjs-libraries/chat/agent.tool.interface';
 import { checkAuth } from '@gitroom/nestjs-libraries/chat/auth.context';
 import { compileDesignPrompt } from '@gitroom/nestjs-libraries/creative-engine/creative-design-prompt.util';
+import { STYLE_PRESETS, PALETTES } from '@gitroom/nestjs-libraries/creative-engine/carousel-design-catalogue';
+
+// Cast to zod's non-empty-tuple shape: the id lists are derived from the
+// shared catalogue (not re-typed here) so a new preset/palette added there is
+// picked up automatically without touching this file. Font pairing is
+// deliberately not exposed here: compileDesignPrompt never reads
+// typography.headingFont/bodyFont (font choice only affects the Studio's own
+// client-side text-overlay compositing, which the headless/MCP path doesn't
+// have), so it would be a knob that silently does nothing.
+const stylePresetIds = STYLE_PRESETS.map((p) => p.presetId) as unknown as [string, ...string[]];
+const paletteIds = PALETTES.map((p) => p.paletteId) as unknown as [string, ...string[]];
 
 const capabilities = [
   'image-generation',
@@ -69,6 +80,10 @@ type CreativeGenerationInput = {
   scenes?: Array<Record<string, unknown>>;
   startSec?: number;
   designSpec?: Record<string, unknown>;
+  stylePresetId?: string;
+  paletteId?: string;
+  density?: 'airy' | 'balanced' | 'dense';
+  alignment?: 'left' | 'center' | 'right';
   slides?: Array<{
     id?: string;
     index?: number;
@@ -150,6 +165,18 @@ export class CreativeGenerationTool implements AgentToolInterface {
         startSec: z.number().optional(),
         designApproved: z.boolean().optional(),
         designSpec: z.record(z.any()).optional(),
+        stylePresetId: z.enum(stylePresetIds).optional().describe(
+          `For generate-carousel: a named visual style, applied identically to every slide. If the user hasn't stated a preference, call creativeCatalogTool with operation 'carousel-styles' first and offer 2-3 named options rather than silently picking one. Available presets: ${STYLE_PRESETS.map((p) => `${p.presetId} (${p.presetName}: ${p.description})`).join('; ')}. Defaults to photo-clean when omitted.`
+        ),
+        paletteId: z.enum(paletteIds).optional().describe(
+          `For generate-carousel: overrides the colour palette independently of stylePresetId (e.g. a dark-premium style with a mint-fresh palette). Available palettes: ${PALETTES.map((p) => `${p.paletteId} (${p.name})`).join('; ')}. When omitted, uses the chosen preset's own palette, seeded with the brand's real colours if available.`
+        ),
+        density: z.enum(['airy', 'balanced', 'dense']).optional().describe(
+          'For generate-carousel: how much visual/text density per slide. Defaults to the chosen preset\'s own density.'
+        ),
+        alignment: z.enum(['left', 'center', 'right']).optional().describe(
+          'For generate-carousel: text alignment for headline/body/CTA. Defaults to left.'
+        ),
         slides: z.array(z.object({
           id: z.string().optional(),
           index: z.number().optional(),
@@ -237,6 +264,10 @@ export class CreativeGenerationTool implements AgentToolInterface {
               prompt: inputData.prompt,
               aspectRatio: inputData.aspectRatio,
               designSpec: inputData.designSpec,
+              stylePresetId: inputData.stylePresetId,
+              paletteId: inputData.paletteId,
+              density: inputData.density,
+              alignment: inputData.alignment,
               idempotencyKey: inputData.idempotencyKey,
               slides: inputData.slides,
             });

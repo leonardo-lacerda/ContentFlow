@@ -1065,6 +1065,13 @@ export class CreativeEngineService {
     prompt?: string;
     aspectRatio?: string;
     designSpec?: Record<string, unknown>;
+    // Headless (MCP) style selection, relayed by the calling agent when the
+    // user expressed a preference — see creativeGenerationTool. Ignored when
+    // a full designSpec is already supplied (the Studio frontend path).
+    stylePresetId?: string;
+    paletteId?: string;
+    density?: 'airy' | 'balanced' | 'dense';
+    alignment?: 'left' | 'center' | 'right';
     idempotencyKey?: string;
     slides: Array<{
       id?: string;
@@ -1111,6 +1118,10 @@ export class CreativeEngineService {
     const designSpec = input.designSpec ?? buildDefaultCarouselDesignSpec({
       aspectRatio: input.aspectRatio,
       brandColors: await this.getBrandDnaColors(organizationId),
+      stylePresetId: input.stylePresetId,
+      paletteId: input.paletteId,
+      density: input.density,
+      alignment: input.alignment,
     });
     const jobs: Array<{ slideId?: string; slideIndex: number; job?: unknown; error?: string }> = [];
     const runners: Array<() => Promise<unknown>> = [];

@@ -7,10 +7,12 @@ import { CreativeWorkflowService } from '@gitroom/nestjs-libraries/creative-engi
 import { CreativePublishService } from '@gitroom/nestjs-libraries/creative-engine/creative-publish.service';
 import { AgentToolInterface } from '@gitroom/nestjs-libraries/chat/agent.tool.interface';
 import { checkAuth } from '@gitroom/nestjs-libraries/chat/auth.context';
+import { STYLE_PRESETS, PALETTES } from '@gitroom/nestjs-libraries/creative-engine/carousel-design-catalogue';
 
 const operations = [
   'capabilities',
   'presets',
+  'carousel-styles',
   'projects',
   'project',
   'assets',
@@ -68,7 +70,7 @@ export class CreativeCatalogTool implements AgentToolInterface {
     return createTool({
       id: 'creativeCatalogTool',
       description:
-        'Read-only lookups for the ContentFlow Creative Engine: capabilities, presets, projects, assets, products, actors, voices, credits, metrics, publications, jobs and workflows. Never mutates state and never consumes credits.',
+        'Read-only lookups for the ContentFlow Creative Engine: capabilities, presets, projects, assets, products, actors, voices, credits, metrics, publications, jobs, workflows, and carousel design styles/palettes. Call operation "carousel-styles" before generate-carousel when the user hasn\'t stated a visual preference, and offer 2-3 named options from the result instead of silently using the default. Never mutates state and never consumes credits.',
       mcp: {
         annotations: {
           title: 'Creative Catalog',
@@ -101,6 +103,27 @@ export class CreativeCatalogTool implements AgentToolInterface {
             return { result: service.listCapabilities() };
           case 'presets':
             return { result: service.listPresets() };
+          case 'carousel-styles':
+            // Static catalogue data — no org context or service call needed.
+            // Feeds generate-carousel's stylePresetId/paletteId parameters
+            // (see creativeGenerationTool): call this first, offer the user
+            // named options, then pass their pick straight through.
+            return {
+              result: {
+                stylePresets: STYLE_PRESETS.map((preset) => ({
+                  id: preset.presetId,
+                  name: preset.presetName,
+                  description: preset.description,
+                  defaultPaletteId: preset.paletteId,
+                })),
+                palettes: PALETTES.map((palette) => ({
+                  id: palette.paletteId,
+                  name: palette.name,
+                  accent: palette.accent,
+                  accent2: palette.accent2,
+                })),
+              },
+            };
           case 'projects':
             return { result: await service.listProjects(organization.id) };
           case 'project':
