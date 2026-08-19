@@ -25,14 +25,19 @@ const mcpClients = [
 
 type McpClient = (typeof mcpClients)[number];
 
+type McpSurface = 'scheduling' | 'studio';
+
 const getMcpConfig = (
   client: McpClient,
   method: 'header' | 'path',
   mcpBase: string,
-  apiKey: string
+  apiKey: string,
+  surface: McpSurface = 'scheduling'
 ): { config: string; hint: string } => {
-  const urlWithKey = `${mcpBase}/mcp/${apiKey}`;
-  const urlBase = `${mcpBase}/mcp`;
+  const mcpPath = surface === 'studio' ? 'mcp-studio' : 'mcp';
+  const serverName = surface === 'studio' ? 'contentflow-studio' : 'contentflow';
+  const urlWithKey = `${mcpBase}/${mcpPath}/${apiKey}`;
+  const urlBase = `${mcpBase}/${mcpPath}`;
   const bearer = `Bearer ${apiKey}`;
 
   const json = (obj: object) => JSON.stringify(obj, null, 2);
@@ -41,46 +46,46 @@ const getMcpConfig = (
     switch (client) {
       case 'Claude Code':
         return {
-          config: `claude mcp add contentflow --transport http "${urlWithKey}"`,
+          config: `claude mcp add ${serverName} --transport http "${urlWithKey}"`,
           hint: 'Run this command in your terminal.',
         };
       case 'Cursor':
         return {
-          config: json({ mcpServers: { contentflow: { url: urlWithKey } } }),
+          config: json({ mcpServers: { [serverName]: { url: urlWithKey } } }),
           hint: 'Add to .cursor/mcp.json in your project root.',
         };
       case 'VS Code / Copilot':
         return {
           config: json({
-            servers: { contentflow: { type: 'http', url: urlWithKey } },
+            servers: { [serverName]: { type: 'http', url: urlWithKey } },
           }),
           hint: 'Add to .vscode/mcp.json in your project root.',
         };
       case 'Windsurf':
         return {
           config: json({
-            mcpServers: { contentflow: { serverUrl: urlWithKey } },
+            mcpServers: { [serverName]: { serverUrl: urlWithKey } },
           }),
           hint: 'Add to ~/.codeium/windsurf/mcp_config.json',
         };
       case 'Amp':
         return {
-          config: `amp mcp add contentflow ${urlWithKey}`,
+          config: `amp mcp add ${serverName} ${urlWithKey}`,
           hint: 'Run this command in your terminal.',
         };
       case 'Codex':
         return {
-          config: `# ~/.codex/config.toml\n\n[mcp_servers.contentflow]\nurl = "${urlWithKey}"`,
+          config: `# ~/.codex/config.toml\n\n[mcp_servers.${serverName}]\nurl = "${urlWithKey}"`,
           hint: 'Add to ~/.codex/config.toml',
         };
       case 'Gemini CLI':
         return {
-          config: json({ mcpServers: { contentflow: { url: urlWithKey } } }),
+          config: json({ mcpServers: { [serverName]: { url: urlWithKey } } }),
           hint: 'Add to ~/.gemini/settings.json',
         };
       case 'Warp':
         return {
-          config: json({ contentflow: { url: urlWithKey } }),
+          config: json({ [serverName]: { url: urlWithKey } }),
           hint: 'Settings > MCP Servers > + Add, then paste this config.',
         };
     }
@@ -89,14 +94,14 @@ const getMcpConfig = (
   switch (client) {
     case 'Claude Code':
       return {
-        config: `claude mcp add contentflow \\\n  --transport http \\\n  --header "Authorization: ${bearer}" \\\n  "${urlBase}"`,
+        config: `claude mcp add ${serverName} \\\n  --transport http \\\n  --header "Authorization: ${bearer}" \\\n  "${urlBase}"`,
         hint: 'Run this command in your terminal.',
       };
     case 'Cursor':
       return {
         config: json({
           mcpServers: {
-            contentflow: { url: urlBase, headers: { Authorization: bearer } },
+            [serverName]: { url: urlBase, headers: { Authorization: bearer } },
           },
         }),
         hint: 'Add to .cursor/mcp.json in your project root.',
@@ -105,7 +110,7 @@ const getMcpConfig = (
       return {
         config: json({
           servers: {
-            contentflow: {
+            [serverName]: {
               type: 'http',
               url: urlBase,
               headers: { Authorization: bearer },
@@ -118,7 +123,7 @@ const getMcpConfig = (
       return {
         config: json({
           mcpServers: {
-            contentflow: {
+            [serverName]: {
               serverUrl: urlBase,
               headers: { Authorization: bearer },
             },
@@ -130,21 +135,21 @@ const getMcpConfig = (
       return {
         config: json({
           'amp.mcpServers': {
-            contentflow: { url: urlBase, headers: { Authorization: bearer } },
+            [serverName]: { url: urlBase, headers: { Authorization: bearer } },
           },
         }),
         hint: 'Add to your Amp settings.json',
       };
     case 'Codex':
       return {
-        config: `# ~/.codex/config.toml\n\n[mcp_servers.contentflow]\nurl = "${urlBase}"\nhttp_headers = { "Authorization" = "${bearer}" }`,
+        config: `# ~/.codex/config.toml\n\n[mcp_servers.${serverName}]\nurl = "${urlBase}"\nhttp_headers = { "Authorization" = "${bearer}" }`,
         hint: 'Add to ~/.codex/config.toml',
       };
     case 'Gemini CLI':
       return {
         config: json({
           mcpServers: {
-            contentflow: { url: urlBase, headers: { Authorization: bearer } },
+            [serverName]: { url: urlBase, headers: { Authorization: bearer } },
           },
         }),
         hint: 'Add to ~/.gemini/settings.json',
@@ -152,7 +157,7 @@ const getMcpConfig = (
     case 'Warp':
       return {
         config: json({
-          contentflow: { url: urlBase, headers: { Authorization: bearer } },
+          [serverName]: { url: urlBase, headers: { Authorization: bearer } },
         }),
         hint: 'Settings > MCP Servers > + Add, then paste this config.',
       };
@@ -202,6 +207,7 @@ const McpSection = ({
   mcpBase: string;
 }) => {
   const t = useT();
+  const [surface, setSurface] = useState<McpSurface>('scheduling');
   const [activeClient, setActiveClient] = useState<McpClient>('Claude Code');
   const [method, setMethod] = useState<'header' | 'path'>('header');
   const [revealed, setRevealed] = useState(false);
@@ -210,11 +216,13 @@ const McpSection = ({
     activeClient,
     method,
     mcpBase,
-    user.publicApi
+    user.publicApi,
+    surface
   );
 
-  const remoteUrl = `${mcpBase}/mcp/${user.publicApi}`;
-  const cliUrl = `${mcpBase}/mcp`;
+  const mcpPath = surface === 'studio' ? 'mcp-studio' : 'mcp';
+  const remoteUrl = `${mcpBase}/${mcpPath}/${user.publicApi}`;
+  const cliUrl = `${mcpBase}/${mcpPath}`;
 
   const maskedConfig = revealed
     ? config
@@ -250,6 +258,38 @@ const McpSection = ({
         </div>
       </div>
       <div className="p-[20px] flex flex-col gap-[16px]">
+        <div className="flex flex-col gap-[6px]">
+          <div className="text-[13px] font-[600] text-customColor18">
+            {t('mcp_surface', 'Surface')}
+          </div>
+          <div className="flex gap-[6px]">
+            {(['scheduling', 'studio'] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                className={clsx(
+                  'cursor-pointer px-[14px] h-[36px] text-[13px] font-[500] rounded-[8px] transition-colors',
+                  surface === s
+                    ? 'bg-[#b4530a] text-white'
+                    : 'bg-btnSimple text-customColor18 hover:bg-boxHover hover:text-textColor'
+                )}
+                onClick={() => setSurface(s)}
+              >
+                {s === 'scheduling'
+                  ? t('mcp_surface_scheduling', 'Scheduling (/mcp)')
+                  : t('mcp_surface_studio', 'Studio – creative (/mcp-studio)')}
+              </button>
+            ))}
+          </div>
+          {surface === 'studio' && (
+            <div className="text-[12px] text-customColor18 mt-[2px]">
+              {t(
+                'mcp_studio_hint',
+                'Full Studio capabilities: ideas, carousels, images, videos and scheduling. Uses /mcp-studio endpoint.'
+              )}
+            </div>
+          )}
+        </div>
         <div className="flex flex-col gap-[6px]">
           <div className="text-[13px] font-[600] text-customColor18">
             {t('auth_method', 'Authentication')}

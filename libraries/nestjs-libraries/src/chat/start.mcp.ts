@@ -18,6 +18,40 @@ const fixAcceptHeader = (req: Request) => {
   }
 };
 
+// Sets the permissive CORS headers required on every MCP endpoint.
+const setCorsHeaders = (res: Response) => {
+  // @ts-ignore
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', '*');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Expose-Headers', '*');
+};
+
+// Dispatches a single authenticated MCP HTTP request to the given server.
+const dispatchMcpHttp = async (
+  req: Request,
+  res: Response,
+  server: MCPServer,
+  urlPath: string,
+  auth: any,
+  requestId: string
+) => {
+  const url = new URL(urlPath, process.env.NEXT_PUBLIC_BACKEND_URL);
+  fixAcceptHeader(req);
+  await runWithContext({ requestId, auth }, async () => {
+    await server.startHTTP({
+      url,
+      httpPath: url.pathname,
+      options: {
+        sessionIdGenerator: () => randomUUID(),
+        enableJsonResponse: true,
+      },
+      req,
+      res,
+    });
+  });
+};
+
 export const startMcp = async (app: INestApplication) => {
   const mastraService = app.get(MastraService, { strict: false });
   const organizationService = app.get(OrganizationService, { strict: false });
@@ -264,4 +298,64 @@ export const startMcp = async (app: INestApplication) => {
       }
     );
   });
+
+  // Studio MCP — headless creative endpoint. Disabled by default; opt-in with
+  // ENABLE_STUDIO_MCP_LOCAL=true locally or leave DISABLE_STUDIO_MCP unset in
+  // production. Uses a separate MCPServer so the existing /mcp routes stay
+  // byte-identical (no risk of breaking external clients that call them by name).
+  const studioMcpEnabled =
+    process.env.DISABLE_STUDIO_MCP !== 'true' &&
+    (process.env.NODE_ENV === 'production' ||
+      process.env.ENABLE_STUDIO_MCP_LOCAL === 'true');
+
+  if (studioMcpEnabled) {
+    const studioAgent = mastra.getAgent('contentflow-studio-mcp');
+    const studioTools = await studioAgent.listTools();
+    const studioServer = new MCPServer({
+      name: 'ContentFlow Studio MCP',
+      version: '1.0.0',
+      tools: studioTools,
+      agents: { 'contentflow-studio-mcp': studioAgent },
+    });
+
+    // Header-auth route: Authorization: Bearer <api-key>
+    app.use('/mcp-studio', async (req: Request, res: Response, next: () => void) => {
+      if (req.path !== '/' && req.path !== '') {
+        next();
+        return;
+      }
+      setCorsHeaders(res);
+      if (req.method === 'OPTIONS') { res.sendStatus(200); return; }
+
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token) { res.status(401).send('Missing Authorization header'); return; }
+
+      const auth = await resolveAuth(token);
+      if (!auth) { res.status(401).send('Invalid API Key or OAuth token'); return; }
+
+      await dispatchMcpHttp(req, res, studioServer, '/mcp-studio', auth, token);
+    });
+
+    // Path-auth route: /mcp-studio/<api-key> — for remote MCP clients that
+    // embed the key in the URL (same pattern as /mcp/:id).
+    app.use('/mcp-studio/:id', async (req: Request, res: Response) => {
+      setCorsHeaders(res);
+      if (req.method === 'OPTIONS') { res.sendStatus(200); return; }
+
+      // @ts-ignore
+      const auth = await organizationService.getOrgByApiKey(req.params.id);
+      if (!auth) { res.status(400).send('Invalid API Key'); return; }
+
+      // @ts-ignore
+      const apiKey = req.params.id as string;
+      await dispatchMcpHttp(
+        req,
+        res,
+        studioServer,
+        `/mcp-studio/${apiKey}`,
+        auth,
+        apiKey
+      );
+    });
+  }
 };

@@ -21,6 +21,10 @@ export class MastraService {
           // instructions, but creativeEngineTool split into 6 smaller tools.
           // Never exposed over MCP.
           'contentflow-studio': await this._loadToolsService.studioAgent(),
+          // Headless Studio agent for the /mcp-studio endpoint: same creative
+          // capabilities as contentflow-studio but without CreationOptionsTool
+          // (frontend configurator card). Uses MCP-surface prompt rules.
+          'contentflow-studio-mcp': await this._loadToolsService.studioMcpAgent(),
         },
         logger: new ConsoleLogger({
           level: 'info',

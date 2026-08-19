@@ -55,6 +55,31 @@ export const studioToolList = [
   CreativeWorkflowTool,
 ];
 
+// Studio tool list for the public /mcp-studio endpoint: same as studioToolList
+// but without CreationOptionsTool, which is headless-incompatible (it renders a
+// frontend configurator card and waits for user selection — meaningless over MCP).
+// The Studio MCP agent infers platform/format/tone from the brief instead.
+export const studioMcpToolList = [
+  IntegrationListTool,
+  IntegrationValidationTool,
+  IntegrationTriggerTool,
+  IntegrationSchedulePostTool,
+  GenerateVideoOptionsTool,
+  VideoFunctionTool,
+  GenerateVideoTool,
+  GenerateImageTool,
+  ContentStudioTool,
+  StudioArtifactTool,
+  ContentPresentationTool,
+  // CreationOptionsTool excluded: UI-only, requires a frontend configurator
+  CreativeCatalogTool,
+  CreativeProjectTool,
+  CreativeGenerationTool,
+  CreativeJobTool,
+  CreativePublishTool,
+  CreativeWorkflowTool,
+];
+
 // Union of every tool class across both lists, each appearing once - this is
 // what actually needs registering as a NestJS provider (ChatModule). toolList
 // and studioToolList themselves are the ordered, per-agent picks that
