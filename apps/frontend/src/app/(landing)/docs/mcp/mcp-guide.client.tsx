@@ -14,8 +14,8 @@ const authMethods = ['header', 'path'] as const;
 type AuthMethod = (typeof authMethods)[number];
 
 const authLabels: Record<AuthMethod, string> = {
-  header: 'CLI (Claude Code, Codex...)',
-  path: 'Servidor remoto (ChatGPT, Claude)',
+  header: 'No terminal (Claude Code, Codex...)',
+  path: 'No site/app da IA (ChatGPT, Claude web...)',
 };
 
 const surfaceCopy: Record<
@@ -23,25 +23,25 @@ const surfaceCopy: Record<
   { tag: string; title: string; endpoint: string; points: string[] }
 > = {
   studio: {
-    tag: 'recomendado',
-    title: 'Estúdio — criativo',
+    tag: 'recomendado pra quase todo mundo',
+    title: 'Estúdio — cria e agenda',
     endpoint: '/mcp-studio',
     points: [
-      'Tudo do endpoint de agendamento, mais:',
-      'Gera ideias e carrosséis completos',
-      'Retorna artefato estruturado em JSON',
-      'Feito para fluxos headless',
+      'Faz tudo que a opção "Agendamento" faz, e também:',
+      'Cria ideias de post e carrosséis inteiros do zero',
+      'Devolve o resultado organizado, pronto pra revisão',
+      'Pensada pra IA usar sem precisar de cliques na tela',
     ],
   },
   scheduling: {
-    tag: 'clássico',
+    tag: 'só agendamento',
     title: 'Agendamento',
     endpoint: '/mcp',
     points: [
-      'Agenda posts em qualquer canal',
-      'Valida integrações conectadas',
-      'Acesso ao Creative Engine completo',
-      'Gera imagens e vídeos',
+      'Agenda posts prontos em qualquer rede conectada',
+      'Confere se suas redes sociais estão conectadas certinho',
+      'Também gera imagens e vídeos com IA',
+      'Opção mais antiga — mantida pra quem já usa assim',
     ],
   },
 };
@@ -181,14 +181,16 @@ export function McpGuideClient() {
       </div>
 
       <section className="container mcpdocs-hero">
-        <span className="eyebrow">integração · protocolo mcp</span>
+        <span className="eyebrow">deixe uma IA usar sua conta</span>
         <h1>
-          Seu agente de IA, <span className="hl">operando o ContentFlow</span>.
+          Sua IA passa a <span className="hl">operar o ContentFlow</span> sozinha.
         </h1>
         <p>
-          Conecte o Claude Code, Cursor, Codex ou qualquer cliente MCP à sua conta.
-          Ele agenda posts, gera ideias e monta carrosséis direto do seu editor —
-          sem você trocar de tela.
+          MCP é um jeito padrão de conectar uma inteligência artificial — Claude,
+          ChatGPT, Cursor e outras — direto à sua conta ContentFlow. Depois de
+          conectada, você só precisa pedir em português: "agende esse post pra
+          amanhã" ou "me dá 5 ideias de carrossel" — e a IA faz sozinha, sem você
+          precisar abrir o site.
         </p>
         <div className="mcpdocs-hero-actions">
           <a href="#configurar" className="btn btn-lime btn-lg">
@@ -200,6 +202,16 @@ export function McpGuideClient() {
         </div>
       </section>
 
+      <section className="container" style={{ marginTop: 8 }}>
+        <div className="mcpdocs-note" style={{ maxWidth: 640 }}>
+          <b>Não curte configuração técnica?</b> Copie o endereço desta página e
+          cole numa conversa com o Claude, o ChatGPT ou o Gemini pedindo:{' '}
+          <i>"configure a integração MCP do ContentFlow pra mim, seguindo essa
+          página."</i> Ela consegue ler os passos abaixo e fazer a configuração
+          por você — essa página foi escrita pensando nisso.
+        </div>
+      </section>
+
       <section className="section">
         <div className="container" style={{ maxWidth: 720 }}>
           <div className="sec-head">
@@ -208,10 +220,12 @@ export function McpGuideClient() {
           </div>
           <div className="mcpdocs-steps">
             <Step n={1} title="Uma conta ContentFlow">
-              Qualquer plano já libera o acesso via API e MCP.
+              Qualquer plano, inclusive o gratuito, já libera essa conexão.
             </Step>
-            <Step n={2} title="Sua API Key">
-              Vá em <b>Configurações → Acesso</b> e copie a chave. Você vai colar
+            <Step n={2} title="Sua API Key (uma senha só sua, gerada automaticamente)">
+              Vá em <b>Configurações → Acesso</b> e copie a chave. É com ela que o
+              ContentFlow reconhece que é você — como uma senha, mas feita pra
+              programas usarem, não pra você digitar toda hora. Você vai colar
               ela no gerador de configuração logo abaixo.
             </Step>
           </div>
@@ -222,10 +236,10 @@ export function McpGuideClient() {
         <div className="container">
           <div className="sec-head">
             <p className="eyebrow">passo 1</p>
-            <h2>Escolha o endpoint</h2>
+            <h2>Escolha o que a IA pode fazer</h2>
             <p className="sec-sub">
-              O ContentFlow expõe dois servidores MCP. Escolha o que combina com o
-              que você precisa.
+              O ContentFlow tem dois "endereços" diferentes pra IA se conectar —
+              pense neles como dois planos de acesso. Escolha um.
             </p>
           </div>
           <div className="mcpdocs-endpoints">
@@ -253,9 +267,9 @@ export function McpGuideClient() {
             })}
           </div>
           <div className="mcpdocs-note">
-            <b>Na dúvida, use /mcp-studio</b> — é um superconjunto de /mcp. Só use
-            /mcp se precisar da interface clássica de creativeEngineTool por
-            compatibilidade.
+            <b>Na dúvida, escolha "Estúdio".</b> Ele faz tudo que o "Agendamento"
+            faz e mais um pouco — a única razão pra escolher "Agendamento" é se
+            você já tinha uma integração antiga configurada e não quer mexer nela.
           </div>
         </div>
       </section>
@@ -264,15 +278,17 @@ export function McpGuideClient() {
         <div className="container">
           <div className="sec-head">
             <p className="eyebrow">passo 2</p>
-            <h2>Configure seu agente</h2>
+            <h2>Gere o comando de conexão</h2>
             <p className="sec-sub">
-              Preencha os campos abaixo e o comando é gerado em tempo real.
+              Preencha os dois campos abaixo com os seus dados e o texto pronto
+              pra copiar aparece na caixinha, atualizado na hora. Não precisa
+              entender o que ele significa — só copiar e colar onde sua IA pedir.
             </p>
           </div>
 
           <div className="mcpdocs-inputs">
             <div className="mcpdocs-field">
-              <label htmlFor="mcpdocs-url">URL do seu backend</label>
+              <label htmlFor="mcpdocs-url">Endereço do seu ContentFlow</label>
               <input
                 id="mcpdocs-url"
                 type="url"
@@ -298,7 +314,7 @@ export function McpGuideClient() {
           </div>
 
           <div className="mcpdocs-tabrow">
-            <span className="mcpdocs-tabrow-label">Endpoint</span>
+            <span className="mcpdocs-tabrow-label">O que a IA vai poder fazer</span>
             <div className="niche-row">
               {(['studio', 'scheduling'] as const).map((s) => (
                 <button
@@ -314,7 +330,7 @@ export function McpGuideClient() {
           </div>
 
           <div className="mcpdocs-tabrow">
-            <span className="mcpdocs-tabrow-label">Autenticação</span>
+            <span className="mcpdocs-tabrow-label">Onde você vai colar isso</span>
             <div className="niche-row">
               {authMethods.map((m) => (
                 <button
@@ -330,7 +346,7 @@ export function McpGuideClient() {
           </div>
 
           <div className="mcpdocs-tabrow">
-            <span className="mcpdocs-tabrow-label">Cliente</span>
+            <span className="mcpdocs-tabrow-label">Qual IA você usa</span>
             <div className="niche-row">
               {mcpClients.map((c) => (
                 <button
@@ -369,21 +385,22 @@ export function McpGuideClient() {
         <div className="container" style={{ maxWidth: 720 }}>
           <div className="sec-head">
             <p className="eyebrow">passo 3</p>
-            <h2>Confirme que funcionou</h2>
+            <h2>Confira se deu certo</h2>
           </div>
           <div className="mcpdocs-steps">
-            <Step n={1} title="Adicione o servidor e reinicie">
-              Rode o comando ou cole o JSON gerado acima, depois reinicie seu
-              cliente se ele pedir.
+            <Step n={1} title="Cole o comando e reinicie a IA">
+              Se copiou um comando de terminal, rode ele. Se copiou um JSON, cole
+              no lugar que a IA indicou. Depois feche e abra a conversa de novo,
+              se ela pedir.
             </Step>
             <Step n={2} title='Peça: "Liste meus canais do ContentFlow"'>
-              O agente chama integrationListTool e retorna suas contas conectadas.
-              Se aparecerem, a conexão está funcionando.
+              A IA vai buscar suas redes sociais conectadas automaticamente. Se
+              elas aparecerem na resposta, a conexão funcionou.
             </Step>
-            <Step n={3} title="No /mcp-studio, peça ideias de conteúdo">
-              Experimente <i>"Me dê 5 ideias de conteúdo para minha marca."</i> Você
-              recebe JSON estruturado de volta — ideias com título, gancho, ângulo,
-              plataforma e CTA.
+            <Step n={3} title="Peça uma ideia de conteúdo (se escolheu o Estúdio)">
+              Experimente <i>"Me dê 5 ideias de conteúdo para minha marca."</i> A
+              IA devolve ideias prontas: título, gancho, ângulo, rede social e
+              chamada pra ação — como se um redator tivesse escrito pra você.
             </Step>
           </div>
         </div>
@@ -392,11 +409,13 @@ export function McpGuideClient() {
       <section className="section">
         <div className="container" style={{ maxWidth: 720 }}>
           <div className="sec-head">
-            <p className="eyebrow">desenvolvimento local</p>
+            <p className="eyebrow">avançado · só pra quem desenvolve o ContentFlow</p>
             <h2>Rodando localmente</h2>
             <p className="sec-sub">
-              Os endpoints MCP ficam desligados por padrão fora de produção. Ative
-              no <code>.env</code> do backend:
+              Isso aqui não é pra usuários — é só se você (ou sua IA) estiver
+              rodando o próprio código do ContentFlow no computador, fora de
+              produção. Nesse caso, essas conexões ficam desligadas até você
+              ativar no arquivo <code>.env</code> do backend:
             </p>
           </div>
           <div className="mcpdocs-envlist">
