@@ -19,6 +19,7 @@ export class GenerateImageTool implements AgentToolInterface {
       description: `Generate image to use in a post,
                     in case the user specified a platform that requires attachment and attachment was not provided,
                     ask if they want to generate a picture of a video.
+                    This consumes the user's AI image credits, so it requires explicit confirmed=true: ask the user first and only pass confirmed=true after they accept.
       `,
       mcp: {
         annotations: {
@@ -31,6 +32,12 @@ export class GenerateImageTool implements AgentToolInterface {
       },
       inputSchema: z.object({
         prompt: z.string(),
+        confirmed: z
+          .boolean()
+          .optional()
+          .describe(
+            'Must be true to actually generate. Generation consumes credits, so ask the user first and only set this after they explicitly accept.'
+          ),
       }),
       outputSchema: z.object({
         id: z.string(),
@@ -38,6 +45,11 @@ export class GenerateImageTool implements AgentToolInterface {
       }),
       execute: async (inputData, context) => {
         checkAuth(inputData, context);
+        if (inputData.confirmed !== true) {
+          throw new Error(
+            'Esta acao consome creditos de imagem e exige confirmacao explicita do usuario antes de continuar.'
+          );
+        }
         const org = JSON.parse((context?.requestContext as any)?.get('organization') as string);
         const image = await this._mediaService.generateImage(
           inputData.prompt,

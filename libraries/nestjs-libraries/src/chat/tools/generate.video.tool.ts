@@ -38,6 +38,7 @@ export class GenerateVideoTool implements AgentToolInterface {
                     in case the user specified a platform that requires attachment and attachment was not provided,
                     ask if they want to generate a picture of a video.
                     In many cases 'videoFunctionTool' will need to be called first, to get things like voice id
+                    This consumes the user's AI video credits, so it requires explicit confirmed=true: ask the user first and only pass confirmed=true after they accept.
                     Here are the type of video that can be generated:
                     ${this._videoManager
                       .getAllVideos()
@@ -53,12 +54,23 @@ export class GenerateVideoTool implements AgentToolInterface {
             value: z.any().describe('Value of the key'),
           })
         ),
+        confirmed: z
+          .boolean()
+          .optional()
+          .describe(
+            'Must be true to actually generate. Generation consumes credits, so ask the user first and only set this after they explicitly accept.'
+          ),
       }),
       outputSchema: z.object({
         url: z.string(),
       }),
       execute: async (inputData, context) => {
         checkAuth(inputData, context);
+        if (inputData.confirmed !== true) {
+          throw new Error(
+            'Esta acao consome creditos de video e exige confirmacao explicita do usuario antes de continuar.'
+          );
+        }
         const org = JSON.parse((context?.requestContext as any)?.get('organization') as string);
         const value = await this._mediaService.generateVideo(org, {
           type: inputData.identifier,
