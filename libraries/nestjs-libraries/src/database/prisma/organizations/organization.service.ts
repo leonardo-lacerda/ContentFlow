@@ -544,8 +544,37 @@ export class OrganizationService {
 
   getPublicApiKey(storedApiKey?: string | null) {
     if (!storedApiKey) return '';
-    if (!storedApiKey.startsWith('gcm:v1:')) return storedApiKey;
-    return AuthService.secureDecryption(storedApiKey);
+    // secureDecryption already falls back to the legacy CBC format for
+    // values that don't carry the gcm:v1: prefix — decrypt unconditionally
+    // instead of returning legacy ciphertext as if it were the plaintext key.
+    try {
+      return AuthService.secureDecryption(storedApiKey);
+    } catch {
+      return '';
+    }
+  }
+
+  // aes-256-cbc (the legacy format) has no auth tag, so decrypting with the
+  // wrong key silently returns garbage instead of throwing — a key that
+  // predates the current DATA_ENCRYPTION_KEY/JWT_SECRET, or that was never
+  // re-encrypted after a secret rotation, decrypts to nonsense with no
+  // error. Validate against the stored hash and regenerate when it doesn't
+  // match, so a broken key self-heals instead of being served as-is.
+  async resolveDisplayApiKey(organization: {
+    id: string;
+    apiKey?: string | null;
+    apiKeyHash?: string | null;
+  }) {
+    const decrypted = this.getPublicApiKey(organization.apiKey);
+    if (
+      decrypted &&
+      organization.apiKeyHash &&
+      AuthService.hashApiKey(decrypted) === organization.apiKeyHash
+    ) {
+      return decrypted;
+    }
+    const { apiKey } = await this.updateApiKey(organization.id);
+    return apiKey;
   }
   getTeam(orgId: string) { return this._organizationRepository.getTeam(orgId); }
 

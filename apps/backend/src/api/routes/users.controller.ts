@@ -71,6 +71,12 @@ export class UsersController {
 
     const impersonate = req.cookies.impersonate || req.headers.impersonate;
     // @ts-ignore
+    const orgRole = organization?.users[0]?.role;
+    const isKeyHolder = orgRole === 'SUPERADMIN' || orgRole === 'ADMIN';
+    const publicApi = isKeyHolder
+      ? await this._orgService.resolveDisplayApiKey(organization)
+      : '';
+    // @ts-ignore
     return {
       ...user,
       orgId: organization.id,
@@ -87,8 +93,7 @@ export class UsersController {
       isTrailing: !process.env.STRIPE_PUBLISHABLE_KEY ? false : organization?.isTrailing,
       allowTrial: organization?.allowTrial,
       streakSince: organization?.streakSince || null,
-      // @ts-ignore
-      publicApi: organization?.users[0]?.role === 'SUPERADMIN' || organization?.users[0]?.role === 'ADMIN' ? this._orgService.getPublicApiKey(organization?.apiKey) : '',
+      publicApi,
     };
   }
 

@@ -560,6 +560,32 @@ const PublicApiContent = () => {
   const [reveal, setReveal] = useState(false);
   const t = useT();
 
+  const requestNewApiKey = useCallback(async () => {
+    const response = await fetch('/user/api-key/rotate', { method: 'POST' });
+    if (!response.ok) {
+      toaster.show(
+        t(
+          'api_key_action_failed',
+          'Something went wrong generating the API Key. Please try again.'
+        ),
+        'warning'
+      );
+      return false;
+    }
+    await mutate('/user/self');
+    setReveal(false);
+    return true;
+  }, [fetch, mutate, toaster]);
+
+  const generateKey = useCallback(async () => {
+    if (await requestNewApiKey()) {
+      toaster.show(
+        t('api_key_generated', 'API Key generated successfully'),
+        'success'
+      );
+    }
+  }, [requestNewApiKey, toaster]);
+
   const rotateKey = useCallback(async () => {
     const approved = await decision.open({
       title: t('rotate_api_key', 'Rotate API Key?'),
@@ -571,17 +597,57 @@ const PublicApiContent = () => {
       cancelLabel: t('cancel', 'Cancel'),
     });
     if (!approved) return;
-    await fetch('/user/api-key/rotate', { method: 'POST' });
-    await mutate('/user/self');
-    setReveal(false);
-    toaster.show(
-      t('api_key_rotated', 'API Key rotated successfully'),
-      'success'
-    );
-  }, [decision, fetch, mutate, toaster]);
+    if (await requestNewApiKey()) {
+      toaster.show(
+        t('api_key_rotated', 'API Key rotated successfully'),
+        'success'
+      );
+    }
+  }, [decision, requestNewApiKey, t, toaster]);
 
-  if (!user || !user.publicApi) {
+  if (!user) {
     return null;
+  }
+
+  // Only org admins can see/manage the org-wide API key — this matches the
+  // backend's own gate in UsersController#getSelf.
+  if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+    return null;
+  }
+
+  if (!user.publicApi) {
+    return (
+      <div className="flex flex-col gap-[40px]">
+        <div className="bg-newBgColorInnerInner rounded-[12px] border border-newBorder overflow-hidden">
+          <div className="bg-newBgColorInner px-[20px] py-[14px] border-b border-newBorder">
+            <div className="text-[15px] font-[600]">
+              {t('api_key', 'API Key')}
+            </div>
+            <div className="text-[13px] text-customColor18 mt-[2px]">
+              {t(
+                'use_contentflow_api_to_integrate_with_your_tools',
+                'Use ContentFlow API to integrate with your tools.'
+              )}
+            </div>
+          </div>
+          <div className="p-[20px] flex flex-col gap-[16px] items-start">
+            <div className="text-[13px] text-customColor18">
+              {t(
+                'no_api_key_yet',
+                "You don't have an API Key yet."
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={generateKey}
+              className="cursor-pointer px-[16px] h-[36px] bg-[#b4530a] hover:bg-[#5520CB] text-white transition-colors rounded-[8px] text-[13px] font-[600] flex items-center gap-[6px]"
+            >
+              {t('generate_api_key', 'Generate API Key')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const mcpBase = mcpUrl || backendUrl;
