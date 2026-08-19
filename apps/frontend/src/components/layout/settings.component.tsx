@@ -94,6 +94,9 @@ export const SettingsPopup: FC<{
     if (user?.tier?.current !== 'FREE') {
       arr.push({ tab: 'signatures', label: t('signatures', 'Assinaturas') });
     }
+    if (user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') {
+      arr.push({ tab: 'api', label: t('api_access', 'Acesso à API') });
+    }
     return arr;
   }, [user, t]);
 
@@ -181,7 +184,7 @@ export const SettingsPopup: FC<{
               )}
 
               {tab === 'api' &&
-                !!user?.tier?.public_api &&
+                (user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') &&
                 isGeneral &&
                 showLogout && (
                   <div>

@@ -15,7 +15,7 @@ const candidates = [
 
 const envFile = candidates.find((candidate) => existsSync(candidate));
 const loadedFiles = envFile ? [envFile] : [];
-if (envFile) dotenv.config({ path: envFile, override: false });
+if (envFile) dotenv.config({ path: envFile, override: true });
 
 const validation = validateRuntimeEnv({ production: true });
 if (!validation.ok) {

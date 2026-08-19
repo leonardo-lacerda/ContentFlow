@@ -16,7 +16,7 @@ const candidates = [
 
 const envFile = candidates.find((candidate) => existsSync(candidate));
 const loadedFiles = envFile ? [envFile] : [];
-if (envFile) dotenv.config({ path: envFile, override: false });
+if (envFile) dotenv.config({ path: envFile, override: true });
 
 if (!loadedFiles.length) {
   console.warn('[ContentFlow] nenhum arquivo .env foi encontrado; usando apenas variáveis do processo.');
