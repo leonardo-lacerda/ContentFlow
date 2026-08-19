@@ -39,6 +39,7 @@ import { resolveCreativeLocalUploadPath } from './creative-local-media';
 import { isSafePublicHttpsUrl } from '@gitroom/nestjs-libraries/dtos/webhooks/webhook.url.validator';
 import { CreativeOutputStorageService } from './creative-output-storage.service';
 import { compileDesignPrompt } from './creative-design-prompt.util';
+import { buildDefaultCarouselDesignSpec } from './carousel-default-design-spec';
 import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
 import { BillingEntitlementsService } from '@gitroom/nestjs-libraries/services/billing-entitlements.service';
@@ -1010,6 +1011,25 @@ export class CreativeEngineService {
     return [nameLine, ...parts].join('\n');
   }
 
+  // Just the brand's DNA colour swatches, used to seed the default designSpec
+  // for headless carousels (see buildDefaultCarouselDesignSpec). Kept separate
+  // from buildBrandIdentityBlock — which returns a prose block, not raw data —
+  // and best-effort like it: a missing brand or snapshot must never block
+  // generation.
+  private async getBrandDnaColors(organizationId: string): Promise<string[]> {
+    try {
+      const brand = await this.brandProfiles?.getSelectedBrand(organizationId);
+      if (!brand?.id) return [];
+      const dna = await this.brandProfiles?.getLatestDnaSnapshot(brand.id);
+      const visual = dna?.visual as { colors?: unknown } | undefined;
+      return Array.isArray(visual?.colors)
+        ? (visual!.colors as unknown[]).map((c) => String(c).trim()).filter(Boolean).slice(0, 4)
+        : [];
+    } catch {
+      return [];
+    }
+  }
+
   // Best-effort reference image for brand anchoring (Studio "professional
   // carousel" improvement): the org's approved logo/product BrandAsset,
   // fetched once per carousel and handed to every slide as an extra
@@ -1082,6 +1102,16 @@ export class CreativeEngineService {
     if (referenceImageUrls.length) {
       brandIdentity = `${brandIdentity}\nA reference image of the real brand logo is attached. Use it ONLY to match the brand's real colours, shapes and materials — never recreate it as a graphic icon; the wordmark is still plain text only, per the logo rule.`;
     }
+    // The Studio frontend always sends a full designSpec (the design editor
+    // builds it); headless callers — the /mcp-studio agent — send none, which
+    // dropped the entire [APPROVED DESIGN SPEC] block from every slide and let
+    // layout/typography/art-direction drift image to image. Synthesise the
+    // same default the editor would (seeded with the brand's real colours) so a
+    // headless carousel is as cohesive as an in-platform one.
+    const designSpec = input.designSpec ?? buildDefaultCarouselDesignSpec({
+      aspectRatio: input.aspectRatio,
+      brandColors: await this.getBrandDnaColors(organizationId),
+    });
     const jobs: Array<{ slideId?: string; slideIndex: number; job?: unknown; error?: string }> = [];
     const runners: Array<() => Promise<unknown>> = [];
     for (const [i, slide] of input.slides.entries()) {
@@ -1096,7 +1126,7 @@ export class CreativeEngineService {
         // Editing the copy/design changes the compiled prompt, which changes
         // the hash, which correctly forces a fresh generation.
         const slideJobInput = {
-          prompt: compileDesignPrompt(slide.imagePrompt, input.designSpec, slide, brandIdentity),
+          prompt: compileDesignPrompt(slide.imagePrompt, designSpec, slide, brandIdentity),
           name: `${input.name || 'Carousel'} slide ${slideIndex + 1}`,
           aspectRatio: slide.aspectRatio || input.aspectRatio,
           idempotencyKey: input.idempotencyKey ? `${input.idempotencyKey}:${slide.id || slideIndex + 1}` : undefined,
