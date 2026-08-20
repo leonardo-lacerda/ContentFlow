@@ -174,6 +174,9 @@ export function McpGuideClient() {
           <span className="logo-txt">Content<b>Flow</b></span>
         </Link>
         <div className="mcpdocs-top-links">
+          <Link className="btn btn-dash btn-sm" href="/">
+            ← Voltar ao ContentFlow
+          </Link>
           <Link className="mcpdocs-back" href="/docs/integrations">
             ← Documentação
           </Link>
