@@ -3,6 +3,15 @@ name: Build
 
 on:
   push:
+    # deploy-digitalocean.yml already runs its own build+test gate (selective,
+    # only affected services) before deploying every push to main, so running
+    # this workflow's unconditional full-repo build+test there too was pure
+    # duplicated GitHub-hosted Actions minutes on every main push. Still runs
+    # on any other branch and on pull_request/merge_group below, which is
+    # where the full, unconditional build+test actually earns its keep (no
+    # deploy gate exists yet to have already covered it).
+    branches-ignore:
+      - main
   merge_group:
   pull_request:
 
