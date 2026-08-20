@@ -1,5 +1,5 @@
-import { buildDefaultCarouselDesignSpec } from './carousel-default-design-spec';
-import { compileDesignPrompt } from './creative-design-prompt.util';
+import { buildDefaultCarouselDesignSpec, buildSlideStyleOverride } from './carousel-default-design-spec';
+import { compileDesignPrompt, mergeDesignRecord } from './creative-design-prompt.util';
 
 describe('buildDefaultCarouselDesignSpec', () => {
   it('produces a spec that compileDesignPrompt renders as a full APPROVED DESIGN SPEC block', () => {
@@ -119,5 +119,49 @@ describe('buildDefaultCarouselDesignSpec', () => {
       expect(layout.density).toBe('airy');
       expect(typography.alignment).toBe('left');
     });
+  });
+});
+
+describe('buildSlideStyleOverride', () => {
+  it('returns an empty object when nothing is overridden (no-op merge)', () => {
+    expect(buildSlideStyleOverride({})).toEqual({});
+  });
+
+  it('resolves stylePresetId to a complete style block, not a partial one', () => {
+    const override = buildSlideStyleOverride({ stylePresetId: 'dark-premium' });
+    expect(override.style).toEqual({
+      presetId: 'dark-premium',
+      presetName: 'Premium escuro',
+      visualStyle: 'cinematic realistic product photography, rich reflective materials',
+      lighting: expect.any(String),
+      mood: expect.any(String),
+      finish: expect.any(String),
+    });
+    // Only style was requested — no other fields should appear.
+    expect(Object.keys(override)).toEqual(['style']);
+  });
+
+  it('resolves paletteId to the full palette object', () => {
+    const override = buildSlideStyleOverride({ paletteId: 'mono-ink' });
+    expect((override.palette as Record<string, unknown>).paletteId).toBe('mono-ink');
+    expect(Object.keys(override)).toEqual(['palette']);
+  });
+
+  it('sets only density/alignment when that is all that was requested', () => {
+    const override = buildSlideStyleOverride({ density: 'dense', alignment: 'center' });
+    expect(override.layout).toEqual({ density: 'dense' });
+    expect(override.typography).toEqual({ alignment: 'center' });
+    expect(override.style).toBeUndefined();
+    expect(override.palette).toBeUndefined();
+  });
+
+  it('merges on top of a base spec the same way compileDesignPrompt does, preserving unrelated base fields', () => {
+    const base = buildDefaultCarouselDesignSpec({ stylePresetId: 'photo-clean' });
+    const override = buildSlideStyleOverride({ paletteId: 'sunset-pop' });
+    const merged = mergeDesignRecord(base, override);
+    // The override's palette wins for this slide...
+    expect((merged.palette as Record<string, unknown>).paletteId).toBe('sunset-pop');
+    // ...but the base style (photo-clean) is untouched, since only palette was overridden.
+    expect((merged.style as Record<string, unknown>).presetId).toBe('photo-clean');
   });
 });

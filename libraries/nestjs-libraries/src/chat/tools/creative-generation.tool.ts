@@ -92,6 +92,12 @@ type CreativeGenerationInput = {
     cta?: string;
     imagePrompt: string;
     aspectRatio?: string;
+    styleOverride?: {
+      stylePresetId?: string;
+      paletteId?: string;
+      density?: 'airy' | 'balanced' | 'dense';
+      alignment?: 'left' | 'center' | 'right';
+    };
   }>;
 };
 
@@ -185,6 +191,14 @@ export class CreativeGenerationTool implements AgentToolInterface {
           cta: z.string().optional(),
           imagePrompt: z.string().min(1),
           aspectRatio: z.string().optional(),
+          styleOverride: z.object({
+            stylePresetId: z.enum(stylePresetIds).optional(),
+            paletteId: z.enum(paletteIds).optional(),
+            density: z.enum(['airy', 'balanced', 'dense']).optional(),
+            alignment: z.enum(['left', 'center', 'right']).optional(),
+          }).optional().describe(
+            "Breaks just this one slide from the carousel's shared style (e.g. a bolder CTA slide). Rare — most carousels should share one style; only use this when the user explicitly asks for one slide to look different. Requires this slide to also set id or index."
+          ),
         })).optional(),
       }),
       outputSchema: z.object({ result: z.any() }),

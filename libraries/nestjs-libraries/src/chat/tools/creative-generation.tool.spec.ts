@@ -147,6 +147,28 @@ describe('CreativeGenerationTool', () => {
     );
   });
 
+  it('passes a per-slide styleOverride through to generateCarouselImages untouched', async () => {
+    await execute({
+      operation: 'generate-carousel',
+      confirmed: true,
+      designApproved: true,
+      projectId: 'proj-1',
+      slides: [
+        { id: 'slide-1', imagePrompt: 'slide 1' },
+        { id: 'slide-2', imagePrompt: 'slide 2', styleOverride: { paletteId: 'sunset-pop' } },
+      ],
+    });
+    expect(service.generateCarouselImages).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({
+        slides: [
+          { id: 'slide-1', imagePrompt: 'slide 1' },
+          { id: 'slide-2', imagePrompt: 'slide 2', styleOverride: { paletteId: 'sunset-pop' } },
+        ],
+      })
+    );
+  });
+
   it('requires projectId and presetId for run-preset', async () => {
     await expect(execute({ operation: 'run-preset', confirmed: true })).rejects.toThrow(
       /projectId and presetId are required/

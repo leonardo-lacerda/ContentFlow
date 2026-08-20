@@ -81,3 +81,38 @@ export function buildDefaultCarouselDesignSpec(opts: {
     source: 'headless-default',
   };
 }
+
+// A single slide's style override (designSpec.slideOverrides[key] — see
+// compileDesignPrompt and mergeDesignRecord in creative-design-prompt.util.ts)
+// for the rare case an MCP agent wants one slide in the carousel to break
+// from the shared style (e.g. a CTA slide in a bolder palette). Deliberately
+// mirrors buildDefaultCarouselDesignSpec's own knobs, not the raw DesignSpec
+// shape, so the MCP schema stays as small as the top-level one.
+//
+// Only fields the caller actually asked to change are set: mergeDesignRecord
+// does `{...base.palette, ...override.palette}` for palette/typography/layout
+// (a partial override is safe there), but `style` is NOT deep-merged — it's
+// replaced wholesale if present — so a stylePresetId override always resolves
+// to a *complete* style block via styleFromPreset, never a partial one that
+// would silently drop the rest of the base style's fields.
+export function buildSlideStyleOverride(opts: {
+  stylePresetId?: string;
+  paletteId?: string;
+  density?: 'airy' | 'balanced' | 'dense';
+  alignment?: 'left' | 'center' | 'right';
+}): Record<string, unknown> {
+  const override: Record<string, unknown> = {};
+  if (opts.stylePresetId) {
+    override.style = styleFromPreset(presetById(opts.stylePresetId));
+  }
+  if (opts.paletteId) {
+    override.palette = paletteById(opts.paletteId);
+  }
+  if (opts.density) {
+    override.layout = { density: opts.density };
+  }
+  if (opts.alignment) {
+    override.typography = { alignment: opts.alignment };
+  }
+  return override;
+}

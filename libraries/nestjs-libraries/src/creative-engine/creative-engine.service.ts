@@ -39,7 +39,7 @@ import { resolveCreativeLocalUploadPath } from './creative-local-media';
 import { isSafePublicHttpsUrl } from '@gitroom/nestjs-libraries/dtos/webhooks/webhook.url.validator';
 import { CreativeOutputStorageService } from './creative-output-storage.service';
 import { compileDesignPrompt } from './creative-design-prompt.util';
-import { buildDefaultCarouselDesignSpec } from './carousel-default-design-spec';
+import { buildDefaultCarouselDesignSpec, buildSlideStyleOverride } from './carousel-default-design-spec';
 import { PlanLimitsService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/plan-limits.service';
 import { PricingCatalogService } from '@gitroom/nestjs-libraries/services/pricing-catalog.service';
 import { BillingEntitlementsService } from '@gitroom/nestjs-libraries/services/billing-entitlements.service';
@@ -1081,10 +1081,28 @@ export class CreativeEngineService {
       cta?: string;
       imagePrompt: string;
       aspectRatio?: string;
+      // Breaks this one slide from the shared style (e.g. a bolder CTA
+      // slide) — rare; see buildSlideStyleOverride. Requires id or index so
+      // compileDesignPrompt's per-slide lookup key is unambiguous (its key
+      // falls back to '' when both are absent, which would otherwise apply
+      // this override to every unkeyed slide in the carousel).
+      styleOverride?: {
+        stylePresetId?: string;
+        paletteId?: string;
+        density?: 'airy' | 'balanced' | 'dense';
+        alignment?: 'left' | 'center' | 'right';
+      };
     }>;
   }) {
     if (!input.slides?.length) {
       throw new BadRequestException('slides are required for carousel image generation');
+    }
+    for (const slide of input.slides) {
+      if (slide.styleOverride && !slide.id && slide.index === undefined) {
+        throw new BadRequestException(
+          'slides with a styleOverride must also set id or index, otherwise the override cannot be targeted to just that slide'
+        );
+      }
     }
     const project = input.projectId
       ? { id: input.projectId }
@@ -1115,7 +1133,7 @@ export class CreativeEngineService {
     // layout/typography/art-direction drift image to image. Synthesise the
     // same default the editor would (seeded with the brand's real colours) so a
     // headless carousel is as cohesive as an in-platform one.
-    const designSpec = input.designSpec ?? buildDefaultCarouselDesignSpec({
+    const baseDesignSpec = input.designSpec ?? buildDefaultCarouselDesignSpec({
       aspectRatio: input.aspectRatio,
       brandColors: await this.getBrandDnaColors(organizationId),
       stylePresetId: input.stylePresetId,
@@ -1123,6 +1141,23 @@ export class CreativeEngineService {
       density: input.density,
       alignment: input.alignment,
     });
+    // Fold any per-slide styleOverride (MCP-only shorthand — see
+    // buildSlideStyleOverride) on top of whatever slideOverrides the caller's
+    // own designSpec already carried, keyed exactly the way
+    // compileDesignPrompt resolves it (id, else index) so the override lands
+    // on the intended slide.
+    const slideOverrides: Record<string, unknown> = {
+      ...(baseDesignSpec.slideOverrides as Record<string, unknown> | undefined),
+    };
+    for (const slide of input.slides) {
+      if (slide.styleOverride) {
+        const key = slide.id || String(slide.index);
+        slideOverrides[key] = buildSlideStyleOverride(slide.styleOverride);
+      }
+    }
+    const designSpec = Object.keys(slideOverrides).length
+      ? { ...baseDesignSpec, slideOverrides }
+      : baseDesignSpec;
     const jobs: Array<{ slideId?: string; slideIndex: number; job?: unknown; error?: string }> = [];
     const runners: Array<() => Promise<unknown>> = [];
     for (const [i, slide] of input.slides.entries()) {
