@@ -88,6 +88,24 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
       return this.enforceOrganizationBucket(request, 'creative-read', 600);
     }
 
+    // Login, registration and password-reset requests are also throttled
+    // per-email, on top of the per-IP bucket below. The IP bucket alone
+    // doesn't stop a distributed attack (many source IPs) aimed at one
+    // victim's account/email — this bucket does, independent of how many
+    // IPs the attempts come from.
+    if (method === 'POST' && url === '/auth/login') {
+      await this.enforcePerEmailBucket(request, 'login', 10, 3600000);
+      return super.canActivate(context);
+    }
+    if (method === 'POST' && url === '/auth/register') {
+      await this.enforcePerEmailBucket(request, 'register', 5, 3600000);
+      return super.canActivate(context);
+    }
+    if (method === 'POST' && url === '/auth/forgot') {
+      await this.enforcePerEmailBucket(request, 'forgot', 5, 3600000);
+      return super.canActivate(context);
+    }
+
     // Always throttle sensitive write endpoints (AI generation, billing).
     if (ALWAYS_THROTTLED_PATHS.some((path) => url.startsWith(path))) {
       return super.canActivate(context);
@@ -109,6 +127,23 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
     // an error body in place of their array response. Same class of false
     // positive as the /creative bucket above.
     return this.enforceOrganizationBucket(request, 'authenticated', 300);
+  }
+
+  private async enforcePerEmailBucket(
+    request: Request,
+    scope: string,
+    limit: number,
+    windowMs: number
+  ): Promise<void> {
+    const email = String((request.body as Record<string, any>)?.email || '')
+      .trim()
+      .toLowerCase();
+    if (!email) return;
+    const bucket = Math.floor(Date.now() / windowMs);
+    const key = `throttle:${scope}-email:${email}:${bucket}`;
+    const count = await ioRedis.incr(key);
+    if (count === 1) await ioRedis.expire(key, Math.ceil(windowMs / 1000));
+    if (count > limit) throw new ThrottlerException();
   }
 
   private async enforceOrganizationBucket(

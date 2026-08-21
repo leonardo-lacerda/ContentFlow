@@ -58,10 +58,19 @@ export class AuthService {
           throw new Error('Registration is disabled');
         }
 
+        // Plus-addressing (user+1@x.com, user+2@x.com, ...) is one real
+        // inbox, so it's the cheapest way to farm repeated free trials from
+        // a single identity when DISALLOW_PLUS isn't set. This doesn't
+        // block the signup — the account is still created normally — it
+        // only withholds the trial grant when this base address already has
+        // history.
+        const allowTrial = !(await this._userService.hasPlusAddressedAliasHistory(body.email));
+
         const create = await this._organizationService.createOrgAndUser(
           body,
           ip,
-          userAgent
+          userAgent,
+          allowTrial
         );
 
         const addedOrg =
@@ -175,6 +184,8 @@ export class AuthService {
       throw new Error('Registration is disabled');
     }
 
+    const allowTrial = !(await this._userService.hasPlusAddressedAliasHistory(providerUser.email));
+
     const create = await this._organizationService.createOrgAndUser(
       {
         company: body.company,
@@ -185,7 +196,8 @@ export class AuthService {
         datafast_visitor_id: body.datafast_visitor_id,
       },
       ip,
-      userAgent
+      userAgent,
+      allowTrial
     );
 
     this._track('register', providerUser.email, body.datafast_visitor_id).catch(

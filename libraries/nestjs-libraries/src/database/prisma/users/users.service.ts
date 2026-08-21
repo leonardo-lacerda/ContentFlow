@@ -16,6 +16,10 @@ export class UsersService {
     return this._usersRepository.getUserByEmail(email);
   }
 
+  hasPlusAddressedAliasHistory(email: string) {
+    return this._usersRepository.hasPlusAddressedAliasHistory(email);
+  }
+
   getUserById(id: string) {
     return this._usersRepository.getUserById(id);
   }

@@ -287,7 +287,8 @@ export class OrganizationRepository {
     body: Omit<CreateOrgUserDto, 'providerToken'> & { providerId?: string },
     hasEmail: boolean,
     ip: string,
-    userAgent: string
+    userAgent: string,
+    allowTrial = true
   ) {
     const apiKey = makeId(48);
     return this._organization.model.organization.create({
@@ -295,8 +296,8 @@ export class OrganizationRepository {
         name: body.company,
         apiKey: AuthService.secureEncryption(apiKey),
         apiKeyHash: AuthService.hashApiKey(apiKey),
-        allowTrial: true,
-        isTrailing: true,
+        allowTrial,
+        isTrailing: allowTrial,
         users: {
           create: {
             role: Role.SUPERADMIN,
