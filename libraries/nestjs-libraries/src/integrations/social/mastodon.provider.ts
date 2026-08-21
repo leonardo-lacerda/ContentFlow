@@ -8,6 +8,8 @@ import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { SocialAbstract } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 import dayjs from 'dayjs';
 import { Integration } from '@prisma/client';
+import { UrlValidator } from '@gitroom/nestjs-libraries/security/url-validator';
+import { ssrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 
 export class MastodonProvider extends SocialAbstract implements SocialProvider {
   override maxConcurrentJob = 5; // Mastodon instances typically have generous limits
@@ -31,6 +33,21 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
       username: '',
     };
   }
+  /**
+   * `url` on every `dynamic*` method below is an instance URL — for
+   * `MastodonCustomProvider` that's the raw `externalUrl` query param a
+   * caller supplies (see integrations.controller.ts's `/social/:integration`
+   * auth-start route), so it's fully attacker-controlled and must be
+   * validated here (root cause, shared by every subclass/call site) rather
+   * than at each individual caller.
+   */
+  protected async assertSafeInstanceUrl(url: string): Promise<void> {
+    const validation = await UrlValidator.validate(url);
+    if (!validation.valid) {
+      throw new Error(`Mastodon instance URL blocked: ${validation.error}`);
+    }
+  }
+
   protected generateUrlDynamic(
     customUrl: string,
     state: string,
@@ -63,6 +80,8 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
     url: string,
     code: string
   ) {
+    await this.assertSafeInstanceUrl(url);
+
     const form = new FormData();
     form.append('client_id', clientId);
     form.append('client_secret', clientSecret);
@@ -78,6 +97,8 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
       await this.fetch(`${url}/oauth/token`, {
         method: 'POST',
         body: form,
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: ssrfSafeDispatcher,
       })
     ).json();
 
@@ -86,6 +107,8 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
         headers: {
           Authorization: `Bearer ${tokenInformation.access_token}`,
         },
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: ssrfSafeDispatcher,
       })
     ).json();
 
@@ -114,7 +137,12 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
   }
 
   async uploadFile(instanceUrl: string, fileUrl: string, accessToken: string) {
+    await this.assertSafeInstanceUrl(instanceUrl);
+
     const form = new FormData();
+    // fileUrl is our own previously-persisted media path, not the
+    // user-supplied instance URL — no SSRF guard needed on this one (same
+    // trust model as carousel-image-compositor.service.ts).
     form.append('file', await fetch(fileUrl).then((r) => r.blob()));
     const media = await (
       await this.fetch(`${instanceUrl}/api/v1/media`, {
@@ -123,6 +151,8 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
           Authorization: `Bearer ${accessToken}`,
         },
         body: form,
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: ssrfSafeDispatcher,
       })
     ).json();
     return media.id;
@@ -134,6 +164,8 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
     url: string,
     postDetails: PostDetails[]
   ): Promise<PostResponse[]> {
+    await this.assertSafeInstanceUrl(url);
+
     const [firstPost] = postDetails;
 
     const uploadFiles = await Promise.all(
@@ -158,6 +190,8 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
           Authorization: `Bearer ${accessToken}`,
         },
         body: form,
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: ssrfSafeDispatcher,
       })
     ).json();
 
@@ -179,6 +213,8 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
     url: string,
     postDetails: PostDetails[]
   ): Promise<PostResponse[]> {
+    await this.assertSafeInstanceUrl(url);
+
     const [commentPost] = postDetails;
     const replyToId = lastCommentId || postId;
 
@@ -205,6 +241,8 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
           Authorization: `Bearer ${accessToken}`,
         },
         body: form,
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: ssrfSafeDispatcher,
       })
     ).json();
 

@@ -14,6 +14,7 @@ import { SocialAbstract } from '@gitroom/nestjs-libraries/integrations/social.ab
 import dayjs from 'dayjs';
 import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
 import { Rules } from '@gitroom/nestjs-libraries/chat/rules.description.decorator';
+import { fetchMediaForPublish } from '@gitroom/nestjs-libraries/upload/safe-media-fetch';
 
 @Rules(
   'Pinterest requires at least one media, if posting a video, you must have two attachment, one for video, one for the cover picture, When posting a video, there can be only one'
@@ -202,11 +203,8 @@ export class PinterestProvider
         })
       ).json();
 
-      const { data, status } = await axios.get(
-        postDetails?.[0]?.media?.[0]?.path!,
-        {
-          responseType: 'stream',
-        }
+      const { buffer: data } = await fetchMediaForPublish(
+        postDetails?.[0]?.media?.[0]?.path!
       );
 
       const formData = Object.keys(upload_parameters)
