@@ -15,14 +15,12 @@ import React, {
 import { sanitizeHtml } from '@gitroom/frontend/components/layout/sanitize-html';
 import {
   AssistantMessage as DefaultAssistantMessage,
+  AssistantMessageProps,
   CopilotChat,
   CopilotKitCSSProperties,
-} from '@copilotkit/react-ui';
-import {
-  AssistantMessageProps,
   InputProps,
   UserMessageProps,
-} from '@copilotkit/react-ui/dist/components/chat/props';
+} from '@copilotkit/react-ui';
 import { Input } from '@gitroom/frontend/components/agents/agent.input';
 import { useModals } from '@gitroom/frontend/components/layout/new-modal';
 import {
@@ -751,18 +749,31 @@ const LoadMessages: FC<{ id: string }> = ({ id }) => {
 };
 
 const Message: FC<UserMessageProps> = (props) => {
+  // `UserMessage.content` is now `string | MessageContentPart[]` (multimodal
+  // parts). Studio's own `submitToAgent` still only ever sends a single
+  // concatenated string, but the wider AG-UI message type allows the array
+  // shape too - normalize to plain text before running the media markers
+  // (Video:/Image:/[--Media--]) through their existing regex conversion.
+  const rawContent = props.message?.content;
+  const textContent = Array.isArray(rawContent)
+    ? rawContent
+        .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+        .map((part) => part.text)
+        .join('')
+    : rawContent || '';
+
   const convertContentToImagesAndVideo = useMemo(() => {
-    return (props.message?.content || '')
-      .replace(/Video: (http.*mp4\n)/g, (match, p1) => {
+    return textContent
+      .replace(/Video: (http.*mp4\n)/g, (match: string, p1: string) => {
         return `<video controls class="h-[150px] w-[150px] rounded-[8px] mb-[10px]"><source src="${p1.trim()}" type="video/mp4">Your browser does not support the video tag.</video>`;
       })
-      .replace(/Image: (http.*\n)/g, (match, p1) => {
+      .replace(/Image: (http.*\n)/g, (match: string, p1: string) => {
         return `<img src="${p1.trim()}" alt="Generated image" class="h-[150px] w-[150px] max-w-full border border-newBgColorInner" />`;
       })
-      .replace(/\[\-\-Media\-\-\](.*)\[\-\-Media\-\-\]/g, (match, p1) => {
+      .replace(/\[\-\-Media\-\-\](.*)\[\-\-Media\-\-\]/g, (match: string, p1: string) => {
         return `<div class="flex justify-center mt-[20px]">${p1}</div>`;
       });
-  }, [props.message?.content]);
+  }, [textContent]);
   const sanitizedForDisplay = useMemo(
     () => stripStudioMarkerBlocks(convertContentToImagesAndVideo),
     [convertContentToImagesAndVideo]

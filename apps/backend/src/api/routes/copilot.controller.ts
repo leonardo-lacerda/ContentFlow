@@ -13,8 +13,21 @@ import {
   CopilotRuntime,
   OpenAIAdapter,
   copilotRuntimeNodeHttpEndpoint,
-  copilotRuntimeNextJSAppRouterEndpoint,
 } from '@copilotkit/runtime';
+// The Studio agent route (`/agent`) is wired through the v2 runtime, not the
+// classic GraphQL endpoint above (still used by `/chat`, which never touches
+// Mastra/AG-UI). `copilotRuntimeNextJSAppRouterEndpoint` bridges to a
+// single-route JSON/SSE dispatcher (createCopilotEndpointSingleRoute) as of
+// @copilotkit/runtime 1.60, but the AG-UI bridge (`@ag-ui/mastra`) only ever
+// emits the newer `TEXT_MESSAGE_CHUNK` wire event, which that v1 endpoint's
+// classic GraphQL resolver never learned to consume — the run reports
+// Success with zero text, silently. The v2 module's own endpoint (below)
+// natively understands TEXT_MESSAGE_CHUNK and turns it into a real streamed
+// assistant message. See docs/studio-audit.md's chat-silent-failure entry.
+import {
+  CopilotRuntime as CopilotRuntimeV2,
+  createCopilotEndpointExpress,
+} from '@copilotkit/runtime/v2';
 import OpenAI from 'openai';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
 import { Organization } from '@prisma/client';
@@ -239,12 +252,12 @@ export class CopilotController {
         ),
       );
     }
-    // CopilotKit drives several GraphQL operations through this one endpoint:
-    // `availableAgents` and `loadAgentState` are cheap metadata queries that run
-    // on every page load, and only the `generateCopilotResponse` mutation calls
+    // The v2 single-route protocol drives several JSON-RPC methods through this
+    // one endpoint: `info` and `agent/connect` are cheap metadata/state-sync
+    // calls that run on every page load, and only `agent/run` actually calls
     // the model. Charging all of them billed ~3x per interaction and could
     // exhaust an org's credits without a single generation.
-    if (req?.body?.operationName === 'generateCopilotResponse') {
+    if (req?.body?.method === 'agent/run') {
       const quote = await this._pricingCatalog.quote({ operation: 'chat-ideas' });
       // The previous fallback keyed on Date.now(), which is unique on every
       // call by construction - it could never actually deduplicate anything,
@@ -296,61 +309,32 @@ export class CopilotController {
       requestContext: requestContext as any,
     });
 
-    const runtime = new CopilotRuntime({
+    const runtime = new CopilotRuntimeV2({
       agents,
     });
 
-    const copilotRuntimeHandler = copilotRuntimeNextJSAppRouterEndpoint({
-      endpoint: '/copilot/agent',
+    const router = createCopilotEndpointExpress({
       runtime,
-      // properties: req.body.variables.properties,
-      serviceAdapter,
+      basePath: '/copilot/agent',
+      mode: 'single-route',
+      // Nest's own global CORS policy already governs this app; letting this
+      // router apply its own default (origin: '*') would be a second, looser
+      // CORS layer stacked behind it.
+      cors: false,
     });
 
-    // Diagnostic only (temporary): production has been observed returning a
-    // clean 200 for generateCopilotResponse - full HTTP success, credits
-    // settled - while the agent run produces no text and nothing gets saved
-    // to Mastra's message store. copilotRuntimeNextJSAppRouterEndpoint
-    // appears to swallow the underlying failure rather than throwing, so
-    // nothing reaches Nest's exception logging. Inspect the actual bytes
-    // written to the client so the next failing run leaves a stack trace /
-    // error payload in the logs instead of vanishing silently.
-    if (req?.body?.operationName === 'generateCopilotResponse') {
-      const responseChunks: Buffer[] = [];
-      const originalWrite = res.write.bind(res);
-      const originalEnd = res.end.bind(res);
-      (res as any).write = (chunk: any, ...args: any[]) => {
-        if (chunk) {
-          responseChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
+    return new Promise<void>((resolve, reject) => {
+      router(req, res, (error?: unknown) => {
+        if (error) {
+          Logger.error(
+            `[copilot/agent] chat run for org ${organization.id} threw: ${error instanceof Error ? error.stack : String(error)}`
+          );
+          reject(error);
+          return;
         }
-        return originalWrite(chunk, ...args);
-      };
-      (res as any).end = (chunk?: any, ...args: any[]) => {
-        if (chunk) {
-          responseChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
-        }
-        try {
-          const body = Buffer.concat(responseChunks).toString('utf8');
-          if (/"errors"\s*:|RUN_ERROR|"type"\s*:\s*"error"/i.test(body)) {
-            Logger.error(
-              `[copilot/agent] chat run for org ${organization.id} completed with an error payload: ${body.slice(0, 4000)}`
-            );
-          }
-        } catch (inspectError) {
-          Logger.error(`[copilot/agent] failed to inspect chat response body: ${String(inspectError)}`);
-        }
-        return originalEnd(chunk, ...args);
-      };
-    }
-
-    try {
-      return await copilotRuntimeHandler.handleRequest(req, res);
-    } catch (error) {
-      Logger.error(
-        `[copilot/agent] chat run for org ${organization.id} threw: ${error instanceof Error ? error.stack : String(error)}`
-      );
-      throw error;
-    }
+        resolve();
+      });
+    });
   }
 
   @Get('/credits')
