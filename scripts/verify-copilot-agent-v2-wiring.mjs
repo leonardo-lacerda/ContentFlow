@@ -48,6 +48,22 @@ class ChunkOnlyAgent extends AbstractAgent {
 const REPLY = 'Oi, como posso ajudar você hoje?';
 
 const app = express();
+// Mirror production's real middleware chain, which double-parses the body on
+// /copilot/*: main.ts mounts its own `json({ limit: '50mb' })` imported from
+// `express` for these routes, and NestJS then runs its own built-in parser
+// (platform-express pins body-parser 1.x). That only no-ops safely while both
+// parsers are the same body-parser major - they agree on the `req._body`
+// already-parsed marker. `express` is NOT a direct dependency by accident:
+// declaring it (package.json) pins it to the 4.x that @nestjs/platform-express
+// and @copilotkit/runtime both require. When it silently drifted to express 5
+// (body-parser 2.x) via a transitive bump, the two parsers stopped agreeing,
+// the second one re-read an already-consumed stream, and every single
+// /copilot/* request died with `InternalServerError: stream is not readable`
+// before ever reaching the controller. Reproduce that stack here so a future
+// drift fails this check instead of production.
+app.use(['/copilot/*', '/posts'], (req, res, next) => {
+  express.json({ limit: '50mb' })(req, res, next);
+});
 app.use(express.json());
 app.post('/copilot/agent', (req, res, next) => {
   const runtime = new CopilotRuntime({ agents: { 'contentflow-studio': new ChunkOnlyAgent(REPLY) } });
