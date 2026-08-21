@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { RealIP } from 'nestjs-real-ip';
+import { RealIP } from '@gitroom/nestjs-libraries/user/real.ip';
 import { AdminRoleType, User } from '@prisma/client';
 import { AuthService } from '@gitroom/helpers/auth/auth.service';
 import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
@@ -178,18 +178,26 @@ export class AdminSecurityController {
     if (adminUser.status !== 'ACTIVE') {
       throw new HttpException('Admin access suspended', 403);
     }
-    const mfaOptional = adminUser.role === 'READONLY' && !adminUser.mfaEnabled;
-    if (!mfaOptional && !adminUser.mfaEnabled) {
+    // MFA is mandatory for every admin role, including READONLY. This used
+    // to be skippable for READONLY admins who hadn't enrolled MFA yet
+    // (`mfaOptional`), which meant taking over that admin's regular USER
+    // session (e.g. XSS, a stolen cookie) was enough on its own to obtain a
+    // full admin session with no second factor at all — for a role that
+    // already has broad read access (audit logs, billing, user PII,
+    // security alerts). MFA enrollment (`/mfa/enroll` + `/mfa/confirm`)
+    // only requires the regular user session, not an admin session, so
+    // every role can and must complete it before their first `/mfa/verify`.
+    if (!adminUser.mfaEnabled) {
       throw new HttpException('Admin MFA is not set up', 403);
     }
-    if (!mfaOptional && await this._adminAuthService.isMfaLockedOut(adminUser.id, ip)) {
+    if (await this._adminAuthService.isMfaLockedOut(adminUser.id, ip)) {
       throw new HttpException(
         'Too many failed attempts. Try again in a few minutes.',
         429
       );
     }
 
-    const ok = mfaOptional || await this.verifyCodeOrBackup(adminUser, code);
+    const ok = await this.verifyCodeOrBackup(adminUser, code);
     if (!ok) {
       await this._adminAuthService.registerFailedMfaAttempt(adminUser.id, ip);
       void this._adminAlertService.emit({ type: 'ADMIN_MFA_FAILURE', severity: 'CRITICAL', title: 'Falha de MFA administrativo', message: `Falha de MFA para ${adminUser.user.email} a partir de ${ip || 'IP desconhecido'}`, adminUserId: adminUser.id });

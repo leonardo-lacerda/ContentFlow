@@ -12,6 +12,7 @@ import { Integration } from '@prisma/client';
 import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
 import { SkoolDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/skool.dto';
 import { AuthService } from '@gitroom/helpers/auth/auth.service';
+import { fetchMediaForPublish } from '@gitroom/nestjs-libraries/upload/safe-media-fetch';
 
 export class SkoolProvider extends SocialAbstract implements SocialProvider {
   identifier = 'skool';
@@ -200,10 +201,9 @@ export class SkoolProvider extends SocialAbstract implements SocialProvider {
     const fileIds: string[] = [];
 
     for (const item of media) {
-      const fileResponse = await fetch(item.path);
-      const fileBuffer = await fileResponse.arrayBuffer();
-      const contentType =
-        fileResponse.headers.get('content-type') || 'application/octet-stream';
+      const { buffer: fileBuffer, contentType: fetchedContentType } =
+        await fetchMediaForPublish(item.path);
+      const contentType = fetchedContentType || 'application/octet-stream';
       const fileName = item.path.split('/').pop() || 'file';
 
       const createFileResponse = await (

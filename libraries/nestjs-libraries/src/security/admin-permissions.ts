@@ -39,12 +39,20 @@ export const ROLE_PERMISSIONS: Record<AdminRoleType, string[]> = {
     ...SELF_SERVICE_PERMISSIONS,
     'users.read',
     'users.support.*',
+    // Deliberately NOT 'users.write' (bare) and NOT 'users.email.write':
+    // SUPPORT is a low-privilege, MFA-optional-by-default tier, and
+    // 'users.write' historically also guarded the user-update endpoint that
+    // could change a user's login email — changing email + /auth/forgot is
+    // a full account-takeover chain, so any email-change capability must
+    // stay CRITICAL-severity and out of this role. Only the narrow
+    // activate/deactivate/basic-profile-field actions are exposed, via the
+    // dedicated key below.
+    'users.write.basic',
     'orgs.read',
     'billing.read',
     'credits.adjust.limited',
     'content.read',
     'content.moderate',
-    'users.write',
     'orgs.members.read',
   ],
   FINANCE: [

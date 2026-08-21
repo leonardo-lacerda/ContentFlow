@@ -8,7 +8,8 @@ import {
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { google, youtube_v3 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library/build/src/auth/oauth2client';
-import axios from 'axios';
+import { Readable } from 'node:stream';
+import { fetchMediaForPublish } from '@gitroom/nestjs-libraries/upload/safe-media-fetch';
 import { YoutubeSettingsDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/youtube.settings.dto';
 import {
   BadBody,
@@ -303,11 +304,9 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
 
     const { settings }: { settings: YoutubeSettingsDto } = firstPost;
 
-    const response = await axios({
-      url: firstPost?.media?.[0]?.path,
-      method: 'GET',
-      responseType: 'stream',
-    });
+    const { buffer: videoBuffer } = await fetchMediaForPublish(
+      firstPost?.media?.[0]?.path!
+    );
 
     const all: GaxiosResponse<Schema$Video> = await this.runInConcurrent(
       async () =>
@@ -329,24 +328,21 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
             },
           },
           media: {
-            body: response.data,
+            body: Readable.from(videoBuffer),
           },
         }),
       true
     );
 
     if (settings?.thumbnail?.path) {
+      const { buffer: thumbnailBuffer } = await fetchMediaForPublish(
+        settings.thumbnail.path
+      );
       await this.runInConcurrent(async () =>
         youtubeClient.thumbnails.set({
           videoId: all?.data?.id!,
           media: {
-            body: (
-              await axios({
-                url: settings?.thumbnail?.path,
-                method: 'GET',
-                responseType: 'stream',
-              })
-            ).data,
+            body: Readable.from(thumbnailBuffer),
           },
         })
       );

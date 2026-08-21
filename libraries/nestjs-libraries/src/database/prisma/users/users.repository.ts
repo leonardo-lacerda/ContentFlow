@@ -47,6 +47,34 @@ export class UsersRepository {
     });
   }
 
+  // Plus-addressing (user+1@gmail.com, user+2@gmail.com, ...) is one real
+  // inbox by construction, so it's the cheapest way to get repeated free
+  // trials from a single identity — DISALLOW_PLUS can reject it outright,
+  // but defaults to off (many legitimate users rely on plus-addressing for
+  // their own organization), so it can't be the only defense. This doesn't
+  // block registration or reject the email; it only tells the caller
+  // whether *another* account already shares this address's base local-part
+  // + domain, so the caller can withhold a fresh trial grant without
+  // touching whether the account itself is allowed to exist.
+  async hasPlusAddressedAliasHistory(email: string): Promise<boolean> {
+    const at = email.indexOf('@');
+    if (at === -1) return false;
+    const domain = email.slice(at);
+    const base = email.slice(0, at).split('+')[0];
+    if (!base) return false;
+
+    const count = await this._user.model.user.count({
+      where: {
+        providerName: Provider.LOCAL,
+        OR: [
+          { email: `${base}${domain}` },
+          { email: { startsWith: `${base}+`, endsWith: domain } },
+        ],
+      },
+    });
+    return count > 0;
+  }
+
   getUserByEmail(email: string) {
     return this._user.model.user.findFirst({
       where: {
@@ -93,6 +121,12 @@ export class UsersRepository {
       data: {
         password: AuthService.hashPassword(password),
         passwordResetRequired: false,
+        // A password change is exactly when a stolen/leaked session JWT
+        // should stop working - without this, the old token stays valid
+        // for the rest of its lifetime (up to 24h) even after the victim's
+        // own remediation. auth.middleware.ts compares this on every
+        // request and rejects a mismatch.
+        authSessionVersion: { increment: 1 },
       },
     });
   }

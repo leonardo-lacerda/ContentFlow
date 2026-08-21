@@ -323,22 +323,31 @@ export class PostsService {
     );
   }
 
-  async updateMedia(id: string, imagesList: any[], convertToJPEG = false) {
+  async updateMedia(
+    org: string,
+    id: string,
+    imagesList: any[],
+    convertToJPEG = false
+  ) {
     try {
       let imageUpdateNeeded = false;
-      const getImageList = await Promise.all(
-        (
-          await Promise.all(
-            (imagesList || []).map(async (p: any) => {
-              if (!p.path && p.id) {
-                imageUpdateNeeded = true;
-                return this._mediaService.getMediaById(p.id);
-              }
+      const resolved = await Promise.all(
+        (imagesList || []).map(async (p: any) => {
+          if (!p.path && p.id) {
+            imageUpdateNeeded = true;
+            return this._mediaService.getMediaById(org, p.id);
+          }
 
-              return p;
-            })
-          )
-        )
+          return p;
+        })
+      );
+
+      const getImageList = await Promise.all(
+        resolved
+          // A media id that doesn't belong to `org` (e.g. a post referencing
+          // another organization's Media row) resolves to null here — drop
+          // it instead of leaking that org's path/URL into the response.
+          .filter((m): m is NonNullable<typeof m> => !!m && !!m.path)
           .map((m) => {
             return {
               ...m,
@@ -480,6 +489,7 @@ export class PostsService {
         (posts || []).map(async (post) => ({
           ...post,
           image: await this.updateMedia(
+            orgId,
             post.id,
             JSON.parse(post.image || '[]'),
             convertToJPEG
@@ -518,6 +528,7 @@ export class PostsService {
         (posts || []).map(async (post) => ({
           ...post,
           image: await this.updateMedia(
+            orgId,
             post.id,
             JSON.parse(post.image || '[]'),
             convertToJPEG

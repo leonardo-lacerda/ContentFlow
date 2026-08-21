@@ -1,4 +1,5 @@
 import { BadRequestException, HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { MediaRepository } from '@gitroom/nestjs-libraries/database/prisma/media/media.repository';
 import { OpenaiService } from '@gitroom/nestjs-libraries/openai/openai.service';
 import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/subscription.service';
@@ -19,6 +20,16 @@ import {
   parseCarouselProjectMetadata,
 } from '@gitroom/nestjs-libraries/database/prisma/media/media.repository';
 import { CarouselImageCompositorService } from '@gitroom/nestjs-libraries/database/prisma/media/carousel-image-compositor.service';
+import { isSafePublicHttpsUrl } from '@gitroom/nestjs-libraries/dtos/webhooks/webhook.url.validator';
+import { ssrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
+import {
+  fetchBufferWithLimit,
+  RemoteFetchError,
+} from '@gitroom/nestjs-libraries/upload/bounded-fetch';
+
+// Matches the pre-existing cap on the base64 carousel-image branch below.
+const MAX_REMOTE_CAROUSEL_IMAGE_BYTES = 12 * 1024 * 1024;
+const REMOTE_CAROUSEL_IMAGE_TIMEOUT_MS = 15_000;
 
 @Injectable()
 export class MediaService {
@@ -36,8 +47,8 @@ export class MediaService {
     return this._mediaRepository.deleteMedia(org, id);
   }
 
-  getMediaById(id: string) {
-    return this._mediaRepository.getMediaById(id);
+  getMediaById(org: string, id: string) {
+    return this._mediaRepository.getMediaById(org, id);
   }
 
   async generateImage(
@@ -54,7 +65,8 @@ export class MediaService {
           console.log('Prompt:', prompt);
         }
         return this._openAi.generateImage(prompt, !!generatePromptFirst);
-      }
+      },
+      createHash('sha256').update(`${prompt}:${!!generatePromptFirst}`).digest('hex')
     );
 
     return generating;
@@ -141,13 +153,45 @@ export class MediaService {
 
   async setCarouselLogo(org: string, body: SetCarouselLogoDto) {
     const childIds = this.parseCarouselGroupId(body.groupId);
+    const logo = await this.resolveCarouselLogoConfig(org, body.logo);
     const result = await this._mediaRepository.setCarouselLogo(
       org,
       childIds,
-      body.logo ? { ...body.logo } : null
+      logo
     );
     if (!result) throw new NotFoundException('Carousel not found');
     return { ok: true };
+  }
+
+  /**
+   * `logo.url` in the request body is client-supplied and must never be
+   * trusted directly - it's later fetched server-side by
+   * CarouselImageCompositorService with a deliberately unguarded fetch()
+   * (see that file's comment), which only stays safe because every URL it
+   * sees is guaranteed to be one this backend itself produced. The only
+   * thing trusted from the client here is `mediaId`, and only after
+   * confirming it's a media row this organization actually owns - the
+   * stored `url` always comes from that row's own `path`, never from the
+   * request body.
+   */
+  private async resolveCarouselLogoConfig(
+    org: string,
+    logo: SetCarouselLogoDto['logo']
+  ) {
+    if (!logo) return null;
+    const media = await this._mediaRepository.getMediaById(org, logo.mediaId);
+    if (!media) {
+      throw new NotFoundException('Logo media not found');
+    }
+    return {
+      mediaId: logo.mediaId,
+      url: media.path,
+      position: logo.position,
+      x: logo.x,
+      y: logo.y,
+      widthPct: logo.widthPct,
+      opacity: logo.opacity,
+    };
   }
 
   /**
@@ -215,14 +259,68 @@ export class MediaService {
     return this._compositor.streamZip(writeStream, entries);
   }
 
+  /**
+   * A client-supplied `http(s)://` value here is fully attacker-controlled -
+   * it must never be stored as `Media.path` verbatim (that value gets
+   * fetched again, unguarded, at every later slide/zip download - see
+   * CarouselImageCompositorService). Instead validate it against the same
+   * public-HTTPS/no-private-IP guard used for every other user-supplied URL
+   * in this codebase, download it server-side through the SSRF-safe
+   * dispatcher with a size/time cap, and re-host the bytes through the
+   * normal upload pipeline (magic-byte validated, same as the base64
+   * branch below) so `Media.path` always ends up being our own trusted
+   * storage URL, never a URL an attacker could point anywhere they choose.
+   */
+  private async fetchRemoteCarouselImage(url: string, index: number) {
+    if (!(await isSafePublicHttpsUrl(url))) {
+      throw new HttpException('Image URL is not allowed', 400);
+    }
+
+    let buffer: Buffer;
+    let contentType: string | null;
+    try {
+      ({ buffer, contentType } = await fetchBufferWithLimit(url, {
+        dispatcher: ssrfSafeDispatcher,
+        maxBytes: MAX_REMOTE_CAROUSEL_IMAGE_BYTES,
+        timeoutMs: REMOTE_CAROUSEL_IMAGE_TIMEOUT_MS,
+        blockRedirects: true,
+      }));
+    } catch (err) {
+      if (err instanceof RemoteFetchError) {
+        throw new HttpException('Could not download image URL', 400);
+      }
+      throw err;
+    }
+
+    if (!buffer.length) {
+      throw new HttpException('Invalid carousel image payload', 400);
+    }
+
+    const mimeType = (contentType || 'image/png').split(';')[0].trim();
+
+    return this.storage.uploadFile({
+      fieldname: 'file',
+      originalname: `carousel-slide-${index}.png`,
+      encoding: '7bit',
+      mimetype: mimeType,
+      size: buffer.length,
+      buffer,
+      stream: undefined as any,
+      destination: '',
+      filename: `carousel-slide-${index}.png`,
+      path: '',
+    } as any);
+  }
+
   private async uploadCarouselImage(image: string, index: number) {
     const trimmedImage = image.trim();
 
     if (/^https?:\/\//i.test(trimmedImage)) {
-      const file = trimmedImage;
+      const uploaded = await this.fetchRemoteCarouselImage(trimmedImage, index);
       return {
-        originalname: file.split('/').pop() || `carousel-slide-${index}.png`,
-        path: file,
+        originalname:
+          uploaded.originalname || `carousel-slide-${index}.png`,
+        path: uploaded.path,
       };
     }
 
@@ -314,7 +412,8 @@ export class MediaService {
 
         const file = await this.storage.uploadSimple(loadedData);
         return this.saveFile(org.id, file.split('/').pop(), file);
-      }
+      },
+      createHash('sha256').update(JSON.stringify({ type: body.type, output: body.output, customParams: body.customParams })).digest('hex')
     );
   }
 

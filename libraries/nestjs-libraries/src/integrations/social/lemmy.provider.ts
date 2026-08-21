@@ -11,6 +11,8 @@ import { Integration } from '@prisma/client';
 import { AuthService } from '@gitroom/helpers/auth/auth.service';
 import { LemmySettingsDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/lemmy.dto';
 import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
+import { UrlValidator } from '@gitroom/nestjs-libraries/security/url-validator';
+import { ssrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 
 export class LemmyProvider extends SocialAbstract implements SocialProvider {
   override maxConcurrentJob = 3; // Lemmy instances typically have moderate limits
@@ -23,6 +25,24 @@ export class LemmyProvider extends SocialAbstract implements SocialProvider {
     return 10000;
   }
   dto = LemmySettingsDto;
+
+  /**
+   * `service` is a user-supplied Lemmy instance URL (see `customFields()`
+   * below — validated there only for URL *shape*, not for pointing
+   * somewhere safe to fetch). Every method in this file that talks to a
+   * Lemmy instance must validate it here first — same pattern as
+   * `MastodonProvider.assertSafeInstanceUrl` / `WordpressProvider` for the
+   * identical "user-supplied custom instance URL" shape. Without this, any
+   * self-registered account could point `service` at 169.254.169.254 or an
+   * internal host and have this backend issue authenticated POST requests
+   * to it on every connect/post/comment.
+   */
+  private async assertSafeInstanceUrl(url: string): Promise<void> {
+    const validation = await UrlValidator.validate(url);
+    if (!validation.valid) {
+      throw new Error(`Lemmy instance URL blocked: ${validation.error}`);
+    }
+  }
 
   async customFields() {
     return [
@@ -75,6 +95,7 @@ export class LemmyProvider extends SocialAbstract implements SocialProvider {
     refresh?: string;
   }) {
     const body = JSON.parse(Buffer.from(params.code, 'base64').toString());
+    await this.assertSafeInstanceUrl(body.service);
 
     const load = await fetch(body.service + '/api/v3/user/login', {
       body: JSON.stringify({
@@ -85,6 +106,8 @@ export class LemmyProvider extends SocialAbstract implements SocialProvider {
       headers: {
         'Content-Type': 'application/json',
       },
+      // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+      dispatcher: ssrfSafeDispatcher,
     });
 
     if (load.status === 401) {
@@ -99,6 +122,8 @@ export class LemmyProvider extends SocialAbstract implements SocialProvider {
           headers: {
             Authorization: `Bearer ${jwt}`,
           },
+          // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+          dispatcher: ssrfSafeDispatcher,
         })
       ).json();
 
@@ -124,6 +149,7 @@ export class LemmyProvider extends SocialAbstract implements SocialProvider {
     const body = JSON.parse(
       AuthService.secureDecryption(integration.customInstanceDetails!)
     );
+    await this.assertSafeInstanceUrl(body.service);
 
     const { jwt } = await (
       await fetch(body.service + '/api/v3/user/login', {
@@ -135,6 +161,8 @@ export class LemmyProvider extends SocialAbstract implements SocialProvider {
         headers: {
           'Content-Type': 'application/json',
         },
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: ssrfSafeDispatcher,
       })
     ).json();
 
@@ -187,6 +215,8 @@ export class LemmyProvider extends SocialAbstract implements SocialProvider {
             Authorization: `Bearer ${jwt}`,
             'Content-Type': 'application/json',
           },
+          // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+          dispatcher: ssrfSafeDispatcher,
         })
       ).json();
 
@@ -235,6 +265,8 @@ export class LemmyProvider extends SocialAbstract implements SocialProvider {
             Authorization: `Bearer ${jwt}`,
             'Content-Type': 'application/json',
           },
+          // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+          dispatcher: ssrfSafeDispatcher,
         })
       ).json();
 
@@ -281,6 +313,8 @@ export class LemmyProvider extends SocialAbstract implements SocialProvider {
           headers: {
             Authorization: `Bearer ${jwt}`,
           },
+          // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+          dispatcher: ssrfSafeDispatcher,
         }
       )
     ).json();

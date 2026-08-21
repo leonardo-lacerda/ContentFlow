@@ -7,29 +7,64 @@ export class TemplateMarketplaceService {
 
   /**
    * List available templates with filters.
+   *
+   * Found while re-verifying the F-08 fix (2026-08-20 audit): this was the
+   * bypass for it — `getTemplate`/`installTemplate` got an ownership check,
+   * but this method had none, so `?source=PRIVATE` (or simply omitting
+   * `source`, which left `where.source` unconstrained) returned every
+   * organization's PRIVATE templates, and `?status=PENDING_REVIEW`/any other
+   * status overrode the safe APPROVED default with no scoping at all. Same
+   * visibility rule as getTemplate, enforced here too: PRIVATE and
+   * non-APPROVED results are only ever the requester's own.
    */
-  async listTemplates(filters?: {
-    category?: string;
-    source?: string;
-    status?: string;
-    search?: string;
-  }) {
-    const where: any = { deletedAt: null };
+  async listTemplates(
+    filters?: {
+      category?: string;
+      source?: string;
+      status?: string;
+      search?: string;
+    },
+    requestingOrgId?: string
+  ) {
+    const status = filters?.status || 'APPROVED';
+    const wantsNonApproved = status !== 'APPROVED';
+    const wantsPrivateOnly = filters?.source === 'PRIVATE';
 
-    if (filters?.category) where.category = filters.category;
-    if (filters?.source) where.source = filters.source;
-    if (filters?.status) where.status = filters.status;
-    else where.status = 'APPROVED'; // Default: only approved templates
+    if ((wantsNonApproved || wantsPrivateOnly) && !requestingOrgId) {
+      return [];
+    }
+
+    const and: any[] = [{ deletedAt: null }, { status }];
+
+    if (filters?.category) and.push({ category: filters.category });
+
+    if (filters?.source) {
+      and.push({ source: filters.source });
+      if (wantsPrivateOnly) and.push({ creatorOrgId: requestingOrgId });
+    } else {
+      // No explicit source requested: never surface another org's PRIVATE
+      // templates in a general browse.
+      and.push({
+        OR: [
+          { source: { not: 'PRIVATE' } },
+          { source: 'PRIVATE', creatorOrgId: requestingOrgId },
+        ],
+      });
+    }
+
+    if (wantsNonApproved) and.push({ creatorOrgId: requestingOrgId });
 
     if (filters?.search) {
-      where.OR = [
-        { name: { contains: filters.search, mode: 'insensitive' } },
-        { description: { contains: filters.search, mode: 'insensitive' } },
-      ];
+      and.push({
+        OR: [
+          { name: { contains: filters.search, mode: 'insensitive' } },
+          { description: { contains: filters.search, mode: 'insensitive' } },
+        ],
+      });
     }
 
     return this._prisma.marketplaceTemplate.findMany({
-      where,
+      where: { AND: and },
       orderBy: { installCount: 'desc' },
       take: 50,
     });
@@ -37,19 +72,38 @@ export class TemplateMarketplaceService {
 
   /**
    * Get a single template by ID.
+   *
+   * PRIVATE templates and anything not yet APPROVED are only visible to the
+   * organization that created them — requestingOrgId must be threaded through
+   * from every caller so this stays true regardless of entry point.
    */
-  async getTemplate(id: string) {
+  async getTemplate(id: string, requestingOrgId?: string) {
     const template = await this._prisma.marketplaceTemplate.findUnique({
       where: { id },
     });
     if (!template || template.deletedAt) {
       throw new HttpException('Template não encontrado', HttpStatus.NOT_FOUND);
     }
+
+    const isOwner =
+      !!requestingOrgId && template.creatorOrgId === requestingOrgId;
+    const isPubliclyVisible =
+      template.status === 'APPROVED' && template.source !== 'PRIVATE';
+
+    if (!isOwner && !isPubliclyVisible) {
+      // Same 404 as "doesn't exist" — don't confirm existence of a private
+      // or unreviewed template to a non-owner.
+      throw new HttpException('Template não encontrado', HttpStatus.NOT_FOUND);
+    }
+
     return template;
   }
 
   /**
-   * Create a new template (community or official).
+   * Create a new template. `source` is never taken from the caller: only the
+   * admin-only `reviewTemplate` path (content.moderate permission) may grant
+   * APPROVED/OFFICIAL status. Every org-created template starts as COMMUNITY
+   * (or PRIVATE, scoped to its own org) and PENDING_REVIEW.
    */
   async createTemplate(
     creatorOrgId: string,
@@ -60,7 +114,7 @@ export class TemplateMarketplaceService {
       templateData: any;
       tags?: string[];
       previewImageUrl?: string;
-      source?: 'OFFICIAL' | 'COMMUNITY' | 'PRIVATE';
+      private?: boolean;
     },
   ) {
     return this._prisma.marketplaceTemplate.create({
@@ -72,8 +126,8 @@ export class TemplateMarketplaceService {
         templateData: data.templateData,
         tags: data.tags || [],
         previewImageUrl: data.previewImageUrl,
-        source: data.source || 'COMMUNITY',
-        status: data.source === 'OFFICIAL' ? 'APPROVED' : 'PENDING_REVIEW',
+        source: data.private ? 'PRIVATE' : 'COMMUNITY',
+        status: 'PENDING_REVIEW',
       },
     });
   }
@@ -82,7 +136,7 @@ export class TemplateMarketplaceService {
    * Install a template for an organization.
    */
   async installTemplate(orgId: string, templateId: string) {
-    const template = await this.getTemplate(templateId);
+    const template = await this.getTemplate(templateId, orgId);
 
     if (template.status !== 'APPROVED') {
       throw new HttpException(
@@ -206,9 +260,16 @@ export class TemplateMarketplaceService {
   }
 
   /**
-   * Record template usage.
+   * Record template usage. Went through `getTemplate`'s own visibility
+   * check (PRIVATE templates only visible to their creator org) rather than
+   * a bare `update({ where: { id } })` — any authenticated user of any org
+   * could otherwise increment `usageCount` on a template they can't even
+   * see, including a probe to confirm a guessed private-template id exists
+   * (an update on a missing/invisible id previously just silently no-op'd
+   * instead of 404ing, which itself was a second, smaller tell).
    */
-  async recordUsage(templateId: string) {
+  async recordUsage(templateId: string, requestingOrgId?: string) {
+    await this.getTemplate(templateId, requestingOrgId);
     await this._prisma.marketplaceTemplate.update({
       where: { id: templateId },
       data: { usageCount: { increment: 1 } },

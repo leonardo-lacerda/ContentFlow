@@ -23,7 +23,11 @@ export class EnterpriseController {
   @Post('/create-user')
   async createUser(@Body('params') params: string) {
     try {
-      const { id, name, saasName, email } = AuthService.verifyJWT(params) as {
+      const { id, name, saasName, email } = AuthService.verifyJWT(
+        params,
+        undefined,
+        { rejectInternalTypes: true }
+      ) as {
         id: string;
         name: string;
         email: string;
@@ -48,7 +52,9 @@ export class EnterpriseController {
   @Post('/url')
   async redirectParams(@Body('params') params: string) {
     try {
-      const load = AuthService.verifyJWT(params) as {
+      const load = AuthService.verifyJWT(params, undefined, {
+        rejectInternalTypes: true,
+      }) as {
         redirectUrl: string;
         apiKey: string;
         refreshId?: string;
@@ -110,7 +116,9 @@ export class EnterpriseController {
   @Post('/delete-channel')
   async deleteChannel(@Body('params') params: string) {
     try {
-      const load = AuthService.verifyJWT(params) as {
+      const load = AuthService.verifyJWT(params, undefined, {
+        rejectInternalTypes: true,
+      }) as {
         apiKey: string;
         id: string;
       };

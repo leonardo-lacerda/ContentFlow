@@ -13,6 +13,7 @@ import { DribbbleDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-sett
 import mime from 'mime-types';
 import { DiscordDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/discord.dto';
 import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
+import { fetchMediaForPublish } from '@gitroom/nestjs-libraries/upload/safe-media-fetch';
 
 export class DribbbleProvider extends SocialAbstract implements SocialProvider {
   override maxConcurrentJob = 3; // Dribbble has moderate API limits
@@ -138,11 +139,8 @@ export class DribbbleProvider extends SocialAbstract implements SocialProvider {
     accessToken: string,
     postDetails: PostDetails<DribbbleDto>[]
   ): Promise<PostResponse[]> {
-    const { data, status } = await axios.get(
-      postDetails?.[0]?.media?.[0]?.path!,
-      {
-        responseType: 'stream',
-      }
+    const { buffer: data } = await fetchMediaForPublish(
+      postDetails?.[0]?.media?.[0]?.path!
     );
 
     const slash = postDetails?.[0]?.media?.[0]?.path.split('/').at(-1);

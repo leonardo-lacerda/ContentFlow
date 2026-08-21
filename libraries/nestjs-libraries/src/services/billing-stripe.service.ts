@@ -134,6 +134,17 @@ export class BillingStripeService {
     if (!item) throw new Error('Stripe subscription has no price item');
 
     if (target.priceCents < current.plan.priceCents) {
+      // Actually move the Stripe subscription item to the cheaper price now
+      // (proration_behavior: 'none' means nothing is charged/refunded this
+      // instant — it only takes effect on the *next* invoice). Without this,
+      // Stripe kept billing the old, higher price at renewal while
+      // handleInvoicePaid's pendingPlanCode logic granted the new, cheaper
+      // plan's entitlements — the org was overcharged for what it received.
+      await stripe.subscriptions.update(current.providerSubscriptionId, {
+        items: [{ id: item.id, price: priceId }],
+        proration_behavior: 'none',
+        metadata: { service: 'contentflow-billing-v2', organizationId, planCode: current.plan.code, pendingPlanCode: target.code },
+      });
       await this.accounting.upsertSubscription({
         organizationId,
         planCode: current.plan.code,
@@ -374,9 +385,23 @@ export class BillingStripeService {
   }
 
   private async handleChargeRefunded(charge: Stripe.Charge) {
+    // Subscription-invoice charges carry `invoice`; one-off payment-mode
+    // Checkout Sessions (top-ups — createTopupCheckout uses mode: 'payment')
+    // never generate a Stripe Invoice at all, so `invoice` is null there and
+    // the only usable correlation id is `payment_intent`, which is exactly
+    // what grantTopup() stored as providerInvoiceId/providerPaymentId.
     const rawInvoice = (charge as any).invoice;
-    const invoiceId = typeof rawInvoice === 'string' ? rawInvoice : undefined;
-    if (invoiceId) await this.prisma.billingInvoice.updateMany({ where: { providerInvoiceId: invoiceId }, data: { status: 'REFUNDED' } });
+    const rawPaymentIntent = (charge as any).payment_intent;
+    const providerInvoiceId =
+      (typeof rawInvoice === 'string' ? rawInvoice : undefined) ||
+      (typeof rawPaymentIntent === 'string' ? rawPaymentIntent : undefined);
+
+    if (!providerInvoiceId) {
+      this.logger.warn(`charge.refunded ${charge.id} has neither invoice nor payment_intent — cannot match a BillingInvoice to revoke credits`);
+      return;
+    }
+
+    await this.accounting.revokeCreditsForInvoice(providerInvoiceId, `stripe:charge.refunded:${charge.id}`);
   }
 
   private async handleDispute(dispute: Stripe.Dispute) {
@@ -384,8 +409,7 @@ export class BillingStripeService {
     if (!customerId) return;
     const current = await this.prisma.billingSubscription.findFirst({ where: { providerCustomerId: customerId } });
     if (current) {
-      await this.accounting.ensureAccount(current.organizationId);
-      await this.prisma.creditAccount.update({ where: { organizationId: current.organizationId }, data: { status: 'CHARGEBACK' } });
+      await this.accounting.markSubscriptionDisputed(current.organizationId, `stripe:charge.dispute.created:${dispute.id}`);
     }
   }
 

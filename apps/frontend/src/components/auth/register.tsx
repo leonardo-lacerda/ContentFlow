@@ -75,7 +75,13 @@ export function Register() {
 function getHelpfulReasonForRegistrationFailure(httpCode: number) {
   switch (httpCode) {
     case 400:
-      return 'Email already exists';
+      // The backend returns a generic 400 for every registration failure
+      // mode (invalid input, weak password, email already registered, ...) —
+      // it deliberately does not say which, to avoid leaking which emails
+      // already have an account (see auth.service.ts's register()). This
+      // message must stay just as generic, or it silently reopens that
+      // enumeration oracle on the frontend.
+      return 'Unable to complete registration. Please check your details and try again.';
     case 404:
       return 'Your browser got a 404 when trying to contact the API, the most likely reasons for this are the NEXT_PUBLIC_BACKEND_URL is set incorrectly, or the backend is not running.';
   }

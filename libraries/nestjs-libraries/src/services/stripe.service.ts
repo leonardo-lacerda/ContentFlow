@@ -177,6 +177,32 @@ export class StripeService {
     );
   }
 
+  // The legacy (V1) webhook switch previously had no case for these two
+  // event types at all — a refund or a chargeback on an org still on the
+  // legacy channel-count subscription model (as opposed to the V2 billing
+  // ledger, which has its own handlers in billing-stripe.service.ts) simply
+  // fell through to `default: return { ok: true }` and revoked nothing.
+  // deleteSubscription() here is the same "downgrade to FREE" primitive the
+  // legacy `customer.subscription.deleted` handler already uses — V1 has no
+  // separate credit ledger, so the subscription tier is the entire benefit
+  // to revoke. A customer id that isn't one of ours is a safe no-op (see
+  // SubscriptionService.modifySubscription's early return).
+  async handleChargeRefunded(event: Stripe.ChargeRefundedEvent) {
+    const customerId = event.data.object.customer;
+    if (typeof customerId === 'string' && customerId) {
+      await this._subscriptionService.deleteSubscription(customerId);
+    }
+    return { ok: true };
+  }
+
+  async handleChargeDispute(event: Stripe.ChargeDisputeCreatedEvent) {
+    const customerId = (event.data.object as any).customer;
+    if (typeof customerId === 'string' && customerId) {
+      await this._subscriptionService.deleteSubscription(customerId);
+    }
+    return { ok: true };
+  }
+
   async createOrGetCustomer(organization: Organization) {
     if (organization.paymentId) {
       return organization.paymentId;
@@ -615,7 +641,7 @@ export class StripeService {
   }
 
   async applyDiscount(customer: string) {
-    const check = this.checkDiscount(customer);
+    const check = await this.checkDiscount(customer);
     if (!check) {
       return false;
     }
@@ -649,6 +675,16 @@ export class StripeService {
 
     if (orgValue) {
       return 2;
+    }
+
+    // Not every organization has a real Stripe customer (e.g. Cakto-billed
+    // orgs get a synthetic `cakto:${orgId}` paymentId, and a brand-new org
+    // may have no paymentId at all) — calling Stripe's API with that would
+    // throw. There's nothing to check against Stripe in that case; the
+    // Subscription-table lookup above is already the full answer for those.
+    const org = await this._organizationService.getOrgById(organizationId);
+    if (!org?.paymentId?.startsWith('cus_')) {
+      return 0;
     }
 
     const getCustomerSubscriptions = await this.getCustomerSubscriptions(
@@ -973,6 +1009,18 @@ export class StripeService {
 
     try {
       const testCode = AuthService.fixedDecryption(code);
+      // fixedDecryption is CBC with no authentication tag, so "decrypts
+      // without a padding error" is not proof the code was ever actually
+      // issued (~1/256 of random ciphertexts pass CBC padding validation by
+      // chance). Every code this app has ever generated (codes.service.ts)
+      // has the shape `<providerToken>:<index 0-9999>` — rejecting anything
+      // that doesn't match that shape closes most of that guessing surface,
+      // on top of the "not already used" check below.
+      if (!/^.+:(\d{1,4})$/.test(testCode) || Number(testCode.split(':').pop()) > 9999) {
+        return {
+          success: false,
+        };
+      }
       const findCode = await this._subscriptionService.getCode(testCode);
       if (findCode) {
         return {

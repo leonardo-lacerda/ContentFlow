@@ -70,10 +70,11 @@ export class MediaRepository {
     });
   }
 
-  getMediaById(id: string) {
+  getMediaById(org: string, id: string) {
     return this._media.model.media.findUnique({
       where: {
         id,
+        organizationId: org,
       },
     });
   }

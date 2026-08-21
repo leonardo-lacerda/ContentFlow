@@ -325,20 +325,81 @@ export class BillingAccountingService {
     await this.prisma.creditAccount.upsert({ where: { organizationId }, update: { status: 'ACTIVE' }, create: { organizationId, status: 'ACTIVE' } });
   }
 
-  async recordWebhook(event: { id: string; type: string; payload: unknown; organizationId?: string }) {
-    try {
-      return await this.prisma.billingWebhookEvent.create({
-        data: {
-          eventId: event.id,
-          eventType: event.type,
-          organizationId: event.organizationId,
-          payload: JSON.parse(JSON.stringify(event.payload)) as Prisma.InputJsonValue,
-        },
-      });
-    } catch (error: any) {
-      if (error?.code === 'P2002') return null;
-      throw error;
+  // Called from a refund webhook. Marks the invoice REFUNDED and claws back
+  // any credits that were granted for it — otherwise a refunded top-up or
+  // subscription payment leaves its credits permanently spendable. Guarded
+  // by invoice.status so a charge that refunds in multiple steps (or a
+  // redelivered-but-distinct webhook event for the same charge) only ever
+  // revokes the grant once.
+  async revokeCreditsForInvoice(providerInvoiceId: string, reason: string) {
+    const invoice = await this.prisma.billingInvoice.findUnique({ where: { providerInvoiceId } });
+    if (!invoice) return { revoked: false, why: 'invoice_not_found' as const };
+    if (invoice.status === 'REFUNDED') return { revoked: false, why: 'already_refunded' as const };
+
+    await this.prisma.billingInvoice.update({ where: { id: invoice.id }, data: { status: 'REFUNDED' } });
+
+    if (invoice.creditsGranted > 0) {
+      await this.credits.adjust(invoice.organizationId, -invoice.creditsGranted, reason, 'system:stripe-refund', providerInvoiceId);
     }
+
+    return { revoked: true as const, organizationId: invoice.organizationId, creditsRevoked: invoice.creditsGranted };
+  }
+
+  // Called from a dispute webhook. A chargeback should immediately pull the
+  // organization off any paid plan/credit access — resolveAccess() only
+  // grants paid-plan features for ACTIVE/TRIALING/PAST_DUE-in-grace
+  // subscriptions, so flipping status here (not just the credit account's
+  // status, which only gates *spending* credits) closes the gap where a
+  // disputed subscription kept its non-credit-metered plan benefits (seats,
+  // white-label, public API, capacity limits) until a human intervened.
+  async markSubscriptionDisputed(organizationId: string, reason?: string) {
+    await this.prisma.creditAccount.upsert({
+      where: { organizationId },
+      update: { status: 'CHARGEBACK' },
+      create: { organizationId, status: 'CHARGEBACK' },
+    });
+    return this.prisma.billingSubscription.updateMany({
+      where: { organizationId },
+      data: { status: 'DISPUTED', metadata: reason ? { reason } : undefined },
+    });
+  }
+
+  // Claims an event id for processing, or returns null if it's a genuine
+  // duplicate delivery of an event already processed (or currently being
+  // processed). An event whose *previous* attempt ended in FAILED is
+  // explicitly re-claimable: handleWebhook's catch block marks the row
+  // FAILED but rethrows, so Stripe retries the same event id — without this,
+  // the unique constraint on eventId would make every retry of a failed
+  // delivery look like a no-op duplicate, permanently stranding whatever
+  // that attempt didn't finish writing (see handleInvoicePaid's two
+  // separate, non-transactional writes).
+  async recordWebhook(event: { id: string; type: string; payload: unknown; organizationId?: string }) {
+    let existing = await this.prisma.billingWebhookEvent.findUnique({ where: { eventId: event.id } });
+
+    if (!existing) {
+      try {
+        return await this.prisma.billingWebhookEvent.create({
+          data: {
+            eventId: event.id,
+            eventType: event.type,
+            organizationId: event.organizationId,
+            payload: JSON.parse(JSON.stringify(event.payload)) as Prisma.InputJsonValue,
+          },
+        });
+      } catch (error: any) {
+        if (error?.code !== 'P2002') throw error;
+        existing = await this.prisma.billingWebhookEvent.findUnique({ where: { eventId: event.id } });
+      }
+    }
+
+    if (existing?.status === 'FAILED') {
+      return this.prisma.billingWebhookEvent.update({
+        where: { eventId: event.id },
+        data: { status: 'RECEIVED', error: null },
+      });
+    }
+
+    return null;
   }
 
   completeWebhook(eventId: string, status = 'PROCESSED', error?: string) {

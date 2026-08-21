@@ -19,7 +19,7 @@ import { ResendActivationDto } from '@gitroom/nestjs-libraries/dtos/auth/resend-
 import { ApiTags } from '@nestjs/swagger';
 import { getCookieUrlFromDomain } from '@gitroom/helpers/subdomain/subdomain.management';
 import { EmailService } from '@gitroom/nestjs-libraries/services/email.service';
-import { RealIP } from 'nestjs-real-ip';
+import { RealIP } from '@gitroom/nestjs-libraries/user/real.ip';
 import { UserAgent } from '@gitroom/nestjs-libraries/user/user.agent';
 import { Provider } from '@prisma/client';
 import * as Sentry from '@sentry/nestjs';

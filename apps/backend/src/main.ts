@@ -14,6 +14,7 @@ process.env.TZ = 'UTC';
 import cookieParser from 'cookie-parser';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 import { SubscriptionExceptionFilter } from '@gitroom/backend/services/auth/permissions/subscription.exception';
@@ -36,7 +37,7 @@ async function start() {
     ...(process.env.MAIN_URL ? [process.env.MAIN_URL] : []),
   ].filter((origin): origin is string => Boolean(origin));
 
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
     cors: {
       // The frontend always uses credentials: include, including local mode

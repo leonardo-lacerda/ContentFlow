@@ -523,13 +523,15 @@ export class OrganizationService {
   async createOrgAndUser(
     body: Omit<CreateOrgUserDto, 'providerToken'> & { providerId?: string },
     ip: string,
-    userAgent: string
+    userAgent: string,
+    allowTrial = true
   ) {
     return this._organizationRepository.createOrgAndUser(
       body,
       this._notificationsService.hasEmailProvider(),
       ip,
-      userAgent
+      userAgent,
+      allowTrial
     );
   }
 

@@ -7,6 +7,7 @@ import { CreativeEngineService } from '@gitroom/nestjs-libraries/creative-engine
 import type { CreativeMediaTool } from '@gitroom/nestjs-libraries/creative-engine/creative-media-tool.service';
 import { AgentToolInterface } from '@gitroom/nestjs-libraries/chat/agent.tool.interface';
 import { checkAuth } from '@gitroom/nestjs-libraries/chat/auth.context';
+import { ToolConfirmationService } from '@gitroom/nestjs-libraries/chat/tool-confirmation.service';
 import { compileDesignPrompt } from '@gitroom/nestjs-libraries/creative-engine/creative-design-prompt.util';
 import { STYLE_PRESETS, PALETTES } from '@gitroom/nestjs-libraries/creative-engine/carousel-design-catalogue';
 
@@ -92,6 +93,12 @@ type CreativeGenerationInput = {
     cta?: string;
     imagePrompt: string;
     aspectRatio?: string;
+    styleOverride?: {
+      stylePresetId?: string;
+      paletteId?: string;
+      density?: 'airy' | 'balanced' | 'dense';
+      alignment?: 'left' | 'center' | 'right';
+    };
   }>;
 };
 
@@ -114,6 +121,10 @@ export class CreativeGenerationTool implements AgentToolInterface {
     const raw = context?.requestContext?.get('organization');
     if (!raw) throw new Error('This Creative Engine operation requires an authenticated organization');
     return JSON.parse(raw) as { id: string };
+  }
+
+  private getConfirmationService() {
+    return this.moduleRef.get(ToolConfirmationService, { strict: false });
   }
 
   run() {
@@ -185,6 +196,14 @@ export class CreativeGenerationTool implements AgentToolInterface {
           cta: z.string().optional(),
           imagePrompt: z.string().min(1),
           aspectRatio: z.string().optional(),
+          styleOverride: z.object({
+            stylePresetId: z.enum(stylePresetIds).optional(),
+            paletteId: z.enum(paletteIds).optional(),
+            density: z.enum(['airy', 'balanced', 'dense']).optional(),
+            alignment: z.enum(['left', 'center', 'right']).optional(),
+          }).optional().describe(
+            "Breaks just this one slide from the carousel's shared style (e.g. a bolder CTA slide). Rare — most carousels should share one style; only use this when the user explicitly asks for one slide to look different. Requires this slide to also set id or index."
+          ),
         })).optional(),
       }),
       outputSchema: z.object({ result: z.any() }),
@@ -204,8 +223,24 @@ export class CreativeGenerationTool implements AgentToolInterface {
           'generate-matrix',
           'localize',
         ]);
-        if (confirmationRequired.has(inputData.operation) && inputData.confirmed !== true) {
-          throw new Error('Esta acao exige confirmacao explicita do usuario antes de continuar.');
+        if (confirmationRequired.has(inputData.operation)) {
+          const threadId = (context as any)?.agent?.threadId as
+            | string
+            | undefined;
+          const requestId = (context?.requestContext as any)?.get(
+            'requestId'
+          ) as string | undefined;
+          const { confirmed, ...fingerprintParams } = inputData as any;
+          const canProceed = await this.getConfirmationService().requestOrConsume(
+            threadId || organization.id,
+            requestId,
+            `creativeGenerationTool:${inputData.operation}`,
+            fingerprintParams,
+            inputData.confirmed
+          );
+          if (!canProceed) {
+            throw new Error('Esta acao exige confirmacao explicita do usuario antes de continuar.');
+          }
         }
 
         switch (inputData.operation) {

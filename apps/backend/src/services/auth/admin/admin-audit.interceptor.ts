@@ -49,10 +49,13 @@ export class AdminAuditInterceptor implements NestInterceptor {
     );
 
     const requestId = uuidv4();
-    const forwardedFor = request.headers['x-forwarded-for'];
-    const ip =
-      (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor) ||
-      request.ip;
+    // Same class of bug as the fix in admin-request.utils.ts: this used to
+    // prefer the raw `x-forwarded-for` header (client-controlled — nginx
+    // APPENDS to it rather than replacing it) over `request.ip` (Express's
+    // own trust-proxy-aware resolution). An admin audit log is only useful
+    // for incident response if the IP it records is real, so a forged
+    // header must never be able to overwrite it here either.
+    const ip = request.ip;
     const userAgent = request.headers['user-agent'];
     const params = request.params as Record<string, string> | undefined;
     const body = request.body as Record<string, unknown> | undefined;

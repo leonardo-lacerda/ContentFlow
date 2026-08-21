@@ -14,6 +14,8 @@ import slugify from 'slugify';
 import axios from 'axios';
 import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
 import { string } from 'yup';
+import { UrlValidator } from '@gitroom/nestjs-libraries/security/url-validator';
+import { ssrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 
 export class WordpressProvider
   extends SocialAbstract
@@ -64,6 +66,19 @@ export class WordpressProvider
     return undefined;
   }
 
+  /**
+   * `domain` is a user-entered custom-instance URL (see customFields
+   * below), so it's fully attacker-controlled — every call site that fetches
+   * it must validate it first (blocks localhost/private/link-local targets)
+   * and pin the resolved IP at connect time via ssrfSafeDispatcher.
+   */
+  private async assertSafeDomain(domain: string): Promise<void> {
+    const validation = await UrlValidator.validate(domain);
+    if (!validation.valid) {
+      throw new Error(`WordPress domain blocked: ${validation.error}`);
+    }
+  }
+
   async customFields() {
     return [
       {
@@ -98,6 +113,7 @@ export class WordpressProvider
       password: string;
     };
     try {
+      await this.assertSafeDomain(body.domain);
       const auth = Buffer.from(`${body.username}:${body.password}`).toString(
         'base64'
       );
@@ -106,6 +122,8 @@ export class WordpressProvider
           headers: {
             Authorization: `Basic ${auth}`,
           },
+          // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+          dispatcher: ssrfSafeDispatcher,
         })
       ).json();
 
@@ -149,6 +167,8 @@ export class WordpressProvider
       password: string;
     };
 
+    await this.assertSafeDomain(body.domain);
+
     const auth = Buffer.from(`${body.username}:${body.password}`).toString(
       'base64'
     );
@@ -158,6 +178,8 @@ export class WordpressProvider
         headers: {
           Authorization: `Basic ${auth}`,
         },
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: ssrfSafeDispatcher,
       })
     ).json();
 
@@ -191,6 +213,8 @@ export class WordpressProvider
       password: string;
     };
 
+    await this.assertSafeDomain(body.domain);
+
     const auth = Buffer.from(`${body.username}:${body.password}`).toString(
       'base64'
     );
@@ -217,6 +241,8 @@ export class WordpressProvider
             'Content-Type': blob.type,
           },
           body: blob,
+          // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+          dispatcher: ssrfSafeDispatcher,
         })
       ).json();
 
@@ -243,6 +269,8 @@ export class WordpressProvider
             status: 'publish',
             ...(mediaId ? { featured_media: mediaId } : {}),
           }),
+          // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+          dispatcher: ssrfSafeDispatcher,
         }
       )
     ).json();

@@ -28,20 +28,27 @@ export class TemplateMarketplaceController {
 
   @Get('/templates')
   async listTemplates(
+    @GetOrgFromRequest() org: Organization,
     @Query('category') category?: string,
     @Query('source') source?: string,
     @Query('search') search?: string,
   ) {
-    return this._marketplaceService.listTemplates({
-      category,
-      source,
-      search,
-    });
+    return this._marketplaceService.listTemplates(
+      {
+        category,
+        source,
+        search,
+      },
+      org?.id
+    );
   }
 
   @Get('/templates/:id')
-  async getTemplate(@Param('id') id: string) {
-    return this._marketplaceService.getTemplate(id);
+  async getTemplate(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string,
+  ) {
+    return this._marketplaceService.getTemplate(id, org?.id);
   }
 
   @Post('/templates')
@@ -55,10 +62,21 @@ export class TemplateMarketplaceController {
       templateData: any;
       tags?: string[];
       previewImageUrl?: string;
-      source?: 'OFFICIAL' | 'COMMUNITY' | 'PRIVATE';
+      private?: boolean;
     },
   ) {
-    return this._marketplaceService.createTemplate(org.id, body);
+    // `source`/`status` are never accepted from the client — only the
+    // admin-gated /review endpoint can grant APPROVED/OFFICIAL. See
+    // TemplateMarketplaceService.createTemplate.
+    return this._marketplaceService.createTemplate(org.id, {
+      name: body.name,
+      description: body.description,
+      category: body.category,
+      templateData: body.templateData,
+      tags: body.tags,
+      previewImageUrl: body.previewImageUrl,
+      private: body.private,
+    });
   }
 
   @Post('/templates/:id/install')
@@ -93,8 +111,11 @@ export class TemplateMarketplaceController {
   }
 
   @Post('/templates/:id/usage')
-  async recordUsage(@Param('id') id: string) {
-    await this._marketplaceService.recordUsage(id);
+  async recordUsage(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    await this._marketplaceService.recordUsage(id, org.id);
     return { success: true };
   }
 

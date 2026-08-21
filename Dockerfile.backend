@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN addgroup --system www \
  && adduser --system --ingroup www --home /www --shell /usr/sbin/nologin www \
- && mkdir -p /www \
- && chown -R www:www /www /var/lib/nginx
+ && mkdir -p /www /www/run /www/log/nginx /uploads \
+ && chown -R www:www /www /var/lib/nginx /uploads
 
 RUN npm --no-update-notifier --no-fund --global install pnpm@10.6.1 pm2
 
@@ -22,5 +22,14 @@ COPY var/docker/nginx.backend.conf /etc/nginx/nginx.conf
 
 RUN pnpm install
 RUN NODE_OPTIONS="--max-old-space-size=3072" pnpm run build:backend && pnpm run build:orchestrator
+
+# Nothing past this point needs root: nginx listens on an unprivileged port
+# (5000) and its pid/log paths above were moved under /www, which `www`
+# already owns; pm2/node need no elevated access either. Running the whole
+# process tree as non-root limits the blast radius of an RCE in the app
+# itself (defense in depth — the container boundary is still the primary
+# isolation, this narrows what a compromised process could touch inside it).
+RUN chown -R www:www /app
+USER www
 
 CMD ["sh", "-c", "nginx && pm2 delete all || true && pnpm run prisma-db-push && pnpm --filter ./apps/backend --filter ./apps/orchestrator run --parallel pm2 && pm2 logs"]

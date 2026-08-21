@@ -49,3 +49,54 @@ describe('CreativeEngineService carousel retryable redrive', () => {
     expect(executeJob).not.toHaveBeenCalled();
   });
 });
+
+// Covers the MCP-only per-slide styleOverride passthrough (see
+// carousel-default-design-spec.ts's buildSlideStyleOverride and the
+// generate-carousel operation in creative-generation.tool.ts): the compiled
+// prompt actually differs for the overridden slide, and the id/index
+// requirement is enforced before any provider work starts.
+describe('CreativeEngineService generateCarouselImages slideOverrides', () => {
+  const buildService = () => {
+    const service = new CreativeEngineService(
+      {} as any, {} as any, {} as any, {} as any, {} as any, {} as any,
+      {} as any, {} as any, {} as any, {} as any, {} as any,
+    );
+    return service;
+  };
+
+  it('rejects a styleOverride on a slide with neither id nor index', async () => {
+    const service = buildService();
+    await expect(
+      service.generateCarouselImages('org-1', {
+        projectId: 'proj-1',
+        slides: [{ imagePrompt: 'a slide', styleOverride: { paletteId: 'mono-ink' } }],
+      })
+    ).rejects.toThrow(/must also set id or index/);
+  });
+
+  it('applies the per-slide override only to the targeted slide\'s compiled prompt', async () => {
+    const service = buildService();
+    const prepared: Array<{ prompt: string }> = [];
+    (service as any).prepareImageJob = jest.fn(async (_org: string, _proj: string, jobInput: { prompt: string }) => {
+      prepared.push({ prompt: jobInput.prompt });
+      return { job: { id: `job-${prepared.length}` } };
+    });
+
+    await service.generateCarouselImages('org-1', {
+      projectId: 'proj-1',
+      stylePresetId: 'photo-clean',
+      slides: [
+        { id: 'slide-1', imagePrompt: 'a calm product shot' },
+        { id: 'slide-2', imagePrompt: 'a bold CTA', styleOverride: { paletteId: 'sunset-pop' } },
+      ],
+    });
+
+    expect(prepared).toHaveLength(2);
+    // Slide 1 keeps the carousel-wide default palette (cobalt-cream)...
+    expect(prepared[0].prompt).toContain('Azul & creme');
+    expect(prepared[0].prompt).not.toContain('Sunset vibrante');
+    // ...slide 2's override palette shows up instead, without losing the
+    // shared style block (still photo-clean's art direction elsewhere).
+    expect(prepared[1].prompt).toContain('Sunset vibrante');
+  });
+});

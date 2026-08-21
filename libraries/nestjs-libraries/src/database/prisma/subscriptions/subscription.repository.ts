@@ -153,6 +153,27 @@ export class SubscriptionRepository {
       return;
     }
 
+    if (code) {
+      // Claim the code atomically, and BEFORE granting anything. The unique
+      // constraint on UsedCodes.code is what actually makes this safe under
+      // concurrency: two requests racing the same code both pass a
+      // read-only "already used?" check, but only one `create` here can
+      // succeed — the loser throws and never reaches the subscription
+      // upsert below. Previously this insert happened *after* the grant,
+      // so both concurrent requests could grant a free lifetime
+      // subscription before either row existed to stop the other.
+      try {
+        await this._usedCodes.model.usedCodes.create({
+          data: { code, orgId: findOrg.id },
+        });
+      } catch (error: any) {
+        if (error?.code === 'P2002') {
+          throw new Error('Code already redeemed');
+        }
+        throw error;
+      }
+    }
+
     await this._subscription.model.subscription.upsert({
       where: {
         organizationId: findOrg.id,
@@ -194,15 +215,6 @@ export class SubscriptionRepository {
         allowTrial: false,
       },
     });
-
-    if (code) {
-      await this._usedCodes.model.usedCodes.create({
-        data: {
-          code,
-          orgId: findOrg.id,
-        },
-      });
-    }
   }
 
   getSubscriptionByIdentifier(identifier: string) {

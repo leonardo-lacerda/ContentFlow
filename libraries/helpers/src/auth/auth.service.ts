@@ -93,11 +93,40 @@ export class AuthService {
       algorithm: 'HS256',
     });
   }
-  static verifyJWT(token: string, expectedType?: string) {
+  // Every `typ` this app itself ever issues via signJWT with the shared
+  // JWT_SECRET (session cookies, invite links, payment callbacks, extension
+  // and integration tokens - see the various `signJWT(..., { type: '...' })`
+  // call sites). Endpoints that accept a JWT signed by an EXTERNAL party
+  // (e.g. an enterprise/white-label partner holding the same JWT_SECRET) but
+  // have no `AuthMiddleware` of their own must reject any of these - without
+  // that check, one of this app's own tokens (a user's session cookie, for
+  // example) could be replayed at that external-facing endpoint instead of
+  // the token type it actually expects.
+  static readonly INTERNAL_JWT_TYPES = [
+    'session',
+    'integration-cookies',
+    'integration-webhook',
+    'extension',
+    'org-invite',
+    'payment',
+  ];
+
+  static verifyJWT(
+    token: string,
+    expectedType?: string,
+    options: { rejectInternalTypes?: boolean } = {}
+  ) {
     const payload = verify(token, process.env.JWT_SECRET!, {
       algorithms: ['HS256'],
     }) as Record<string, unknown>;
     if (expectedType && payload.typ !== expectedType) {
+      throw new Error('Invalid token type');
+    }
+    if (
+      options.rejectInternalTypes &&
+      typeof payload.typ === 'string' &&
+      AuthService.INTERNAL_JWT_TYPES.includes(payload.typ)
+    ) {
       throw new Error('Invalid token type');
     }
     return payload;

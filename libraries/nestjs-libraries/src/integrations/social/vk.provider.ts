@@ -12,6 +12,7 @@ import axios from 'axios';
 import FormDataNew from 'form-data';
 import mime from 'mime-types';
 import { Integration } from '@prisma/client';
+import { fetchMediaForPublish } from '@gitroom/nestjs-libraries/upload/safe-media-fetch';
 
 export class VkProvider extends SocialAbstract implements SocialProvider {
   override maxConcurrentJob = 2; // VK has moderate API limits
@@ -174,9 +175,7 @@ export class VkProvider extends SocialAbstract implements SocialProvider {
           )
         ).json();
 
-        const { data } = await axios.get(media.path!, {
-          responseType: 'stream',
-        });
+        const { buffer: data } = await fetchMediaForPublish(media.path!);
 
         const slash = media.path.split('/').at(-1);
 

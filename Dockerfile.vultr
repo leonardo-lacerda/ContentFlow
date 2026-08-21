@@ -11,12 +11,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN npm --no-update-notifier --no-fund --global install pnpm@10.6.1 pm2
 
+# Unlike the other Dockerfiles, this image previously had no non-root user at
+# all and ran nginx/pm2/node entirely as root, with a world-writable (777)
+# /uploads on top of that. `www` here matches the same convention as
+# Dockerfile.backend/Dockerfile.dev.
+RUN addgroup --system www \
+ && adduser --system --ingroup www --home /www --shell /usr/sbin/nologin www \
+ && mkdir -p /www /www/run /www/log/nginx
+
 WORKDIR /app
 COPY . /app
 COPY var/docker/nginx.conf /etc/nginx/nginx.conf
 RUN sed -i 's/\r$//' /app/var/docker/start-vultr.sh \
  && chmod +x /app/var/docker/start-vultr.sh \
- && mkdir -p /uploads && chmod 777 /uploads
+ && mkdir -p /uploads \
+ && chown -R www:www /www /var/lib/nginx /uploads
 
 RUN pnpm install --frozen-lockfile || pnpm install
 
@@ -37,4 +46,11 @@ RUN NODE_OPTIONS="--max-old-space-size=3072" pnpm run build:frontend
 EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=8 \
   CMD curl -sf http://localhost:5000/ || exit 1
+
+# Nothing at runtime needs root: nginx listens on an unprivileged port and
+# its pid/log paths (var/docker/nginx.conf) live under /www, which `www`
+# already owns; pm2/node/prisma need no elevated access either.
+RUN chown -R www:www /app
+USER www
+
 CMD ["bash", "/app/var/docker/start-vultr.sh"]

@@ -26,6 +26,7 @@ import {
 } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
 import { RefreshIntegrationService } from '@gitroom/nestjs-libraries/integrations/refresh.integration.service';
 import { OrganizationService } from '@gitroom/nestjs-libraries/database/prisma/organizations/organization.service';
+import { ssrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 
 @ApiTags('Integrations')
 @Controller('/integrations')
@@ -272,6 +273,11 @@ export class NoAuthIntegrationsController {
     const webhookUrl = await ioRedis.get(`webhookUrl:${body.state}`);
     if (webhookUrl) {
       try {
+        // webhookUrl was validated with UrlValidator at write time
+        // (enterprise.controller.ts), but delivery here can happen up to an
+        // hour later (Redis TTL) — pin the resolved IP at connect time so a
+        // DNS-rebind between validation and delivery can't reopen the SSRF
+        // window the validation was meant to close.
         await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -281,6 +287,8 @@ export class NoAuthIntegrationsController {
               { type: 'integration-webhook', expiresIn: '10m' }
             ),
           }),
+          // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+          dispatcher: ssrfSafeDispatcher,
         });
       } catch (err) {}
 

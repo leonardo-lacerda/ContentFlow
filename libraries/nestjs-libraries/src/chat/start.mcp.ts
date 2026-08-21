@@ -7,6 +7,7 @@ import { OrganizationService } from '@gitroom/nestjs-libraries/database/prisma/o
 import { OAuthService } from '@gitroom/nestjs-libraries/database/prisma/oauth/oauth.service';
 import { runWithContext } from './async.storage';
 import { createOAuthMiddleware } from './oauth-middleware';
+import { enforceMcpRateLimit } from './mcp-rate-limit';
 const fixAcceptHeader = (req: Request) => {
   const value = 'application/json, text/event-stream';
   req.headers.accept = value;
@@ -146,6 +147,7 @@ export const startMcp = async (app: INestApplication) => {
       res.status(401).json({ error: 'invalid_token', error_description: 'Could not resolve organization' });
       return;
     }
+    if (!(await enforceMcpRateLimit(auth.id, res))) return;
 
     fixAcceptHeader(req);
     await runWithContext({ requestId: token!, auth }, async () => {
@@ -195,6 +197,8 @@ export const startMcp = async (app: INestApplication) => {
       res.status(401).send('Invalid API Key or OAuth token');
       return;
     }
+    // @ts-ignore
+    if (!(await enforceMcpRateLimit(req.auth.id, res))) return;
 
     const url = new URL('/mcp', process.env.NEXT_PUBLIC_BACKEND_URL);
 
@@ -235,6 +239,8 @@ export const startMcp = async (app: INestApplication) => {
       res.status(400).send('Invalid API Key');
       return;
     }
+    // @ts-ignore
+    if (!(await enforceMcpRateLimit(req.auth.id, res))) return;
 
     const url = new URL(
       `/mcp/${req.params.id}`,
@@ -281,6 +287,8 @@ export const startMcp = async (app: INestApplication) => {
       res.status(400).send('Invalid API Key');
       return;
     }
+    // @ts-ignore
+    if (!(await enforceMcpRateLimit(req.auth.id, res))) return;
 
     const url = new URL(req.originalUrl, process.env.NEXT_PUBLIC_BACKEND_URL);
 
@@ -299,10 +307,15 @@ export const startMcp = async (app: INestApplication) => {
     );
   });
 
-  // Studio MCP — headless creative endpoint. Disabled by default; opt-in with
-  // ENABLE_STUDIO_MCP_LOCAL=true locally or leave DISABLE_STUDIO_MCP unset in
-  // production. Uses a separate MCPServer so the existing /mcp routes stay
-  // byte-identical (no risk of breaking external clients that call them by name).
+  // Studio MCP — headless creative endpoint. Same enablement pattern as the
+  // /mcp routes above (see DISABLE_MCP): ON by default in production, off in
+  // local dev unless explicitly opted into. Set DISABLE_STUDIO_MCP=true to
+  // turn it off in production; set ENABLE_STUDIO_MCP_LOCAL=true to turn it on
+  // locally. Auth (API key / OAuth token, org-scoped) is enforced the same as
+  // every other authenticated route — this flag only controls whether the
+  // route exists at all, not who can call it. Uses a separate MCPServer so
+  // the existing /mcp routes stay byte-identical (no risk of breaking
+  // external clients that call them by name).
   const studioMcpEnabled =
     process.env.DISABLE_STUDIO_MCP !== 'true' &&
     (process.env.NODE_ENV === 'production' ||
@@ -332,6 +345,7 @@ export const startMcp = async (app: INestApplication) => {
 
       const auth = await resolveAuth(token);
       if (!auth) { res.status(401).send('Invalid API Key or OAuth token'); return; }
+      if (!(await enforceMcpRateLimit(auth.id, res))) return;
 
       await dispatchMcpHttp(req, res, studioServer, '/mcp-studio', auth, token);
     });
@@ -345,6 +359,7 @@ export const startMcp = async (app: INestApplication) => {
       // @ts-ignore
       const auth = await organizationService.getOrgByApiKey(req.params.id);
       if (!auth) { res.status(400).send('Invalid API Key'); return; }
+      if (!(await enforceMcpRateLimit(auth.id, res))) return;
 
       // @ts-ignore
       const apiKey = req.params.id as string;

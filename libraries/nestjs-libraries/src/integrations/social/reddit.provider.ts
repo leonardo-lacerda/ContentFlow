@@ -10,10 +10,10 @@ import { timer } from '@gitroom/helpers/utils/timer';
 import { groupBy } from 'lodash';
 import { SocialAbstract } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 import { lookup } from 'mime-types';
-import axios from 'axios';
 import WebSocket from 'ws';
 import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
 import { Integration } from '@prisma/client';
+import { fetchMediaForPublish } from '@gitroom/nestjs-libraries/upload/safe-media-fetch';
 
 // @ts-ignore
 global.WebSocket = WebSocket;
@@ -150,9 +150,7 @@ export class RedditProvider extends SocialAbstract implements SocialProvider {
       )
     ).json();
 
-    const { data } = await axios.get(path, {
-      responseType: 'arraybuffer',
-    });
+    const { buffer: data } = await fetchMediaForPublish(path);
 
     const upload = (fields as { name: string; value: string }[]).reduce(
       (acc, value) => {

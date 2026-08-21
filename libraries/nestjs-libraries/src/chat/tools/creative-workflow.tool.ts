@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { CreativeWorkflowService } from '@gitroom/nestjs-libraries/creative-engine/creative-workflow.service';
 import { AgentToolInterface } from '@gitroom/nestjs-libraries/chat/agent.tool.interface';
 import { checkAuth } from '@gitroom/nestjs-libraries/chat/auth.context';
+import { ToolConfirmationService } from '@gitroom/nestjs-libraries/chat/tool-confirmation.service';
 
 const operations = [
   'create-workflow',
@@ -48,6 +49,10 @@ export class CreativeWorkflowTool implements AgentToolInterface {
     return JSON.parse(raw) as { id: string };
   }
 
+  private getConfirmationService() {
+    return this.moduleRef.get(ToolConfirmationService, { strict: false });
+  }
+
   run() {
     return createTool({
       id: 'creativeWorkflowTool',
@@ -81,8 +86,24 @@ export class CreativeWorkflowTool implements AgentToolInterface {
           throw new Error('Creative Engine is disabled');
         }
         const organization = this.getOrganization(context);
-        if (inputData.operation === 'run-workflow' && inputData.confirmed !== true) {
-          throw new Error('Esta acao exige confirmacao explicita do usuario antes de continuar.');
+        if (inputData.operation === 'run-workflow') {
+          const threadId = (context as any)?.agent?.threadId as
+            | string
+            | undefined;
+          const requestId = (context?.requestContext as any)?.get(
+            'requestId'
+          ) as string | undefined;
+          const { confirmed, ...fingerprintParams } = inputData as any;
+          const canProceed = await this.getConfirmationService().requestOrConsume(
+            threadId || organization.id,
+            requestId,
+            'creativeWorkflowTool:run-workflow',
+            fingerprintParams,
+            inputData.confirmed
+          );
+          if (!canProceed) {
+            throw new Error('Esta acao exige confirmacao explicita do usuario antes de continuar.');
+          }
         }
         const workflows = this.getOptionalService<CreativeWorkflowService>(CreativeWorkflowService, 'Creative workflows are not available');
 

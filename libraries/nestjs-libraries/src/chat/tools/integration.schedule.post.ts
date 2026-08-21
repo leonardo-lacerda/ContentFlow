@@ -12,6 +12,7 @@ import { Integration } from '@prisma/client';
 import { checkAuth } from '@gitroom/nestjs-libraries/chat/auth.context';
 import { stripHtmlValidation } from '@gitroom/helpers/utils/strip.html.validation';
 import { weightedLength } from '@gitroom/helpers/utils/count.length';
+import { ToolConfirmationService } from '@gitroom/nestjs-libraries/chat/tool-confirmation.service';
 
 function countCharacters(text: string, type: string): number {
   if (type !== 'x') {
@@ -24,7 +25,8 @@ function countCharacters(text: string, type: string): number {
 export class IntegrationSchedulePostTool implements AgentToolInterface {
   constructor(
     private _postsService: PostsService,
-    private _integrationService: IntegrationService
+    private _integrationService: IntegrationService,
+    private _confirmation: ToolConfirmationService
   ) {}
   name = 'integrationSchedulePostTool';
 
@@ -53,8 +55,16 @@ If the user want to post 20 posts for facebook each in individual days without c
 - postsAndComments array length will be one
 
 If the tools return errors, you would need to rerun it with the right parameters, don't ask again, just run it
+
+Scheduling ('schedule') or publishing immediately ('now') puts real content on a real, already-connected social channel - this consumes no credits but is a real-world, largely irreversible action. It requires explicit confirmed=true: show the user exactly what will be posted (channel, date/time, text, attachments) and only pass confirmed=true after they explicitly accept. 'draft' posts are not published anywhere and do not require confirmation.
 `,
       inputSchema: z.object({
+        confirmed: z
+          .boolean()
+          .optional()
+          .describe(
+            'Must be true to actually schedule or publish (type schedule/now). Show the user the exact channel, date/time, text and attachments first, and only set this after they explicitly accept. Not required when every post in this call is type=draft.'
+          ),
         socialPost: z
           .array(
             z.object({
@@ -128,6 +138,39 @@ If the tools return errors, you would need to rerun it with the right parameters
         const organizationId = JSON.parse(
           (context?.requestContext as any)?.get('organization') as string
         ).id;
+
+        // Scheduling/publishing ('schedule'/'now') puts real content on a
+        // real connected channel - unlike every credit-spending generation
+        // tool, this used to have NO code-level gate at all, only a system
+        // prompt instruction telling the model to ask first. A prompt
+        // injected through untrusted content (an attached file, a fetched
+        // link) could tell the model the user already approved and have it
+        // publish on its own initiative. 'draft' alone never leaves this
+        // app, so it's exempt.
+        const requiresConfirmation = inputData.socialPost.some(
+          (post) => post.type !== 'draft'
+        );
+        if (requiresConfirmation) {
+          const threadId = (context as any)?.agent?.threadId as
+            | string
+            | undefined;
+          const requestId = (context?.requestContext as any)?.get(
+            'requestId'
+          ) as string | undefined;
+          const canProceed = await this._confirmation.requestOrConsume(
+            threadId || organizationId,
+            requestId,
+            'integrationSchedulePostTool',
+            { socialPost: inputData.socialPost },
+            inputData.confirmed
+          );
+          if (!canProceed) {
+            throw new Error(
+              'Publicar ou agendar um post exige confirmacao explicita do usuario. Mostre exatamente o que sera publicado (canal, data/hora, texto e anexos) e so chame esta ferramenta novamente com confirmed=true depois que o usuario aceitar.'
+            );
+          }
+        }
+
         const finalOutput = [];
 
         const integrations = {} as Record<string, Integration>;

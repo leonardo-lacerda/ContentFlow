@@ -9,6 +9,7 @@ import { HttpForbiddenException } from '@gitroom/nestjs-libraries/services/excep
 import { MastraService } from '@gitroom/nestjs-libraries/chat/mastra.service';
 import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
 import { applyImpersonationIdentity } from '@gitroom/backend/services/auth/admin/admin-impersonation.policy';
+import { AdminAuthService } from '@gitroom/backend/services/auth/admin/admin-auth.service';
 
 export const removeAuth = (res: Response) => {
   res.cookie('auth', '', {
@@ -31,7 +32,8 @@ export class AuthMiddleware implements NestMiddleware {
   constructor(
     private _organizationService: OrganizationService,
     private _userService: UsersService,
-    private _prisma: PrismaService
+    private _prisma: PrismaService,
+    private _adminAuthService: AdminAuthService
   ) {}
   async use(req: Request, res: Response, next: NextFunction) {
     const auth = req.headers.auth || req.cookies.auth;
@@ -72,7 +74,34 @@ export class AuthMiddleware implements NestMiddleware {
           impersonate
         );
 
-        if (loadImpersonate && activeImpersonation && activeImpersonation.targetUserId === loadImpersonate.user.id && activeImpersonation.targetOrgId === loadImpersonate.organization.id) {
+        // Every prior check here (adminUser.status, the AdminImpersonation
+        // row's own endedAt/expiresAt) only proves the impersonation grant
+        // itself hasn't been explicitly ended or timed out - it says
+        // nothing about whether the admin_auth session that STARTED this
+        // impersonation is still valid. Revoking that admin session (stolen
+        // admin_auth token, MFA reset, an explicit "log this admin out")
+        // used to leave an already-active impersonation usable for up to
+        // its own 60-minute expiry regardless. Re-run the same admin
+        // session validation AdminSessionGuard does on every request so
+        // revoking the admin session ends the impersonation immediately,
+        // not just at its own timeout.
+        const adminAuthToken = (req.cookies?.admin_auth || req.headers?.['admin-auth']) as string | undefined;
+        const adminSession = adminAuthToken
+          ? await this._adminAuthService.validateToken(
+              adminAuthToken,
+              req.ip,
+              req.headers?.['user-agent']?.toString()
+            )
+          : null;
+
+        if (
+          loadImpersonate &&
+          activeImpersonation &&
+          adminSession &&
+          adminSession.adminUser.id === adminUser.id &&
+          activeImpersonation.targetUserId === loadImpersonate.user.id &&
+          activeImpersonation.targetOrgId === loadImpersonate.organization.id
+        ) {
           if (activeImpersonation.readOnly && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
             throw new HttpForbiddenException();
           }
@@ -97,7 +126,16 @@ export class AuthMiddleware implements NestMiddleware {
           next();
           return;
         }
-        await this._prisma.adminImpersonation.updateMany({ where: { adminUserId: adminUser.id, endedAt: null, expiresAt: { lte: new Date() } }, data: { endedAt: new Date() } });
+        await this._prisma.adminImpersonation.updateMany({
+          where: {
+            adminUserId: adminUser.id,
+            endedAt: null,
+            // Naturally expired, OR the admin session that started it is no
+            // longer valid — both end the grant, not just the first.
+            OR: [{ expiresAt: { lte: new Date() } }, ...(activeImpersonation && !adminSession ? [{ id: activeImpersonation.id }] : [])],
+          },
+          data: { endedAt: new Date() },
+        });
         res.cookie('impersonate', '', { httpOnly: true, expires: new Date(0), maxAge: -1, ...(!process.env.NOT_SECURED ? { secure: true, sameSite: 'lax' as const } : {}) });
       }
 

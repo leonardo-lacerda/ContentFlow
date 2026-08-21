@@ -11,6 +11,7 @@ import { CreativeWorkflowService } from '@gitroom/nestjs-libraries/creative-engi
 import type { CreativeMediaTool } from '@gitroom/nestjs-libraries/creative-engine/creative-media-tool.service';
 import { AgentToolInterface } from '@gitroom/nestjs-libraries/chat/agent.tool.interface';
 import { checkAuth } from '@gitroom/nestjs-libraries/chat/auth.context';
+import { ToolConfirmationService } from '@gitroom/nestjs-libraries/chat/tool-confirmation.service';
 import { compileDesignPrompt } from '@gitroom/nestjs-libraries/creative-engine/creative-design-prompt.util';
 
 const capabilities = [
@@ -166,6 +167,10 @@ export class CreativeEngineTool implements AgentToolInterface {
     return JSON.parse(raw) as { id: string };
   }
 
+  private getConfirmationService() {
+    return this.moduleRef.get(ToolConfirmationService, { strict: false });
+  }
+
   run() {
     return createTool({
       id: 'creativeEngineTool',
@@ -265,8 +270,24 @@ export class CreativeEngineTool implements AgentToolInterface {
           'publish',
           'run-workflow',
         ]);
-        if (confirmationRequired.has(inputData.operation) && inputData.confirmed !== true) {
-          throw new Error('Esta acao exige confirmacao explicita do usuario antes de continuar.');
+        if (confirmationRequired.has(inputData.operation)) {
+          const threadId = (context as any)?.agent?.threadId as
+            | string
+            | undefined;
+          const requestId = (context?.requestContext as any)?.get(
+            'requestId'
+          ) as string | undefined;
+          const { confirmed, ...fingerprintParams } = inputData as any;
+          const canProceed = await this.getConfirmationService().requestOrConsume(
+            threadId || organization.id,
+            requestId,
+            `creativeEngineTool:${inputData.operation}`,
+            fingerprintParams,
+            inputData.confirmed
+          );
+          if (!canProceed) {
+            throw new Error('Esta acao exige confirmacao explicita do usuario antes de continuar.');
+          }
         }
 
         switch (inputData.operation) {

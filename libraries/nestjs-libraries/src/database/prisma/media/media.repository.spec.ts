@@ -37,6 +37,45 @@ describe('parseCarouselProjectMetadata / serializeCarouselProjectMetadata (round
   });
 });
 
+// Regression test for the 2026-08-20 audit finding: getMediaById used to do
+// findUnique({ where: { id } }) with no organization filter, unlike every
+// other method in this file — so a post referencing another org's Media.id
+// (with no path) would resolve that foreign row's real path/URL back into
+// the response, leaking cross-tenant asset locations.
+describe('MediaRepository.getMediaById organization scoping', () => {
+  it('scopes the Prisma query by organizationId alongside id', async () => {
+    const findUnique = jest.fn().mockResolvedValue(null);
+    const media = { model: { media: { findUnique } } };
+    const repository = new MediaRepository(media as any);
+
+    await repository.getMediaById('org-1', 'media-1');
+
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'media-1', organizationId: 'org-1' },
+    });
+  });
+
+  it('returns null (not another org\'s row) when the media belongs to a different org', async () => {
+    // Prisma itself enforces the where clause; this asserts the repository
+    // passes the org through rather than silently dropping it.
+    const findUnique = jest.fn().mockImplementation(({ where }) =>
+      Promise.resolve(
+        where.organizationId === 'org-owner'
+          ? { id: where.id, organizationId: 'org-owner', path: '/uploads/secret.png' }
+          : null
+      )
+    );
+    const media = { model: { media: { findUnique } } };
+    const repository = new MediaRepository(media as any);
+
+    const asAttacker = await repository.getMediaById('org-attacker', 'media-1');
+    expect(asAttacker).toBeNull();
+
+    const asOwner = await repository.getMediaById('org-owner', 'media-1');
+    expect(asOwner).not.toBeNull();
+  });
+});
+
 describe('MediaRepository.setCarouselLogo', () => {
   const buildRepository = (rows: Array<{ id: string; name: string; alt: string | null }>) => {
     const findMany = jest.fn().mockResolvedValue(rows.map((r) => ({ ...r, path: 'p', originalName: 'Carrossel: X', createdAt: new Date() })));

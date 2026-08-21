@@ -9,6 +9,7 @@ import { SocialAbstract } from '@gitroom/nestjs-libraries/integrations/social.ab
 import { Integration } from '@prisma/client';
 import { DiscordDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/discord.dto';
 import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
+import { fetchMediaForPublish } from '@gitroom/nestjs-libraries/upload/safe-media-fetch';
 
 export class DiscordProvider extends SocialAbstract implements SocialProvider {
   override maxConcurrentJob = 5; // Discord has generous rate limits for webhook posting
@@ -160,11 +161,12 @@ export class DiscordProvider extends SocialAbstract implements SocialProvider {
 
     let index = 0;
     for (const media of firstPost.media || []) {
-      const loadMedia = await fetch(media.path);
+      const { buffer: mediaBuffer, contentType: mediaContentType } =
+        await fetchMediaForPublish(media.path);
 
       form.append(
         `files[${index}]`,
-        await loadMedia.blob(),
+        new Blob([mediaBuffer], mediaContentType ? { type: mediaContentType } : {}),
         media.path.split('/').pop()
       );
       index++;
@@ -243,11 +245,12 @@ export class DiscordProvider extends SocialAbstract implements SocialProvider {
 
     let index = 0;
     for (const media of commentPost.media || []) {
-      const loadMedia = await fetch(media.path);
+      const { buffer: mediaBuffer, contentType: mediaContentType } =
+        await fetchMediaForPublish(media.path);
 
       form.append(
         `files[${index}]`,
-        await loadMedia.blob(),
+        new Blob([mediaBuffer], mediaContentType ? { type: mediaContentType } : {}),
         media.path.split('/').pop()
       );
       index++;

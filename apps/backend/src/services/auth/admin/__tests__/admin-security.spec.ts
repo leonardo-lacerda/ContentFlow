@@ -33,18 +33,48 @@ describe('admin security policy', () => {
     await expect(guard.canActivate({ switchToHttp: () => ({ getRequest: () => ({ cookies: {} }) }) } as any)).rejects.toMatchObject({ status: 401 });
   });
 
-  it('uses the forwarded client IP when the API is behind a reverse proxy', () => {
+  // Regression test for the 2026-08-20 audit finding: this used to parse
+  // `X-Forwarded-For` manually and trust its FIRST entry — a header any
+  // client can set to anything. Behind this app's nginx config
+  // ($proxy_add_x_forwarded_for APPENDS the real address rather than
+  // replacing it), that first entry is exactly the part an attacker
+  // controls, so a stolen admin_auth token plus a forged header could pass
+  // the IP allowlist and defeat session IP-pinning. `getAdminClientIp` now
+  // only ever reads `request.ip` — Express's own resolution, which already
+  // honours `app.set('trust proxy', TRUST_PROXY_HOPS)` (main.ts) and reads
+  // from the trusted, proxy-appended end of the header, never the
+  // client-supplied end. The two tests below no longer feed a raw
+  // `x-forwarded-for` header at all: `request.ip` here stands in for
+  // whatever value Express's real trust-proxy-aware resolution already
+  // produced, which is the only thing this function is now allowed to see.
+  it('trusts only request.ip (Express\'s own trust-proxy-aware resolution), never a raw header', () => {
     const request = {
-      ip: '127.0.0.1',
+      ip: '45.172.112.163',
       headers: {
-        'x-forwarded-for': '45.172.112.163, 127.0.0.1',
+        // Even if present, a raw client-controlled header must have no
+        // effect — getAdminClientIp must not read it at all any more.
+        'x-forwarded-for': '9.9.9.9, 45.172.112.163',
       },
     } as any;
 
     expect(getAdminClientIp(request)).toBe('45.172.112.163');
   });
 
-  it('validates an admin session with the forwarded client IP', async () => {
+  it('cannot be spoofed by a forged x-forwarded-for header once trust proxy has already resolved request.ip', () => {
+    // Simulates a spoofed header arriving at the app: Express, with
+    // `trust proxy` correctly configured, has already resolved the real
+    // client address into `request.ip` — a forged leading XFF entry never
+    // reaches this function at all.
+    const request = {
+      ip: '203.0.113.9', // the real, resolved client IP
+      headers: { 'x-forwarded-for': '10.0.0.1, 203.0.113.9' }, // attacker-forged leading entry
+    } as any;
+
+    expect(getAdminClientIp(request)).toBe('203.0.113.9');
+    expect(getAdminClientIp(request)).not.toBe('10.0.0.1');
+  });
+
+  it('validates an admin session with the client IP resolved by Express', async () => {
     const validateToken = jest.fn().mockResolvedValue({
       adminUser: { id: 'admin-1' },
       sessionId: 'session-1',
@@ -53,10 +83,9 @@ describe('admin security policy', () => {
     });
     const guard = new AdminSessionGuard({ validateToken } as any);
     const request = {
-      ip: '127.0.0.1',
+      ip: '45.172.112.163',
       cookies: { admin_auth: 'session-token' },
       headers: {
-        'x-forwarded-for': '45.172.112.163, 127.0.0.1',
         'user-agent': 'admin-test-agent',
       },
     } as any;

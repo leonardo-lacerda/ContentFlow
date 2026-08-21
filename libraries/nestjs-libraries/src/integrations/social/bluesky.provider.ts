@@ -24,18 +24,23 @@ import { AuthService } from '@gitroom/helpers/auth/auth.service';
 import sharp from 'sharp';
 import { Plug } from '@gitroom/helpers/decorators/plug.decorator';
 import { timer } from '@gitroom/helpers/utils/timer';
-import axios from 'axios';
 import { stripHtmlValidation } from '@gitroom/helpers/utils/strip.html.validation';
 import { Rules } from '@gitroom/nestjs-libraries/chat/rules.description.decorator';
 import { Logger } from '@nestjs/common';
+import { fetchMediaForPublish } from '@gitroom/nestjs-libraries/upload/safe-media-fetch';
+import { UrlValidator } from '@gitroom/nestjs-libraries/security/url-validator';
 
 const logger = new Logger('BlueskyProvider');
 
+// `url` here is a post's attached media path — normally this app's own
+// Media.path, but attacker-controllable (e.g. via a chat tool's
+// `attachments: string[]` field), so it must go through the SSRF-safe
+// fetch used everywhere else a post-media URL is downloaded server-side.
 async function reduceImageBySize(url: string, maxSizeKB = 976) {
   try {
     // Fetch the image from the URL
-    const response = await axios.get(url, { responseType: 'arraybuffer' });
-    let imageBuffer = Buffer.from(response.data);
+    const { buffer: fetchedBuffer } = await fetchMediaForPublish(url);
+    let imageBuffer = fetchedBuffer;
 
     // Use sharp to get the metadata of the image
     const metadata = await sharp(imageBuffer).metadata();
@@ -77,14 +82,8 @@ async function uploadVideo(
   async function downloadVideo(
     url: string
   ): Promise<{ video: Buffer; size: number }> {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch video: ${response.statusText}`);
-    }
-    const arrayBuffer = await response.arrayBuffer();
-    const video = Buffer.from(arrayBuffer);
-    const size = video.length;
-    return { video, size };
+    const { buffer: video } = await fetchMediaForPublish(url);
+    return { video, size: video.length };
   }
 
   const video = await downloadVideo(videoPath);
@@ -160,6 +159,25 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
     return 300;
   }
 
+  /**
+   * `service` is a user-supplied AT Protocol PDS URL (see `customFields()`
+   * below — its regex is shape-only and, unlike the guard here, does not
+   * exclude private/loopback ranges or raw IPs). Same "user-supplied custom
+   * instance URL" pattern as Lemmy/Listmonk/Mastodon, fetched here via the
+   * `@atproto/api` client instead of a direct `fetch()` call this codebase's
+   * `ssrfSafeDispatcher` can attach to - that third-party client manages its
+   * own HTTP transport internally. Validating the URL before constructing
+   * the agent still blocks the primary risk (an internal/private target),
+   * though it does not close a DNS-rebinding TOCTOU window the way the
+   * dispatcher-based guard does elsewhere in this codebase.
+   */
+  private async assertSafeInstanceUrl(url: string): Promise<void> {
+    const validation = await UrlValidator.validate(url);
+    if (!validation.valid) {
+      throw new Error(`Bluesky service URL blocked: ${validation.error}`);
+    }
+  }
+
   async customFields() {
     return [
       {
@@ -213,6 +231,7 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
     const body = JSON.parse(Buffer.from(params.code, 'base64').toString());
 
     try {
+      await this.assertSafeInstanceUrl(body.service);
       const agent = new BskyAgent({
         service: body.service,
       });
@@ -247,6 +266,7 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
     const body = JSON.parse(
       AuthService.secureDecryption(integration.customInstanceDetails!)
     );
+    await this.assertSafeInstanceUrl(body.service);
     const agent = new BskyAgent({
       service: body.service,
     });
@@ -435,6 +455,7 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
     const body = JSON.parse(
       AuthService.secureDecryption(integration.customInstanceDetails!)
     );
+    await this.assertSafeInstanceUrl(body.service);
     const agent = new BskyAgent({
       service: body.service,
     });
@@ -496,6 +517,7 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
     const body = JSON.parse(
       AuthService.secureDecryption(integration.customInstanceDetails!)
     );
+    await this.assertSafeInstanceUrl(body.service);
     const agent = new BskyAgent({
       service: body.service,
     });
@@ -551,6 +573,7 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
     const body = JSON.parse(
       AuthService.secureDecryption(integration.customInstanceDetails!)
     );
+    await this.assertSafeInstanceUrl(body.service);
 
     const agent = new BskyAgent({
       service: body.service,

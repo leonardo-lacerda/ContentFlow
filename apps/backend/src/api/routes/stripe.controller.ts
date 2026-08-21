@@ -32,12 +32,22 @@ export class StripeController {
       return this._billingStripeService.handleWebhook(event);
     }
 
-    // Maybe it comes from another stripe webhook
+    // Maybe it comes from another stripe webhook.
+    // charge.refunded/charge.dispute.created are exempted from the
+    // metadata.service==='gitroom' gate on purpose: that metadata is set on
+    // Checkout Sessions/Subscriptions at creation time, but Stripe does not
+    // propagate it onto the Charge/Dispute objects those events carry — the
+    // gate would silently swallow every refund/dispute event otherwise.
+    // Ownership is instead verified inside the handlers themselves, by
+    // resolving the event's customer id against our own org/subscription
+    // records (a customer id that isn't ours is a safe no-op there).
     if (
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       event?.data?.object?.metadata?.service !== 'gitroom' &&
-      event.type !== 'invoice.payment_succeeded'
+      event.type !== 'invoice.payment_succeeded' &&
+      event.type !== 'charge.refunded' &&
+      event.type !== 'charge.dispute.created'
     ) {
       return { ok: true };
     }
@@ -52,6 +62,10 @@ export class StripeController {
           return this._stripeService.updateSubscription(event);
         case 'customer.subscription.deleted':
           return this._stripeService.deleteSubscription(event);
+        case 'charge.refunded':
+          return this._stripeService.handleChargeRefunded(event);
+        case 'charge.dispute.created':
+          return this._stripeService.handleChargeDispute(event);
         default:
           return { ok: true };
       }

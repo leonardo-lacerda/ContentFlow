@@ -31,14 +31,25 @@ export class SubscriptionService {
   async useCredit<T>(
     organization: Organization,
     type = 'ai_images',
-    func: () => Promise<T>
+    func: () => Promise<T>,
+    // A stable hash of the actual request content (prompt, params, ...), so
+    // a dropped connection or client-side double-submit of the *same*
+    // request collapses onto one reservation instead of reserving (and
+    // eventually billing) credits twice for what the user experienced as
+    // one click. Falls back to a random, never-colliding key for any caller
+    // that doesn't have meaningful request content to key on — same
+    // (correct, but non-deduplicating) behavior as before this existed.
+    dedupeSeed?: string
   ): Promise<T> {
     const isVideo = type === 'ai_videos';
     await this.entitlements.assertFeature(organization.id, isVideo ? 'video-generation' : 'image-generation');
     const quote = await this.pricingCatalog.quote({ operation: isVideo ? 'seedance-2.5-480p-10' : 'image-basic' });
+    const idempotencyKey = dedupeSeed
+      ? `legacy-generation:${organization.id}:${type}:${dedupeSeed}:${Math.floor(Date.now() / 30000)}`
+      : `legacy-generation:${organization.id}:${type}:${randomUUID()}`;
     const reservation = await this.credits.reserve(organization.id, quote.credits, {
       quoteId: quote.quoteId,
-      idempotencyKey: `legacy-generation:${organization.id}:${type}:${randomUUID()}`,
+      idempotencyKey,
       operation: quote.operation,
       provider: quote.provider,
       model: quote.model,

@@ -24,7 +24,7 @@ import { UsersService } from '@gitroom/nestjs-libraries/database/prisma/users/us
 import { UserDetailDto } from '@gitroom/nestjs-libraries/dtos/users/user.details.dto';
 import { EmailNotificationsDto } from '@gitroom/nestjs-libraries/dtos/users/email-notifications.dto';
 import { HttpForbiddenException } from '@gitroom/nestjs-libraries/services/exception.filter';
-import { RealIP } from 'nestjs-real-ip';
+import { RealIP } from '@gitroom/nestjs-libraries/user/real.ip';
 import { UserAgent } from '@gitroom/nestjs-libraries/user/user.agent';
 import { TrackEnum } from '@gitroom/nestjs-libraries/user/track.enum';
 import { TrackService } from '@gitroom/nestjs-libraries/track/track.service';

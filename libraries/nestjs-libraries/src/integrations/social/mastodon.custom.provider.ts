@@ -6,6 +6,7 @@ import {
 import { MastodonProvider } from '@gitroom/nestjs-libraries/integrations/social/mastodon.provider';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { Integration } from '@prisma/client';
+import { ssrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 
 export class MastodonCustomProvider extends MastodonProvider {
   override identifier = 'mastodon-custom';
@@ -14,6 +15,12 @@ export class MastodonCustomProvider extends MastodonProvider {
   editor = 'normal' as const;
 
   async externalUrl(url: string) {
+    // `url` is the raw `externalUrl` query param from the auth-start route
+    // (integrations.controller.ts /social/:integration) — fully
+    // attacker-controlled, so it goes through the same instance-URL guard
+    // every other dynamic Mastodon fetch uses.
+    await this.assertSafeInstanceUrl(url);
+
     const form = new FormData();
     form.append('client_name', 'ContentFlow');
     form.append(
@@ -26,6 +33,8 @@ export class MastodonCustomProvider extends MastodonProvider {
       await fetch(url + '/api/v1/apps', {
         method: 'POST',
         body: form,
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: ssrfSafeDispatcher,
       })
     ).json();
 

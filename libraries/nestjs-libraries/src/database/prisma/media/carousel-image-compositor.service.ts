@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import sharp from 'sharp';
 import archiver from 'archiver';
+import { fetchBufferWithLimit } from '@gitroom/nestjs-libraries/upload/bounded-fetch';
 
 export type CarouselLogoPosition =
   | 'top-left'
@@ -30,15 +31,23 @@ const MIN_WIDTH_PCT = 4;
 const MAX_WIDTH_PCT = 60;
 const DEFAULT_MARGIN_PCT = 4;
 
+// Matches the size cap already enforced when carousel images/logos are
+// accepted at upload time (see MediaService.uploadCarouselImage) - a render
+// should never need more bytes than an upload was ever allowed to store.
+const MAX_COMPOSITE_IMAGE_BYTES = 12 * 1024 * 1024;
+const COMPOSITE_FETCH_TIMEOUT_MS = 15_000;
+
 /**
- * All the media this feature ever composites are the app's own generated
- * carousel slides and the user's own just-uploaded logo file - both are
+ * All the media this feature composites are the app's own generated
+ * carousel slides and the user's own already-uploaded logo file - both are
  * `Media.path` values this same backend produced at upload time (either the
  * local-storage `${FRONTEND_URL}/uploads/...` path or the configured
  * Cloudflare bucket URL), scoped to the caller's own organization by
- * `getCarouselGroup`'s query. Never a URL an attacker could substitute
- * in the request - `groupId`/`mediaId` only select which of the org's own
- * already-uploaded rows to read, they don't carry a URL themselves.
+ * `getCarouselGroup`'s query, AND re-hosted server-side through the SSRF
+ * guard at accept time (see MediaService.uploadCarouselImage /
+ * setCarouselLogo) rather than stored as a raw client-supplied URL. So by
+ * the time a render reaches this function, `url` is never an
+ * attacker-chosen address.
  *
  * Deliberately a plain fetch(), NOT ssrfSafeDispatcher: that dispatcher
  * exists to stop trusted code from being tricked into fetching an
@@ -49,14 +58,18 @@ const DEFAULT_MARGIN_PCT = 4;
  * through that dispatcher doesn't add protection, it just breaks every local
  * dev compositing request. Confirmed live: composited download 500'd with
  * "fetch failed" until this was removed.
+ *
+ * Still bounded on size/time (defense in depth): a trusted URL can still be
+ * slow or, if storage misconfiguration ever let a larger file through,
+ * unexpectedly large - both would otherwise let one render request tie up
+ * the process indefinitely or exhaust memory.
  */
 async function fetchImageBuffer(url: string): Promise<Buffer> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch image (${response.status}): ${url}`);
-  }
-  const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  const { buffer } = await fetchBufferWithLimit(url, {
+    maxBytes: MAX_COMPOSITE_IMAGE_BYTES,
+    timeoutMs: COMPOSITE_FETCH_TIMEOUT_MS,
+  });
+  return buffer;
 }
 
 const clamp = (value: number, min: number, max: number) =>

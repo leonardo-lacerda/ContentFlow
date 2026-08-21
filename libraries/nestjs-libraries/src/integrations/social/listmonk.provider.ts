@@ -12,6 +12,8 @@ import { ListmonkDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-sett
 import { AuthService } from '@gitroom/helpers/auth/auth.service';
 import slugify from 'slugify';
 import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
+import { UrlValidator } from '@gitroom/nestjs-libraries/security/url-validator';
+import { ssrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 
 export class ListmonkProvider extends SocialAbstract implements SocialProvider {
   override maxConcurrentJob = 100; // Bluesky has moderate rate limits
@@ -24,6 +26,22 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
 
   maxLength() {
     return 100000000;
+  }
+
+  /**
+   * `url` is a user-supplied self-hosted Listmonk instance URL (see
+   * `customFields()` below — its regex is only shape validation, and
+   * deliberately still ALLOWS `localhost` and raw IPs, so it never blocked
+   * an internal target). Same pattern as
+   * `LemmyProvider.assertSafeInstanceUrl` / `MastodonProvider` for the
+   * identical "user-supplied custom instance URL" shape — every method
+   * that talks to a Listmonk instance must validate it here first.
+   */
+  private async assertSafeInstanceUrl(url: string): Promise<void> {
+    const validation = await UrlValidator.validate(url);
+    if (!validation.valid) {
+      throw new Error(`Listmonk instance URL blocked: ${validation.error}`);
+    }
   }
 
   async customFields() {
@@ -78,6 +96,7 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
   }) {
     const body: { url: string; username: string; password: string } =
       JSON.parse(Buffer.from(params.code, 'base64').toString());
+    await this.assertSafeInstanceUrl(body.url);
 
     console.log(body);
     try {
@@ -92,6 +111,8 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
             Accept: 'application/json',
             Authorization: 'Basic ' + basic,
           },
+          // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+          dispatcher: ssrfSafeDispatcher,
         })
       ).json();
 
@@ -121,6 +142,7 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
       JSON.parse(
         AuthService.secureDecryption(integration.customInstanceDetails!)
       );
+    await this.assertSafeInstanceUrl(body.url);
 
     const auth = Buffer.from(`${body.username}:${body.password}`).toString(
       'base64'
@@ -131,6 +153,8 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
         headers: {
           Authorization: `Basic ${auth}`,
         },
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: ssrfSafeDispatcher,
       })
     ).json();
 
@@ -148,6 +172,7 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
       JSON.parse(
         AuthService.secureDecryption(integration.customInstanceDetails!)
       );
+    await this.assertSafeInstanceUrl(body.url);
 
     const auth = Buffer.from(`${body.username}:${body.password}`).toString(
       'base64'
@@ -158,6 +183,8 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
         headers: {
           Authorization: `Basic ${auth}`,
         },
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: ssrfSafeDispatcher,
       })
     ).json();
 
@@ -177,6 +204,7 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
       JSON.parse(
         AuthService.secureDecryption(integration.customInstanceDetails!)
       );
+    await this.assertSafeInstanceUrl(body.url);
 
     const auth = Buffer.from(`${body.username}:${body.password}`).toString(
       'base64'
@@ -250,6 +278,8 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
             ? { template_id: +postDetails[0].settings.template }
             : {}),
         }),
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: ssrfSafeDispatcher,
       })
     ).json();
 
@@ -263,6 +293,8 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
       body: JSON.stringify({
         status: 'running',
       }),
+      // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+      dispatcher: ssrfSafeDispatcher,
     });
 
     return [
