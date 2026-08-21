@@ -34,6 +34,7 @@ describe('MediaService — carousel logo & downloads', () => {
     mediaRepository = {
       setCarouselLogo: jest.fn().mockResolvedValue({ id: 'slide-1' }),
       getCarouselGroup: jest.fn().mockResolvedValue(group),
+      getMediaById: jest.fn().mockResolvedValue({ id: 'logo-1', path: 'https://cdn/logo.png' }),
     };
     compositor = {
       renderSlide: jest.fn().mockResolvedValue(Buffer.from('fake-png-bytes')),
@@ -49,7 +50,7 @@ describe('MediaService — carousel logo & downloads', () => {
   });
 
   describe('setCarouselLogo', () => {
-    it('parses the synthetic group id and forwards the child ids and logo config', async () => {
+    it('parses the synthetic group id, verifies the logo media belongs to the org, and forwards its own stored path', async () => {
       const logo = {
         mediaId: 'logo-1',
         url: 'https://cdn/logo.png',
@@ -61,13 +62,62 @@ describe('MediaService — carousel logo & downloads', () => {
         groupId: 'carousel:slide-1:slide-2',
         logo,
       });
-      expect(mediaRepository.setCarouselLogo).toHaveBeenCalledWith('org-1', ['slide-1', 'slide-2'], logo);
+      expect(mediaRepository.getMediaById).toHaveBeenCalledWith('org-1', 'logo-1');
+      expect(mediaRepository.setCarouselLogo).toHaveBeenCalledWith(
+        'org-1',
+        ['slide-1', 'slide-2'],
+        expect.objectContaining({ mediaId: 'logo-1', url: 'https://cdn/logo.png', position: 'top-right' })
+      );
       expect(result).toEqual({ ok: true });
+    });
+
+    // Regression test for the SSRF fix: `logo.url` in the request body must
+    // never be trusted, even when it points at an internal/cloud-metadata
+    // address - only the URL that was actually stored on the org's own
+    // media row (looked up server-side by mediaId) may ever reach the
+    // compositor's later unguarded fetch().
+    it('ignores a client-supplied logo.url entirely and always uses the media row\'s own stored path', async () => {
+      mediaRepository.getMediaById.mockResolvedValue({
+        id: 'logo-1',
+        path: 'https://cdn/trusted-logo.png',
+      });
+      const logo = {
+        mediaId: 'logo-1',
+        url: 'http://169.254.169.254/latest/meta-data/', // attacker-supplied, must be discarded
+        position: 'center' as const,
+        widthPct: 20,
+        opacity: 1,
+      };
+      await service.setCarouselLogo('org-1', {
+        groupId: 'carousel:slide-1:slide-2',
+        logo,
+      });
+      const [, , storedLogo] = mediaRepository.setCarouselLogo.mock.calls[0];
+      expect(storedLogo.url).toBe('https://cdn/trusted-logo.png');
+      expect(storedLogo.url).not.toContain('169.254.169.254');
+    });
+
+    it('throws NotFoundException when the logo mediaId does not belong to this org (or does not exist)', async () => {
+      mediaRepository.getMediaById.mockResolvedValue(null);
+      await expect(
+        service.setCarouselLogo('org-1', {
+          groupId: 'carousel:slide-1:slide-2',
+          logo: {
+            mediaId: 'someone-elses-media',
+            url: 'https://cdn/logo.png',
+            position: 'center' as const,
+            widthPct: 20,
+            opacity: 1,
+          },
+        })
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(mediaRepository.setCarouselLogo).not.toHaveBeenCalled();
     });
 
     it('passes null through to remove the logo when the request omits it', async () => {
       await service.setCarouselLogo('org-1', { groupId: 'carousel:slide-1:slide-2' });
       expect(mediaRepository.setCarouselLogo).toHaveBeenCalledWith('org-1', ['slide-1', 'slide-2'], null);
+      expect(mediaRepository.getMediaById).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException when the repository finds no matching carousel', async () => {

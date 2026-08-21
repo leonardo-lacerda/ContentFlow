@@ -170,7 +170,21 @@ export class HybridComposeService {
       return null;
     }
 
-    const absolute = /^https?:\/\//i.test(url)
+    // `backgroundUrl` comes straight from the client's recompose request
+    // body (ai-generate.controller.ts's /hybrid/recompose), so an absolute
+    // http(s) value here is fully attacker-controlled and must go through
+    // the same SSRF guard as every other outbound fetch of a user-supplied
+    // address. A relative value is always resolved against our own
+    // MAIN_URL/FRONTEND_URL below — same-origin by construction, so it
+    // doesn't need the guard (see CLAUDE.md's note on not reflexively
+    // wrapping trusted same-origin fetches).
+    const isAbsolute = /^https?:\/\//i.test(url);
+    if (isAbsolute && !(await isSafePublicHttpsUrl(url))) {
+      this.logger.warn(`Hybrid background URL blocked by SSRF guard: ${url}`);
+      return null;
+    }
+
+    const absolute = isAbsolute
       ? url
       : `${(process.env.MAIN_URL || process.env.FRONTEND_URL || '').replace(
           /\/$/,
@@ -178,7 +192,10 @@ export class HybridComposeService {
         )}${url.startsWith('/') ? '' : '/'}${url}`;
 
     try {
-      const response = await fetch(absolute);
+      const response = await fetch(absolute, {
+        // @ts-expect-error undici dispatcher is supported by the runtime fetch implementation.
+        dispatcher: isAbsolute ? ssrfSafeDispatcher : undefined,
+      });
       if (!response.ok) {
         this.logger.warn(
           `Hybrid background fetch failed (${response.status}): ${absolute}`
