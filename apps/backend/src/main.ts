@@ -11,6 +11,18 @@ if (process.env.DISABLE_TEMPORAL !== 'true') {
 
 process.env.TZ = 'UTC';
 
+// @copilotkit/runtime@1.60.1's own telemetry client throws an UNCAUGHT
+// `TypeError: lambdaClient.send is not a function` from inside its v2 SSE
+// completion handler (a bug in that package, not ours) whenever it actually
+// samples an event - which happens on ~5% of run completions by default.
+// That exception isn't caught anywhere in the chain, so it crashes the
+// entire Node process, taking down every in-flight request (not just chat)
+// until PM2 restarts it. Disabling telemetry short-circuits capture() before
+// it ever reaches the broken call. Set here, not only in .env, so it can't
+// be forgotten on a future deploy - see docs/studio-audit.md's chat outage
+// entry for the 2026-08-21 incident this caused in production.
+process.env.COPILOTKIT_TELEMETRY_DISABLED = 'true';
+
 import cookieParser from 'cookie-parser';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
