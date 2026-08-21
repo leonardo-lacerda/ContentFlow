@@ -297,7 +297,50 @@ export class CopilotController {
       serviceAdapter,
     });
 
-    return copilotRuntimeHandler.handleRequest(req, res);
+    // Diagnostic only (temporary): production has been observed returning a
+    // clean 200 for generateCopilotResponse - full HTTP success, credits
+    // settled - while the agent run produces no text and nothing gets saved
+    // to Mastra's message store. copilotRuntimeNextJSAppRouterEndpoint
+    // appears to swallow the underlying failure rather than throwing, so
+    // nothing reaches Nest's exception logging. Inspect the actual bytes
+    // written to the client so the next failing run leaves a stack trace /
+    // error payload in the logs instead of vanishing silently.
+    if (req?.body?.operationName === 'generateCopilotResponse') {
+      const responseChunks: Buffer[] = [];
+      const originalWrite = res.write.bind(res);
+      const originalEnd = res.end.bind(res);
+      (res as any).write = (chunk: any, ...args: any[]) => {
+        if (chunk) {
+          responseChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
+        }
+        return originalWrite(chunk, ...args);
+      };
+      (res as any).end = (chunk?: any, ...args: any[]) => {
+        if (chunk) {
+          responseChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
+        }
+        try {
+          const body = Buffer.concat(responseChunks).toString('utf8');
+          if (/"errors"\s*:|RUN_ERROR|"type"\s*:\s*"error"/i.test(body)) {
+            Logger.error(
+              `[copilot/agent] chat run for org ${organization.id} completed with an error payload: ${body.slice(0, 4000)}`
+            );
+          }
+        } catch (inspectError) {
+          Logger.error(`[copilot/agent] failed to inspect chat response body: ${String(inspectError)}`);
+        }
+        return originalEnd(chunk, ...args);
+      };
+    }
+
+    try {
+      return await copilotRuntimeHandler.handleRequest(req, res);
+    } catch (error) {
+      Logger.error(
+        `[copilot/agent] chat run for org ${organization.id} threw: ${error instanceof Error ? error.stack : String(error)}`
+      );
+      throw error;
+    }
   }
 
   @Get('/credits')
