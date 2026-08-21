@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   Param,
   Post,
   Query,
@@ -12,7 +13,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { PostsService } from '@gitroom/nestjs-libraries/database/prisma/posts/posts.service';
 import { TrackService } from '@gitroom/nestjs-libraries/track/track.service';
-import { RealIP } from 'nestjs-real-ip';
+import { RealIP } from '@gitroom/nestjs-libraries/user/real.ip';
 import { UserAgent } from '@gitroom/nestjs-libraries/user/user.agent';
 import { TrackEnum } from '@gitroom/nestjs-libraries/user/track.enum';
 import { Request, Response } from 'express';
@@ -130,8 +131,12 @@ export class PublicController {
   }
 
   @Post('/crypto/:path')
-  async cryptoPost(@Body() body: any, @Param('path') path: string) {
-    return this._nowpayments.processPayment(path, body);
+  async cryptoPost(
+    @Body() body: any,
+    @Param('path') path: string,
+    @Headers('x-nowpayments-sig') signature?: string
+  ) {
+    return this._nowpayments.processPayment(path, body, signature);
   }
 
   @Get('/stream')

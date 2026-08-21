@@ -49,7 +49,12 @@ export class BillingEntitlementsService {
       const status = subscription.status.toUpperCase();
       const failedAt = subscription.failedAt?.getTime() || subscription.updatedAt.getTime();
       const inPaymentGrace = status === 'PAST_DUE' && now - failedAt <= PAYMENT_GRACE_MS;
-      const canUsePaidPlan = ['ACTIVE', 'TRIALING'].includes(status)
+      // A status of ACTIVE/TRIALING only means "the last webhook we saw said
+      // so" — it is not re-derived from the period itself, so a subscription
+      // that's ACTIVE but whose currentPeriodEnd has already passed (a missed
+      // renewal webhook, or any other gateway/DB drift) must not keep
+      // granting paid access indefinitely.
+      const canUsePaidPlan = (['ACTIVE', 'TRIALING'].includes(status) && periodIsActive)
         || (subscription.cancelAtPeriodEnd && periodIsActive)
         || inPaymentGrace;
       const plan = getBillingCatalogPlan(canUsePaidPlan ? subscription.plan.code : 'FREE');

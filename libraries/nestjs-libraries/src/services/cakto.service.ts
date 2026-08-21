@@ -5,6 +5,7 @@ import { SubscriptionService } from '@gitroom/nestjs-libraries/database/prisma/s
 import { pricing } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/pricing';
 import { BillingSubscribeDto } from '@gitroom/nestjs-libraries/dtos/billing/billing.subscribe.dto';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
+import { ioRedis } from '@gitroom/nestjs-libraries/redis/redis.service';
 import { Organization, User } from '@prisma/client';
 
 type ContentFlowBillingTier = 'STANDARD' | 'PRO' | 'TEAM' | 'ULTIMATE';
@@ -51,6 +52,18 @@ type ParsedCaktoWebhook = {
   providerSubscriptionId?: string;
   dueAt?: string;
 };
+
+type PendingCaktoCheckout = {
+  organizationId: string;
+  customerId: string;
+  billing: ContentFlowBillingTier;
+  period: 'MONTHLY' | 'YEARLY';
+};
+
+// How long a checkout link stays redeemable before we forget about it. Cakto
+// supports slow-to-clear methods (boleto/PIX can take days), so this is
+// deliberately generous rather than tied to any one payment method's SLA.
+const PENDING_CHECKOUT_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 const caktoPlanByBilling: Record<ContentFlowBillingTier, string> = {
   STANDARD: 'starter',
@@ -261,17 +274,18 @@ export class CaktoService {
       organization.paymentId = customerId;
     }
 
-    await this._subscriptionService.createOrUpdateSubscription(
-      true,
-      checkoutReference,
+    // Do NOT grant the plan here. This only creates the checkout link — the
+    // user hasn't paid anything yet, and may never complete the checkout.
+    // The paid tier is only ever written to the Subscription table from
+    // processWebhook(), once Cakto confirms an actually-paid order for this
+    // checkoutReference. Until then we just remember what this reference is
+    // *for*, so the webhook knows which org/plan to activate.
+    await this.storePendingCheckout(checkoutReference, {
+      organizationId: organization.id,
       customerId,
-      pricing[billing].channel!,
       billing,
-      body.period,
-      null,
-      undefined,
-      organization.id
-    );
+      period: body.period,
+    });
 
     return {
       id: checkoutReference,
@@ -375,12 +389,110 @@ export class CaktoService {
     };
   }
 
+  // Providers guarantee at-least-once delivery, so the same signed event
+  // will eventually be retried/redelivered. createOrUpdateSubscription is an
+  // upsert (sets state rather than incrementing), so a replay can't
+  // double-grant credits, but it also has no ordering guarantee — a replayed
+  // "paid" event delivered after a later "canceled" one was already
+  // processed could otherwise resurrect a subscription the org had actually
+  // canceled. Claiming the event id once, atomically, closes that gap the
+  // same way billing-accounting.service.ts's Stripe V2 path already does.
+  private async claimWebhookEvent(eventId: string): Promise<boolean> {
+    const claimed = await ioRedis.set(
+      `cakto:webhook-seen:${eventId}`,
+      '1',
+      'EX',
+      86400,
+      'NX'
+    );
+    return claimed === 'OK';
+  }
+
+  private pendingCheckoutKey(checkoutReference: string) {
+    return `cakto:pending-checkout:${checkoutReference}`;
+  }
+
+  private async storePendingCheckout(
+    checkoutReference: string,
+    data: PendingCaktoCheckout
+  ): Promise<void> {
+    await ioRedis.set(
+      this.pendingCheckoutKey(checkoutReference),
+      JSON.stringify(data),
+      'EX',
+      PENDING_CHECKOUT_TTL_SECONDS
+    );
+  }
+
+  private async peekPendingCheckout(
+    checkoutReference: string | undefined
+  ): Promise<PendingCaktoCheckout | null> {
+    if (!checkoutReference) {
+      return null;
+    }
+    const raw = await ioRedis.get(this.pendingCheckoutKey(checkoutReference));
+    if (!raw) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw) as PendingCaktoCheckout;
+    } catch {
+      return null;
+    }
+  }
+
+  private async clearPendingCheckout(
+    checkoutReference: string | undefined
+  ): Promise<void> {
+    if (!checkoutReference) {
+      return;
+    }
+    await ioRedis.del(this.pendingCheckoutKey(checkoutReference));
+  }
+
   async processWebhook(event: ParsedCaktoWebhook) {
+    if (!(await this.claimWebhookEvent(event.eventId))) {
+      return { ok: true, duplicate: true };
+    }
+
     const subscription =
       await this._subscriptionService.getSubscriptionByIdentifier(
         event.checkoutReference || event.providerSubscriptionId || ''
       );
+
     if (!subscription) {
+      // No confirmed subscription exists yet for this reference. The only
+      // thing that's allowed to create one is an actually-paid order — never
+      // a bare checkout-initiation. Look up what this checkout reference was
+      // *for* (stashed at /billing/subscribe time) and only activate it once
+      // we see a genuinely paid status straight from Cakto's own webhook.
+      if (isPaidStatus(event.status)) {
+        const pending = await this.peekPendingCheckout(event.checkoutReference);
+        if (!pending) {
+          return { ok: true, ignored: true, reason: 'subscription_not_found' };
+        }
+
+        await this._subscriptionService.createOrUpdateSubscription(
+          false,
+          event.providerSubscriptionId || event.checkoutReference || event.orderId,
+          pending.customerId,
+          pricing[pending.billing].channel!,
+          pending.billing,
+          pending.period,
+          null,
+          undefined,
+          pending.organizationId
+        );
+        await this.clearPendingCheckout(event.checkoutReference);
+        return { ok: true, status: 'active' };
+      }
+
+      if (isCanceledStatus(event.status)) {
+        // Checkout was abandoned/refused before ever being paid — nothing
+        // was granted, so there's nothing to revoke. Just stop tracking it.
+        await this.clearPendingCheckout(event.checkoutReference);
+      }
+
       return { ok: true, ignored: true, reason: 'subscription_not_found' };
     }
 

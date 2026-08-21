@@ -38,6 +38,29 @@ export class CreditAccountingService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  // Idempotency lookups below key purely on a globally-unique idempotencyKey
+  // and hand back whatever row already has it — every current caller
+  // happens to prefix that key with the organizationId before it reaches
+  // here, so a cross-tenant collision isn't reachable today, but that's a
+  // convention, not a check. This is the actual check: a key collision
+  // across two different orgs is either an idempotency-key bug in a caller
+  // or an attempted key-guessing attack, and either way the right behavior
+  // is to fail loudly rather than silently hand back another org's credit
+  // data.
+  private assertSameOrg<T extends { organizationId: string }>(
+    row: T,
+    organizationId: string,
+    what: string,
+  ): T {
+    if (row.organizationId !== organizationId) {
+      throw new HttpException(
+        `Idempotency key collision across organizations for ${what}`,
+        HttpStatus.CONFLICT,
+      );
+    }
+    return row;
+  }
+
   async ensureAccount(organizationId: string) {
     // Concurrent requests for the same org race here: both see "not found" and
     // both try to create. The row existing is the desired end state, so a
@@ -129,11 +152,11 @@ export class CreditAccountingService {
 
     const key = idempotencyKey || `credit-v2:grant:${input.source}:${input.sourceReference}`;
     const existing = await this.prisma.creditTransaction.findUnique({ where: { idempotencyKey: key } });
-    if (existing) return existing;
+    if (existing) return this.assertSameOrg(existing, organizationId, 'creditTransaction');
 
     return this.prisma.$transaction(async (tx) => {
       const duplicate = await tx.creditTransaction.findUnique({ where: { idempotencyKey: key } });
-      if (duplicate) return duplicate;
+      if (duplicate) return this.assertSameOrg(duplicate, organizationId, 'creditTransaction');
       const lot = await tx.creditLot.create({
         data: {
           organizationId,
@@ -235,7 +258,7 @@ export class CreditAccountingService {
       throw new HttpException('New generations are blocked while the account has a credit debt', HttpStatus.PAYMENT_REQUIRED);
     }
     const existing = await this.prisma.creditReservation.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
-    if (existing) return existing;
+    if (existing) return this.assertSameOrg(existing, organizationId, 'creditReservation');
 
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
@@ -312,7 +335,7 @@ export class CreditAccountingService {
           const concurrent = await this.prisma.creditReservation.findUnique({
             where: { idempotencyKey: input.idempotencyKey },
           });
-          if (concurrent) return concurrent;
+          if (concurrent) return this.assertSameOrg(concurrent, organizationId, 'creditReservation');
         }
         if (error?.code !== 'P2034' || attempt === 3) throw error;
         this.logger.warn(`Retrying credit reservation after serialization conflict (${attempt}/3)`);

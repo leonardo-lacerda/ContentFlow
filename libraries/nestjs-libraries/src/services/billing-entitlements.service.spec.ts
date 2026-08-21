@@ -41,4 +41,45 @@ describe('BillingEntitlementsService', () => {
     }));
     await expect(service.resolveAccess('org')).resolves.toMatchObject({ plan: 'FREE' });
   });
+
+  // Regression coverage for the 2026-08-20 payment-security audit finding
+  // V-2 (HIGH): a status of ACTIVE/TRIALING was granted paid access forever,
+  // without ever being re-checked against currentPeriodEnd. A subscription
+  // stuck ACTIVE (a missed renewal webhook, or any other DB/gateway drift —
+  // including the now-fixed V-1 Cakto bug, which used to write exactly this
+  // shape of stale-forever row) must fall back to FREE once its period has
+  // actually passed.
+  it('falls back to Free when status is ACTIVE but the period has already ended', async () => {
+    const service = create(subscription('PRO', {
+      status: 'ACTIVE',
+      cancelAtPeriodEnd: false,
+      currentPeriodEnd: new Date(Date.now() - 1000),
+    }));
+    await expect(service.resolveAccess('org')).resolves.toMatchObject({ plan: 'FREE' });
+  });
+
+  it('falls back to Free when status is TRIALING but the period has already ended', async () => {
+    const service = create(subscription('STARTER', {
+      status: 'TRIALING',
+      cancelAtPeriodEnd: false,
+      currentPeriodEnd: new Date(Date.now() - 1000),
+    }));
+    await expect(service.resolveAccess('org')).resolves.toMatchObject({ plan: 'FREE' });
+  });
+
+  it('still grants access for an ACTIVE subscription with no currentPeriodEnd set yet', async () => {
+    const service = create(subscription('PRO', {
+      status: 'ACTIVE',
+      currentPeriodEnd: null,
+    }));
+    await expect(service.resolveAccess('org')).resolves.toMatchObject({ plan: 'PRO' });
+  });
+
+  it('still grants access for an ACTIVE subscription whose period genuinely has not ended', async () => {
+    const service = create(subscription('PRO', {
+      status: 'ACTIVE',
+      currentPeriodEnd: new Date(Date.now() + 86400000),
+    }));
+    await expect(service.resolveAccess('org')).resolves.toMatchObject({ plan: 'PRO' });
+  });
 });
