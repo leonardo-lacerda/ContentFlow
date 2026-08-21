@@ -21,6 +21,7 @@ import {
 import { AdminUserWithAccount } from '@gitroom/backend/services/auth/admin/admin-auth.service';
 import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
 import { AuthService } from '@gitroom/helpers/auth/auth.service';
+import { EmailService } from '@gitroom/nestjs-libraries/services/email.service';
 import { randomBytes } from 'crypto';
 import { Response } from 'express';
 
@@ -53,7 +54,10 @@ const SAFE_ORG = {
 @Controller('/admin/users')
 @UseGuards(AdminSessionGuard, AdminPermissionGuard)
 export class AdminUsersController {
-  constructor(private readonly _prisma: PrismaService) {}
+  constructor(
+    private readonly _prisma: PrismaService,
+    private readonly _emailService: EmailService
+  ) {}
 
   @Get('/')
   @AdminPermission('users.read', { resourceType: 'User' })
@@ -101,14 +105,19 @@ export class AdminUsersController {
     });
   }
 
+  // Deliberately excludes `email`: changing a user's login email is the one
+  // field here that enables full account takeover (change email -> trigger
+  // /auth/forgot -> complete reset from the attacker's inbox), so it lives
+  // behind its own CRITICAL-severity endpoint (see `updateEmail` below) that
+  // requires a fresh MFA step-up and cannot be reached by the SUPPORT role.
+  // Do not add `email` back to this DTO/handler.
   @Patch('/:id')
-  @AdminPermission('users.write', { severity: 'WARNING', requireReason: true, resourceType: 'User' })
+  @AdminPermission('users.write.basic', { severity: 'WARNING', requireReason: true, resourceType: 'User' })
   async update(
     @Param('id') id: string,
-    @Body() body: { email?: string; name?: string; lastName?: string; timezone?: number; activated?: boolean; reason?: string }
+    @Body() body: { name?: string; lastName?: string; timezone?: number; activated?: boolean; reason?: string }
   ) {
     const data: Record<string, unknown> = {};
-    if (body.email !== undefined) data.email = body.email.trim().toLowerCase();
     if (body.name !== undefined) data.name = body.name;
     if (body.lastName !== undefined) data.lastName = body.lastName;
     if (body.timezone !== undefined) data.timezone = Number(body.timezone);
@@ -117,13 +126,63 @@ export class AdminUsersController {
     return this._prisma.user.update({ where: { id }, data, select: SAFE_USER });
   }
 
+  // Separate, higher-privilege endpoint for the one field that can be used
+  // to hijack an account. CRITICAL severity forces a fresh MFA step-up
+  // (admin-permission.guard.ts) and the SUPPORT role has no CRITICAL-tier
+  // users.* permission, so this cannot be reached with a support-only
+  // session. The target's sessions are invalidated and their previous
+  // address is notified, so a change made via a compromised/misused admin
+  // session is still visible to the real account owner.
+  @Patch('/:id/email')
+  @AdminPermission('users.email.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'User' })
+  async updateEmail(
+    @Param('id') id: string,
+    @Body() body: { email?: string; reason?: string }
+  ) {
+    const nextEmail = body.email?.trim().toLowerCase();
+    if (!nextEmail) throw new BadRequestException('email is required');
+
+    const existing = await this._prisma.user.findUnique({ where: { id }, select: { email: true } });
+    if (!existing) throw new HttpException('User not found', 404);
+    if (existing.email === nextEmail) throw new BadRequestException('No user changes supplied');
+
+    const conflict = await this._prisma.user.findFirst({ where: { email: nextEmail, id: { not: id } }, select: { id: true } });
+    if (conflict) throw new BadRequestException('Email already in use');
+
+    const updated = await this._prisma.user.update({
+      where: { id },
+      data: { email: nextEmail, authSessionVersion: { increment: 1 } },
+      select: SAFE_USER,
+    });
+
+    if (existing.email) {
+      void this._emailService
+        .sendEmail(
+          existing.email,
+          'Your ContentFlow account email was changed',
+          `A ContentFlow administrator changed the login email on this account from ${existing.email} to ${nextEmail}. If you did not request this, contact support immediately.`,
+          'top'
+        )
+        .catch(() => {});
+    }
+
+    return updated;
+  }
+
   @Post('/:id/password-reset')
   @AdminPermission('users.password.reset', { severity: 'CRITICAL', requireReason: true, resourceType: 'User' })
   async forcePasswordReset(@Param('id') id: string) {
     const temporaryPassword = randomBytes(18).toString('base64url');
     const user = await this._prisma.user.update({
       where: { id },
-      data: { password: AuthService.hashPassword(temporaryPassword), passwordResetRequired: true },
+      data: {
+        password: AuthService.hashPassword(temporaryPassword),
+        passwordResetRequired: true,
+        // Same reasoning as the self-service reset path
+        // (UsersRepository.updatePassword): a forced reset must also kill
+        // any existing session for this user, not just change the password.
+        authSessionVersion: { increment: 1 },
+      },
       select: { id: true, email: true },
     });
     return { user, temporaryPassword };
@@ -137,11 +196,11 @@ export class AdminUsersController {
   }
 
   @Post('/:id/activate')
-  @AdminPermission('users.write', { severity: 'WARNING', requireReason: true, resourceType: 'User' })
+  @AdminPermission('users.write.basic', { severity: 'WARNING', requireReason: true, resourceType: 'User' })
   activate(@Param('id') id: string) { return this._prisma.user.update({ where: { id }, data: { activated: true }, select: SAFE_USER }); }
 
   @Post('/:id/deactivate')
-  @AdminPermission('users.write', { severity: 'WARNING', requireReason: true, resourceType: 'User' })
+  @AdminPermission('users.write.basic', { severity: 'WARNING', requireReason: true, resourceType: 'User' })
   deactivate(@Param('id') id: string) { return this._prisma.user.update({ where: { id }, data: { activated: false }, select: SAFE_USER }); }
 
   @Delete('/:id')
@@ -202,13 +261,16 @@ export class AdminOrganizationsController {
     return this._prisma.organization.create({ data: { name: body.name.trim(), description: body.description?.trim() || undefined } , select: SAFE_ORG });
   }
 
+  // `status` is deliberately not accepted here: it's how an org gets
+  // suspended/reactivated/deleted, and those already have dedicated
+  // CRITICAL-severity endpoints below (suspend/unsuspend/delete/restore)
+  // that this WARNING-severity generic update must not be able to shortcut.
   @Patch('/:id')
   @AdminPermission('orgs.write', { severity: 'WARNING', requireReason: true, resourceType: 'Organization' })
-  update(@Param('id') id: string, @Body() body: { name?: string; description?: string; status?: string; allowTrial?: boolean }) {
+  update(@Param('id') id: string, @Body() body: { name?: string; description?: string; allowTrial?: boolean }) {
     const data: Record<string, unknown> = {};
     if (body.name !== undefined) data.name = body.name.trim();
     if (body.description !== undefined) data.description = body.description;
-    if (body.status !== undefined) data.status = body.status;
     if (body.allowTrial !== undefined) data.allowTrial = !!body.allowTrial;
     if (!Object.keys(data).length) throw new BadRequestException('No organization changes supplied');
     return this._prisma.organization.update({ where: { id }, data, select: SAFE_ORG });
@@ -287,9 +349,20 @@ export class AdminOrganizationsController {
     return this._prisma.userOrganization.upsert({ where: { userId_organizationId: { userId: user.id, organizationId } }, update: { disabled: false, role: body.role || 'USER' }, create: { userId: user.id, organizationId, role: body.role || 'USER' } });
   }
 
+  // Granting SUPERADMIN here is deliberately rejected: it's org-ownership
+  // equivalent (see `transferOwnership`, which demotes the previous
+  // SUPERADMIN and requires CRITICAL severity + step-up), and this
+  // WARNING-severity endpoint must not be a second, weaker path to the
+  // same privilege. USER/ADMIN role changes and disabling a member stay
+  // WARNING, matching the low-medium risk of those actions.
   @Patch('/:id/members/:userId')
   @AdminPermission('orgs.members.write', { severity: 'WARNING', requireReason: true, resourceType: 'Organization' })
-  updateMember(@Param('id') organizationId: string, @Param('userId') userId: string, @Body() body: { role?: 'USER' | 'ADMIN' | 'SUPERADMIN'; disabled?: boolean }) { return this._prisma.userOrganization.update({ where: { userId_organizationId: { userId, organizationId } }, data: { role: body.role, disabled: body.disabled } }); }
+  updateMember(@Param('id') organizationId: string, @Param('userId') userId: string, @Body() body: { role?: 'USER' | 'ADMIN' | 'SUPERADMIN'; disabled?: boolean }) {
+    if (body.role === 'SUPERADMIN') {
+      throw new HttpException('Use POST /:id/transfer-ownership to grant SUPERADMIN', 400);
+    }
+    return this._prisma.userOrganization.update({ where: { userId_organizationId: { userId, organizationId } }, data: { role: body.role, disabled: body.disabled } });
+  }
 
   @Delete('/:id/members/:userId')
   @AdminPermission('orgs.members.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'Organization' })

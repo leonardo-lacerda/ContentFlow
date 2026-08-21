@@ -19,7 +19,7 @@ import {
   AdminIpNotAllowedException,
   AdminApprovalRequiredException,
 } from '@gitroom/backend/services/auth/admin/admin.exceptions';
-import { RESOURCE_CONFIG } from '@gitroom/backend/api/routes/admin/admin-domain.service';
+import { RESOURCE_CONFIG, resourceWriteIsCritical } from '@gitroom/backend/api/routes/admin/admin-domain.service';
 import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
 import { AdminAlertService } from '@gitroom/nestjs-libraries/database/prisma/admin/admin-alert.service';
 import { getAdminClientIp } from '@gitroom/backend/services/auth/admin/admin-request.utils';
@@ -55,9 +55,24 @@ export class AdminPermissionGuard implements CanActivate {
 
     const resource = (request.params as Record<string, string> | undefined)?.resource;
     let effectivePermission = metadata.key;
+    // Generic /admin/:resource/* writes must be at least as strict as the
+    // dedicated endpoint that performs the equivalent state change (e.g.
+    // PATCH /admin/organizations/:id {status:"SUSPENDED"} vs the dedicated
+    // POST /admin/organizations/:id/suspend). Resolving `effectivePermission`
+    // dynamically already existed; resolving the *severity* the same way
+    // did not — a generic PATCH always inherited the static WARNING
+    // severity of its own decorator, letting it skip the MFA step-up the
+    // dedicated CRITICAL endpoint enforces for the same mutation. See
+    // admin-domain.service.ts's `criticalFields`/`resourceWriteIsCritical`.
+    let effectiveSeverity = metadata.severity;
     if (resource && (metadata.key === 'system.read' || metadata.key === 'system.write')) {
       const config = RESOURCE_CONFIG[resource];
-      if (config) effectivePermission = metadata.key === 'system.write' ? (config.writePermission || config.permission) : config.permission;
+      if (config) {
+        effectivePermission = metadata.key === 'system.write' ? (config.writePermission || config.permission) : config.permission;
+        if (metadata.key === 'system.write' && resourceWriteIsCritical(config, request.body as Record<string, unknown> | undefined)) {
+          effectiveSeverity = 'CRITICAL';
+        }
+      }
     }
 
     if (
@@ -76,7 +91,7 @@ export class AdminPermissionGuard implements CanActivate {
       throw new AdminIpNotAllowedException();
     }
 
-    if (metadata.severity === 'CRITICAL' && !isStepUpValid(adminSession?.mfaVerifiedAt)) {
+    if (effectiveSeverity === 'CRITICAL' && !isStepUpValid(adminSession?.mfaVerifiedAt)) {
       throw new AdminStepUpRequiredException();
     }
 

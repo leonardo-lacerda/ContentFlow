@@ -7,6 +7,19 @@ import { AdminPermissionGuard } from '@gitroom/backend/services/auth/admin/admin
 import { AdminPermission, GetAdminUserFromRequest } from '@gitroom/backend/services/auth/admin/admin-permission.decorator';
 import { AdminUserWithAccount } from '@gitroom/backend/services/auth/admin/admin-auth.service';
 import { StripeService } from '@gitroom/nestjs-libraries/services/stripe.service';
+import {
+  AdminAdjustCreditsDto,
+  AdminAiProviderConfigDto,
+  AdminChangeSubscriptionDto,
+  AdminCreatePlanDto,
+  AdminCreatePriceDto,
+  AdminCreateSubscriptionDto,
+  AdminKillSwitchDto,
+  AdminRefundDto,
+  AdminUpdatePlanDto,
+  AdminUpdatePriceDto,
+  AdminUpdatePricingDto,
+} from '@gitroom/nestjs-libraries/dtos/admin/billing/admin-billing.dto';
 
 @Controller('/admin/billing')
 @UseGuards(AdminSessionGuard, AdminPermissionGuard)
@@ -23,14 +36,13 @@ export class AdminBillingController {
 
   @Post('/plans')
   @AdminPermission('billing.plans.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'BillingPlan' })
-  createPlan(@Body() body: { code?: string; name?: string; priceCents?: number; monthlyCredits?: number }) {
-    if (!body.code || !body.name || !Number.isInteger(body.priceCents) || !Number.isInteger(body.monthlyCredits)) throw new BadRequestException('code, name, priceCents and monthlyCredits are required');
-    return this._prisma.billingPlan.create({ data: { code: body.code.toUpperCase(), name: body.name, priceCents: body.priceCents!, monthlyCredits: body.monthlyCredits! } });
+  createPlan(@Body() body: AdminCreatePlanDto) {
+    return this._prisma.billingPlan.create({ data: { code: body.code.toUpperCase(), name: body.name, priceCents: body.priceCents, monthlyCredits: body.monthlyCredits } });
   }
 
   @Patch('/plans/:id')
   @AdminPermission('billing.plans.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'BillingPlan' })
-  updatePlan(@Param('id') id: string, @Body() body: { name?: string; priceCents?: number; monthlyCredits?: number; active?: boolean }) { return this._prisma.billingPlan.update({ where: { id }, data: body }); }
+  updatePlan(@Param('id') id: string, @Body() body: AdminUpdatePlanDto) { return this._prisma.billingPlan.update({ where: { id }, data: body }); }
 
   @Delete('/plans/:id')
   @AdminPermission('billing.plans.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'BillingPlan' })
@@ -42,14 +54,13 @@ export class AdminBillingController {
 
   @Post('/prices')
   @AdminPermission('billing.pricing.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'BillingPrice' })
-  createPrice(@Body() body: { code?: string; planId?: string; kind?: string; amountCents?: number; credits?: number; validityDays?: number; provider?: string }) {
-    if (!body.code || !Number.isInteger(body.amountCents) || !Number.isInteger(body.credits)) throw new BadRequestException('code, amountCents and credits are required');
-    return this._prisma.billingPrice.create({ data: { code: body.code.toUpperCase(), planId: body.planId, kind: body.kind || 'PLAN', amountCents: body.amountCents!, credits: body.credits!, validityDays: body.validityDays, provider: body.provider || 'STRIPE' } });
+  createPrice(@Body() body: AdminCreatePriceDto) {
+    return this._prisma.billingPrice.create({ data: { code: body.code.toUpperCase(), planId: body.planId, kind: body.kind || 'PLAN', amountCents: body.amountCents, credits: body.credits, validityDays: body.validityDays, provider: body.provider || 'STRIPE' } });
   }
 
   @Patch('/prices/:id')
   @AdminPermission('billing.pricing.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'BillingPrice' })
-  updatePrice(@Param('id') id: string, @Body() body: { amountCents?: number; credits?: number; validityDays?: number; active?: boolean }) { return this._prisma.billingPrice.update({ where: { id }, data: body }); }
+  updatePrice(@Param('id') id: string, @Body() body: AdminUpdatePriceDto) { return this._prisma.billingPrice.update({ where: { id }, data: body }); }
 
   @Delete('/prices/:id')
   @AdminPermission('billing.pricing.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'BillingPrice' })
@@ -61,14 +72,13 @@ export class AdminBillingController {
 
   @Post('/subscriptions')
   @AdminPermission('billing.subscriptions.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'BillingSubscription' })
-  createSubscription(@Body() body: { organizationId?: string; planId?: string; provider?: string }) {
-    if (!body.organizationId || !body.planId) throw new BadRequestException('organizationId and planId are required');
+  createSubscription(@Body() body: AdminCreateSubscriptionDto) {
     return this._prisma.billingSubscription.create({ data: { organizationId: body.organizationId, planId: body.planId, provider: body.provider || 'STRIPE' } });
   }
 
   @Patch('/subscriptions/:id')
   @AdminPermission('billing.subscriptions.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'BillingSubscription' })
-  changeSubscription(@Param('id') id: string, @Body() body: { planId?: string; cancelAtPeriodEnd?: boolean }) { return this._prisma.billingSubscription.update({ where: { id }, data: body }); }
+  changeSubscription(@Param('id') id: string, @Body() body: AdminChangeSubscriptionDto) { return this._prisma.billingSubscription.update({ where: { id }, data: body }); }
 
   @Post('/subscriptions/:id/cancel')
   @AdminPermission('billing.subscriptions.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'BillingSubscription' })
@@ -84,8 +94,8 @@ export class AdminBillingController {
 
   @Post('/refunds')
   @AdminPermission('billing.refund', { severity: 'CRITICAL', requireReason: true, resourceType: 'BillingRefund' })
-  async refund(@Body() body: { organizationId?: string; chargeIds?: string[]; amountCents?: number }) {
-    if (!body.organizationId || !body.chargeIds?.length) throw new BadRequestException('organizationId and chargeIds are required');
+  async refund(@Body() body: AdminRefundDto) {
+    if (!body.chargeIds.length) throw new BadRequestException('chargeIds must not be empty');
     if (Math.abs(body.amountCents || 0) > 100000) throw new HttpException('Refunds above R$1,000 require an approved request', 409);
     return this._stripe.refundCharges(body.organizationId, body.chargeIds);
   }
@@ -118,10 +128,10 @@ export class AdminCreditsController {
 
   @Post('/adjust')
   @AdminPermission('credits.adjust', { severity: 'CRITICAL', requireReason: true, resourceType: 'FinancialAdjustment' })
-  async adjust(@Body() body: { organizationId?: string; credits?: number; reason?: string; reference?: string }, @GetAdminUserFromRequest() actor: AdminUserWithAccount) {
-    if (!body.organizationId || !Number.isInteger(body.credits) || !body.credits || !body.reason?.trim()) throw new BadRequestException('organizationId, non-zero integer credits and reason are required');
+  async adjust(@Body() body: AdminAdjustCreditsDto, @GetAdminUserFromRequest() actor: AdminUserWithAccount) {
+    if (!body.credits || !body.reason.trim()) throw new BadRequestException('non-zero credits and a reason are required');
     const admin = await this._prisma.adminUser.findUnique({ where: { id: actor.id } });
-    const limit = admin?.role === 'SUPPORT' ? 500 : admin?.role === 'FINANCE' ? 50000 : 50000;
+    const limit = admin?.role === 'SUPPORT' ? 500 : 50000;
     if (Math.abs(body.credits) > limit) throw new HttpException(`Credit adjustment exceeds role limit of ${limit}`, 403);
     return this._billing.adjustCredits(body.organizationId, body.credits, body.reason, actor.id, body.reference);
   }
@@ -142,13 +152,13 @@ export class AdminAiController {
 
   @Patch('/providers/:provider')
   @AdminPermission('ai.providers.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'PlatformSetting' })
-  provider(@Param('provider') provider: string, @Body() body: { config?: unknown; disabled?: boolean }, @GetAdminUserFromRequest() actor: AdminUserWithAccount) {
+  provider(@Param('provider') provider: string, @Body() body: AdminAiProviderConfigDto, @GetAdminUserFromRequest() actor: AdminUserWithAccount) {
     return this._prisma.platformSetting.upsert({ where: { key: `ai.provider.${provider}.config` }, update: { value: { config: body.config, disabled: !!body.disabled } as any, updatedBy: actor.id }, create: { key: `ai.provider.${provider}.config`, category: 'ai', value: { config: body.config, disabled: !!body.disabled } as any, updatedBy: actor.id } });
   }
 
   @Patch('/pricing/:code')
   @AdminPermission('ai.pricing.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'PricingVersion' })
-  updatePricing(@Param('code') code: string, @Body() body: { baseCredits?: number; minCredits?: number; providerCostUsd?: number; active?: boolean }, @GetAdminUserFromRequest() actor: AdminUserWithAccount) { return this._pricing.update(code, { ...body, updatedBy: actor.id }); }
+  updatePricing(@Param('code') code: string, @Body() body: AdminUpdatePricingDto, @GetAdminUserFromRequest() actor: AdminUserWithAccount) { return this._pricing.update(code, { ...body, updatedBy: actor.id }); }
 
   @Get('/jobs')
   @AdminPermission('ai.jobs.read', { resourceType: 'GenerationJob' })
@@ -172,7 +182,7 @@ export class AdminAiController {
 
   @Post('/providers/:provider/kill-switch')
   @AdminPermission('ai.providers.write', { severity: 'CRITICAL', requireReason: true, resourceType: 'PlatformSetting' })
-  async killSwitch(@Param('provider') provider: string, @Body('enabled') enabled: boolean, @GetAdminUserFromRequest() actor: AdminUserWithAccount) {
-    return this._prisma.platformSetting.upsert({ where: { key: `ai.provider.${provider}.disabled` }, update: { value: !!enabled, updatedBy: actor.id }, create: { key: `ai.provider.${provider}.disabled`, value: !!enabled, category: 'ai', description: `Kill switch for ${provider}`, updatedBy: actor.id } });
+  async killSwitch(@Param('provider') provider: string, @Body() body: AdminKillSwitchDto, @GetAdminUserFromRequest() actor: AdminUserWithAccount) {
+    return this._prisma.platformSetting.upsert({ where: { key: `ai.provider.${provider}.disabled` }, update: { value: !!body.enabled, updatedBy: actor.id }, create: { key: `ai.provider.${provider}.disabled`, value: !!body.enabled, category: 'ai', description: `Kill switch for ${provider}`, updatedBy: actor.id } });
   }
 }

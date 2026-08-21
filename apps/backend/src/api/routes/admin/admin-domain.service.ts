@@ -11,17 +11,50 @@ type ResourceConfig = {
   fields: string[];
   sensitive?: string[];
   softDelete?: boolean;
+  // Fields that can never be written through this generic CRUD endpoint,
+  // because a dedicated endpoint handles the same change plus side effects
+  // (session invalidation, ledger entries, notifications) that this
+  // generic path does not and must not silently skip. Attempting to write
+  // one throws — the caller must use the dedicated endpoint instead.
+  blockedFields?: string[];
+  // Fields whose presence in the update body forces CRITICAL severity
+  // (fresh MFA step-up) on this write, matching the severity the dedicated
+  // action/endpoint for the same state change already requires. '*' means
+  // any write to this resource is CRITICAL.
+  criticalFields?: string[] | '*';
 };
 
 const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
-  users: { model: 'user', permission: 'users.read', writePermission: 'users.write', search: ['id', 'email', 'name', 'lastName'], fields: ['id', 'email', 'name', 'lastName', 'providerName', 'activated', 'createdAt', 'lastOnline', 'deletedAt'], softDelete: true },
-  organizations: { model: 'organization', permission: 'orgs.read', writePermission: 'orgs.write', search: ['id', 'name', 'paymentId'], fields: ['id', 'name', 'description', 'status', 'allowTrial', 'isTrailing', 'createdAt', 'updatedAt', 'deletedAt'], softDelete: true },
-  plans: { model: 'billingPlan', permission: 'billing.read', writePermission: 'billing.write', search: ['id', 'code', 'name'], fields: ['id', 'code', 'name', 'priceCents', 'monthlyCredits', 'active', 'createdAt', 'updatedAt'] },
-  prices: { model: 'billingPrice', permission: 'billing.read', writePermission: 'billing.write', search: ['id', 'code', 'kind', 'provider'], fields: ['id', 'planId', 'code', 'kind', 'provider', 'amountCents', 'credits', 'validityDays', 'active', 'validFrom', 'validUntil'] },
-  subscriptions: { model: 'billingSubscription', permission: 'billing.read', writePermission: 'billing.write', search: ['id', 'organizationId', 'status', 'providerSubscriptionId'], fields: ['id', 'organizationId', 'planId', 'provider', 'status', 'currentPeriodStart', 'currentPeriodEnd', 'cancelAtPeriodEnd', 'failedAt', 'createdAt', 'updatedAt'] },
-  invoices: { model: 'billingInvoice', permission: 'billing.read', writePermission: 'billing.write', search: ['id', 'organizationId', 'providerInvoiceId', 'status'], fields: ['id', 'organizationId', 'provider', 'providerInvoiceId', 'type', 'status', 'amountCents', 'currency', 'priceCode', 'creditsGranted', 'periodStart', 'periodEnd', 'paidAt', 'createdAt'] },
-  credits: { model: 'creditAccount', permission: 'credits.read', writePermission: 'credits.adjust', search: ['id', 'organizationId', 'status'], fields: ['id', 'organizationId', 'status', 'debtCredits', 'createdAt', 'updatedAt'] },
-  creditLots: { model: 'creditLot', permission: 'credits.read', writePermission: 'credits.adjust', search: ['id', 'organizationId', 'source', 'status'], fields: ['id', 'organizationId', 'source', 'sourceReference', 'totalCredits', 'remainingCredits', 'expiresAt', 'status', 'createdAt', 'updatedAt'] },
+  // `email` is excluded on purpose: changing a user's login email enables
+  // full account takeover (change email -> /auth/forgot -> reset from the
+  // attacker's inbox). That flow has its own CRITICAL endpoint
+  // (AdminUsersController.updateEmail) which also invalidates sessions and
+  // notifies the old address — this generic path must not be able to set
+  // it directly and skip all of that.
+  users: { model: 'user', permission: 'users.read', writePermission: 'users.write.basic', search: ['id', 'email', 'name', 'lastName'], fields: ['id', 'email', 'name', 'lastName', 'providerName', 'activated', 'createdAt', 'lastOnline', 'deletedAt'], softDelete: true, blockedFields: ['email'] },
+  // `status` is critical: it's how an org gets suspended, which the
+  // dedicated POST /organizations/:id/suspend endpoint requires CRITICAL
+  // severity for. Writing it through this generic PATCH must match that.
+  organizations: { model: 'organization', permission: 'orgs.read', writePermission: 'orgs.write', search: ['id', 'name', 'paymentId'], fields: ['id', 'name', 'description', 'status', 'allowTrial', 'isTrailing', 'createdAt', 'updatedAt', 'deletedAt'], softDelete: true, criticalFields: ['status'] },
+  plans: { model: 'billingPlan', permission: 'billing.read', writePermission: 'billing.write', search: ['id', 'code', 'name'], fields: ['id', 'code', 'name', 'priceCents', 'monthlyCredits', 'active', 'createdAt', 'updatedAt'], criticalFields: '*' },
+  prices: { model: 'billingPrice', permission: 'billing.read', writePermission: 'billing.write', search: ['id', 'code', 'kind', 'provider'], fields: ['id', 'planId', 'code', 'kind', 'provider', 'amountCents', 'credits', 'validityDays', 'active', 'validFrom', 'validUntil'], criticalFields: '*' },
+  // `status`/`planId`/`cancelAtPeriodEnd` reflect what the customer is
+  // actually entitled to. These must normally only move via a verified
+  // Stripe/Cakto webhook, never a free-form admin PATCH — treat any write
+  // to them as CRITICAL so at minimum a fresh MFA step-up is required.
+  subscriptions: { model: 'billingSubscription', permission: 'billing.read', writePermission: 'billing.write', search: ['id', 'organizationId', 'status', 'providerSubscriptionId'], fields: ['id', 'organizationId', 'planId', 'provider', 'status', 'currentPeriodStart', 'currentPeriodEnd', 'cancelAtPeriodEnd', 'failedAt', 'createdAt', 'updatedAt'], criticalFields: ['status', 'planId', 'cancelAtPeriodEnd', 'currentPeriodEnd'] },
+  // Same reasoning: `status`/`amountCents`/`creditsGranted` are the fields
+  // a forged/direct write could use to fabricate a paid invoice or grant
+  // credits without a real payment ever happening.
+  invoices: { model: 'billingInvoice', permission: 'billing.read', writePermission: 'billing.write', search: ['id', 'organizationId', 'providerInvoiceId', 'status'], fields: ['id', 'organizationId', 'provider', 'providerInvoiceId', 'type', 'status', 'amountCents', 'currency', 'priceCode', 'creditsGranted', 'periodStart', 'periodEnd', 'paidAt', 'createdAt'], criticalFields: ['status', 'amountCents', 'creditsGranted'] },
+  // Both credit resources' balance fields must only move through
+  // AdminDomainService.adjustCredits() (the `adjust` action), which writes
+  // an immutable CreditTransaction/FinancialAdjustment ledger entry and
+  // enforces the SUPPORT-role daily limit. Writing `debtCredits`/
+  // `remainingCredits`/`totalCredits`/`status` directly here would silently
+  // change an org's balance with no ledger entry and no limit at all.
+  credits: { model: 'creditAccount', permission: 'credits.read', writePermission: 'credits.adjust', search: ['id', 'organizationId', 'status'], fields: ['id', 'organizationId', 'status', 'debtCredits', 'createdAt', 'updatedAt'], blockedFields: ['debtCredits', 'status'] },
+  creditLots: { model: 'creditLot', permission: 'credits.read', writePermission: 'credits.adjust', search: ['id', 'organizationId', 'source', 'status'], fields: ['id', 'organizationId', 'source', 'sourceReference', 'totalCredits', 'remainingCredits', 'expiresAt', 'status', 'createdAt', 'updatedAt'], blockedFields: ['totalCredits', 'remainingCredits', 'status'] },
   transactions: { model: 'creditTransaction', permission: 'credits.read', search: ['id', 'organizationId', 'type', 'operation', 'provider', 'model'], fields: ['id', 'organizationId', 'type', 'credits', 'operation', 'provider', 'model', 'estimatedCostUsd', 'actualCostUsd', 'costBrlCents', 'createdAt'] },
   providerCosts: { model: 'providerCostRecord', permission: 'ai.costs.read', search: ['id', 'organizationId', 'provider', 'model', 'operation'], fields: ['id', 'organizationId', 'provider', 'model', 'operation', 'providerRequestId', 'estimatedCostUsd', 'actualCostUsd', 'costBrlCents', 'creditsCharged', 'createdAt'] },
   jobs: { model: 'generationJob', permission: 'ai.jobs.read', writePermission: 'ai.jobs.write', search: ['id', 'organizationId', 'type', 'status', 'provider', 'model'], fields: ['id', 'organizationId', 'type', 'status', 'progress', 'error', 'model', 'provider', 'costEstimate', 'createdAt', 'updatedAt', 'startedAt', 'completedAt'] },
@@ -35,7 +68,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
   webhooks: { model: 'webhook', permission: 'integrations.read', writePermission: 'integrations.write', search: ['id', 'organizationId', 'url', 'status'], fields: ['id', 'organizationId', 'url', 'events', 'status', 'failureCount', 'lastTriggeredAt', 'lastResponseStatus', 'createdAt', 'updatedAt', 'deletedAt'], sensitive: ['secret'] },
   errors: { model: 'errors', permission: 'system.errors.read', search: ['id', 'organizationId', 'platform', 'message'], fields: ['id', 'organizationId', 'platform', 'message', 'body', 'postId', 'createdAt', 'updatedAt'] },
   flags: { model: 'featureFlag', permission: 'system.read', writePermission: 'system.flags.write', search: ['id', 'key', 'description'], fields: ['id', 'key', 'enabled', 'rolloutPercent', 'targetOrgIds', 'targetPlans', 'description', 'updatedBy', 'updatedAt'] },
-  settings: { model: 'platformSetting', permission: 'system.read', writePermission: 'system.settings.write', search: ['id', 'key', 'category', 'description'], fields: ['id', 'key', 'value', 'category', 'description', 'isSecret', 'updatedBy', 'updatedAt'] },
+  settings: { model: 'platformSetting', permission: 'system.read', writePermission: 'system.settings.write', search: ['id', 'key', 'category', 'description'], fields: ['id', 'key', 'value', 'category', 'description', 'isSecret', 'updatedBy', 'updatedAt'], criticalFields: '*' },
   affiliate: { model: 'affiliate', permission: 'analytics.read', writePermission: 'analytics.write', search: ['id', 'organizationId', 'code', 'name', 'email', 'status'], fields: ['id', 'organizationId', 'code', 'name', 'email', 'status', 'commissionRate', 'totalReferrals', 'totalConversions', 'totalEarnings', 'paidEarnings', 'createdAt', 'updatedAt', 'deletedAt'] },
 };
 
@@ -216,9 +249,16 @@ export class AdminDomainService {
   }
 
   private pickWritable(config: ResourceConfig, input: Record<string, unknown>) {
+    const blocked = new Set(config.blockedFields || []);
     const data: Record<string, any> = {};
     for (const field of config.fields) {
-      if (!READ_ONLY_FIELDS.has(field) && Object.prototype.hasOwnProperty.call(input, field)) data[field] = input[field];
+      if (READ_ONLY_FIELDS.has(field) || !Object.prototype.hasOwnProperty.call(input, field)) continue;
+      if (blocked.has(field)) {
+        throw new ForbiddenException(
+          `Field '${field}' cannot be written through this generic endpoint; use the dedicated endpoint for this change.`
+        );
+      }
+      data[field] = input[field];
     }
     return data;
   }
@@ -229,4 +269,18 @@ export class AdminDomainService {
   }
 }
 
+// Used by AdminPermissionGuard to decide whether a generic-resource write
+// must be treated as CRITICAL severity (forcing a fresh MFA step-up),
+// independent of the static severity on the generic route's own decorator.
+// See admin-permission.guard.ts — this is the fix for the gap where
+// PATCH /admin/organizations/:id {status:"SUSPENDED"} (WARNING) achieved
+// the same state change as POST /admin/organizations/:id/suspend
+// (CRITICAL) without the step-up the dedicated endpoint requires.
+export function resourceWriteIsCritical(config: ResourceConfig, body: Record<string, unknown> | undefined): boolean {
+  if (config.criticalFields === '*') return true;
+  if (!config.criticalFields || !body) return false;
+  return config.criticalFields.some((field) => Object.prototype.hasOwnProperty.call(body, field));
+}
+
 export { RESOURCE_CONFIG };
+export type { ResourceConfig };
