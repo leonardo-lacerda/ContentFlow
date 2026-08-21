@@ -13,12 +13,14 @@ import { MediaService } from '@gitroom/nestjs-libraries/database/prisma/media/me
 import { OrganizationService } from '@gitroom/nestjs-libraries/database/prisma/organizations/organization.service';
 import { VideoManager } from '@gitroom/nestjs-libraries/videos/video.manager';
 import { checkAuth } from '@gitroom/nestjs-libraries/chat/auth.context';
+import { ToolConfirmationService } from '@gitroom/nestjs-libraries/chat/tool-confirmation.service';
 
 @Injectable()
 export class GenerateVideoTool implements AgentToolInterface {
   constructor(
     private _mediaService: MediaService,
-    private _videoManager: VideoManager
+    private _videoManager: VideoManager,
+    private _confirmation: ToolConfirmationService
   ) {}
   name = 'generateVideoTool';
 
@@ -66,12 +68,29 @@ export class GenerateVideoTool implements AgentToolInterface {
       }),
       execute: async (inputData, context) => {
         checkAuth(inputData, context);
-        if (inputData.confirmed !== true) {
+        const org = JSON.parse((context?.requestContext as any)?.get('organization') as string);
+        const threadId = (context as any)?.agent?.threadId as
+          | string
+          | undefined;
+        const requestId = (context?.requestContext as any)?.get(
+          'requestId'
+        ) as string | undefined;
+        const canProceed = await this._confirmation.requestOrConsume(
+          threadId || org?.id,
+          requestId,
+          'generateVideoTool',
+          {
+            identifier: inputData.identifier,
+            output: inputData.output,
+            customParams: inputData.customParams,
+          },
+          inputData.confirmed
+        );
+        if (!canProceed) {
           throw new Error(
             'Esta acao consome creditos de video e exige confirmacao explicita do usuario antes de continuar.'
           );
         }
-        const org = JSON.parse((context?.requestContext as any)?.get('organization') as string);
         const value = await this._mediaService.generateVideo(org, {
           type: inputData.identifier,
           output: inputData.output,

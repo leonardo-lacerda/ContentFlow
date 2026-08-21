@@ -5,12 +5,16 @@ import { Injectable } from '@nestjs/common';
 import { MediaService } from '@gitroom/nestjs-libraries/database/prisma/media/media.service';
 import { UploadFactory } from '@gitroom/nestjs-libraries/upload/upload.factory';
 import { checkAuth } from '@gitroom/nestjs-libraries/chat/auth.context';
+import { ToolConfirmationService } from '@gitroom/nestjs-libraries/chat/tool-confirmation.service';
 
 @Injectable()
 export class GenerateImageTool implements AgentToolInterface {
   private storage = UploadFactory.createStorage();
 
-  constructor(private _mediaService: MediaService) {}
+  constructor(
+    private _mediaService: MediaService,
+    private _confirmation: ToolConfirmationService
+  ) {}
   name = 'generateImageTool';
 
   run() {
@@ -45,12 +49,25 @@ export class GenerateImageTool implements AgentToolInterface {
       }),
       execute: async (inputData, context) => {
         checkAuth(inputData, context);
-        if (inputData.confirmed !== true) {
+        const org = JSON.parse((context?.requestContext as any)?.get('organization') as string);
+        const threadId = (context as any)?.agent?.threadId as
+          | string
+          | undefined;
+        const requestId = (context?.requestContext as any)?.get(
+          'requestId'
+        ) as string | undefined;
+        const canProceed = await this._confirmation.requestOrConsume(
+          threadId || org?.id,
+          requestId,
+          'generateImageTool',
+          { prompt: inputData.prompt },
+          inputData.confirmed
+        );
+        if (!canProceed) {
           throw new Error(
             'Esta acao consome creditos de imagem e exige confirmacao explicita do usuario antes de continuar.'
           );
         }
-        const org = JSON.parse((context?.requestContext as any)?.get('organization') as string);
         const image = await this._mediaService.generateImage(
           inputData.prompt,
           org

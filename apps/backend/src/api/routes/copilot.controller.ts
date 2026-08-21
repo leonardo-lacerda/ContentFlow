@@ -8,7 +8,7 @@ import {
   Query,
   Param,
 } from '@nestjs/common';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import {
   CopilotRuntime,
   OpenAIAdapter,
@@ -36,6 +36,7 @@ export type ChannelsContext = {
   ui: string;
   studioAttachments: string;
   brandContext: string;
+  requestId: string;
 };
 
 type PrimaryAiConfig = {
@@ -207,6 +208,15 @@ export class CopilotController {
     requestContext.set('organization', JSON.stringify(organization));
     requestContext.set('ui', 'true');
     requestContext.set('brandContext', await this.buildBrandContext(organization.id));
+    // One fresh id per incoming HTTP request, stable across every step of
+    // this request's tool-calling loop (maxSteps: 8 — see
+    // load.tools.service.ts) but different on the next request. Credit-
+    // spending tools use this to make sure a confirmed=true call can only
+    // consume a pending confirmation that was asked in an EARLIER request —
+    // closing the gap where the model could otherwise ask-then-confirm
+    // entirely on its own within one multi-step tool loop, no real user
+    // turn involved. See ToolConfirmationService.
+    requestContext.set('requestId', randomUUID());
     const threadId =
       req.body?.threadId || req.body?.thread?.id || req.body?.variables?.threadId;
     if (threadId) {

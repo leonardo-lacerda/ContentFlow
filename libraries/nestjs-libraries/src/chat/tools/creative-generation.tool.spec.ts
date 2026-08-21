@@ -1,4 +1,20 @@
+const redisStore = new Map<string, string>();
+jest.mock('@gitroom/nestjs-libraries/redis/redis.service', () => ({
+  ioRedis: {
+    set: jest.fn(async (key: string, value: string) => {
+      redisStore.set(key, value);
+      return 'OK';
+    }),
+    getdel: jest.fn(async (key: string) => {
+      const value = redisStore.get(key);
+      redisStore.delete(key);
+      return value;
+    }),
+  },
+}));
+
 import { CreativeGenerationTool } from './creative-generation.tool';
+import { ToolConfirmationService } from '@gitroom/nestjs-libraries/chat/tool-confirmation.service';
 
 // Safety net for the C4 split (docs/studio-audit.md): creative.engine.tool.ts
 // had zero test coverage before this, so a mis-copied case body when
@@ -7,7 +23,7 @@ import { CreativeGenerationTool } from './creative-generation.tool';
 // credits): required-field validation, the confirmation gate, and that each
 // operation dispatches to the right service method with the right args.
 
-const buildContext = (organizationId = 'org-1') => {
+const buildContext = (organizationId = 'org-1', threadId?: string) => {
   const store = new Map<string, string>([
     ['organization', JSON.stringify({ id: organizationId })],
   ]);
@@ -16,6 +32,7 @@ const buildContext = (organizationId = 'org-1') => {
       get: (key: string) => store.get(key),
       set: (key: string, value: string) => store.set(key, value),
     },
+    ...(threadId ? { agent: { threadId } } : {}),
   };
 };
 
@@ -26,6 +43,7 @@ describe('CreativeGenerationTool', () => {
   let previousEnabledFlag: string | undefined;
 
   beforeEach(() => {
+    redisStore.clear();
     previousEnabledFlag = process.env.CREATIVE_ENGINE_ENABLED;
     delete process.env.CREATIVE_ENGINE_ENABLED;
 
@@ -42,7 +60,13 @@ describe('CreativeGenerationTool', () => {
       generateVariantMatrix: jest.fn().mockResolvedValue({ variants: [] }),
       localizeVariant: jest.fn().mockResolvedValue({ id: 'variant-2' }),
     };
-    moduleRef = { get: jest.fn().mockReturnValue(service) };
+    moduleRef = {
+      get: jest.fn((token: any) =>
+        token === ToolConfirmationService
+          ? new ToolConfirmationService()
+          : service
+      ),
+    };
     tool = new CreativeGenerationTool(moduleRef as any).run();
   });
 
@@ -51,7 +75,21 @@ describe('CreativeGenerationTool', () => {
     else process.env.CREATIVE_ENGINE_ENABLED = previousEnabledFlag;
   });
 
-  const execute = (input: Record<string, any>) => (tool as any).execute(input, buildContext());
+  const execute = (input: Record<string, any>, threadId?: string) =>
+    (tool as any).execute(input, buildContext('org-1', threadId));
+
+  // With no thread (or within one), a credit-consuming operation now always
+  // needs a real preceding "ask" call before confirmed=true is honoured —
+  // see the CONFIRMED-1 regression coverage in generate.image.tool.spec.ts.
+  // Tests that exercise dispatch/validation logic PAST the confirmation
+  // gate use this to get there, mirroring what a real two-turn interaction
+  // does; it is not itself a test of the confirmation gate (that has its
+  // own dedicated tests below and in tool-confirmation.service.spec.ts).
+  const confirmedExecute = async (input: Record<string, any>, threadId?: string) => {
+    const { confirmed, ...rest } = input;
+    await execute(rest, threadId).catch(() => {});
+    return execute({ ...rest, confirmed: true }, threadId);
+  };
 
   it('is registered under the expected tool id', () => {
     expect((tool as any).id).toBe('creativeGenerationTool');
@@ -64,16 +102,35 @@ describe('CreativeGenerationTool', () => {
     expect(service.generateImage).not.toHaveBeenCalled();
   });
 
+  // Regression coverage for the 2026-08-20 audit finding — see
+  // generate.image.tool.spec.ts for the full rationale: inside a chat
+  // thread, confirmed=true must follow a separate, earlier unconfirmed call.
+  it('cannot self-confirm a credit-consuming operation in a single call within a thread', async () => {
+    await expect(
+      execute(
+        { operation: 'generate-image', prompt: 'a cat', confirmed: true },
+        'thread-1'
+      )
+    ).rejects.toThrow(/confirmac/i);
+    expect(service.generateImage).not.toHaveBeenCalled();
+  });
+
+  it('succeeds within a thread once confirmed=true follows an earlier unconfirmed ask', async () => {
+    const input = { operation: 'generate-image', prompt: 'a cat', projectId: 'proj-1' };
+    await expect(execute(input, 'thread-1')).rejects.toThrow(/confirmac/i);
+    await execute({ ...input, confirmed: true }, 'thread-1');
+    expect(service.generateImage).toHaveBeenCalled();
+  });
+
   it('rejects generate-image without a prompt', async () => {
-    await expect(execute({ operation: 'generate-image', confirmed: true })).rejects.toThrow(
+    await expect(confirmedExecute({ operation: 'generate-image' })).rejects.toThrow(
       /prompt is required/
     );
   });
 
   it('dispatches generate-image to the service with an existing project', async () => {
-    const result = await execute({
+    const result = await confirmedExecute({
       operation: 'generate-image',
-      confirmed: true,
       projectId: 'proj-1',
       prompt: 'a cat wearing a hat',
       aspectRatio: '1:1',
@@ -88,31 +145,29 @@ describe('CreativeGenerationTool', () => {
   });
 
   it('creates a project first when generate-image has no projectId', async () => {
-    await execute({ operation: 'generate-image', confirmed: true, prompt: 'a dog' });
+    await confirmedExecute({ operation: 'generate-image', prompt: 'a dog' });
     expect(service.createProject).toHaveBeenCalledWith('org-1', expect.objectContaining({ objective: 'a dog' }));
     expect(service.generateImage).toHaveBeenCalledWith('org-1', 'proj-auto', expect.anything());
   });
 
   it('rejects generate-carousel without slides', async () => {
-    await expect(execute({ operation: 'generate-carousel', confirmed: true, designApproved: true })).rejects.toThrow(
+    await expect(confirmedExecute({ operation: 'generate-carousel', designApproved: true })).rejects.toThrow(
       /slides are required/
     );
   });
 
   it('rejects generate-carousel without designApproved', async () => {
     await expect(
-      execute({
+      confirmedExecute({
         operation: 'generate-carousel',
-        confirmed: true,
         slides: [{ imagePrompt: 'p' }],
       })
     ).rejects.toThrow(/designApproved=true/);
   });
 
   it('dispatches generate-carousel including the brief field (fidelity with the original tool)', async () => {
-    await execute({
+    await confirmedExecute({
       operation: 'generate-carousel',
-      confirmed: true,
       designApproved: true,
       projectId: 'proj-1',
       brief: 'a carousel about coffee',
@@ -125,9 +180,8 @@ describe('CreativeGenerationTool', () => {
   });
 
   it('passes stylePresetId/paletteId/density/alignment through to generateCarouselImages', async () => {
-    await execute({
+    await confirmedExecute({
       operation: 'generate-carousel',
-      confirmed: true,
       designApproved: true,
       projectId: 'proj-1',
       slides: [{ imagePrompt: 'slide 1' }],
@@ -148,9 +202,8 @@ describe('CreativeGenerationTool', () => {
   });
 
   it('passes a per-slide styleOverride through to generateCarouselImages untouched', async () => {
-    await execute({
+    await confirmedExecute({
       operation: 'generate-carousel',
-      confirmed: true,
       designApproved: true,
       projectId: 'proj-1',
       slides: [
@@ -170,15 +223,14 @@ describe('CreativeGenerationTool', () => {
   });
 
   it('requires projectId and presetId for run-preset', async () => {
-    await expect(execute({ operation: 'run-preset', confirmed: true })).rejects.toThrow(
+    await expect(confirmedExecute({ operation: 'run-preset' })).rejects.toThrow(
       /projectId and presetId are required/
     );
   });
 
   it('dispatches run-preset with the full option set', async () => {
-    await execute({
+    await confirmedExecute({
       operation: 'run-preset',
-      confirmed: true,
       projectId: 'proj-1',
       presetId: 'preset-1',
       actorId: 'actor-1',
@@ -201,9 +253,8 @@ describe('CreativeGenerationTool', () => {
   });
 
   it('dispatches localize with all required fields', async () => {
-    await execute({
+    await confirmedExecute({
       operation: 'localize',
-      confirmed: true,
       projectId: 'proj-1',
       variantId: 'var-1',
       targetLanguage: 'es',
@@ -218,7 +269,7 @@ describe('CreativeGenerationTool', () => {
 
   it('rejects localize when a required field is missing', async () => {
     await expect(
-      execute({ operation: 'localize', confirmed: true, projectId: 'proj-1' })
+      confirmedExecute({ operation: 'localize', projectId: 'proj-1' })
     ).rejects.toThrow(/projectId, variantId and targetLanguage/);
   });
 

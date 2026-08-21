@@ -12,14 +12,30 @@ jest.mock('@gitroom/nestjs-libraries/creative-engine/creative-publish.service', 
   CreativePublishService: class CreativePublishService {},
 }));
 
+const redisStore = new Map<string, string>();
+jest.mock('@gitroom/nestjs-libraries/redis/redis.service', () => ({
+  ioRedis: {
+    set: jest.fn(async (key: string, value: string) => {
+      redisStore.set(key, value);
+      return 'OK';
+    }),
+    getdel: jest.fn(async (key: string) => {
+      const value = redisStore.get(key);
+      redisStore.delete(key);
+      return value;
+    }),
+  },
+}));
+
 import { CreativePublishTool } from './creative-publish.tool';
+import { ToolConfirmationService } from '@gitroom/nestjs-libraries/chat/tool-confirmation.service';
 
 // Safety net for the C4 split (docs/studio-audit.md) - see
 // creative-generation.tool.spec.ts for the full rationale. Publish has a real
 // external side effect (posting to a channel), so its confirmation gate
 // matters more than most.
 
-const buildContext = (organizationId = 'org-1') => {
+const buildContext = (organizationId = 'org-1', threadId?: string) => {
   const store = new Map<string, string>([
     ['organization', JSON.stringify({ id: organizationId })],
   ]);
@@ -28,6 +44,7 @@ const buildContext = (organizationId = 'org-1') => {
       get: (key: string) => store.get(key),
       set: (key: string, value: string) => store.set(key, value),
     },
+    ...(threadId ? { agent: { threadId } } : {}),
   };
 };
 
@@ -39,12 +56,14 @@ describe('CreativePublishTool', () => {
   let tool: ReturnType<CreativePublishTool['run']>;
 
   beforeEach(() => {
+    redisStore.clear();
     delete process.env.CREATIVE_ENGINE_ENABLED;
     service = { getVariantDownload: jest.fn().mockResolvedValue({ videoUrl: 'https://example.com/v.mp4' }) };
     exportService = { exportProject: jest.fn().mockResolvedValue({ zipUrl: 'https://example.com/export.zip' }) };
     publishService = { publishVariant: jest.fn().mockResolvedValue({ id: 'publication-1' }) };
     moduleRef = {
       get: jest.fn((token: any) => {
+        if (token === ToolConfirmationService) return new ToolConfirmationService();
         if (token?.name === 'CreativeExportService') return exportService;
         if (token?.name === 'CreativePublishService') return publishService;
         return service;
@@ -53,7 +72,16 @@ describe('CreativePublishTool', () => {
     tool = new CreativePublishTool(moduleRef as any).run();
   });
 
-  const execute = (input: Record<string, any>) => (tool as any).execute(input, buildContext());
+  const execute = (input: Record<string, any>, threadId?: string) =>
+    (tool as any).execute(input, buildContext('org-1', threadId));
+
+  // See creative-generation.tool.spec.ts's confirmedExecute for rationale:
+  // every confirmation-gated operation now needs a real preceding ask.
+  const confirmedExecute = async (input: Record<string, any>, threadId?: string) => {
+    const { confirmed, ...rest } = input;
+    await execute(rest, threadId).catch(() => {});
+    return execute({ ...rest, confirmed: true }, threadId);
+  };
 
   it('is registered under the expected tool id', () => {
     expect((tool as any).id).toBe('creativePublishTool');
@@ -73,7 +101,7 @@ describe('CreativePublishTool', () => {
   });
 
   it('dispatches export-project once confirmed', async () => {
-    await execute({ operation: 'export-project', projectId: 'proj-1', confirmed: true });
+    await confirmedExecute({ operation: 'export-project', projectId: 'proj-1' });
     expect(exportService.exportProject).toHaveBeenCalledWith('org-1', 'proj-1');
   });
 
@@ -89,16 +117,35 @@ describe('CreativePublishTool', () => {
     expect(publishService.publishVariant).not.toHaveBeenCalled();
   });
 
+  // Regression coverage for the 2026-08-20 audit finding — see
+  // generate.image.tool.spec.ts for the full rationale. Publish has a real
+  // external side effect, so this matters more here than most tools.
+  it('cannot self-confirm publish in a single call within a thread', async () => {
+    await expect(
+      execute(
+        { operation: 'publish', projectId: 'proj-1', variantId: 'var-1', integrationId: 'ig-1', confirmed: true },
+        'thread-1'
+      )
+    ).rejects.toThrow(/confirmac/i);
+    expect(publishService.publishVariant).not.toHaveBeenCalled();
+  });
+
+  it('publishes within a thread once confirmed=true follows an earlier unconfirmed ask', async () => {
+    const input = { operation: 'publish', projectId: 'proj-1', variantId: 'var-1', integrationId: 'ig-1' };
+    await expect(execute(input, 'thread-1')).rejects.toThrow(/confirmac/i);
+    await execute({ ...input, confirmed: true }, 'thread-1');
+    expect(publishService.publishVariant).toHaveBeenCalled();
+  });
+
   it('requires projectId, variantId and integrationId for publish', async () => {
-    await expect(execute({ operation: 'publish', confirmed: true })).rejects.toThrow(
+    await expect(confirmedExecute({ operation: 'publish' })).rejects.toThrow(
       /projectId, variantId and integrationId/
     );
   });
 
   it('dispatches publish with the full option set once confirmed', async () => {
-    await execute({
+    await confirmedExecute({
       operation: 'publish',
-      confirmed: true,
       projectId: 'proj-1',
       variantId: 'var-1',
       integrationId: 'ig-1',
