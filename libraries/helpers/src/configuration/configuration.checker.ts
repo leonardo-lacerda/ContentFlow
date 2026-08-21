@@ -47,27 +47,37 @@ export class ConfigurationChecker {
         'Needed for AI content/image generation and the AI agents.'
       );
     }
-    // TEMPORARILY DISABLED (2026-08-14): this Vultr production host has never
-    // had a payment provider configured (neither Stripe nor Cakto — both sets
-    // of keys are present in .env but empty). This check itself is not new;
-    // what changed today is main.ts's start() now treats any check() issue as
-    // fatal in production (see below), turning a previously-harmless boot
-    // warning into a hard boot failure. Explicit, informed decision by the
-    // site owner to keep checkout/billing non-functional for now rather than
-    // block deploys on it. Re-enable once a real payment provider is
-    // configured — see SECURITY-REMEDIATION-2026-08-14.md.
-    // const hasCakto = !!(this.cfg.CAKTO_STARTER_CHECKOUT_URL || this.cfg.CAKTO_PRO_CHECKOUT_URL || this.cfg.CAKTO_SCALE_CHECKOUT_URL);
-    // const hasStripe = !!this.cfg.STRIPE_SECRET_KEY;
-    // if (!hasCakto && !hasStripe) {
-    //   this.checkNonEmpty(
-    //     'STRIPE_SECRET_KEY',
-    //     'Needed to create checkouts and manage subscriptions. (Or set CAKTO_*_CHECKOUT_URL for Cakto)'
-    //   );
-    //   this.checkNonEmpty(
-    //     'STRIPE_SIGNING_KEY',
-    //     'Needed to validate Stripe webhook events. (Or set CAKTO_WEBHOOK_* for Cakto)'
-    //   );
-    // }
+    // Re-enabled 2026-08-20 (security remediation): restores the
+    // payment-provider guard that was temporarily commented out on
+    // 2026-08-14. If the production host still has no Stripe/Cakto
+    // credentials configured, this will now fail its boot check again —
+    // that's intentional; configure a real payment provider (or keep this
+    // disabled deliberately by re-commenting it, not by leaving it silently
+    // broken). See SECURITY-REMEDIATION-2026-08-14.md.
+    const hasCakto = !!(this.cfg.CAKTO_STARTER_CHECKOUT_URL || this.cfg.CAKTO_PRO_CHECKOUT_URL || this.cfg.CAKTO_SCALE_CHECKOUT_URL);
+    const hasStripe = !!this.cfg.STRIPE_SECRET_KEY;
+    if (!hasCakto && !hasStripe) {
+      this.checkNonEmpty(
+        'STRIPE_SECRET_KEY',
+        'Needed to create checkouts and manage subscriptions. (Or set CAKTO_*_CHECKOUT_URL for Cakto)'
+      );
+      this.checkNonEmpty(
+        'STRIPE_SIGNING_KEY',
+        'Needed to validate Stripe webhook events. (Or set CAKTO_WEBHOOK_* for Cakto)'
+      );
+    } else if (hasStripe) {
+      // Previously this only ran when *neither* provider was configured, so
+      // a deploy with STRIPE_SECRET_KEY set but STRIPE_SIGNING_KEY missing
+      // (e.g. Stripe configured alongside Cakto, or STRIPE_SIGNING_KEY
+      // simply forgotten) booted without the intended hard failure —
+      // webhook signature verification would then be broken with no
+      // boot-time signal. Stripe being active at all is what requires its
+      // signing key, independent of whether Cakto is also configured.
+      this.checkNonEmpty(
+        'STRIPE_SIGNING_KEY',
+        'Needed to validate Stripe webhook events.'
+      );
+    }
 
     if (this.get('NODE_ENV') === 'production') {
       for (const key of [
@@ -87,24 +97,27 @@ export class ConfigurationChecker {
         }
       }
 
-      // TEMPORARILY DISABLED (2026-08-14): the current production host
-      // (Vultr, 216.238.121.214:4007) has no domain/TLS termination yet, so
-      // this check refuses to boot the process. Explicit, informed decision
-      // by the site owner to accept plaintext-HTTP session cookies until a
-      // domain + HTTPS reverse proxy is set up. Re-enable as soon as that's
-      // in place — see SECURITY-REMEDIATION-2026-08-14.md, "Production
-      // actions required before deploying this revision". Mirrors the same
-      // temporary change in scripts/validate-runtime-env.mjs.
-      // for (const key of ['MAIN_URL', 'FRONTEND_URL', 'NEXT_PUBLIC_BACKEND_URL']) {
-      //   const value = this.get(key);
-      //   if (value && !value.startsWith('https://')) {
-      //     this.issues.push(`${key} must use HTTPS in production`);
-      //   }
-      // }
-      //
-      // if (String(this.get('NOT_SECURED')).toLowerCase() === 'true') {
-      //   this.issues.push('NOT_SECURED must not be enabled in production');
-      // }
+      // Re-enabled 2026-08-20 (security remediation): restores the
+      // HTTPS/NOT_SECURED guard that was temporarily commented out on
+      // 2026-08-14. Session cookies ship without Secure/HttpOnly/SameSite
+      // whenever NOT_SECURED=true (see every cookie-setting route), so
+      // running production without HTTPS is a real, active exposure, not a
+      // theoretical one. If the production host still has no domain/TLS
+      // reverse proxy, this will now fail its boot check again — that's
+      // intentional; stand up TLS (docker-compose.proxy.yaml) rather than
+      // leaving this silently disabled. See SECURITY-REMEDIATION-2026-08-14.md,
+      // "Production actions required before deploying this revision". Mirrors
+      // the same guard in scripts/validate-runtime-env.mjs.
+      for (const key of ['MAIN_URL', 'FRONTEND_URL', 'NEXT_PUBLIC_BACKEND_URL']) {
+        const value = this.get(key);
+        if (value && !value.startsWith('https://')) {
+          this.issues.push(`${key} must use HTTPS in production`);
+        }
+      }
+
+      if (String(this.get('NOT_SECURED')).toLowerCase() === 'true') {
+        this.issues.push('NOT_SECURED must not be enabled in production');
+      }
     }
   }
 

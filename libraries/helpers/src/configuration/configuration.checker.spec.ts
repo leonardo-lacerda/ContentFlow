@@ -44,24 +44,50 @@ describe('ConfigurationChecker production guard', () => {
     );
   });
 
-  // TEMPORARILY DISABLED (2026-08-14): the HTTPS/NOT_SECURED production guard
-  // is commented out in configuration.checker.ts until the production host
-  // has a domain + TLS reverse proxy. Re-enable this test alongside that
-  // check — see SECURITY-REMEDIATION-2026-08-14.md.
-  // it('rejects production without HTTPS', () => {
-  //   process.env = {
-  //     ...validProductionEnv,
-  //     FRONTEND_URL: 'http://contentflow.example.com',
-  //   };
-  //
-  //   const checker = new ConfigurationChecker();
-  //   checker.readEnvFromProcess();
-  //   checker.check();
-  //
-  //   expect(checker.getIssues()).toEqual(
-  //     expect.arrayContaining(['FRONTEND_URL must use HTTPS in production'])
-  //   );
-  // });
+  it('rejects production without HTTPS', () => {
+    process.env = {
+      ...validProductionEnv,
+      FRONTEND_URL: 'http://contentflow.example.com',
+    };
+
+    const checker = new ConfigurationChecker();
+    checker.readEnvFromProcess();
+    checker.check();
+
+    expect(checker.getIssues()).toEqual(
+      expect.arrayContaining(['FRONTEND_URL must use HTTPS in production'])
+    );
+  });
+
+  it('rejects production with NOT_SECURED=true', () => {
+    process.env = {
+      ...validProductionEnv,
+      NOT_SECURED: 'true',
+    };
+
+    const checker = new ConfigurationChecker();
+    checker.readEnvFromProcess();
+    checker.check();
+
+    expect(checker.getIssues()).toEqual(
+      expect.arrayContaining(['NOT_SECURED must not be enabled in production'])
+    );
+  });
+
+  it('rejects production without a payment provider (neither Stripe nor Cakto)', () => {
+    const { CAKTO_STARTER_CHECKOUT_URL, ...withoutCakto } = validProductionEnv;
+    process.env = withoutCakto;
+
+    const checker = new ConfigurationChecker();
+    checker.readEnvFromProcess();
+    checker.check();
+
+    expect(checker.getIssues()).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('STRIPE_SECRET_KEY not set'),
+      ])
+    );
+  });
 
   it('accepts a complete production configuration', () => {
     process.env = { ...validProductionEnv };
