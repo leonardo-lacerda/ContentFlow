@@ -91,6 +91,17 @@ export class AffiliateService {
       return null;
     }
 
+    // An org cannot be its own affiliate's paying referral: without this,
+    // an org could register as an affiliate, click its own tracking link,
+    // then buy its own subscription and collect commission on its own
+    // purchase. No live caller wires a real purchase event to this method
+    // yet (see the 2026-08-20 audit), so this has no effect today — it's
+    // here so the very first integration doesn't ship the self-referral
+    // hole by omission.
+    if (referredOrgId === affiliate.organizationId) {
+      return null;
+    }
+
     const commission = amount * affiliate.commissionRate;
 
     // Find most recent clicked referral for this code
