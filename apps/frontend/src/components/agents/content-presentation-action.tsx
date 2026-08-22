@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, type FC } from 'react';
+import { useId, useRef, type FC } from 'react';
 import {
   CarouselPreviewCard,
   ContentIdeasCard,
@@ -41,7 +41,28 @@ export const ContentPresentationAction: FC<PresentationActionProps> = ({
   // for callers that don't supply it (e.g. the isolated jsdom test harness).
   const instanceId = useId();
   const ownerKey = toolCallId || instanceId;
-  const presentation = resolveContentPresentation(args, status);
+
+  // FIX #2: Keep the last settled args/status across brief remounts. If
+  // CopilotKit unmounts this component mid-stream (token arrives → action
+  // re-registers → AG-UI adapter swaps component identity), the new mount
+  // starts with fresh undefined props. Without this guard the component
+  // would flash to null (return early) until the next args arrive, causing
+  // a visible flicker. Holding the settled values means a remount during
+  // streaming still renders the last-known card.
+  const settledArgsRef = useRef(args);
+  const settledStatusRef = useRef(status);
+  // Only update when we have real content (not inProgress streaming)
+  if (status !== 'inProgress' && args) {
+    settledArgsRef.current = args;
+    settledStatusRef.current = status;
+  }
+  const presentation = resolveContentPresentation(
+    // During inProgress streaming, let resolveContentPresentation return null
+    // (no card yet). After that, use the settled values so a remount between
+    // the last token and the status flip doesn't blank the card.
+    status === 'inProgress' ? undefined : (args || settledArgsRef.current),
+    status === 'inProgress' ? status : (status || settledStatusRef.current),
+  );
   if (!presentation) return null;
   // The structured tool result is the canonical card; it takes over a stale
   // text-fallback render of the same content, but yields if another

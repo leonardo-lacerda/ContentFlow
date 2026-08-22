@@ -124,6 +124,21 @@ const classifyChatError = (errorEvent: any): 'provider' | 'credits' => {
  * *renders* <CopilotKit> puts them outside it: the Studio actions would never
  * be sent to the agent and the model could not render any artifact card.
  */
+
+// FIX #1: Stable render component declared OUTSIDE StudioChat so CopilotKit's
+// AG-UI adapter never sees a new component identity on parent re-renders.
+// Previously the inline arrow in useCopilotAction created a fresh closure every
+// streamed token, causing React to unmount/remount the card each time — the
+// root cause of the ideas panel flickering.
+const StableContentPresentationRender = ({ args, status, toolCallId }: any) => (
+  <ContentPresentationAction
+    args={args as Record<string, any>}
+    status={status}
+    toolCallId={toolCallId}
+    onAction={dispatchArtifactAction}
+  />
+);
+
 const StudioChat: FC = () => {
   const t = useT();
   const { isLoading } = useCopilotChat();
@@ -319,17 +334,17 @@ const StudioChat: FC = () => {
   // the model. The old showContentIdeas/showCarouselPreview aliases were
   // retained as no-op actions before, but their presence let the provider
   // choose two rendering paths for the same result.
+  //
+  // FIX #1: Uses StableContentPresentationRender (declared outside this
+  // component) instead of an inline arrow. CopilotKit's AG-UI adapter uses the
+  // render function's reference identity as the JSX component type — a fresh
+  // closure every streamed token forced React to unmount/remount the card on
+  // every token, replaying the entrance animation and causing the ideas panel
+  // to flicker crazily.
   useCopilotAction({
     name: 'contentPresentationTool',
     available: 'frontend',
-    render: ({ args, status, toolCallId }: any) => (
-      <ContentPresentationAction
-        args={args as Record<string, any>}
-        status={status}
-        toolCallId={toolCallId}
-        onAction={dispatchArtifactAction}
-      />
-    ),
+    render: StableContentPresentationRender,
   });
 
   return (
@@ -560,7 +575,27 @@ const getAssistantContent = (value: unknown): string => {
 const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Record<string, unknown>) => void }> = (props) => {
   const content = getAssistantContent(props.message?.content);
   const visibleSource = useMemo(() => stripTransportEnvelope(content), [content]);
-  const presentedArtifact = useMemo(() => extractPresentedArtifact(content) || extractPresentedArtifact(visibleSource), [content, visibleSource]);
+
+  // FIX #3: Detect whether this message carries a structured contentPresentationTool
+  // invocation. When it does, the structured action (ContentPresentationAction) is the
+  // canonical renderer — the text-fallback parser must not also render a card, because
+  // both paths compete for the same visual slot and cause the ideas panel to flicker.
+  const hasStructuredToolCall = useMemo(() => {
+    const invocations = collectToolInvocations(props.message?.content);
+    return invocations.some(
+      (inv) => inv.toolName === 'contentPresentationTool' && inv.state !== 'error'
+    );
+  }, [props.message?.content]);
+
+  // FIX #4: Skip artifact parsing while the content is still streaming. The text
+  // fallback parser (extractPresentedArtifact) has 5 strategies that can match
+  // partial content with different signatures than the structured tool call, causing
+  // the card to flash between the fallback and structured renderers. Only parse
+  // once the content has settled (isLoading === false).
+  const presentedArtifact = useMemo(
+    () => extractPresentedArtifact(content) || extractPresentedArtifact(visibleSource),
+    [content, visibleSource]
+  );
   const renderSource = presentedArtifact?.sourceStart === 0 && visibleSource !== content ? visibleSource : content;
   const displayContentRaw = (presentedArtifact
     ? `${renderSource.slice(0, presentedArtifact.sourceStart).replace(/(?:```)?json\s*$/i, '').trim()}\n\n${renderSource.slice(renderSource.indexOf('Este resultado', presentedArtifact.sourceStart) >= 0 ? renderSource.indexOf('Este resultado', presentedArtifact.sourceStart) : renderSource.length)}`
@@ -577,8 +612,10 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
   const textFallbackArtifact = presentedArtifact && 'renderFromText' in presentedArtifact && presentedArtifact.renderFromText
     ? presentedArtifact.parsed
     : null;
-  // Only render the text-fallback card if no other path (the structured tool
-  // result, or an earlier message with identical content) already owns it.
+  // Only render the text-fallback card if:
+  // 1. No structured contentPresentationTool invocation exists on this message
+  //    (Fix #3 — prevents the two renderers from fighting for the same card).
+  // 2. No other path already owns this signature.
   // Keyed by message id so re-renders of this same message keep the card while
   // duplicate messages/retries suppress it.
   const fallbackSignature = textFallbackArtifact
@@ -586,6 +623,7 @@ const StudioAssistantMessage: FC<AssistantMessageProps & { onAction?: (value: Re
     : '';
   const canRenderFallback =
     !props.isLoading &&
+    !hasStructuredToolCall &&
     !!textFallbackArtifact &&
     claimArtifactCard(fallbackSignature, `text:${props.message?.id || fallbackSignature}`);
   return (

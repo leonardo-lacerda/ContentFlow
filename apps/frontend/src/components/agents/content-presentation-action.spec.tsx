@@ -31,6 +31,13 @@ const ideasArgs = {
   ],
 };
 
+const carouselArgs = {
+  operation: 'carousel',
+  slides: [
+    { id: 'slide-1', index: 1, headline: 'Slide 1', imagePrompt: 'uma cena' },
+  ],
+};
+
 describe('ContentPresentationAction remount stability', () => {
   beforeEach(() => {
     resetArtifactCardOwners();
@@ -75,5 +82,57 @@ describe('ContentPresentationAction remount stability', () => {
       )
     );
     expect(container.textContent).toBe('');
+  });
+});
+
+describe('ContentPresentationAction settledArgs guard (Fix #2)', () => {
+  beforeEach(() => {
+    resetArtifactCardOwners();
+    cleanup();
+  });
+
+  it('shows nothing during inProgress even if args have content', () => {
+    const { container } = render(
+      withProvider(
+        <ContentPresentationAction args={ideasArgs} status="inProgress" toolCallId="call_settled" />
+      )
+    );
+    // During streaming, the card should not render (no premature flash)
+    expect(container.textContent).toBe('');
+  });
+
+  it('renders the card once status becomes complete', () => {
+    const { rerender } = render(
+      withProvider(
+        <ContentPresentationAction args={ideasArgs} status="inProgress" toolCallId="call_settled2" />
+      )
+    );
+    // Simulate the tool call finishing
+    rerender(
+      withProvider(
+        <ContentPresentationAction args={ideasArgs} status="complete" toolCallId="call_settled2" />
+      )
+    );
+    expect(screen.getByText('Por Tras das Cameras')).toBeTruthy();
+  });
+
+  it('survives a re-render with undefined args after settling (settledArgs guard)', () => {
+    const { rerender } = render(
+      withProvider(
+        <ContentPresentationAction args={ideasArgs} status="complete" toolCallId="call_guard" />
+      )
+    );
+    expect(screen.getByText('Por Tras das Cameras')).toBeTruthy();
+
+    // Simulate CopilotKit briefly passing undefined args during a status
+    // transition (the settledArgs guard should carry over the last known
+    // args so the card doesn't flash to null within the same instance).
+    rerender(
+      withProvider(
+        <ContentPresentationAction args={undefined} status="complete" toolCallId="call_guard" />
+      )
+    );
+    // The card should still render from the settled args
+    expect(screen.getByText('Por Tras das Cameras')).toBeTruthy();
   });
 });
