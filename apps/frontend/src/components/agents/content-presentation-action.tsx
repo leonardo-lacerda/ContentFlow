@@ -12,6 +12,12 @@ import {
   resolveContentPresentation,
 } from './content-presentation-payload';
 
+// Tracks which tool call IDs have already rendered at least once, so remounts
+// (caused by CopilotKit re-registering the action on parent re-renders) can
+// skip the CSS entrance animation that otherwise replays on each mount and
+// produces the visible flicker.
+const alreadyRenderedToolCalls = new Set<string>();
+
 type PresentationActionProps = {
   args?: Record<string, any>;
   status?: string;
@@ -71,17 +77,23 @@ export const ContentPresentationAction: FC<PresentationActionProps> = ({
   const signature = artifactSignature(presentation.operation, presentation.payload);
   const owned = claimArtifactCard(signature, `structured:${ownerKey}`, true);
   if (!owned) return null;
+  // On the very first render of this tool call the card animates in (CSS
+  // cf-content-artifact-in). On any subsequent mount (CopilotKit remount)
+  // the animation is skipped so the card doesn't flash to invisible and
+  // back — this is the root cause of the ideas panel flickering.
+  const isRehydrated = toolCallId ? alreadyRenderedToolCalls.has(toolCallId) : false;
+  if (toolCallId) alreadyRenderedToolCalls.add(toolCallId);
   if (presentation.operation === 'ideas') {
     return (
       <CardErrorBoundary label="ideas card">
-        <ContentIdeasCard args={presentation.payload} onAction={onAction} />
+        <ContentIdeasCard args={presentation.payload} onAction={onAction} rehydrated={isRehydrated} />
       </CardErrorBoundary>
     );
   }
   if (presentation.operation === 'carousel') {
     return (
       <CardErrorBoundary label="carousel card">
-        <CarouselPreviewCard args={presentation.payload} onAction={onAction} />
+        <CarouselPreviewCard args={presentation.payload} onAction={onAction} rehydrated={isRehydrated} />
       </CardErrorBoundary>
     );
   }

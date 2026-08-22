@@ -137,7 +137,7 @@ const typographyScaleValue = (value: DesignSpec['typography']['scale']) => ({
   expressive: 1.14,
 }[value] || 1);
 
-export function ContentIdeasCard({ args, status, respond, onAction }: ActionProps & { args: Record<string, any> }) {
+export function ContentIdeasCard({ args, status, respond, onAction, rehydrated }: ActionProps & { args: Record<string, any>; rehydrated?: boolean }) {
   const ideas = useMemo<ContentIdea[]>(
     () => (Array.isArray(args.ideas) ? args.ideas : []).filter((idea) => idea?.title),
     [args.ideas]
@@ -210,7 +210,7 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
 
   return (
     <section
-      className={`cf-content-artifact cf-content-ideas ${pendingAction ? 'is-processing' : ''}`}
+      className={`cf-content-artifact cf-content-ideas ${pendingAction ? 'is-processing' : ''} ${rehydrated ? 'cf-content-artifact--rehydrated' : ''}`}
       aria-label="Ideias prontas"
       aria-busy={pendingAction ? 'true' : 'false'}
     >
@@ -296,7 +296,7 @@ export function ContentIdeasCard({ args, status, respond, onAction }: ActionProp
   );
 }
 
-export function CarouselPreviewCard({ args, status, respond, onAction }: ActionProps & { args: Record<string, any> }) {
+export function CarouselPreviewCard({ args, status, respond, onAction, rehydrated }: ActionProps & { args: Record<string, any>; rehydrated?: boolean }) {
   const slides = useMemo<CarouselPreviewSlide[]>(
     () => (Array.isArray(args.slides) ? args.slides : []).filter((slide) => slide?.headline),
     [args.slides]
@@ -819,7 +819,7 @@ export function CarouselPreviewCard({ args, status, respond, onAction }: ActionP
   }, [carouselCardKey]);
 
   return (
-    <section className="cf-content-artifact cf-carousel-preview" aria-label="Preview do carrossel">
+    <section className={`cf-content-artifact cf-carousel-preview ${rehydrated ? 'cf-content-artifact--rehydrated' : ''}`} aria-label="Preview do carrossel">
       <header className="cf-content-artifact__header">
         <div>
           <span className="cf-content-artifact__eyebrow">Copy pronta para aprovação</span>

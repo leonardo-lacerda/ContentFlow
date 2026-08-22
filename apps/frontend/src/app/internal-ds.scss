@@ -1540,6 +1540,16 @@ body.light .cf-studio [class*='bg-cyan-'] {
 .cf-content-artifact {
   width: calc(100% - 24px);
   max-width: 1080px;
+
+  // CopilotKit may unmount/remount the card mid-stream (token arrives →
+  // action re-registers → AG-UI adapter swaps component identity). Each
+  // remount replays cf-content-artifact-in (260ms opacity+translateY),
+  // causing the visible ideas-panel flicker. The --rehydrated modifier is
+  // set by ContentPresentationAction when a toolCallId has already been
+  // rendered once, telling CSS to skip the entrance animation.
+  &.cf-content-artifact--rehydrated {
+    animation: none;
+  }
   align-self: stretch;
   margin: 12px;
   overflow: hidden;
