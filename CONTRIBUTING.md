@@ -56,6 +56,24 @@ This project follows a Fork/Feature Branch/Pull Request model. If you're not fam
    ```
 6. **Create a pull request**: Propose your changes **to the main branch**.
 
+## Testing
+
+See [TESTING.md](TESTING.md) for the full command list and CI gating. The two
+rules that matter most:
+
+- **Every bug fix ships with a regression test in the same PR.** Reproduce the
+  bug as a failing test first, then fix it, then confirm the test passes. This
+  is already how most of this repo's existing test suite was built — most
+  spec files are named after the incident they pin down. Keep doing that.
+- **Every new critical feature ships with tests** (unit at minimum; add
+  integration/API/E2E coverage per TESTING.md's guidance for anything that
+  touches auth, billing, admin, or another already-designated critical
+  domain).
+
+`pnpm run test:ci` runs the same checks CI runs before a change can deploy —
+run it locally before opening a PR that touches backend, frontend, or the
+orchestrator.
+
 # Need Help?
 
 Again, do check the [developer guide](https://docs.contentflow.com/developer-guide). Much of what you probably need to know is in there.

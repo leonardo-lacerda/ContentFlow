@@ -1,5 +1,22 @@
 // Global test setup for the frontend vitest suite.
-// Intentionally minimal: the pure-logic specs (parsers, url builders, dedup)
-// need nothing here, and component specs bring their own mocks. Kept as a stable
-// hook so future shared setup (e.g. jest-dom matchers, once added) has a home.
+
+// jest-dom matchers (toBeInTheDocument, toHaveTextContent, etc.) for
+// component-level specs — auto-extends vitest's `expect`.
+import '@testing-library/jest-dom/vitest';
+
+// jsdom doesn't implement matchMedia; @copilotkit/react-ui's dark-mode
+// detection calls it unconditionally on mount.
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  window.matchMedia = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  } as unknown as MediaQueryList);
+}
+
 export {};

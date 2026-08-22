@@ -34,5 +34,26 @@ export default defineConfig({
     clearMocks: true,
     restoreMocks: true,
     setupFiles: [resolve(__dirname, 'vitest.setup.ts')],
+    // @copilotkit/react-ui pulls in several Radix UI packages that ship as
+    // ESM-only. Left external, Vite's CJS/ESM interop shim fails to detect
+    // their named exports ("does not provide an export named ..."), even
+    // though the packages are valid ESM - inlining them makes Vite actually
+    // transform/bundle them instead of guessing at their export shape.
+    server: {
+      deps: {
+        inline: [/@radix-ui\//, /@copilotkit\//],
+      },
+    },
+    // Off by default (the plain `test`/`test:watch` scripts pass
+    // --no-coverage for fast local iteration); enabled via the root
+    // `pnpm run test:coverage` script. Thresholds are set once a real
+    // baseline is measured — see TESTING.md.
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      reportsDirectory: '../../coverage/apps/frontend',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.spec.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
+    },
   },
 });

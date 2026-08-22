@@ -6,7 +6,8 @@
     "dev": "dotenv -e ../../.env -- nest start --watch --entryFile=./apps/orchestrator/src/main",
     "build": "cd ../.. && cross-env NODE_OPTIONS=--max_old_space_size=4096 NODE_ENV=production node scripts/swc-compile-orchestrator.js",
     "start": "dotenv -e ../../.env -- node --experimental-require-module ./dist/apps/orchestrator/src/main.js",
-    "pm2": "pm2 start pnpm --name orchestrator -- start"
+    "pm2": "pm2 start pnpm --name orchestrator -- start",
+    "test": "jest --config jest.config.ts"
   },
   "keywords": [],
   "author": "",
