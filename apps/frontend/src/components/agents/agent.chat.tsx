@@ -322,10 +322,11 @@ const StudioChat: FC = () => {
   useCopilotAction({
     name: 'contentPresentationTool',
     available: 'frontend',
-    render: ({ args, status }) => (
+    render: ({ args, status, toolCallId }: any) => (
       <ContentPresentationAction
         args={args as Record<string, any>}
         status={status}
+        toolCallId={toolCallId}
         onAction={dispatchArtifactAction}
       />
     ),
